@@ -25,7 +25,7 @@ from pyglet.window import key
 
 import bwaccel
 
-from . import runtime, state
+from . import display, runtime, state
 from .constants import (CLINICAL_MODE, WEB_DONATE, WEB_FORUM, WEB_MORSE,
                         WEB_SITE, WEB_TUTORIAL)
 from .paths import dump_pyglet_info, edit_config_ini
@@ -249,6 +249,8 @@ def on_key_press(symbol: int, modifiers: int) -> bool:
     mode = state.mode
     if symbol == key.D and (modifiers & key.MOD_CTRL):
         dump_pyglet_info()
+    elif symbol == key.F11:
+        display.toggle_fullscreen()
     elif mode.title_screen and not mode.draw_graph:
         _on_key_title_screen(symbol, modifiers)
     elif mode.draw_graph:

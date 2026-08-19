@@ -63,6 +63,15 @@ rather than imported by value, because switching user profile rebinds
 some of them. `bootstrap.build_application()` populates that module in
 the one order that works; nothing else touches a singleton before it has.
 
+### Full screen
+
+**F11** switches between windowed and full screen from any screen, and
+`WINDOW_FULLSCREEN` in `config.ini` decides which one the game starts
+in. Every widget is sized from the window when it is built, so changing
+the size rebuilds them (`display.relayout()`); the session, the level
+and the stats are untouched, and a stimulus on screen mid-trial stays
+on screen.
+
 ### Trial timing (milliseconds)
 
 Human play still defaults to 100 ms ticks and ~3 s per trial. For faster

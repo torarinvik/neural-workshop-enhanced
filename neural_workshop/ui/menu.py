@@ -96,18 +96,10 @@ class Menu:
                  footnote: Optional[str] = None,
                  choose_once: bool = False,
                  default: int = 0) -> None:
-        window = state.window
-        self.titlesize = calc_fontsize(18)
-        self.choicesize = calc_fontsize(12)
-        self.footnotesize = calc_fontsize(12)
         if footnote is None:
             footnote = _('Esc: cancel     Space: modify option     Enter: apply')
-
-        self.bgcolor = (255 * int(not state.cfg.BLACK_BACKGROUND),) * 3
-        self.textcolor = (255 * int(state.cfg.BLACK_BACKGROUND),) * 3 + (255,)
-        self.pagesize = int(min(len(options),
-                                (window.height * 6 / 10)
-                                / (self.choicesize * 3 / 2)))
+        self.footnote_text = footnote
+        self.title_text = title
 
         if isinstance(options, dict):
             default_values: Dict[str, Any] = options
@@ -126,15 +118,39 @@ class Menu:
         self.choose_once = choose_once
         self.disppos = 0    # index of the first option shown on screen
         self.selpos = default
+        self.closed = False
+        self.build_chrome()
+
+        self.update_labels()
+        state.window.push_handlers(self.on_key_press, self.on_text,
+                                   self.on_text_motion, self.on_draw)
+        Menu.instance = self
+
+    def build_chrome(self) -> None:
+        """Create the batch, the fonts and the labels, sized to the window.
+
+        Called once when the menu opens and again whenever the window
+        changes size, so everything it touches must be derived from the
+        window rather than carried over.
+        """
+        window = state.window
+        self.titlesize = calc_fontsize(18)
+        self.choicesize = calc_fontsize(12)
+        self.footnotesize = calc_fontsize(12)
+        self.bgcolor = (255 * int(not state.cfg.BLACK_BACKGROUND),) * 3
+        self.textcolor = (255 * int(state.cfg.BLACK_BACKGROUND),) * 3 + (255,)
+        self.pagesize = max(1, int(min(len(self.options),
+                                       (window.height * 6 / 10)
+                                       / (self.choicesize * 3 / 2))))
         self.batch = pyglet.graphics.Batch()
 
         self.title = pyglet.text.Label(
-            title, font_size=self.titlesize, weight='bold',
+            self.title_text, font_size=self.titlesize, weight='bold',
             color=self.textcolor, batch=self.batch,
             x=width_center(), y=(window.height * 9) / 10,
             anchor_x='center', anchor_y='center')
         self.footnote = pyglet.text.Label(
-            footnote, font_size=self.footnotesize, weight='bold',
+            self.footnote_text, font_size=self.footnotesize, weight='bold',
             color=self.textcolor, batch=self.batch,
             x=width_center(), y=from_bottom_edge(35),
             anchor_x='center', anchor_y='center')
@@ -149,10 +165,11 @@ class Menu:
         self.marker = pyglet.shapes.Polygon((0, 0), (0, 0), (0, 0),
                                             color=[1] * 3, batch=self.batch)
 
-        self.update_labels()
-        window.push_handlers(self.on_key_press, self.on_text,
-                             self.on_text_motion, self.on_draw)
-        Menu.instance = self
+    def relayout(self) -> None:
+        """Rebuild at the window's current size, keeping the selection."""
+        self.build_chrome()
+        self.disppos = 0
+        self.move_selection(self.selpos, relative=False)
 
     # --- display ---------------------------------------------------------
 
@@ -243,6 +260,7 @@ class Menu:
         """Called when the menu is accepted. Override in subclasses."""
 
     def close(self) -> None:
+        self.closed = True
         state.window.remove_handlers(self.on_key_press, self.on_text,
                                      self.on_text_motion, self.on_draw)
 
@@ -256,6 +274,9 @@ class Menu:
             self.close()
         elif sym == key.SPACE:
             self.select()
+        elif sym == key.F11:
+            from .. import display
+            display.toggle_fullscreen()
         return pyglet.event.EVENT_HANDLED
 
     def on_text_motion(self, evt: int) -> bool:

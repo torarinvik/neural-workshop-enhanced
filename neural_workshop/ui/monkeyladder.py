@@ -12,7 +12,7 @@ from typing import List, Optional, Tuple
 import pyglet
 from pyglet.window import key
 
-from .. import state
+from .. import display, state
 from ..constants import FONTLIST
 from ..geometry import calc_fontsize, from_bottom_edge, from_top_edge, width_center
 from . import cursor, taskoptions
@@ -39,12 +39,28 @@ class MonkeyLadder:
         self.wrong: Optional[GridCell] = None
         self.show_until = 0.0
         self.message = _('Press Space to watch the numbers')
-        self.batch = pyglet.graphics.Batch()
         self.shapes: List[object] = []
         self.cell_labels: List[pyglet.text.Label] = []
+        self._build_chrome()
+        state.window.push_handlers(self.on_key_press, self.on_mouse_press,
+                                   self.on_draw)
+        pyglet.clock.schedule_interval(self.update, 1 / 30.)
+        cursor.acquire()
+        MonkeyLadder.instance = self
+
+    # --- layout ----------------------------------------------------------
+
+    def _build_chrome(self) -> None:
+        """Create the batch, the colours and the fixed labels.
+
+        Called when the task opens and again after a window resize.
+        """
         bg = 0 if state.cfg.BLACK_BACKGROUND else 255
         fg = 255 - bg
         self.textcolor = (fg, fg, fg, 255)
+        self.batch = pyglet.graphics.Batch()
+        self.shapes = []
+        self.cell_labels = []
         self.title = pyglet.text.Label(
             _('Monkey Ladder'), font_size=calc_fontsize(22), weight='bold',
             color=self.textcolor, batch=self.batch,
@@ -61,11 +77,10 @@ class MonkeyLadder:
             anchor_x='center', anchor_y='center')
         self._layout_grid()
         self._redraw()
-        state.window.push_handlers(self.on_key_press, self.on_mouse_press,
-                                   self.on_draw)
-        pyglet.clock.schedule_interval(self.update, 1 / 30.)
-        cursor.acquire()
-        MonkeyLadder.instance = self
+
+    def relayout(self) -> None:
+        """Rebuild at the window's current size, mid-round if need be."""
+        self._build_chrome()
 
     # --- options ---------------------------------------------------------
 
@@ -220,6 +235,8 @@ class MonkeyLadder:
             self.start_round()
         elif symbol == key.C:
             self.open_options()
+        elif symbol == key.F11:
+            display.toggle_fullscreen()
         return pyglet.event.EVENT_HANDLED
 
     def on_mouse_press(self, x: int, y: int, button: int,

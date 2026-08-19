@@ -186,7 +186,8 @@ class KeysListLabel:
                 _('W: Brain Workshop Web Site\n')])
         if cfg.WINDOW_FULLSCREEN:
             parts.append(_('E: Saccadic Eye Exercise\n'))
-        parts.extend(['\n', _('ESC: Task menu\n')])
+        parts.extend(['\n', _('F11: Full Screen\n'),
+                      _('ESC: Task menu\n')])
         return parts
 
     def update(self) -> None:
@@ -242,6 +243,7 @@ class TitleKeysLabel:
         if not CLINICAL_MODE:
             parts.extend([_('U: Choose User\n'),
                           _('G: Daily Progress Graph\n')])
+        parts.append(_('F11: Full Screen\n'))
         parts.append(_('H: Help / Tutorial\n'))
         if not CLINICAL_MODE:
             parts.extend([_('D: Donate\n'),

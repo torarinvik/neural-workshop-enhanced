@@ -28,6 +28,26 @@ class MyWindow(pyglet.window.Window):
         pass
 
 
+def enter_fullscreen(window: MyWindow) -> None:
+    """Take over the default screen and hide the system cursor."""
+    screen = pyglet.display.get_display().get_default_screen()
+    state.cfg.WINDOW_WIDTH_FULLSCREEN = screen.width
+    state.cfg.WINDOW_HEIGHT_FULLSCREEN = screen.height
+    window.set_fullscreen(True, screen=screen)
+    if sys.platform == 'darwin':
+        window.set_exclusive_keyboard()
+    window.set_mouse_visible(False)
+
+
+def leave_fullscreen(window: MyWindow) -> None:
+    """Give the screen back, at the size the config asks for."""
+    if sys.platform == 'darwin':
+        window.set_exclusive_keyboard(False)
+    window.set_fullscreen(False)
+    window.set_size(state.cfg.WINDOW_WIDTH, state.cfg.WINDOW_HEIGHT)
+    window.set_mouse_visible(True)
+
+
 def _caption() -> str:
     """Title-bar text: product, version and the active profile."""
     parts = ['BW-Clinical ' if CLINICAL_MODE else 'Neural Workshop ', VERSION]
@@ -39,23 +59,12 @@ def _caption() -> str:
 def create_window() -> MyWindow:
     """Build the window described by the config and prepare its GL state."""
     cfg = state.cfg
-    if cfg.WINDOW_FULLSCREEN:
-        style = pyglet.window.Window.WINDOW_STYLE_BORDERLESS
-        screen = pyglet.canvas.get_display().get_default_screen()
-        cfg.WINDOW_WIDTH_FULLSCREEN = screen.width
-        cfg.WINDOW_HEIGHT_FULLSCREEN = screen.height
-        window = MyWindow(cfg.WINDOW_WIDTH_FULLSCREEN,
-                          cfg.WINDOW_HEIGHT_FULLSCREEN,
-                          caption=_caption(), style=style,
-                          vsync=runtime.VSYNC, fullscreen=True)
-    else:
-        style = pyglet.window.Window.WINDOW_STYLE_DEFAULT
-        window = MyWindow(cfg.WINDOW_WIDTH, cfg.WINDOW_HEIGHT,
-                          caption=_caption(), style=style,
-                          vsync=runtime.VSYNC)
+    fullscreen = bool(cfg.WINDOW_FULLSCREEN) and not runtime.HEADLESS
+    window = MyWindow(cfg.WINDOW_WIDTH, cfg.WINDOW_HEIGHT,
+                      caption=_caption(),
+                      style=pyglet.window.Window.WINDOW_STYLE_DEFAULT,
+                      vsync=runtime.VSYNC)
 
-    if sys.platform == 'darwin' and cfg.WINDOW_FULLSCREEN:
-        window.set_exclusive_keyboard()
     if sys.platform.startswith('linux'):
         from . import resources
         window.set_icon(load_pyglet_image(
@@ -66,10 +75,8 @@ def create_window() -> MyWindow:
     else:
         pyglet.gl.glClearColor(1, 1, 1, 1)
 
-    if cfg.WINDOW_FULLSCREEN:
-        window.maximize()
-        window.set_fullscreen(cfg.WINDOW_FULLSCREEN)
-        window.set_mouse_visible(False)
+    if fullscreen:
+        enter_fullscreen(window)
 
     if runtime.HEADLESS:
         try:

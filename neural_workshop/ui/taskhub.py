@@ -13,7 +13,7 @@ from typing import Dict, List, Optional, Sequence, Tuple
 import pyglet
 from pyglet.window import key
 
-from .. import state
+from .. import display, state
 from ..constants import FONTLIST
 from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
                         width_center)
@@ -61,17 +61,31 @@ class TaskHub:
         if self.category not in TASKS:
             self.category = 'working_memory'
         self.selected = 0
-        self.batch = pyglet.graphics.Batch()
         self.shapes: List[object] = []
         self.tab_rects: List[Tuple[int, int, int, int, str]] = []
         self.task_rects: List[Tuple[int, int, int, int, str]] = []
+        self.tab_labels: List[pyglet.text.Label] = []
+        self.task_labels: List[pyglet.text.Label] = []
+        self._build_chrome()
+        window.push_handlers(self.on_key_press, self.on_text_motion,
+                             self.on_mouse_press, self.on_draw)
+        cursor.acquire()
+        TaskHub.instance = self
+        state.mode.task_category = self.category
 
+    def _build_chrome(self) -> None:
+        """Create the batch, the colours and the fixed labels.
+
+        Called when the hub opens and again after a window resize, so
+        everything sized from the window is created here.
+        """
         bg = 0 if state.cfg.BLACK_BACKGROUND else 255
         fg = 255 - bg
         self.bgcolor = (bg, bg, bg)
         self.textcolor = (fg, fg, fg, 255)
         self.accent = (64, 96, 255, 255)
         self.muted = (fg, fg, fg, 160)
+        self.batch = pyglet.graphics.Batch()
 
         self.title = pyglet.text.Label(
             _('Choose a task'), font_size=calc_fontsize(22), weight='bold',
@@ -80,7 +94,7 @@ class TaskHub:
             anchor_x='center', anchor_y='center', font_name=FONTLIST)
         self.empty = pyglet.text.Label(
             '', font_size=calc_fontsize(16), color=self.muted,
-            batch=self.batch,             x=width_center(), y=from_top_edge(280),
+            batch=self.batch, x=width_center(), y=from_top_edge(280),
             anchor_x='center', anchor_y='center', font_name=FONTLIST)
         self.footnote = pyglet.text.Label(
             _('Esc: back     ← → category     ↑ ↓ task'
@@ -89,14 +103,14 @@ class TaskHub:
             color=self.textcolor, batch=self.batch,
             x=width_center(), y=from_bottom_edge(36),
             anchor_x='center', anchor_y='center')
-        self.tab_labels: List[pyglet.text.Label] = []
-        self.task_labels: List[pyglet.text.Label] = []
+        self.tab_labels = []
+        self.task_labels = []
+        self.shapes = []
         self._rebuild()
-        window.push_handlers(self.on_key_press, self.on_text_motion,
-                             self.on_mouse_press, self.on_draw)
-        cursor.acquire()
-        TaskHub.instance = self
-        state.mode.task_category = self.category
+
+    def relayout(self) -> None:
+        """Rebuild at the window's current size, keeping the selection."""
+        self._build_chrome()
 
     def _clear_shapes(self) -> None:
         for shape in self.shapes:
@@ -259,6 +273,8 @@ class TaskHub:
             self.cycle_category(1)
         elif symbol == key.C:
             self.open_options()
+        elif symbol == key.F11:
+            display.toggle_fullscreen()
         return pyglet.event.EVENT_HANDLED
 
     def on_text_motion(self, motion: int) -> bool:

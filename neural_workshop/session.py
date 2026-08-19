@@ -450,6 +450,26 @@ def _spawn_visuals(multi: int, variable: int) -> None:
                 mode.current_operation, variable)
 
 
+def _current_variable_back() -> int:
+    """The n this trial is really testing, under variable n-back."""
+    mode = state.mode
+    if state.cfg.VARIABLE_NBACK and mode.trial_number > mode.back:
+        return mode.variable_list[mode.trial_number - 1 - mode.back]
+    return 0
+
+
+def respawn_visuals() -> None:
+    """Show the current trial's stimuli again, without generating new ones.
+
+    The window changing size rebuilds every widget, which takes the
+    stimulus off the screen mid-trial. This puts the same one back.
+    """
+    mode = state.mode
+    if not mode.started or not mode.current_stim:
+        return
+    _spawn_visuals(mode.flags[mode.mode]['multi'], _current_variable_back())
+
+
 def generate_stimulus() -> None:
     """Choose and present the stimuli for the next trial."""
     cfg, mode = state.cfg, state.mode
@@ -474,10 +494,7 @@ def generate_stimulus() -> None:
 
     _queue_audio()
 
-    if cfg.VARIABLE_NBACK and mode.trial_number > mode.back:
-        variable = mode.variable_list[mode.trial_number - 1 - mode.back]
-    else:
-        variable = 0
+    variable = _current_variable_back()
     if runtime.DEBUG:
         print('trial=%i, pos=%i, aud=%i, col=%i, vis=%i, num=%i, op=%s, var=%i'
               % (mode.trial_number, mode.current_stim['position1'],

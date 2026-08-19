@@ -63,8 +63,20 @@ def _verify_batch_works() -> None:
         quit_with_error(_('Error creating test polygon. Full text of error:\n'))
 
 
+def _build_game_objects() -> None:
+    """Create the singletons that outlive a re-layout."""
+    state.mode = Mode()
+    state.stats = Stats()
+
+
 def _build_widgets() -> None:
-    """Create every persistent widget, in dependency order."""
+    """Create every persistent widget, in dependency order.
+
+    Everything here is positioned from the current window size and
+    lives in :data:`state.batch`, so a window resize rebuilds the lot
+    (see :func:`neural_workshop.display.relayout`). Nothing here may
+    own game state — that belongs in :func:`_build_game_objects`.
+    """
     from .ui.effects import Saccadic
     from .ui.field import Field, Visual
     from .ui.graph import Graph
@@ -78,10 +90,8 @@ def _build_widgets() -> None:
     from .ui.trialui import (ArithmeticAnswerLabel, SessionInfoLabel,
                              SpaceLabel, ThresholdLabel)
 
-    state.mode = Mode()
     state.field = Field()
     state.visuals = [Visual() for _ in range(4)]
-    state.stats = Stats()
     state.graph = Graph()
     state.circles = Circles()
     state.saccadic = Saccadic()
@@ -195,6 +205,7 @@ def build_application() -> None:
     state.batch = pyglet.graphics.Batch()
     _verify_batch_works()
 
+    _build_game_objects()
     _build_widgets()
     _restore_last_mode()
     update_all_labels()

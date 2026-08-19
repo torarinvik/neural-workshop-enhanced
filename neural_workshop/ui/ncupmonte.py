@@ -12,7 +12,7 @@ from typing import List, Optional, Tuple
 import pyglet
 from pyglet.window import key
 
-from .. import state
+from .. import display, state
 from ..constants import FONTLIST
 from ..geometry import calc_fontsize, from_bottom_edge, from_top_edge, width_center
 from . import cursor, taskoptions
@@ -41,12 +41,28 @@ class NCupMonte:
         self.reveal_until = 0.0
         self.message = _('Press Space to hide the ball')
         self.guess: Optional[int] = None
-        self.batch = pyglet.graphics.Batch()
         self.shapes: List[object] = []
         self.cup_labels: List[pyglet.text.Label] = []
+        self._build_chrome()
+        state.window.push_handlers(self.on_key_press, self.on_mouse_press,
+                                   self.on_draw)
+        pyglet.clock.schedule_interval(self.update, 1 / 60.)
+        cursor.acquire()
+        NCupMonte.instance = self
+
+    # --- layout ----------------------------------------------------------
+
+    def _build_chrome(self) -> None:
+        """Create the batch, the colours and the fixed labels.
+
+        Called when the task opens and again after a window resize.
+        """
         bg = 0 if state.cfg.BLACK_BACKGROUND else 255
         fg = 255 - bg
         self.textcolor = (fg, fg, fg, 255)
+        self.batch = pyglet.graphics.Batch()
+        self.shapes = []
+        self.cup_labels = []
         self.title = pyglet.text.Label(
             _('N-Cup Monte'), font_size=calc_fontsize(22), weight='bold',
             color=self.textcolor, batch=self.batch,
@@ -61,13 +77,22 @@ class NCupMonte:
             font_size=calc_fontsize(12), color=self.textcolor,
             batch=self.batch, x=width_center(), y=from_bottom_edge(30),
             anchor_x='center', anchor_y='center')
-        self._place_cups()
+        self._resize_slots()
         self._redraw()
-        state.window.push_handlers(self.on_key_press, self.on_mouse_press,
-                                   self.on_draw)
-        pyglet.clock.schedule_interval(self.update, 1 / 60.)
-        cursor.acquire()
-        NCupMonte.instance = self
+
+    def _resize_slots(self) -> None:
+        """Move the cups to the slots of the current window width.
+
+        Unlike :meth:`_place_cups` this keeps ``order``, so a resize
+        during a shuffle does not hand the player the answer.
+        """
+        self.xs = self._slot_positions(self.cups)
+        self.start_xs = list(self.xs)
+        self.targets = list(self.xs)
+
+    def relayout(self) -> None:
+        """Rebuild at the window's current size, mid-round if need be."""
+        self._build_chrome()
 
     # --- options ---------------------------------------------------------
 
@@ -273,6 +298,8 @@ class NCupMonte:
             self.start_round()
         elif symbol == key.C:
             self.open_options()
+        elif symbol == key.F11:
+            display.toggle_fullscreen()
         return pyglet.event.EVENT_HANDLED
 
     def on_mouse_press(self, x: int, y: int, button: int,

@@ -99,6 +99,8 @@ BLACK_BACKGROUND = False
 
 # Begin in full screen mode?
 # Setting this to False will begin in windowed mode.
+# F11 switches between the two while the game is running, and updates
+# this setting for the rest of the session.
 # Default: False
 WINDOW_FULLSCREEN = False
 

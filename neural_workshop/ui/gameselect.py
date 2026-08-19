@@ -114,12 +114,23 @@ class GameSelect(Menu):
 
         Menu.__init__(self, options, values, names=names,
                       title=_('Choose your game mode'))
+        self._build_modelabel()
+        self.newmode: Union[int, bool] = mode.mode
+        self.update_labels()
+
+    # --- layout ----------------------------------------------------------
+
+    def _build_modelabel(self) -> None:
+        """The resolved mode name, under the option list."""
         self.modelabel = pyglet.text.Label(
             '', font_size=self.titlesize, weight='normal',
             color=(0, 0, 0, 255), batch=self.batch,
             x=width_center(), y=(state.window.height * 1) / 10,
             anchor_x='center', anchor_y='center')
-        self.newmode: Union[int, bool] = mode.mode
+
+    def relayout(self) -> None:
+        Menu.relayout(self)
+        self._build_modelabel()
         self.update_labels()
 
     # --- mode resolution -------------------------------------------------
