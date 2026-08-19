@@ -276,10 +276,6 @@ class TaskHub:
             self.close()
         elif symbol in (key.RETURN, key.ENTER, key.SPACE):
             self.launch()
-        elif symbol == key.LEFT:
-            self.cycle_category(-1)
-        elif symbol == key.RIGHT:
-            self.cycle_category(1)
         elif symbol == key.C:
             self.open_options()
         elif symbol == key.F11:
@@ -287,6 +283,14 @@ class TaskHub:
         return pyglet.event.EVENT_HANDLED
 
     def on_text_motion(self, motion: int) -> bool:
+        """Arrow keys move the selection.
+
+        All four arrows are handled here and nowhere else. pyglet
+        dispatches ``on_key_press`` *and* ``on_text_motion`` for one
+        press of an arrow, so handling them in both moves twice per
+        press — which read as working while there were three
+        categories, because two steps of three is one step back.
+        """
         if motion == key.MOTION_LEFT:
             self.cycle_category(-1)
         elif motion == key.MOTION_RIGHT:

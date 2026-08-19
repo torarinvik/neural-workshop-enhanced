@@ -11,9 +11,10 @@ import unittest
 from uisupport import (AllCycler, Cycler, GameSelect, ImageSelect,
                        LanguageScreen, OptionsScreen, PercentCycler,
                        SoundSelect, TASKS, TaskHub, UserScreen,
-                       current_3d_color_count, current_active_position_ids,
-                       current_cell_count, decode_3d_colors,
-                       decode_3d_pattern, needs_ui, state, tasks_for)
+                       close_overlays, current_3d_color_count,
+                       current_active_position_ids, current_cell_count,
+                       decode_3d_colors, decode_3d_pattern, key, needs_ui,
+                       state, tasks_for)
 
 
 @needs_ui
@@ -157,6 +158,82 @@ class CyclerTests(unittest.TestCase):
         self.assertEqual(str(PercentCycler([0.5])), '50.0%')
         self.assertEqual(str(AllCycler([0])), 'all')
         self.assertEqual(str(AllCycler([4])), '4')
+
+
+@needs_ui
+class HubArrowKeyTests(unittest.TestCase):
+    """One press of an arrow moves the selection exactly one place.
+
+    pyglet dispatches ``on_key_press`` *and* ``on_text_motion`` for a
+    single arrow press, so these drive both — testing either alone
+    would pass while the hub moved two categories per press, which is
+    the bug that hid behind three categories evenly dividing into two.
+    """
+
+    def setUp(self):
+        close_overlays()
+        self.hub = TaskHub(category='working_memory')
+
+    def tearDown(self):
+        close_overlays()
+
+    def _press(self, symbol, motion):
+        """One arrow key press, as the window really delivers it."""
+        self.hub.on_key_press(symbol, 0)
+        self.hub.on_text_motion(motion)
+
+    def _ids(self):
+        from neural_workshop.ui.taskhub import CATEGORIES
+        return [cat for cat, _name in CATEGORIES]
+
+    def test_right_moves_one_category(self):
+        ids = self._ids()
+        for expected in ids[1:]:
+            self._press(key.RIGHT, key.MOTION_RIGHT)
+            self.assertEqual(self.hub.category, expected)
+
+    def test_left_moves_one_category(self):
+        ids = self._ids()
+        for expected in list(reversed(ids))[:-1]:
+            self._press(key.LEFT, key.MOTION_LEFT)
+            self.assertEqual(self.hub.category, expected)
+
+    def test_right_all_the_way_round_returns_home(self):
+        ids = self._ids()
+        for _ in range(len(ids)):
+            self._press(key.RIGHT, key.MOTION_RIGHT)
+        self.assertEqual(self.hub.category, ids[0])
+
+    def test_right_then_left_is_where_it_started(self):
+        for start in self._ids():
+            self.hub.set_category(start)
+            self._press(key.RIGHT, key.MOTION_RIGHT)
+            self._press(key.LEFT, key.MOTION_LEFT)
+            self.assertEqual(self.hub.category, start)
+
+    def test_every_category_is_reachable_by_arrow(self):
+        seen = {self.hub.category}
+        for _ in range(len(self._ids())):
+            self._press(key.RIGHT, key.MOTION_RIGHT)
+            seen.add(self.hub.category)
+        self.assertEqual(seen, set(self._ids()))
+
+    def test_up_and_down_move_one_task(self):
+        self.hub.set_category('working_memory')
+        tasks = tasks_for('working_memory')
+        self.assertGreater(len(tasks), 1)
+        self.assertEqual(self.hub.selected, 0)
+        self._press(key.DOWN, key.MOTION_DOWN)
+        self.assertEqual(self.hub.selected, 1)
+        self._press(key.UP, key.MOTION_UP)
+        self.assertEqual(self.hub.selected, 0)
+
+    def test_only_one_handler_acts_on_the_arrows(self):
+        # Belt and braces: the key handler alone must not move anything.
+        before = self.hub.category
+        self.hub.on_key_press(key.RIGHT, 0)
+        self.hub.on_key_press(key.LEFT, 0)
+        self.assertEqual(self.hub.category, before)
 
 
 if __name__ == '__main__':
