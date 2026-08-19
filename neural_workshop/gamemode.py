@@ -105,6 +105,28 @@ def get_color(color: int) -> Sequence[int]:
     return state.cfg['COLOR_%i' % color]
 
 
+# Luminance floor so every color-n-back hue stays readable on the dark cubes.
+_3D_FACE_COLORS = {
+    1: (56, 112, 255, 255),
+    2: (0, 220, 230, 255),
+    3: (46, 214, 82, 255),
+    4: (232, 234, 240, 255),
+    5: (232, 64, 214, 255),
+    6: (240, 56, 56, 255),
+    7: (198, 204, 214, 255),
+    8: (250, 214, 40, 255),
+}
+
+
+def get_3d_color(color: int) -> Sequence[int]:
+    """High-contrast RGBA for a 3D cube face, 1-based colour index."""
+    try:
+        index = ((int(color) - 1) % 8) + 1
+    except Exception:
+        index = 1
+    return _3D_FACE_COLORS[index]
+
+
 def default_nback_mode(mode: int) -> int:
     """Configured starting n-back level for *mode*."""
     if ('BACK_%i' % mode) in state.cfg:

@@ -75,6 +75,28 @@ def decode_3d_pattern(position: int, count: int | None = None) -> List[int]:
     return faces
 
 
+def current_3d_palette_size() -> int:
+    """How many distinct colours a 3D color-pattern digit may take."""
+    return 8
+
+
+def decode_3d_colors(color: int, count: int | None = None) -> List[int]:
+    """Decode a 1-based color-pattern id into one colour index per cube."""
+    count = current_3d_cube_count() if count is None else max(1, int(count))
+    base = current_3d_palette_size()
+    value = max(0, int(color) - 1)
+    colors = []
+    for _ in range(count):
+        colors.append((value % base) + 1)
+        value //= base
+    return colors
+
+
+def current_3d_color_count() -> int:
+    """How many color-pattern ids 3D mode can sample from."""
+    return current_3d_palette_size() ** current_3d_cube_count()
+
+
 def current_cell_count() -> int:
     """How many cells the board has."""
     if current_grid_3d():

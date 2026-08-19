@@ -18,11 +18,11 @@ import pyglet
 import bwaccel
 
 from .. import state
-from ..gamemode import get_color
+from ..gamemode import get_3d_color, get_color
 from ..geometry import (from_height_center, height_center, scale_to_height,
                         width_center)
 from ..grid import (current_3d_cube_count, current_cell_px, current_grid_3d,
-                    current_grid_size, decode_3d_pattern,
+                    current_grid_size, decode_3d_colors, decode_3d_pattern,
                     position_pixel_center)
 from ..paths import load_pyglet_image
 
@@ -165,6 +165,7 @@ class Visual:
         self.letters2: List[str] = []
         self.position = 0
         self.vis = 0
+        self.color_id = 1
         self.color: Sequence[int] = (0, 0, 0, 255)
         self.center_x = 0
         self.center_y = 0
@@ -273,6 +274,8 @@ class Visual:
         """Render the complete pattern of six-faced perspective cubes."""
         count = current_3d_cube_count()
         faces = decode_3d_pattern(position, count)
+        colors = decode_3d_colors(self.color_id, count)
+        color_only = position <= 0
         cols = int(math.ceil(math.sqrt(count)))
         rows = int(math.ceil(count / float(cols)))
         gap = max(10, int(state.field.size * 0.035))
@@ -293,7 +296,8 @@ class Visual:
             row_offset = (cols - row_count) * (tile + gap) / 2
             cx = start_x + row_offset + col * (tile + gap) + tile / 2
             cy = start_y - row * (tile + gap) - tile / 2
-            self._draw_pattern_cube(cx, cy, tile, face)
+            self._draw_pattern_cube(
+                cx, cy, tile, None if color_only else face, colors[index])
         self.age = 0.0
         pyglet.clock.unschedule(self.animate_3d_pattern)
         if state.cfg.ANIMATE_SQUARES:
@@ -308,7 +312,8 @@ class Visual:
                 for x, y in points]
 
     def _draw_pattern_cube(self, cx: float, cy: float, size: float,
-                           highlighted: int) -> None:
+                           highlighted: Optional[int],
+                           color_id: int = 1) -> None:
         """Draw one six-faced cube card with an unmistakable active face."""
         half = size * 0.43
         inner = size * 0.17
@@ -331,34 +336,45 @@ class Visual:
         inactive = [
             (31, 47, 72, 255), (24, 38, 61, 255),
             (16, 28, 47, 255), (27, 42, 65, 255)]
-        r, g, b = self.color[:3]
+        r, g, b = get_3d_color(color_id)[:3]
         # Keep saturated configured colours while adding enough white light
         # to reveal surface detail, especially for pure blue.
-        light = (0.18, 0.10, 0.04, 0.12, 0.22, 0.08)[highlighted]
-        lit = tuple(min(255, int(c + (255 - c) * light))
-                    for c in (r, g, b))
+        face_lights = (0.18, 0.10, 0.04, 0.12, 0.22, 0.08)
+        face_shades = (1.00, 0.82, 0.64, 0.88, 1.06, 0.56)
+
+        def _lit(amount: float, shade: float = 1.0) -> Tuple[int, int, int]:
+            lifted = tuple(min(255, int(c + (255 - c) * amount))
+                           for c in (r, g, b))
+            return tuple(max(0, min(255, int(c * shade))) for c in lifted)
+
+        if highlighted is None:
+            lit = _lit(0.16, 1.0)
+        else:
+            lit = _lit(face_lights[highlighted], face_shades[highlighted])
 
         # Shadow grounds each cube without obscuring neighbouring tiles.
         self.poly_3d.append(pyglet.shapes.Rectangle(
             cx - half + size * 0.025, cy - half - size * 0.035,
             half * 2, half * 2, color=(0, 0, 0, 95), batch=state.batch))
         for index, points in enumerate(face_points):
-            if index == highlighted:
+            if highlighted is None or index == highlighted:
+                face_lit = (_lit(face_lights[index], face_shades[index])
+                            if highlighted is None else lit)
                 glow = pyglet.shapes.Polygon(
-                    *points, color=(*lit, 105), batch=state.batch)
+                    *points, color=(*face_lit, 105), batch=state.batch)
                 self.poly_3d.append(glow)
                 self.poly_3d_pulse.append(glow)
                 inset = self._inset_polygon(points, 0.07)
                 self.poly_3d.append(pyglet.shapes.Polygon(
                     *inset,
-                    color=(*lit, 245),
+                    color=(*face_lit, 245),
                     batch=state.batch))
                 specular = self._inset_polygon(points, 0.16)
                 self.poly_3d.append(pyglet.shapes.Polygon(
                     *specular,
-                    color=(min(255, lit[0] + 12),
-                           min(255, lit[1] + 12),
-                           min(255, lit[2] + 12), 70),
+                    color=(min(255, face_lit[0] + 12),
+                           min(255, face_lit[1] + 12),
+                           min(255, face_lit[2] + 12), 70),
                     batch=state.batch))
             else:
                 self.poly_3d.append(pyglet.shapes.Polygon(
@@ -366,26 +382,30 @@ class Visual:
 
         # Back is the recessed square; front is a translucent plane across
         # the opening. Their very different projected sizes remove ambiguity.
-        if highlighted == 5:
+        if highlighted is None or highlighted == 5:
+            back_lit = (_lit(face_lights[5], face_shades[5])
+                        if highlighted is None else lit)
             glow = pyglet.shapes.Polygon(
-                *inside, color=(*lit, 120), batch=state.batch)
+                *inside, color=(*back_lit, 120), batch=state.batch)
             self.poly_3d.extend([
                 glow,
                 pyglet.shapes.Polygon(
                     *self._inset_polygon(inside, 0.08),
-                    color=(*lit, 250), batch=state.batch),
+                    color=(*back_lit, 250), batch=state.batch),
             ])
             self.poly_3d_pulse.append(glow)
         else:
             self.poly_3d.append(pyglet.shapes.Polygon(
                 *inside, color=(5, 9, 17, 255), batch=state.batch))
 
-        if highlighted == 4:
+        if highlighted is None or highlighted == 4:
+            front_lit = (_lit(face_lights[4], face_shades[4])
+                         if highlighted is None else lit)
             glow = pyglet.shapes.Polygon(
-                *outer, color=(*lit, 55), batch=state.batch)
+                *outer, color=(*front_lit, 40), batch=state.batch)
             glass = pyglet.shapes.Polygon(
                 *self._inset_polygon(outer, 0.045),
-                color=(*lit, 105), batch=state.batch)
+                color=(*front_lit, 70), batch=state.batch)
             self.poly_3d.extend([glow, glass])
             self.poly_3d_pulse.extend([glow, glass])
 
@@ -404,9 +424,13 @@ class Visual:
             self.poly_3d.append(pyglet.shapes.Line(
                 *p1, *p2, thickness=max(1.5, size * 0.008),
                 color=inner_edge, batch=state.batch))
-        active = (face_points[highlighted] if highlighted < 4
-                  else outer if highlighted == 4 else inside)
-        for p1, p2 in zip(active, active[1:] + active[:1]):
+        if highlighted is None:
+            active_edges = list(zip(outer, outer[1:] + outer[:1]))
+        else:
+            active = (face_points[highlighted] if highlighted < 4
+                      else outer if highlighted == 4 else inside)
+            active_edges = list(zip(active, active[1:] + active[:1]))
+        for p1, p2 in active_edges:
             line = pyglet.shapes.Line(
                 *p1, *p2, thickness=max(4.0, size * 0.024),
                 color=active_edge, batch=state.batch)
@@ -433,7 +457,8 @@ class Visual:
               variable: int = 0) -> None:
         """Show this stimulus for the current trial."""
         self.position = position
-        self.color = get_color(color)
+        self.color_id = color
+        self.color = get_color(((int(color) - 1) % 8) + 1)
         self.vis = vis
         self.sync_size()
         self.center_x, self.center_y = position_pixel_center(position)

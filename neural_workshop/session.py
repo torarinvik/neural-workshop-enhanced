@@ -22,7 +22,8 @@ import bwaccel
 from . import audio, resources, runtime, state
 from .config import parse_config, rewrite_configfile, save_last_user
 from .constants import CLINICAL_MODE, PREVENT_MUSIC_SKIPPING
-from .grid import current_active_position_ids
+from .grid import (current_3d_color_count, current_active_position_ids,
+                   current_grid_3d)
 from .paths import get_data_dir
 
 
@@ -230,8 +231,12 @@ def _sample_random_stimuli() -> List[int]:
     for s, p in zip(range(1, k_multi + 1), positions):
         mode.current_stim['position%i' % s] = p
         mode.current_stim['vis%i' % s] = random.randint(1, 8)
-    for name in ('color', 'vis', 'audio', 'audio2'):
+    for name in ('vis', 'audio', 'audio2'):
         mode.current_stim[name] = random.randint(1, 8)
+    if current_grid_3d():
+        mode.current_stim['color'] = random.randint(1, current_3d_color_count())
+    else:
+        mode.current_stim['color'] = random.randint(1, 8)
     return positions
 
 

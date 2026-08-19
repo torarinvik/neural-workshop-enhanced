@@ -32,7 +32,8 @@ try:
     from neural_workshop import bootstrap, state
     from neural_workshop.events import on_draw, on_key_press
     from neural_workshop.grid import (current_active_position_ids,
-                                      current_cell_count, decode_3d_pattern)
+                                      current_cell_count, current_3d_color_count,
+                                      decode_3d_colors, decode_3d_pattern)
     from neural_workshop.session import end_session, new_session
     from neural_workshop.ui.gameselect import GameSelect
     from neural_workshop.ui.menu import AllCycler, Cycler, PercentCycler
@@ -76,6 +77,10 @@ class MenuTests(unittest.TestCase):
             self.assertEqual(current_cell_count(), 216)
             self.assertEqual(len(current_active_position_ids()), 216)
             self.assertEqual(decode_3d_pattern(122, 3), [1, 2, 3])
+            self.assertEqual(decode_3d_colors(1, 2), [1, 1])
+            self.assertEqual(decode_3d_colors(2, 2), [2, 1])
+            self.assertEqual(decode_3d_colors(9, 2), [1, 2])
+            self.assertEqual(current_3d_color_count(), 8 ** 3)
         finally:
             menu.values['grid_3d'] = False
             menu.values['grid_3d_cubes'].choose(1)
@@ -205,6 +210,20 @@ class ScreenDrawTests(unittest.TestCase):
             self.assertTrue(state.visuals[0].visible)
             self.assertGreaterEqual(len(state.visuals[0].poly_3d), 18)
             self.assertTrue(state.field.v_lines)
+            blue = [s.color[:3] for s in state.visuals[0].poly_3d
+                    if hasattr(s, 'color') and s.color[2] > s.color[0] + 40]
+            state.visuals[0].hide()
+            state.visuals[0].spawn(position=1, color=6)
+            red = [s.color[:3] for s in state.visuals[0].poly_3d
+                   if hasattr(s, 'color') and s.color[0] > s.color[2] + 40]
+            self.assertTrue(blue)
+            self.assertTrue(red)
+            state.visuals[0].hide()
+            state.visuals[0].spawn(position=0, color=8)
+            washed = [s.color[:3] for s in state.visuals[0].poly_3d
+                      if hasattr(s, 'color') and s.color[0] > 180
+                      and s.color[1] > 160]
+            self.assertTrue(washed)
             on_draw()
         finally:
             end_session(cancelled=True)
