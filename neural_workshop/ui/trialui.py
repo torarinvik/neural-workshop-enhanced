@@ -22,6 +22,7 @@ from ..gamemode import get_color
 from ..geometry import (calc_fontsize, from_bottom_edge, from_left_edge,
                         from_right_edge, scale_to_width, width_center)
 from ..grid import (current_active_position_ids, current_cell_count,
+                    current_3d_cube_count, current_grid_3d,
                     current_grid_size)
 from ..matching import CORRECT, INCORRECT, MISSED, UNKNOWN, check_match
 from ..timing import trial_interval_ms
@@ -249,7 +250,10 @@ class SessionInfoLabel:
 
         ncells = current_cell_count()
         active = current_active_position_ids()
-        if len(active) < ncells:
+        if current_grid_3d():
+            cubes = current_3d_cube_count()
+            gridline = _('%i cubes (%i face patterns)') % (cubes, ncells)
+        elif len(active) < ncells:
             gridline = _('Grid %i×%i (%i/%i cells)') % (n, n, len(active),
                                                         ncells)
         else:

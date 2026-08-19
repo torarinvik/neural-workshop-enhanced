@@ -31,6 +31,8 @@ try:
 
     from neural_workshop import bootstrap, state
     from neural_workshop.events import on_draw, on_key_press
+    from neural_workshop.grid import (current_active_position_ids,
+                                      current_cell_count, decode_3d_pattern)
     from neural_workshop.session import end_session, new_session
     from neural_workshop.ui.gameselect import GameSelect
     from neural_workshop.ui.menu import AllCycler, Cycler, PercentCycler
@@ -65,12 +67,18 @@ class MenuTests(unittest.TestCase):
         menu = GameSelect()
         try:
             menu.values['grid_3d'] = True
+            menu.values['grid_3d_cubes'].choose(3)
             menu.update_labels()
             self.assertTrue(menu.modelabel.text.startswith('3D '))
             menu.save()
             self.assertTrue(state.cfg.GRID_3D)
+            self.assertEqual(state.cfg.GRID_3D_CUBES, 3)
+            self.assertEqual(current_cell_count(), 64)
+            self.assertEqual(len(current_active_position_ids()), 64)
+            self.assertEqual(decode_3d_pattern(58, 3), [1, 2, 3])
         finally:
             menu.values['grid_3d'] = False
+            menu.values['grid_3d_cubes'].choose(1)
             menu.save()
             menu.close()
 
@@ -195,7 +203,8 @@ class ScreenDrawTests(unittest.TestCase):
             new_session()
             state.visuals[0].spawn(position=1, color=1)
             self.assertTrue(state.visuals[0].visible)
-            self.assertTrue(len(state.visuals[0].poly_3d) > 0)
+            self.assertGreaterEqual(len(state.visuals[0].poly_3d), 18)
+            self.assertTrue(state.field.v_lines)
             on_draw()
         finally:
             end_session(cancelled=True)

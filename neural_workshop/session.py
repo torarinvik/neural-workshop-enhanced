@@ -428,7 +428,7 @@ def _spawn_visuals(multi: int, variable: int) -> None:
     """Show the visual stimuli for this trial."""
     cfg, mode = state.cfg, state.mode
     stim = mode.current_stim
-    if multi == 1:
+    if multi == 1 or cfg.GRID_3D:
         state.visuals[0].spawn(stim['position1'], stim['color'], stim['vis'],
                                stim['number'], mode.current_operation,
                                variable)

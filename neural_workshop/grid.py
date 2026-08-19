@@ -56,18 +56,42 @@ def current_grid_3d() -> bool:
         return False
 
 
+def current_3d_cube_count() -> int:
+    """Number of four-faced cubes composing one 3D position pattern."""
+    try:
+        return max(1, min(6, int(state.cfg.GRID_3D_CUBES)))
+    except Exception:
+        return 1
+
+
+def decode_3d_pattern(position: int, count: int | None = None) -> List[int]:
+    """Decode a 1-based pattern id into one highlighted face per cube."""
+    count = current_3d_cube_count() if count is None else max(1, int(count))
+    value = max(0, int(position) - 1)
+    faces = []
+    for _ in range(count):
+        faces.append(value % 4)
+        value //= 4
+    return faces
+
+
 def current_cell_count() -> int:
     """How many cells the board has."""
+    if current_grid_3d():
+        return 4 ** current_3d_cube_count()
     dim = 3 if current_grid_3d() else 2
     return bwaccel.grid_cell_count(
         current_grid_size(), current_include_center(), dim=dim)
+
+
+_PERSPECTIVE_BACK_SCALE = 0.18
 
 
 def current_cell_px() -> float:
     """Side length of one cell, in pixels."""
     n = current_grid_size()
     if current_grid_3d():
-        return state.field.size / float(n * 2.2)
+        return state.field.size / float(n)
     return state.field.size / float(n)
 
 
@@ -85,6 +109,8 @@ def current_active_cell_limit() -> int:
 
 def current_active_position_ids() -> List[int]:
     """Position ids the stimulus generator may draw from."""
+    if current_grid_3d():
+        return list(range(1, current_cell_count() + 1))
     dim = 3 if current_grid_3d() else 2
     return bwaccel.active_position_ids(
         current_grid_size(), current_include_center(),
@@ -92,28 +118,21 @@ def current_active_position_ids() -> List[int]:
 
 
 def position_3d_node_px(i: float, j: float, k: float, n: int) -> Tuple[int, int]:
-    """Screen coordinates of a 3D grid node or vertex in isometric view."""
-    di = i - n / 2.0
-    dj = j - n / 2.0
-    dk = k - n / 2.0
-    u = state.field.size / float(n * 2.2)
-    cos30 = 0.8660254037844386  # sqrt(3) / 2
-    sin30 = 0.5
-    x = int(round(state.field.center_x + (di - dk) * u * cos30))
-    y = int(round(state.field.center_y + dj * u - (di + dk) * u * sin30))
+    """Project a 3D grid node into a room viewed along the depth axis."""
+    depth = max(0.0, min(1.0, k / float(n)))
+    scale = _PERSPECTIVE_BACK_SCALE + (
+        1.0 - _PERSPECTIVE_BACK_SCALE) * depth
+    x = int(round(state.field.center_x
+                  + (i / float(n) - 0.5) * state.field.size * scale))
+    y = int(round(state.field.center_y
+                  + (j / float(n) - 0.5) * state.field.size * scale))
     return x, y
 
 
 def position_pixel_center(position: int) -> Tuple[int, int]:
     """Pixel centre of a stimulus. ``position <= 0`` is the field centre."""
     if current_grid_3d():
-        crd = bwaccel.position_col_row_depth(
-            position, current_grid_size(), current_include_center())
-        if crd is None:
-            return int(state.field.center_x), int(state.field.center_y)
-        col, row, depth = crd
-        return position_3d_node_px(
-            col + 0.5, row + 0.5, depth + 0.5, current_grid_size())
+        return int(state.field.center_x), int(state.field.center_y)
     cell = current_cell_px()
     col_row = bwaccel.position_col_row(
         position, current_grid_size(), current_include_center())

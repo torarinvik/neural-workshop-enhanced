@@ -17,7 +17,8 @@ import pyglet
 from .. import state
 from ..geometry import width_center
 from ..grid import (current_active_cell_limit, current_cell_count,
-                    current_grid_bounds, current_grid_size)
+                    current_3d_cube_count, current_grid_bounds,
+                    current_grid_size)
 from ..timing import set_trial_interval_ms, trial_interval_ms
 from .menu import BLANK_LINE, AllCycler, Cycler, Menu, PercentCycler
 from ..i18n import _
@@ -57,7 +58,8 @@ class GameSelect(Menu):
         mode = state.mode
         options = list(_MODALITIES)
         options.extend([BLANK_LINE, 'combination', BLANK_LINE, 'variable',
-                        'crab', 'grid_3d', BLANK_LINE, 'grid', 'active_cells',
+                        'crab', 'grid_3d', 'grid_3d_cubes', BLANK_LINE,
+                        'grid', 'active_cells',
                         'trial_ms', BLANK_LINE, 'multi', 'multimode',
                         BLANK_LINE, 'selfpaced', BLANK_LINE, 'interference'])
 
@@ -66,9 +68,10 @@ class GameSelect(Menu):
         names['combination'] = _('Combination N-back mode')
         names['variable'] = _('Use variable N-Back levels')
         names['crab'] = _('Crab-back mode (reverse order of sets of N stimuli)')
-        names['grid_3d'] = _('3D Cube Mode (transparent 3D cube)')
-        names['grid'] = _('Grid size')
-        names['active_cells'] = _('Active position cells')
+        names['grid_3d'] = _('3D face-pattern mode')
+        names['grid_3d_cubes'] = _('Cubes in 3D pattern')
+        names['grid'] = _('2D grid size')
+        names['active_cells'] = _('Active 2D position cells')
         names['trial_ms'] = _('Trial interval (ms)')
         names['multi'] = _('Simultaneous visual stimuli')
         names['multimode'] = _('Simultaneous stimuli differentiated by')
@@ -83,6 +86,9 @@ class GameSelect(Menu):
         values['variable'] = bool(cfg.VARIABLE_NBACK)
         values['crab'] = bool(mode.flags[mode.mode]['crab'])
         values['grid_3d'] = bool(cfg.GRID_3D)
+        values['grid_3d_cubes'] = Cycler(
+            values=[1, 2, 3, 4, 5, 6],
+            default=current_3d_cube_count() - 1)
         values['selfpaced'] = bool(mode.flags[mode.mode]['selfpaced'])
         values['multi'] = Cycler(values=[1, 2, 3, 4],
                                  default=mode.flags[mode.mode]['multi'] - 1)
@@ -147,7 +153,8 @@ class GameSelect(Menu):
         return modes
 
     def _variant_bits(self) -> int:
-        bits = 256 * (self.values['multi'].value() - 1)
+        pattern_3d = bool(self.values.get('grid_3d'))
+        bits = 0 if pattern_3d else 256 * (self.values['multi'].value() - 1)
         if self.values['crab']:
             bits += 128
         if self.values['selfpaced']:
@@ -174,6 +181,7 @@ class GameSelect(Menu):
         self.calc_mode()
         cfg.VARIABLE_NBACK = self.values['variable']
         cfg.GRID_3D = bool(self.values.get('grid_3d'))
+        cfg.GRID_3D_CUBES = int(self.values['grid_3d_cubes'].value())
         cfg.MULTI_MODE = self.values['multimode'].value()
         cfg.CHANCE_OF_INTERFERENCE = self.values['interference'].value()
         cfg.GRID_SIZE = int(self.values['grid'].value())
@@ -234,9 +242,13 @@ class GameSelect(Menu):
                 values['image'] = False
                 values['multimode'].choose('image')
         elif choice == 'multi':
+            if values['multi'].value() > 1:
+                values['grid_3d'] = False
             values['arithmetic'] = False
             values['combination'] = False
             values[values['multimode'].value()] = False
+        elif choice == 'grid_3d' and values['grid_3d']:
+            values['multi'].choose(1)
         elif choice == 'multimode' and values['multi'].value() > 1:
             previous = values['multimode'].value()
             other = 'color' if previous == 'image' else 'image'

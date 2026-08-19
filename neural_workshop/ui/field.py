@@ -10,6 +10,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 from __future__ import annotations
 
 import random
+import math
 from typing import List, Optional, Sequence, Tuple
 
 import pyglet
@@ -20,8 +21,9 @@ from .. import state
 from ..gamemode import get_color
 from ..geometry import (from_height_center, height_center, scale_to_height,
                         width_center)
-from ..grid import (current_cell_px, current_grid_3d, current_grid_size,
-                    position_3d_node_px, position_pixel_center)
+from ..grid import (current_3d_cube_count, current_cell_px, current_grid_3d,
+                    current_grid_size, decode_3d_pattern,
+                    position_pixel_center)
 from ..paths import load_pyglet_image
 
 
@@ -83,41 +85,32 @@ class Field:
             self.v_lines.append(pyglet.shapes.Line(
                 self.x1, y, self.x2, y, color=self.color, batch=state.batch))
 
+    def _add_seg(self, p1: Tuple[int, int], p2: Tuple[int, int],
+                 color: Sequence[int], width: float = 1.0) -> None:
+        self.v_lines.append(pyglet.shapes.Line(
+            p1[0], p1[1], p2[0], p2[1],
+            thickness=width, color=tuple(color), batch=state.batch))
+
     def _draw_3d_cube(self, n: int) -> None:
-        """Draw a transparent 3D wireframe cube showing all grid cells."""
-        outer_color = self.color
-        inner_color = ((48, 48, 48, 160) if state.cfg.BLACK_BACKGROUND
-                       else (170, 170, 170, 180))
-
-        # Col axis lines (i: 0 -> n)
-        for j in range(n + 1):
-            for k in range(n + 1):
-                is_outer = (j in (0, n) and k in (0, n))
-                col = outer_color if is_outer else inner_color
-                x1, y1 = position_3d_node_px(0, j, k, n)
-                x2, y2 = position_3d_node_px(n, j, k, n)
-                self.v_lines.append(pyglet.shapes.Line(
-                    x1, y1, x2, y2, color=col, batch=state.batch))
-
-        # Row axis lines (j: 0 -> n, vertical)
-        for i in range(n + 1):
-            for k in range(n + 1):
-                is_outer = (i in (0, n) and k in (0, n))
-                col = outer_color if is_outer else inner_color
-                x1, y1 = position_3d_node_px(i, 0, k, n)
-                x2, y2 = position_3d_node_px(i, n, k, n)
-                self.v_lines.append(pyglet.shapes.Line(
-                    x1, y1, x2, y2, color=col, batch=state.batch))
-
-        # Depth axis lines (k: 0 -> n)
-        for i in range(n + 1):
-            for j in range(n + 1):
-                is_outer = (i in (0, n) and j in (0, n))
-                col = outer_color if is_outer else inner_color
-                x1, y1 = position_3d_node_px(i, j, 0, n)
-                x2, y2 = position_3d_node_px(i, j, n, n)
-                self.v_lines.append(pyglet.shapes.Line(
-                    x1, y1, x2, y2, color=col, batch=state.batch))
+        """Draw the stage shared by the complete multi-cube pattern."""
+        room = ((7, 11, 20, 255) if not state.cfg.BLACK_BACKGROUND
+                else (0, 0, 0, 255))
+        self.v_lines.append(pyglet.shapes.Rectangle(
+            self.x1, self.y1, self.size, self.size,
+            color=room, batch=state.batch))
+        # The double frame groups every cube into one matchable pattern.
+        frame = (105, 135, 175, 210)
+        inset = max(5, int(self.size * 0.015))
+        for offset, width, alpha in ((0, 3.0, 220), (inset, 1.0, 100)):
+            color = (*frame[:3], alpha)
+            points = [
+                (self.x1 + offset, self.y1 + offset),
+                (self.x2 - offset, self.y1 + offset),
+                (self.x2 - offset, self.y2 - offset),
+                (self.x1 + offset, self.y2 - offset),
+            ]
+            for p1, p2 in zip(points, points[1:] + points[:1]):
+                self._add_seg(p1, p2, color, width)
 
     def rebuild_grid(self) -> None:
         self.draw_grid()
@@ -133,6 +126,13 @@ class Field:
     def crosshair_update(self) -> None:
         """Show or hide the small cross marking the centre of the field."""
         if not state.cfg.CROSSHAIRS:
+            return
+        if current_grid_3d():
+            if self.crosshair_visible:
+                for line in self.v_crosshair:
+                    line.delete()
+                self.v_crosshair = []
+                self.crosshair_visible = False
             return
         if self._crosshair_wanted():
             if self.crosshair_visible:
@@ -269,53 +269,107 @@ class Visual:
                                             batch=state.batch)
 
     def _spawn_3d_voxel(self, position: int) -> None:
-        """Render a 3D isometric colored voxel cell in the transparent cube."""
-        n = current_grid_size()
-        crd = bwaccel.position_col_row_depth(
-            position, n, state.cfg.GRID_INCLUDE_CENTER)
-        if crd is None:
-            crd = (n // 2, n // 2, n // 2)
-        col, row, depth = crd
-        i0, i1 = col, col + 1
-        j0, j1 = row, row + 1
-        k0, k1 = depth, depth + 1
+        """Render the complete pattern of four-faced perspective cubes."""
+        count = current_3d_cube_count()
+        faces = decode_3d_pattern(position, count)
+        cols = int(math.ceil(math.sqrt(count)))
+        rows = int(math.ceil(count / float(cols)))
+        gap = max(10, int(state.field.size * 0.035))
+        usable = state.field.size - gap * 2
+        tile = min((usable - gap * (cols - 1)) / cols,
+                   (usable - gap * (rows - 1)) / rows)
+        total_w = cols * tile + (cols - 1) * gap
+        total_h = rows * tile + (rows - 1) * gap
+        start_x = state.field.center_x - total_w / 2
+        start_y = state.field.center_y + total_h / 2
 
-        p_top_back = position_3d_node_px(i0, j1, k0, n)
-        p_top_right = position_3d_node_px(i1, j1, k0, n)
-        p_top_front = position_3d_node_px(i1, j1, k1, n)
-        p_top_left = position_3d_node_px(i0, j1, k1, n)
+        self.poly_3d = []
+        for index, face in enumerate(faces):
+            row, col = divmod(index, cols)
+            # Centre the final incomplete row.
+            row_count = min(cols, count - row * cols)
+            row_offset = (cols - row_count) * (tile + gap) / 2
+            cx = start_x + row_offset + col * (tile + gap) + tile / 2
+            cy = start_y - row * (tile + gap) - tile / 2
+            self._draw_pattern_cube(cx, cy, tile, face)
 
-        p_bot_back = position_3d_node_px(i0, j0, k0, n)
-        p_bot_left = position_3d_node_px(i0, j0, k1, n)
-        p_bot_front = position_3d_node_px(i1, j0, k1, n)
-        p_bot_right = position_3d_node_px(i1, j0, k0, n)
+    @staticmethod
+    def _inset_polygon(points: Sequence[Tuple[float, float]],
+                       amount: float) -> List[Tuple[float, float]]:
+        cx = sum(p[0] for p in points) / len(points)
+        cy = sum(p[1] for p in points) / len(points)
+        return [(x + (cx - x) * amount, y + (cy - y) * amount)
+                for x, y in points]
 
+    def _draw_pattern_cube(self, cx: float, cy: float, size: float,
+                           highlighted: int) -> None:
+        """Draw one four-faced cube card with an unmistakable active face."""
+        half = size * 0.43
+        inner = size * 0.17
+        # A small offset avoids sterile symmetry and strengthens perspective.
+        ix, iy = size * 0.025, size * 0.035
+        outer = [
+            (cx - half, cy + half), (cx + half, cy + half),
+            (cx + half, cy - half), (cx - half, cy - half)]
+        inside = [
+            (cx - inner + ix, cy + inner + iy),
+            (cx + inner + ix, cy + inner + iy),
+            (cx + inner + ix, cy - inner + iy),
+            (cx - inner + ix, cy - inner + iy)]
+        face_points = [
+            (outer[0], outer[1], inside[1], inside[0]),  # top
+            (outer[1], outer[2], inside[2], inside[1]),  # right
+            (outer[3], inside[3], inside[2], outer[2]),  # bottom
+            (outer[0], inside[0], inside[3], outer[3]),  # left
+        ]
+        inactive = [
+            (31, 47, 72, 255), (24, 38, 61, 255),
+            (16, 28, 47, 255), (27, 42, 65, 255)]
         r, g, b = self.color[:3]
-        c_top = (min(255, int(r * 1.25)), min(255, int(g * 1.25)),
-                 min(255, int(b * 1.25)), 220)
-        c_left = (int(r * 0.95), int(g * 0.95), int(b * 0.95), 210)
-        c_right = (int(r * 0.70), int(g * 0.70), int(b * 0.70), 210)
 
-        self.poly_3d = [
-            pyglet.shapes.Polygon(p_top_back, p_top_right, p_top_front,
-                                  p_top_left, color=c_top, batch=state.batch),
-            pyglet.shapes.Polygon(p_top_left, p_top_front, p_bot_front,
-                                  p_bot_left, color=c_left, batch=state.batch),
-            pyglet.shapes.Polygon(p_top_front, p_top_right, p_bot_right,
-                                  p_bot_front, color=c_right, batch=state.batch),
-        ]
-        edge_col = ((255, 255, 255, 200) if state.cfg.BLACK_BACKGROUND
-                    else (30, 30, 30, 200))
-        edges = [
-            (p_top_back, p_top_right), (p_top_right, p_top_front),
-            (p_top_front, p_top_left), (p_top_left, p_top_back),
-            (p_top_left, p_bot_left), (p_top_front, p_bot_front),
-            (p_top_right, p_bot_right), (p_bot_left, p_bot_front),
-            (p_bot_front, p_bot_right),
-        ]
-        for p1, p2 in edges:
+        # Shadow grounds each cube without obscuring neighbouring tiles.
+        self.poly_3d.append(pyglet.shapes.Rectangle(
+            cx - half + size * 0.025, cy - half - size * 0.035,
+            half * 2, half * 2, color=(0, 0, 0, 95), batch=state.batch))
+        for index, points in enumerate(face_points):
+            if index == highlighted:
+                self.poly_3d.append(pyglet.shapes.Polygon(
+                    *points, color=(r, g, b, 85), batch=state.batch))
+                inset = self._inset_polygon(points, 0.07)
+                self.poly_3d.append(pyglet.shapes.Polygon(
+                    *inset,
+                    color=(min(255, int(r * 1.18)),
+                           min(255, int(g * 1.18)),
+                           min(255, int(b * 1.18)), 245),
+                    batch=state.batch))
+            else:
+                self.poly_3d.append(pyglet.shapes.Polygon(
+                    *points, color=inactive[index], batch=state.batch))
+
+        self.poly_3d.append(pyglet.shapes.Polygon(
+            *inside, color=(5, 9, 17, 255), batch=state.batch))
+
+        edge = (225, 238, 255, 255)
+        inner_edge = (145, 175, 210, 235)
+        active_edge = (255, 255, 255, 255)
+        for p1, p2 in zip(outer, outer[1:] + outer[:1]):
             self.poly_3d.append(pyglet.shapes.Line(
-                p1[0], p1[1], p2[0], p2[1], color=edge_col, batch=state.batch))
+                *p1, *p2, thickness=max(3.0, size * 0.018),
+                color=edge, batch=state.batch))
+        for p1, p2 in zip(inside, inside[1:] + inside[:1]):
+            self.poly_3d.append(pyglet.shapes.Line(
+                *p1, *p2, thickness=max(2.0, size * 0.012),
+                color=inner_edge, batch=state.batch))
+        for p1, p2 in zip(outer, inside):
+            self.poly_3d.append(pyglet.shapes.Line(
+                *p1, *p2, thickness=max(1.5, size * 0.008),
+                color=inner_edge, batch=state.batch))
+        active = face_points[highlighted]
+        for p1, p2 in zip(active, active[1:] + active[:1]):
+            self.poly_3d.append(pyglet.shapes.Line(
+                *p1, *p2, thickness=max(4.0, size * 0.024),
+                color=active_edge, batch=state.batch))
+
 
     def spawn(self, position: int = 0, color: int = 1, vis: int = 0,
               number: int = -1, operation: str = 'none',
