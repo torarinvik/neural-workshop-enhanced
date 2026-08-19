@@ -364,6 +364,91 @@ class ReasoningHubTests(unittest.TestCase):
 
 
 @needs_ui
+class OptionsNoteTests(unittest.TestCase):
+    """The live line under the rows on the options screen.
+
+    Rows are independent, so nothing else on that screen can say what
+    a *combination* of them will do — and one of them silently raises
+    another, which is exactly the thing worth saying before starting.
+    """
+
+    def tearDown(self):
+        close_overlays()
+        for key_name, value in DEFAULTS.items():
+            state.cfg[key_name] = value
+        reset_window()
+
+    def open_with(self, dots, density, subtle):
+        from neural_workshop.ui import taskoptions
+        state.cfg['GRAPH_MAP_NODES'] = dots
+        state.cfg['GRAPH_MAP_DENSITY'] = density
+        state.cfg['GRAPH_MAP_SUBTLE'] = subtle
+        return taskoptions.open_task_options('graph_mapping')
+
+    def test_it_reports_the_size_that_will_actually_be_shown(self):
+        menu = self.open_with(gm.MIN_NODES, 'medium', True)
+        raised = gm.subtle_floor('medium')
+        self.assertGreater(raised, gm.MIN_NODES)
+        self.assertIn('%d dots' % raised, menu.note.text)
+        self.assertNotIn('%d dots,' % gm.MIN_NODES, menu.note.text)
+        menu.on_draw()
+
+    def test_it_reports_the_size_asked_for_when_nothing_is_raised(self):
+        menu = self.open_with(8, 'dense', True)
+        self.assertIn('8 dots', menu.note.text)
+        self.assertIn('%d lines' % gm.edge_count(8, 'dense'), menu.note.text)
+
+    def test_it_reports_the_size_asked_for_when_counts_are_not_kept(self):
+        menu = self.open_with(gm.MIN_NODES, 'medium', False)
+        self.assertIn('%d dots' % gm.MIN_NODES, menu.note.text)
+
+    def test_it_says_which_task_the_rows_add_up_to(self):
+        kept = self.open_with(8, 'medium', True).note.text
+        close_overlays()
+        loose = self.open_with(8, 'medium', False).note.text
+        self.assertNotEqual(kept, loose)
+        self.assertIn('settles nothing', kept)
+        self.assertIn('answers a pair', loose)
+
+    def test_it_follows_the_rows_rather_than_the_config(self):
+        from uisupport import Menu
+        menu = self.open_with(gm.MIN_NODES, 'medium', True)
+        before = menu.note.text
+        menu.move_selection(
+            [option.key for option in menu.spec.options]
+            .index('GRAPH_MAP_SUBTLE'), relative=False)
+        menu.select()                      # turn off keeping the counts
+        self.assertNotEqual(menu.note.text, before)
+        self.assertIn('%d dots' % gm.MIN_NODES, menu.note.text)
+        self.assertIs(Menu.instance, menu)
+
+    def test_it_survives_a_resize(self):
+        menu = self.open_with(gm.MIN_NODES, 'medium', True)
+        display.relayout(force=True)
+        self.assertIn('%d dots' % gm.subtle_floor('medium'), menu.note.text)
+        # The text alone proves nothing: a resize builds a fresh batch,
+        # and a note left behind in the old one still reads correctly
+        # while being drawn by nobody.
+        self.assertIs(menu.note.batch, menu.batch)
+        menu.on_draw()
+
+    def test_it_stays_clear_of_the_key_help(self):
+        menu = self.open_with(gm.MIN_NODES, 'medium', True)
+        self.assertGreater(menu.note.y, menu.footnote.y)
+
+    def test_the_screens_without_a_note_still_open(self):
+        from neural_workshop.ui import taskoptions
+        for task_id, spec in taskoptions.TASK_SPECS.items():
+            if spec.note is not None:
+                continue
+            menu = taskoptions.open_task_options(task_id)
+            self.assertIsNotNone(menu, task_id)
+            self.assertEqual(menu.note.text, '', task_id)
+            menu.on_draw()
+            menu.close()
+
+
+@needs_ui
 class GraphMappingScreenTests(unittest.TestCase):
     """The task on screen."""
 

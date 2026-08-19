@@ -188,7 +188,13 @@ and at five, once there are more than six lines — every profile of
 connection counts describes exactly one network, so there is no second
 one to cross lines into. Asking to keep the counts therefore holds the
 size up to where such a network exists: six dots, or five when sparse.
-If you had picked fewer, the waiting screen says so before you start.
+
+You do not have to know that. The options screen carries a line under
+the rows saying what the three of them add up to — how many dots and
+lines each panel will really hold, and which kind of mismatch you are
+asking for — and it follows the rows as you change them, so a size
+that is about to be raised says so while you are still choosing it.
+The waiting screen repeats it before you start.
 
 Above that floor a partner always exists, but not for every starting
 network — at six dots and a dense graph only four of the nine have

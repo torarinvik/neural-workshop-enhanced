@@ -23,7 +23,9 @@
     functions at the top of the module, testable without a window.
 ``taskoptions`` / ``cursor``
     The per-task settings screens reached with C, and the pointing-hand
-    cursor the mouse-driven screens wear.
+    cursor the mouse-driven screens wear. A spec may carry a *note*: a
+    line rebuilt from the rows on every change, for saying what a
+    combination of them does when no single row can.
 ``field``
     The board and the stimuli on it.
 ``hud`` / ``trialui`` / ``readouts``

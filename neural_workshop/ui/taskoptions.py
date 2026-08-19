@@ -17,12 +17,22 @@ from __future__ import annotations
 
 from typing import (Any, Callable, Dict, NamedTuple, Optional, Sequence)
 
+import pyglet
+
 from .. import state
+from ..constants import FONTLIST
+from ..geometry import calc_fontsize, from_bottom_edge, width_center
 from .menu import Cycler, Menu
 from ..i18n import _
 
 #: Called after a task's options are applied, so the task can restart.
 ApplyCallback = Callable[[], None]
+
+#: Called with the rows' current values to produce a line of live text
+#: shown under them. Rows are independent — each one knows nothing of
+#: the others — so this is where a task explains what a *combination*
+#: of them will actually do.
+NoteBuilder = Callable[[Dict[str, Any]], str]
 
 
 class SuffixCycler(Cycler):
@@ -54,10 +64,12 @@ class Option(NamedTuple):
 
 
 class TaskSpec(NamedTuple):
-    """A task's settings screen: a title and the rows it shows."""
+    """A task's settings screen: a title, its rows, and a note."""
 
     title: str
     options: Sequence[Option]
+    #: Optional live line under the rows, rebuilt on every change.
+    note: Optional[NoteBuilder] = None
 
 
 def current_value(option: Option) -> Any:
@@ -105,6 +117,27 @@ class TaskOptions(Menu):
         Menu.__init__(self, options, values, names=names, title=spec.title,
                       footnote=_('Esc: cancel     Space: modify option'
                                  '     Enter: apply'))
+
+    def build_chrome(self) -> None:
+        """The menu's own furniture, plus the note under it."""
+        Menu.build_chrome(self)
+        self.note = pyglet.text.Label(
+            '', font_size=calc_fontsize(11), color=self.textcolor,
+            batch=self.batch, x=width_center(), y=from_bottom_edge(92),
+            width=int(state.window.width * 0.74), multiline=True,
+            align='center', anchor_x='center', anchor_y='center',
+            font_name=FONTLIST)
+
+    def update_labels(self) -> None:
+        """Refill the rows, then say what they add up to.
+
+        Menu calls this after every move and every change, so the note
+        follows the rows rather than describing what they said when
+        the screen opened.
+        """
+        Menu.update_labels(self)
+        if self.spec.note is not None and getattr(self, 'note', None):
+            self.note.text = self.spec.note(self.resolved())
 
     def resolved(self) -> Dict[str, Any]:
         """The value each row currently holds, keyed by config key."""
@@ -236,6 +269,31 @@ COUNTING = TaskSpec(
                True),
     ))
 
+def graph_mapping_note(chosen: Dict[str, Any]) -> str:
+    """What this combination of rows will actually put on screen.
+
+    Three rows decide it between them — the size, the density and
+    whether mismatches keep their counts — and the third silently
+    raises the first when it has to, so saying so here is the only
+    place the player can see it before starting.
+    """
+    from .graphmapping import edge_count, subtle_floor
+    density = str(chosen['GRAPH_MAP_DENSITY'])
+    dots = int(chosen['GRAPH_MAP_NODES'])
+    if not chosen['GRAPH_MAP_SUBTLE']:
+        why = _('Mismatches will differ in their connection counts, so '
+                'tallying the lines at each dot answers a pair.')
+    elif dots < subtle_floor(density):
+        dots = subtle_floor(density)
+        why = _('No two networks smaller than %d dots share their '
+                'connection counts, so runs will start there.') % dots
+    else:
+        why = _('Mismatches will keep every connection count, so tallying '
+                'them settles nothing and the structure has to be walked.')
+    return _('Each panel: %d dots, %d lines.  %s') % (
+        dots, edge_count(dots, density), why)
+
+
 GRAPH_MAPPING = TaskSpec(
     title=_('Graph Mapping options'),
     options=(
@@ -253,7 +311,8 @@ GRAPH_MAPPING = TaskSpec(
                _('Add a dot when right, drop one when wrong'), True),
         Option('GRAPH_MAP_FEEDBACK', _('Say whether each answer was right'),
                True),
-    ))
+    ),
+    note=graph_mapping_note)
 
 #: Task id → the settings screen it owns.
 TASK_SPECS: Dict[str, TaskSpec] = {
