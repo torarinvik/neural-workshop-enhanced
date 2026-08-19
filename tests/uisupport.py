@@ -45,6 +45,7 @@ try:
     from neural_workshop.ui.concentration import Concentration
     from neural_workshop.ui.counting import Counting
     from neural_workshop.ui.gameselect import GameSelect
+    from neural_workshop.ui.graphmapping import GraphMapping
     from neural_workshop.ui.menu import AllCycler, Cycler, Menu, PercentCycler
     from neural_workshop.ui.message import Message
     from neural_workshop.ui.monkeyladder import MonkeyLadder

@@ -160,6 +160,39 @@ perception rather than from patiently ticking shapes off, and with
 
 Nothing is downloaded for this one — the shapes are generated.
 
+### Reasoning
+
+The *Reasoning* category holds **Graph Mapping**: two networks of dots
+and lines, side by side, drawn differently. The question is whether
+one is the other redrawn — whether every dot on the left can be
+matched to a dot on the right with exactly the same connections.
+Answer with **Y** / **N**, the arrow keys, or the two buttons.
+
+Nothing is labelled, on purpose. Labels shared between the panels
+would reduce the task to checking a list of pairs; without them there
+is no way through but to find the correspondence. The two panels
+always hold the same number of dots and the same number of lines, so
+counting either can never answer a trial.
+
+*Mismatches keep every connection count the same* decides how a
+"different" pair differs, and it is the difference between two quite
+separate tasks. With it off, one line has been moved somewhere else,
+so the dots' connection counts no longer match up — tally them on both
+sides and the answer falls out, mechanically. With it on, two lines
+have been crossed over instead, which leaves every count exactly as it
+was: the tallies agree, tell you nothing, and the structure has to be
+walked.
+
+At four or five dots there are few enough connected networks that no
+second one shares the counts, so those trials quietly fall back to the
+first kind rather than to a match — an easier trial, rather than one
+where the honest answer would have to change.
+
+*How many connections* sets the density, *Hide the graphs after* puts
+the pair under time pressure, and with *Add a dot when right* the size
+follows how you do. Nothing is downloaded for this one either — the
+networks are generated.
+
 ### Window size, full screen, and the two coordinate spaces
 
 The window is resizable, and **F11** switches to and from full screen

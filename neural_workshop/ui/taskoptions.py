@@ -236,6 +236,25 @@ COUNTING = TaskSpec(
                True),
     ))
 
+GRAPH_MAPPING = TaskSpec(
+    title=_('Graph Mapping options'),
+    options=(
+        Option('GRAPH_MAP_NODES', _('Dots to start with'), 6,
+               values=(4, 5, 6, 7, 8, 9, 10)),
+        Option('GRAPH_MAP_DENSITY', _('How many connections'), 'medium',
+               values=('sparse', 'medium', 'dense')),
+        Option('GRAPH_MAP_TRIALS', _('Pairs per run'), 20,
+               values=(5, 10, 15, 20, 30, 50)),
+        Option('GRAPH_MAP_SUBTLE',
+               _('Mismatches keep every connection count the same'), True),
+        Option('GRAPH_MAP_EXPOSURE_MS', _('Hide the graphs after'), 0,
+               values=(0, 3000, 5000, 8000, 12000, 20000), suffix=' ms'),
+        Option('GRAPH_MAP_ADAPTIVE',
+               _('Add a dot when right, drop one when wrong'), True),
+        Option('GRAPH_MAP_FEEDBACK', _('Say whether each answer was right'),
+               True),
+    ))
+
 #: Task id → the settings screen it owns.
 TASK_SPECS: Dict[str, TaskSpec] = {
     'monkey_ladder': MONKEY_LADDER,
@@ -244,6 +263,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'recognition': RECOGNITION,
     'reflex': REFLEX,
     'count': COUNTING,
+    'graph_mapping': GRAPH_MAPPING,
 }
 
 

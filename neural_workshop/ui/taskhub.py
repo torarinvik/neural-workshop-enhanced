@@ -26,6 +26,7 @@ CATEGORIES: Sequence[Tuple[str, str]] = (
     ('long_term_memory', _('Long-term memory')),
     ('attention', _('Attention')),
     ('perception', _('Perception')),
+    ('reasoning', _('Reasoning')),
     ('misc', _('Misc')),
 )
 
@@ -44,6 +45,9 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
     ],
     'perception': [
         ('count', _('Count')),
+    ],
+    'reasoning': [
+        ('graph_mapping', _('Graph Mapping')),
     ],
     'misc': [
         ('ncup_monte', _('N-Cup Monte')),
@@ -358,6 +362,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'count':
         from .counting import Counting
         Counting()
+        return
+    if task_id == 'graph_mapping':
+        from .graphmapping import GraphMapping
+        GraphMapping()
         return
     # Unknown task: restore the hub rather than dropping the player.
     TaskHub(return_to_title=return_to_title, category=category)

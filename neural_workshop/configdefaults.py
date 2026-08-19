@@ -560,6 +560,20 @@ COUNT_EXPOSURE_MS = 0
 COUNT_ADAPTIVE = True
 COUNT_SHOW_ANSWER = True
 
+
+# Graph Mapping: two networks side by side, and the question is
+# whether one is the other redrawn. GRAPH_MAP_DENSITY is 'sparse',
+# 'medium' or 'dense'. With GRAPH_MAP_SUBTLE a mismatched pair keeps
+# every dot's connection count identical, so counting the lines at
+# each dot settles nothing and the structure has to be walked.
+GRAPH_MAP_NODES = 6
+GRAPH_MAP_DENSITY = 'medium'
+GRAPH_MAP_TRIALS = 20
+GRAPH_MAP_SUBTLE = True
+GRAPH_MAP_EXPOSURE_MS = 0
+GRAPH_MAP_ADAPTIVE = True
+GRAPH_MAP_FEEDBACK = True
+
 ######################################################################
 # This is the end of the configuration file.
 ######################################################################

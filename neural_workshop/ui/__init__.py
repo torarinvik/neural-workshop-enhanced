@@ -17,6 +17,10 @@
 ``counting``
     The perception task. Generates its own shapes, so it needs no
     downloaded media.
+``graphmapping``
+    The reasoning task. Its graph arithmetic — building networks,
+    rewiring them and deciding whether two are the same — is free
+    functions at the top of the module, testable without a window.
 ``taskoptions`` / ``cursor``
     The per-task settings screens reached with C, and the pointing-hand
     cursor the mouse-driven screens wear.
