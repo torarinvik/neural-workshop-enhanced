@@ -1,7 +1,7 @@
 include native/bwcore.c
-include bwaccel.py
-include nwenv.py
 include setup.py
-include tests/test_bwcore.py
-include tests/test_nwenv.py
 include run
+recursive-include neural_workshop *.py
+recursive-include bwaccel *.py
+recursive-include nwenv *.py
+recursive-include tests *.py

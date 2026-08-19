@@ -1,0 +1,66 @@
+# -*- coding: utf-8 -*-
+"""Capturing what is on screen.
+
+A "significant frame" is the picture at the moment the game's visual
+phase changed. The capture has to read the *backbuffer* before the flip,
+otherwise the learner sees the previous frame.
+
+SPDX-License-Identifier: GPL-2.0-or-later
+"""
+from __future__ import annotations
+
+import hashlib
+import time
+from typing import Any, Tuple
+
+
+def now_ns() -> int:
+    """Monotonic timestamp, in nanoseconds."""
+    return time.monotonic_ns()
+
+
+def flip_rgba(raw: bytes, width: int, height: int) -> bytes:
+    """Turn a bottom-up GL readback into a top-down image."""
+    row = width * 4
+    if row <= 0 or height <= 0:
+        return raw
+    out = bytearray(len(raw))
+    for y in range(height):
+        src = (height - 1 - y) * row
+        out[y * row:y * row + row] = raw[src:src + row]
+    return bytes(out)
+
+
+def capture_rgba(window: Any) -> Tuple[int, int, bytes]:
+    """Read the window's framebuffer as top-down RGBA bytes."""
+    from pyglet.gl import (GL_PACK_ALIGNMENT, GL_RGBA, GL_UNSIGNED_BYTE,
+                           GLubyte, glPixelStorei, glReadPixels)
+    glPixelStorei(GL_PACK_ALIGNMENT, 1)
+    try:
+        width, height = window.get_framebuffer_size()
+    except Exception:
+        width, height = window.width, window.height
+    width, height = int(width), int(height)
+    count = width * height * 4
+    if count <= 0:
+        return width, height, b''
+    buf = (GLubyte * count)()
+    glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, buf)
+    return width, height, flip_rgba(bytes(buf), width, height)
+
+
+def render_significant_frame() -> Tuple[int, int, bytes]:
+    """Draw, read the backbuffer, then flip. Capture must precede flip."""
+    import brainworkshop as bw
+    window = bw.window
+    window.switch_to()
+    window.dispatch_events()
+    bw.on_draw()
+    captured = capture_rgba(window)
+    window.flip()
+    return captured
+
+
+def digest_rgba(rgba: bytes) -> str:
+    """SHA-256 of a frame, which is how frames are named in evidence."""
+    return hashlib.sha256(rgba or b'').hexdigest()

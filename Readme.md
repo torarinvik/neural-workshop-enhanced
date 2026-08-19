@@ -45,6 +45,24 @@ stable compared to the original project and work with modern Python and Pyglet
 ## Notes:
 * You need pyglet installed for this to work.
 
+### Code layout
+
+`brainworkshop.py` is still the entry point (`python brainworkshop.py`)
+and still the module the gym imports (`import brainworkshop as bw`), but
+it is now a thin facade over three packages:
+
+| Package | What lives there |
+| --- | --- |
+| `neural_workshop/` | the game — config, state, board, modes, scoring, session, events, and everything drawn on screen under `ui/` |
+| `bwaccel/` | the accelerated kernels, dispatching to the `bwcore` C extension when it is built and to `bwaccel/fallback.py` when it is not |
+| `nwenv/` | the agent boundary — frame capture, public outcomes and their verification, and the stepped environment |
+
+Inside `neural_workshop`, the live singletons (`cfg`, `window`, `mode`,
+`field`, the labels) live in `state.py` and are reached as `state.mode`
+rather than imported by value, because switching user profile rebinds
+some of them. `bootstrap.build_application()` populates that module in
+the one order that works; nothing else touches a singleton before it has.
+
 ### Trial timing (milliseconds)
 
 Human play still defaults to 100 ms ticks and ~3 s per trial. For faster
@@ -105,7 +123,7 @@ env.close()
 Benchmark (reports trials/s, never “experiences/s”):
 
 ```
-.venv/bin/python nwenv.py
+.venv/bin/python -m nwenv
 ```
 
 `GRID_SIZE` is the visible board. `ACTIVE_POSITION_CELLS` (0 = all) is
@@ -149,7 +167,7 @@ Build it once from the project root (needs a C compiler and Python headers):
 python setup.py build_ext --inplace
 ```
 
-The game still runs without the extension: `bwaccel.py` falls back to
+The game still runs without the extension: the `bwaccel` package falls back to
 equivalent Python. Sessions at high n-back are much faster with the C module,
 because the old rejection sampler is replaced by an O(n) constructive
 generator that still produces exactly 6 position matches, 6 audio matches,
