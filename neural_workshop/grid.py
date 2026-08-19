@@ -48,14 +48,27 @@ def current_include_center() -> bool:
     return bool(state.cfg.GRID_INCLUDE_CENTER)
 
 
+def current_grid_3d() -> bool:
+    """Whether the board is rendered as a 3D transparent cube."""
+    try:
+        return bool(state.cfg.GRID_3D)
+    except Exception:
+        return False
+
+
 def current_cell_count() -> int:
     """How many cells the board has."""
-    return bwaccel.grid_cell_count(current_grid_size(), current_include_center())
+    dim = 3 if current_grid_3d() else 2
+    return bwaccel.grid_cell_count(
+        current_grid_size(), current_include_center(), dim=dim)
 
 
 def current_cell_px() -> float:
     """Side length of one cell, in pixels."""
-    return state.field.size / float(current_grid_size())
+    n = current_grid_size()
+    if current_grid_3d():
+        return state.field.size / float(n * 2.2)
+    return state.field.size / float(n)
 
 
 def current_active_cell_limit() -> int:
@@ -72,13 +85,35 @@ def current_active_cell_limit() -> int:
 
 def current_active_position_ids() -> List[int]:
     """Position ids the stimulus generator may draw from."""
+    dim = 3 if current_grid_3d() else 2
     return bwaccel.active_position_ids(
         current_grid_size(), current_include_center(),
-        current_active_cell_limit())
+        current_active_cell_limit(), dim=dim)
+
+
+def position_3d_node_px(i: float, j: float, k: float, n: int) -> Tuple[int, int]:
+    """Screen coordinates of a 3D grid node or vertex in isometric view."""
+    di = i - n / 2.0
+    dj = j - n / 2.0
+    dk = k - n / 2.0
+    u = state.field.size / float(n * 2.2)
+    cos30 = 0.8660254037844386  # sqrt(3) / 2
+    sin30 = 0.5
+    x = int(round(state.field.center_x + (di - dk) * u * cos30))
+    y = int(round(state.field.center_y + dj * u - (di + dk) * u * sin30))
+    return x, y
 
 
 def position_pixel_center(position: int) -> Tuple[int, int]:
     """Pixel centre of a stimulus. ``position <= 0`` is the field centre."""
+    if current_grid_3d():
+        crd = bwaccel.position_col_row_depth(
+            position, current_grid_size(), current_include_center())
+        if crd is None:
+            return int(state.field.center_x), int(state.field.center_y)
+        col, row, depth = crd
+        return position_3d_node_px(
+            col + 0.5, row + 0.5, depth + 0.5, current_grid_size())
     cell = current_cell_px()
     col_row = bwaccel.position_col_row(
         position, current_grid_size(), current_include_center())

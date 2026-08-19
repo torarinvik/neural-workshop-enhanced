@@ -102,6 +102,33 @@ class GridLayoutTests(unittest.TestCase):
             bwaccel.grid_center_out_ids(3),
             [1, 2, 3, 6, 4, 5, 7, 8])
 
+    def test_3d_cube_3x3x3_cells(self):
+        cells_without_center = bwaccel.grid_layout_3d(3, include_center=False)
+        self.assertEqual(len(cells_without_center), 26)
+        self.assertEqual(bwaccel.grid_cell_count(3, False, dim=3), 26)
+        coords = {(c, r, d) for _, c, r, d in cells_without_center}
+        self.assertNotIn((1, 1, 1), coords)
+
+        cells_with_center = bwaccel.grid_layout_3d(3, include_center=True)
+        self.assertEqual(len(cells_with_center), 27)
+        self.assertEqual(bwaccel.grid_cell_count(3, True, dim=3), 27)
+        coords_all = {(c, r, d) for _, c, r, d in cells_with_center}
+        self.assertIn((1, 1, 1), coords_all)
+
+    def test_3d_cube_position_mapping(self):
+        pos = bwaccel.position_col_row_depth(1, 3, include_center=False)
+        self.assertEqual(pos, (0, 0, 0))
+        last_pos = bwaccel.position_col_row_depth(26, 3, include_center=False)
+        self.assertEqual(last_pos, (2, 2, 2))
+        self.assertIsNone(bwaccel.position_col_row_depth(0, 3))
+        self.assertIsNone(bwaccel.position_col_row_depth(99, 3))
+
+    def test_3d_center_out_curriculum(self):
+        ids = bwaccel.grid_center_out_ids_3d(3, include_center=True)
+        self.assertEqual(len(ids), 27)
+        crd = bwaccel.position_col_row_depth(ids[0], 3, include_center=True)
+        self.assertEqual(crd, (1, 1, 1))
+
 
 class AnalyzeTests(unittest.TestCase):
     def _session(self):

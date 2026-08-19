@@ -29,7 +29,8 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from .arithmetic import ARITHMETIC_OPS, apply_arithmetic, score_arithmetic
 from .board import (active_position_ids, grid_cell_count, grid_center_out_ids,
-                    grid_layout, position_col_row)
+                    grid_center_out_ids_3d, grid_layout, grid_layout_3d,
+                    position_col_row, position_col_row_depth)
 from .fallback import (_aggregate_day_scores_py, _analyze_session_py,
                        _compute_bt_sequence_py, _is_nback_match_py,
                        _mean_tail_py, _parse_stats_text_py,
@@ -53,8 +54,9 @@ __all__ = [
     'rounded_rect_vertices', 'variable_nback_list', 'sample_unique',
     'parse_stats_text', 'is_nback_match', 'mean_tail',
     'apply_arithmetic', 'score_arithmetic', 'ARITHMETIC_OPS',
-    'grid_layout', 'grid_cell_count', 'position_col_row',
-    'grid_center_out_ids', 'active_position_ids',
+    'grid_layout', 'grid_layout_3d', 'grid_cell_count', 'position_col_row',
+    'position_col_row_depth', 'grid_center_out_ids', 'grid_center_out_ids_3d',
+    'active_position_ids',
     'ms_to_ticks', 'clamp_trial_interval_ms', 'plan_trial_phases',
     'interval_adjust_step',
     'count_feedback_pixels', 'count_feedback_label_runs',

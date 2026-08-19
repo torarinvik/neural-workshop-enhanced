@@ -37,7 +37,7 @@ from neural_workshop.events import (  # noqa: E402,F401
     trial_tick, update)
 from neural_workshop.grid import (  # noqa: E402,F401
     current_active_position_ids, current_cell_count, current_cell_px,
-    current_grid_size, position_pixel_center)
+    current_grid_3d, current_grid_size, position_pixel_center)
 from neural_workshop.matching import check_match  # noqa: E402,F401
 from neural_workshop.session import (  # noqa: E402,F401
     end_session, generate_stimulus, new_session, reset_input, set_user,
@@ -62,7 +62,7 @@ _LIVE_RUNTIME = ('DEBUG', 'HEADLESS', 'USER', 'CONFIGFILE', 'STATS_BINARY',
 __all__ = sorted(set(_LIVE_STATE) | set(_LIVE_AUDIO) | set(_LIVE_RUNTIME) | {
     'VERSION', 'CapturePlayer', 'action_button_names', 'check_match',
     'current_active_position_ids', 'current_cell_count', 'current_cell_px',
-    'current_grid_size', 'end_session', 'generate_stimulus',
+    'current_grid_3d', 'current_grid_size', 'end_session', 'generate_stimulus',
     'inject_match_action', 'new_session', 'on_draw', 'on_key_press',
     'on_mouse_press', 'plan_current_trial_phases', 'position_pixel_center',
     'reset_input', 'response_window_open', 'set_trial_interval_ms',

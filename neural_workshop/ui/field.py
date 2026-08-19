@@ -20,7 +20,8 @@ from .. import state
 from ..gamemode import get_color
 from ..geometry import (from_height_center, height_center, scale_to_height,
                         width_center)
-from ..grid import current_cell_px, current_grid_size, position_pixel_center
+from ..grid import (current_cell_px, current_grid_3d, current_grid_size,
+                    position_3d_node_px, position_pixel_center)
 from ..paths import load_pyglet_image
 
 
@@ -70,6 +71,9 @@ class Field:
         if not state.cfg.GRIDLINES:
             return
         n = current_grid_size()
+        if current_grid_3d():
+            self._draw_3d_cube(n)
+            return
         for i in range(1, n):
             t = i / float(n)
             x = int(round(self.x1 + self.size * t))
@@ -78,6 +82,42 @@ class Field:
                 x, self.y1, x, self.y2, color=self.color, batch=state.batch))
             self.v_lines.append(pyglet.shapes.Line(
                 self.x1, y, self.x2, y, color=self.color, batch=state.batch))
+
+    def _draw_3d_cube(self, n: int) -> None:
+        """Draw a transparent 3D wireframe cube showing all grid cells."""
+        outer_color = self.color
+        inner_color = ((48, 48, 48, 160) if state.cfg.BLACK_BACKGROUND
+                       else (170, 170, 170, 180))
+
+        # Col axis lines (i: 0 -> n)
+        for j in range(n + 1):
+            for k in range(n + 1):
+                is_outer = (j in (0, n) and k in (0, n))
+                col = outer_color if is_outer else inner_color
+                x1, y1 = position_3d_node_px(0, j, k, n)
+                x2, y2 = position_3d_node_px(n, j, k, n)
+                self.v_lines.append(pyglet.shapes.Line(
+                    x1, y1, x2, y2, color=col, batch=state.batch))
+
+        # Row axis lines (j: 0 -> n, vertical)
+        for i in range(n + 1):
+            for k in range(n + 1):
+                is_outer = (i in (0, n) and k in (0, n))
+                col = outer_color if is_outer else inner_color
+                x1, y1 = position_3d_node_px(i, 0, k, n)
+                x2, y2 = position_3d_node_px(i, n, k, n)
+                self.v_lines.append(pyglet.shapes.Line(
+                    x1, y1, x2, y2, color=col, batch=state.batch))
+
+        # Depth axis lines (k: 0 -> n)
+        for i in range(n + 1):
+            for j in range(n + 1):
+                is_outer = (i in (0, n) and j in (0, n))
+                col = outer_color if is_outer else inner_color
+                x1, y1 = position_3d_node_px(i, j, 0, n)
+                x2, y2 = position_3d_node_px(i, j, n, n)
+                self.v_lines.append(pyglet.shapes.Line(
+                    x1, y1, x2, y2, color=col, batch=state.batch))
 
     def rebuild_grid(self) -> None:
         self.draw_grid()
@@ -131,6 +171,7 @@ class Visual:
         self.age = 0.0
         self.square: object = None
         self.square_size_scaled = 0
+        self.poly_3d: List[object] = []
 
         font_size = state.field.size // 6
         self.label = pyglet.text.Label(
@@ -227,6 +268,55 @@ class Visual:
         self.square = pyglet.shapes.Polygon(*points, color=tuple(self.color),
                                             batch=state.batch)
 
+    def _spawn_3d_voxel(self, position: int) -> None:
+        """Render a 3D isometric colored voxel cell in the transparent cube."""
+        n = current_grid_size()
+        crd = bwaccel.position_col_row_depth(
+            position, n, state.cfg.GRID_INCLUDE_CENTER)
+        if crd is None:
+            crd = (n // 2, n // 2, n // 2)
+        col, row, depth = crd
+        i0, i1 = col, col + 1
+        j0, j1 = row, row + 1
+        k0, k1 = depth, depth + 1
+
+        p_top_back = position_3d_node_px(i0, j1, k0, n)
+        p_top_right = position_3d_node_px(i1, j1, k0, n)
+        p_top_front = position_3d_node_px(i1, j1, k1, n)
+        p_top_left = position_3d_node_px(i0, j1, k1, n)
+
+        p_bot_back = position_3d_node_px(i0, j0, k0, n)
+        p_bot_left = position_3d_node_px(i0, j0, k1, n)
+        p_bot_front = position_3d_node_px(i1, j0, k1, n)
+        p_bot_right = position_3d_node_px(i1, j0, k0, n)
+
+        r, g, b = self.color[:3]
+        c_top = (min(255, int(r * 1.25)), min(255, int(g * 1.25)),
+                 min(255, int(b * 1.25)), 220)
+        c_left = (int(r * 0.95), int(g * 0.95), int(b * 0.95), 210)
+        c_right = (int(r * 0.70), int(g * 0.70), int(b * 0.70), 210)
+
+        self.poly_3d = [
+            pyglet.shapes.Polygon(p_top_back, p_top_right, p_top_front,
+                                  p_top_left, color=c_top, batch=state.batch),
+            pyglet.shapes.Polygon(p_top_left, p_top_front, p_bot_front,
+                                  p_bot_left, color=c_left, batch=state.batch),
+            pyglet.shapes.Polygon(p_top_front, p_top_right, p_bot_right,
+                                  p_bot_front, color=c_right, batch=state.batch),
+        ]
+        edge_col = ((255, 255, 255, 200) if state.cfg.BLACK_BACKGROUND
+                    else (30, 30, 30, 200))
+        edges = [
+            (p_top_back, p_top_right), (p_top_right, p_top_front),
+            (p_top_front, p_top_left), (p_top_left, p_top_back),
+            (p_top_left, p_bot_left), (p_top_front, p_bot_front),
+            (p_top_right, p_bot_right), (p_bot_left, p_bot_front),
+            (p_bot_front, p_bot_right),
+        ]
+        for p1, p2 in edges:
+            self.poly_3d.append(pyglet.shapes.Line(
+                p1[0], p1[1], p2[0], p2[1], color=edge_col, batch=state.batch))
+
     def spawn(self, position: int = 0, color: int = 1, vis: int = 0,
               number: int = -1, operation: str = 'none',
               variable: int = 0) -> None:
@@ -239,7 +329,9 @@ class Visual:
         modalities = self._modalities()
 
         if self.vis == 0:
-            if state.cfg.OLD_STYLE_SQUARES:
+            if current_grid_3d():
+                self._spawn_3d_voxel(position)
+            elif state.cfg.OLD_STYLE_SQUARES:
                 self._spawn_old_style_square()
             else:
                 self._place_sprite(self.spr_square[color - 1],
@@ -297,11 +389,20 @@ class Visual:
             return
         self.label.text = ''
         self.variable_label.text = ''
+        if self.poly_3d:
+            for shape in self.poly_3d:
+                try:
+                    shape.delete()
+                except Exception:
+                    pass
+            self.poly_3d = []
         if self._is_pictogram_mode():
             self.square.batch = None
             pyglet.clock.unschedule(self.animate_square)
         elif self.vis == 0:
-            if state.cfg.OLD_STYLE_SQUARES:
+            if current_grid_3d():
+                pass  # cleaned up via poly_3d
+            elif state.cfg.OLD_STYLE_SQUARES:
                 self.square.delete()
             else:
                 self.square.batch = None

@@ -61,6 +61,19 @@ class MenuTests(unittest.TestCase):
         self.assertTrue(menu.newmode)
         self._exercise(menu)
 
+    def test_3d_game_select_toggle(self):
+        menu = GameSelect()
+        try:
+            menu.values['grid_3d'] = True
+            menu.update_labels()
+            self.assertTrue(menu.modelabel.text.startswith('3D '))
+            menu.save()
+            self.assertTrue(state.cfg.GRID_3D)
+        finally:
+            menu.values['grid_3d'] = False
+            menu.save()
+            menu.close()
+
     def test_image_select(self):
         self._exercise(ImageSelect())
 
@@ -173,6 +186,21 @@ class ScreenDrawTests(unittest.TestCase):
             on_draw()
         finally:
             end_session(cancelled=True)
+
+    def test_3d_cube_mode_session_draws(self):
+        prev_3d = state.cfg.GRID_3D
+        state.cfg.GRID_3D = True
+        state.field.rebuild_grid()
+        try:
+            new_session()
+            state.visuals[0].spawn(position=1, color=1)
+            self.assertTrue(state.visuals[0].visible)
+            self.assertTrue(len(state.visuals[0].poly_3d) > 0)
+            on_draw()
+        finally:
+            end_session(cancelled=True)
+            state.cfg.GRID_3D = prev_3d
+            state.field.rebuild_grid()
 
 
 @unittest.skipIf(_IMPORT_ERROR is not None,

@@ -131,10 +131,12 @@ CROSSHAIRS = True
 # Even sizes (4, 6, ...) use every cell. Odd sizes skip the center unless
 # GRID_INCLUDE_CENTER is True.
 # GRID_SIZE_MAX is the upper bound for config and the in-game cycler (2..max).
+# GRID_3D renders the board as a transparent 3D cube with GRID_SIZE^3 cells.
 GRID_SIZE = 3
 GRID_SIZE_MIN = 2
 GRID_SIZE_MAX = 32
 GRID_INCLUDE_CENTER = False
+GRID_3D = False
 
 # Set the color of the square in non-Color N-Back modes.
 # This also affects Dual Combination N-Back and Arithmetic N-Back.

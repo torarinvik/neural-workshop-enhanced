@@ -57,7 +57,7 @@ class GameSelect(Menu):
         mode = state.mode
         options = list(_MODALITIES)
         options.extend([BLANK_LINE, 'combination', BLANK_LINE, 'variable',
-                        'crab', BLANK_LINE, 'grid', 'active_cells',
+                        'crab', 'grid_3d', BLANK_LINE, 'grid', 'active_cells',
                         'trial_ms', BLANK_LINE, 'multi', 'multimode',
                         BLANK_LINE, 'selfpaced', BLANK_LINE, 'interference'])
 
@@ -65,10 +65,11 @@ class GameSelect(Menu):
         names['position1'] = _('Use position')
         names['combination'] = _('Combination N-back mode')
         names['variable'] = _('Use variable N-Back levels')
+        names['crab'] = _('Crab-back mode (reverse order of sets of N stimuli)')
+        names['grid_3d'] = _('3D Cube Mode (transparent 3D cube)')
         names['grid'] = _('Grid size')
         names['active_cells'] = _('Active position cells')
         names['trial_ms'] = _('Trial interval (ms)')
-        names['crab'] = _('Crab-back mode (reverse order of sets of N stimuli)')
         names['multi'] = _('Simultaneous visual stimuli')
         names['multimode'] = _('Simultaneous stimuli differentiated by')
         names['selfpaced'] = _('Self-paced mode')
@@ -81,6 +82,7 @@ class GameSelect(Menu):
         values['combination'] = 'visvis' in curmodes
         values['variable'] = bool(cfg.VARIABLE_NBACK)
         values['crab'] = bool(mode.flags[mode.mode]['crab'])
+        values['grid_3d'] = bool(cfg.GRID_3D)
         values['selfpaced'] = bool(mode.flags[mode.mode]['selfpaced'])
         values['multi'] = Cycler(values=[1, 2, 3, 4],
                                  default=mode.flags[mode.mode]['multi'] - 1)
@@ -120,8 +122,10 @@ class GameSelect(Menu):
         self.calc_mode()
         try:
             if self.newmode:
+                prefix = '3D ' if self.values.get('grid_3d') else ''
                 self.modelabel.text = (
-                    state.mode.long_mode_names[self.newmode]
+                    prefix
+                    + state.mode.long_mode_names[self.newmode]
                     + (' V.' if self.values['variable'] else '') + ' N-Back')
             else:
                 self.modelabel.text = _('An invalid mode has been selected.')
@@ -133,7 +137,7 @@ class GameSelect(Menu):
         """The modality names the current tick-boxes imply."""
         modes = [k for k, v in self.values.items()
                  if v and not isinstance(v, Cycler)]
-        for name in ('variable', 'crab', 'selfpaced'):
+        for name in ('variable', 'crab', 'selfpaced', 'grid_3d'):
             if name in modes:
                 modes.remove(name)
         if 'combination' in modes:
@@ -169,6 +173,7 @@ class GameSelect(Menu):
         cfg = state.cfg
         self.calc_mode()
         cfg.VARIABLE_NBACK = self.values['variable']
+        cfg.GRID_3D = bool(self.values.get('grid_3d'))
         cfg.MULTI_MODE = self.values['multimode'].value()
         cfg.CHANCE_OF_INTERFERENCE = self.values['interference'].value()
         cfg.GRID_SIZE = int(self.values['grid'].value())
@@ -244,7 +249,8 @@ class GameSelect(Menu):
         # Never leave the player with nothing to match.
         enabled = [k for k, v in self.values.items() if v]
         substantive = [v for k, v in self.values.items()
-                       if v and k not in ('crab', 'combination', 'variable')]
+                       if v and k not in ('crab', 'combination', 'variable',
+                                          'grid_3d')]
         if not substantive or (len(enabled) == 1
                                and enabled[0] in ('image', 'color')):
             self.values['position1'] = True

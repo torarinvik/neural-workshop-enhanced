@@ -107,6 +107,7 @@ def _clamp_grid_settings(cfg: DotDict) -> None:
         cfg.GRID_SIZE_MAX = 32
     if cfg.GRID_INCLUDE_CENTER is None:
         cfg.GRID_INCLUDE_CENTER = False
+    cfg.GRID_3D = bool(cfg.GRID_3D)
 
 
 def parse_config(configpath: str) -> DotDict:
@@ -202,6 +203,10 @@ def _apply_environment_overrides(cfg: DotDict) -> None:
         value = runtime.get_argv(flag) or os.environ.get(env)
         if value is not None:
             cfg[key] = int(value)
+
+    if (runtime.get_argv('--3d') or runtime.get_argv('--grid-3d')
+            or os.environ.get('NW_GRID_3D') in ('1', 'true', 'True')):
+        cfg.GRID_3D = True
 
 
 def _apply_headless_defaults(cfg: DotDict) -> None:

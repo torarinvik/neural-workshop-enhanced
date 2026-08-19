@@ -101,6 +101,8 @@ class GameModeLabel:
             parts.append(_('Jaeggi mode: '))
         if mode.manual:
             parts.append(_('Manual mode: '))
+        if state.cfg.GRID_3D:
+            parts.append(_('3D '))
         parts.append(mode.long_mode_names[mode.mode] + ' ')
         if state.cfg.VARIABLE_NBACK:
             parts.append(_('V. '))
