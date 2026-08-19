@@ -24,6 +24,7 @@ from ..i18n import _
 CATEGORIES: Sequence[Tuple[str, str]] = (
     ('working_memory', _('Working memory')),
     ('long_term_memory', _('Long-term memory')),
+    ('attention', _('Attention')),
     ('misc', _('Misc')),
 )
 
@@ -36,6 +37,9 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
     'long_term_memory': [
         ('concentration', _('Concentration')),
         ('recognition', _('Seen It Before?')),
+    ],
+    'attention': [
+        ('reflex', _('Reflex')),
     ],
     'misc': [
         ('ncup_monte', _('N-Cup Monte')),
@@ -338,6 +342,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'recognition':
         from .recognition import Recognition
         Recognition()
+        return
+    if task_id == 'reflex':
+        from .reflex import Reflex
+        Reflex()
         return
     # Unknown task: restore the hub rather than dropping the player.
     TaskHub(return_to_title=return_to_title, category=category)

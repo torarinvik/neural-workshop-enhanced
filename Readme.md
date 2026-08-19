@@ -124,6 +124,25 @@ image or audio library is involved either way.
 .venv/bin/python -m pip install pyarrow   # optional, for bulk fetches
 ```
 
+### Attention
+
+The *Attention* category holds **Reflex**: photographs appear at random
+places and shrink from full size to nothing, and you click them before
+they go. Several are on screen at once, each on its own clock, so the
+work is choosing what to go for as much as pointing at it — the one
+about to vanish is the one worth chasing, and a click on overlapping
+targets is awarded to the smaller of them for that reason.
+
+With *Speed up when you hit* the life of a target shortens as you hit
+and lengthens as you miss, more quickly to ease off than to tighten,
+so it settles near the edge of what you can manage. The floor is 0.3 s,
+which is about human reaction time; reaching it means the task has
+nothing harder left to offer.
+
+It draws from the same photograph library as the long-term-memory
+games, so `python -m neural_workshop.datasets tiny-imagenet` is all it
+needs.
+
 ### Window size, full screen, and the two coordinate spaces
 
 The window is resizable, and **F11** switches to and from full screen

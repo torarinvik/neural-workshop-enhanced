@@ -532,6 +532,21 @@ RECOGNITION_MIN_LAG = 4
 RECOGNITION_STUDY_MS = 0
 RECOGNITION_FEEDBACK = True
 
+
+# Reflex: images appear at random places and shrink away; click them
+# before they vanish. REFLEX_MAX_ACTIVE targets can be on screen at
+# once, each with its own clock, which is what makes it a divided-
+# attention task rather than a pointing exercise.
+# REFLEX_SIZE is in reference-window pixels and scales with the window.
+# With REFLEX_ADAPTIVE the lifetime shortens as you hit and lengthens
+# as you miss, settling near the edge of what you can manage.
+REFLEX_TARGETS = 40
+REFLEX_LIFETIME_MS = 1600
+REFLEX_SPAWN_MS = 700
+REFLEX_MAX_ACTIVE = 3
+REFLEX_SIZE = 130
+REFLEX_ADAPTIVE = True
+
 ######################################################################
 # This is the end of the configuration file.
 ######################################################################

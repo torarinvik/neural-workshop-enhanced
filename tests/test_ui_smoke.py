@@ -17,6 +17,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+from test_ui_attention import *   # noqa: F401,F403,E402
 from test_ui_display import *     # noqa: F401,F403,E402
 from test_ui_longterm import *    # noqa: F401,F403,E402
 from test_ui_menus import *       # noqa: F401,F403,E402

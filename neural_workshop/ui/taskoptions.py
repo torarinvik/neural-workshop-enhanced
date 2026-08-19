@@ -198,12 +198,32 @@ RECOGNITION = TaskSpec(
                True),
     ))
 
+REFLEX = TaskSpec(
+    title=_('Reflex options'),
+    options=(
+        Option('REFLEX_TARGETS', _('Targets per run'), 40,
+               values=(10, 20, 30, 40, 60, 80, 120, 200)),
+        Option('REFLEX_LIFETIME_MS', _('A target takes this long to vanish'),
+               1600, values=(400, 600, 800, 1200, 1600, 2200, 3000, 4000),
+               suffix=' ms'),
+        Option('REFLEX_SPAWN_MS', _('Gap between targets appearing'), 700,
+               values=(150, 250, 400, 550, 700, 1000, 1500, 2000),
+               suffix=' ms'),
+        Option('REFLEX_MAX_ACTIVE', _('Most targets on screen at once'), 3,
+               values=(1, 2, 3, 4, 5, 6, 8)),
+        Option('REFLEX_SIZE', _('Size a target starts at'), 130,
+               values=(60, 80, 100, 130, 170, 220, 280), suffix=' px'),
+        Option('REFLEX_ADAPTIVE', _('Speed up when you hit, ease off when you miss'),
+               True),
+    ))
+
 #: Task id → the settings screen it owns.
 TASK_SPECS: Dict[str, TaskSpec] = {
     'monkey_ladder': MONKEY_LADDER,
     'ncup_monte': NCUP_MONTE,
     'concentration': CONCENTRATION,
     'recognition': RECOGNITION,
+    'reflex': REFLEX,
 }
 
 
