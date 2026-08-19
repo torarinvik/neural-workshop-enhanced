@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import unittest
 
+import pyglet
+
 from uisupport import (MonkeyLadder, NCupMonte, TaskHub, close_overlays,
                        display, end_session, geometry, key, needs_ui,
                        new_session, on_draw, on_key_press, reset_window, state,
@@ -97,10 +99,14 @@ class RelayoutTests(unittest.TestCase):
             overlay.on_draw()
 
     def test_cup_order_survives_a_relayout(self):
+        # The shuffle animation legitimately reorders cups as it runs,
+        # and a relayout is slow enough for a tick to land inside it —
+        # so hold the animation still and test the relayout alone.
         task = NCupMonte()
         task.start_round()
         task._plan_swaps()
         task._begin_swap()
+        pyglet.clock.unschedule(task.update)
         order = list(task.order)
         self._resize(*self.SIZES[0])
         self.assertEqual(task.order, order)

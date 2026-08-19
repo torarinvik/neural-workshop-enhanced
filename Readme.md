@@ -63,6 +63,45 @@ rather than imported by value, because switching user profile rebinds
 some of them. `bootstrap.build_application()` populates that module in
 the one order that works; nothing else touches a singleton before it has.
 
+### Long-term memory games and their media libraries
+
+The task hub's *Long-term memory* category holds two games that work
+on material you have not seen a hundred times already, so the material
+is downloaded rather than shipped:
+
+- **Concentration** — a board of face-down pairs, turned over two at a
+  time. With `Cards show: sound` it deals five-second clips instead of
+  photographs, which is a markedly harder game: a sound cannot be
+  compared at a glance, it has to be held in mind while the second
+  card plays.
+- **Seen It Before?** — the old/new recognition task. A run presents a
+  stream of items, some of them second showings from far enough back
+  that rehearsal is no help. Scored on both halves — catching repeats
+  and not claiming the new ones — so a single constant answer scores
+  the repeat rate, never 100%.
+
+Fetch the libraries once:
+
+```bash
+.venv/bin/python -m neural_workshop.datasets
+```
+
+That pulls 5,000 photographs from `thethinkmachine/tiny-imagenet`
+(~10 MB) and 500 sound clips from `renumics/esc50` (~220 MB) into
+`<data dir>/datasets/`. Name one to fetch only that, and add a number
+for a different size:
+
+```bash
+.venv/bin/python -m neural_workshop.datasets tiny-imagenet 2000
+```
+
+Fetching is resumable and idempotent — it skips what is already on
+disk, so an interrupted download is finished by running it again.
+Nothing downloads on its own; a game whose library is missing says so
+and stays playable in the other medium. `neural_workshop/datasets.py`
+uses only the standard library, going through Hugging Face's
+datasets-server rather than needing `datasets`, `pyarrow` or `pillow`.
+
 ### Window size, full screen, and the two coordinate spaces
 
 The window is resizable, and **F11** switches to and from full screen

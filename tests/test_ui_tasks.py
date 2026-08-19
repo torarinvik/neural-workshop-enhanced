@@ -140,9 +140,16 @@ class TaskOptionsTests(unittest.TestCase):
         Menu.instance.on_key_press(key.ESCAPE, 0)
 
     def test_hub_c_in_an_empty_category_is_harmless(self):
-        hub = TaskHub(category='long_term_memory')
-        self.assertIsNone(hub.selected_task())
-        hub.on_key_press(key.C, 0)
+        # Every category has tasks now, so make an empty one to test.
+        TASKS['_empty_for_test'] = []
+        try:
+            hub = TaskHub()
+            hub.category = '_empty_for_test'
+            self.assertIsNone(hub.selected_task())
+            hub.on_key_press(key.C, 0)
+            hub.launch()
+        finally:
+            del TASKS['_empty_for_test']
 
 
 @needs_ui

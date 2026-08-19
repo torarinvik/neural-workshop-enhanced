@@ -166,10 +166,44 @@ NCUP_MONTE = TaskSpec(
         Option('NCUP_MONTE_SHOW_CUP_NUMBERS', _('Number the cups'), True),
     ))
 
+CONCENTRATION = TaskSpec(
+    title=_('Concentration options'),
+    options=(
+        Option('CONCENTRATION_PAIRS', _('Pairs on the board'), 8,
+               values=(4, 6, 8, 10, 12, 15, 18, 21, 24, 30)),
+        Option('CONCENTRATION_MEDIUM', _('Cards show'), 'image',
+               values=('image', 'sound')),
+        Option('CONCENTRATION_PEEK_MS',
+               _('Reveal the board at the start for'), 0,
+               values=(0, 500, 1000, 2000, 3000, 5000), suffix=' ms'),
+        Option('CONCENTRATION_HIDE_MS', _('A wrong pair stays up for'), 900,
+               values=(300, 500, 700, 900, 1200, 1600, 2000), suffix=' ms'),
+        Option('CONCENTRATION_SHOW_TURNS', _('Count pairs and turns'), True),
+    ))
+
+RECOGNITION = TaskSpec(
+    title=_('Seen it before? options'),
+    options=(
+        Option('RECOGNITION_TRIALS', _('Items per run'), 40,
+               values=(10, 20, 30, 40, 60, 80, 100, 150)),
+        Option('RECOGNITION_MEDIUM', _('Present'), 'image',
+               values=('image', 'sound')),
+        Option('RECOGNITION_REPEAT_PERCENT', _('Share of items repeated'), 40,
+               values=(20, 30, 40, 50), suffix='%'),
+        Option('RECOGNITION_MIN_LAG', _('Smallest gap before a repeat'), 4,
+               values=(1, 2, 3, 4, 6, 8, 12, 20, 30), suffix=' items'),
+        Option('RECOGNITION_STUDY_MS', _('Hide the image after'), 0,
+               values=(0, 500, 1000, 1500, 2000, 3000), suffix=' ms'),
+        Option('RECOGNITION_FEEDBACK', _('Say whether each answer was right'),
+               True),
+    ))
+
 #: Task id → the settings screen it owns.
 TASK_SPECS: Dict[str, TaskSpec] = {
     'monkey_ladder': MONKEY_LADDER,
     'ncup_monte': NCUP_MONTE,
+    'concentration': CONCENTRATION,
+    'recognition': RECOGNITION,
 }
 
 

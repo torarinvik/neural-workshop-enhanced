@@ -8,6 +8,9 @@
     The concrete menu screens, plus the category task hub.
 ``monkeyladder`` / ``ncupmonte``
     Standalone working-memory and misc tasks launched from the hub.
+``concentration`` / ``recognition``
+    The long-term-memory games, drawing on the downloaded media
+    libraries in :mod:`neural_workshop.datasets`.
 ``taskoptions`` / ``cursor``
     The per-task settings screens reached with C, and the pointing-hand
     cursor the mouse-driven screens wear.

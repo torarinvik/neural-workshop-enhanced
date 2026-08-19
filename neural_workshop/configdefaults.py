@@ -506,6 +506,32 @@ NCUP_MONTE_SWAP_MS = 340
 NCUP_MONTE_REVEAL_MS = 1150
 NCUP_MONTE_SHOW_CUP_NUMBERS = True
 
+
+# Concentration: a board of face-down pairs, turned over two at a time.
+# CONCENTRATION_MEDIUM is 'image' for photographs or 'sound' for
+# environmental clips, which is a markedly harder game — a sound cannot
+# be compared at a glance, it has to be held in mind.
+# Both draw on libraries downloaded into the data directory; see the
+# Readme for how to fetch them.
+CONCENTRATION_PAIRS = 8
+CONCENTRATION_MEDIUM = 'image'
+CONCENTRATION_PEEK_MS = 0
+CONCENTRATION_HIDE_MS = 900
+CONCENTRATION_SHOW_TURNS = True
+
+# Seen It Before?: the old/new recognition task. A run presents
+# RECOGNITION_TRIALS items, RECOGNITION_REPEAT_PERCENT of which are
+# second showings of something at least RECOGNITION_MIN_LAG items back.
+# RECOGNITION_STUDY_MS hides the image after a while so the answer has
+# to come from memory rather than from still looking at it; 0 leaves it
+# up until you answer.
+RECOGNITION_TRIALS = 40
+RECOGNITION_MEDIUM = 'image'
+RECOGNITION_REPEAT_PERCENT = 40
+RECOGNITION_MIN_LAG = 4
+RECOGNITION_STUDY_MS = 0
+RECOGNITION_FEEDBACK = True
+
 ######################################################################
 # This is the end of the configuration file.
 ######################################################################

@@ -38,17 +38,33 @@ class MenuTests(unittest.TestCase):
         try:
             self.assertEqual([task[0] for task in tasks_for('working_memory')],
                              ['nback', 'monkey_ladder'])
-            self.assertEqual(TASKS['long_term_memory'], [])
+            self.assertEqual(
+                [task for task, _name in TASKS['long_term_memory']],
+                ['concentration', 'recognition'])
             self.assertEqual([task[0] for task in tasks_for('misc')],
                              ['ncup_monte'])
             hub.set_category('misc')
             self.assertEqual(hub.category, 'misc')
             self.assertEqual(len(hub.task_rects), 1)
             hub.set_category('long_term_memory')
-            self.assertEqual(hub.empty.text, 'No tasks in this category yet.')
+            self.assertEqual(hub.category, 'long_term_memory')
+            self.assertEqual(len(hub.task_rects), 2)
+            self.assertEqual(hub.empty.text, '')
             hub.on_draw()
         finally:
             hub.close()
+
+    def test_the_hub_says_so_when_a_category_is_empty(self):
+        TASKS['_empty_for_test'] = []
+        hub = TaskHub()
+        try:
+            hub.set_category('_empty_for_test')
+            self.assertEqual(hub.empty.text, 'No tasks in this category yet.')
+            self.assertEqual(hub.task_rects, [])
+            hub.on_draw()
+        finally:
+            hub.close()
+            del TASKS['_empty_for_test']
 
     def test_task_hub_launches_nback(self):
         hub = TaskHub()

@@ -29,7 +29,8 @@ try:
     import pyglet
     from pyglet.window import key
 
-    from neural_workshop import bootstrap, display, geometry, state
+    from neural_workshop import (bootstrap, datasets, display, geometry,
+                                 media, state)
     from neural_workshop.constants import (DEFAULT_WINDOW_HEIGHT,
                                            DEFAULT_WINDOW_WIDTH)
     from neural_workshop.events import (on_draw, on_key_press,
@@ -41,11 +42,13 @@ try:
                                       decode_3d_pattern)
     from neural_workshop.session import end_session, new_session
     from neural_workshop.ui import cursor, taskoptions
+    from neural_workshop.ui.concentration import Concentration
     from neural_workshop.ui.gameselect import GameSelect
     from neural_workshop.ui.menu import AllCycler, Cycler, Menu, PercentCycler
     from neural_workshop.ui.message import Message
     from neural_workshop.ui.monkeyladder import MonkeyLadder
     from neural_workshop.ui.ncupmonte import NCupMonte
+    from neural_workshop.ui.recognition import NEW, SEEN, Recognition
     from neural_workshop.ui.screens import (ImageSelect, LanguageScreen,
                                             OptionsScreen, SoundSelect,
                                             UserScreen)
