@@ -8,6 +8,9 @@
     The concrete menu screens, plus the category task hub.
 ``monkeyladder`` / ``ncupmonte``
     Standalone working-memory and misc tasks launched from the hub.
+``taskoptions`` / ``cursor``
+    The per-task settings screens reached with C, and the pointing-hand
+    cursor the mouse-driven screens wear.
 ``field``
     The board and the stimuli on it.
 ``hud`` / ``trialui`` / ``readouts``

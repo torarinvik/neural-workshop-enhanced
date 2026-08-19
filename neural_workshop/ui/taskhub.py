@@ -17,6 +17,7 @@ from .. import state
 from ..constants import FONTLIST
 from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
                         width_center)
+from . import cursor
 from ..i18n import _
 
 #: Category id → display name, in tab order.
@@ -93,10 +94,7 @@ class TaskHub:
         self._rebuild()
         window.push_handlers(self.on_key_press, self.on_text_motion,
                              self.on_mouse_press, self.on_draw)
-        try:
-            window.set_mouse_visible(True)
-        except Exception:
-            pass
+        cursor.acquire()
         TaskHub.instance = self
         state.mode.task_category = self.category
 
@@ -245,6 +243,7 @@ class TaskHub:
         self._clear_shapes()
         state.window.remove_handlers(self.on_key_press, self.on_text_motion,
                                      self.on_mouse_press, self.on_draw)
+        cursor.release()
         TaskHub.instance = None
         if self.return_to_title:
             state.mode.title_screen = True

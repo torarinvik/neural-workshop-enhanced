@@ -15,7 +15,7 @@ from pyglet.window import key
 from .. import state
 from ..constants import FONTLIST
 from ..geometry import calc_fontsize, from_bottom_edge, from_top_edge, width_center
-from . import taskoptions
+from . import cursor, taskoptions
 from ..i18n import _
 
 
@@ -66,10 +66,7 @@ class NCupMonte:
         state.window.push_handlers(self.on_key_press, self.on_mouse_press,
                                    self.on_draw)
         pyglet.clock.schedule_interval(self.update, 1 / 60.)
-        try:
-            state.window.set_mouse_visible(True)
-        except Exception:
-            pass
+        cursor.acquire()
         NCupMonte.instance = self
 
     # --- options ---------------------------------------------------------
@@ -261,6 +258,7 @@ class NCupMonte:
         pyglet.clock.unschedule(self.update)
         state.window.remove_handlers(self.on_key_press, self.on_mouse_press,
                                      self.on_draw)
+        cursor.release()
         NCupMonte.instance = None
 
     def return_to_hub(self) -> None:

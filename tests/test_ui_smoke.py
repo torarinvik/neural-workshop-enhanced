@@ -27,9 +27,11 @@ os.environ.setdefault('NW_TRIAL_MS', '10')
 warnings.filterwarnings('ignore', category=ResourceWarning)
 
 try:
+    import pyglet
     from pyglet.window import key
 
     from neural_workshop import bootstrap, state
+    from neural_workshop.geometry import scale_to_height
     from neural_workshop.events import on_draw, on_key_press
     from neural_workshop.grid import (current_active_position_ids,
                                       current_cell_count, current_3d_color_count,
@@ -43,7 +45,7 @@ try:
                                             OptionsScreen, SoundSelect,
                                             UserScreen)
     from neural_workshop.ui.taskhub import TASKS, TaskHub, tasks_for
-    from neural_workshop.ui import taskoptions
+    from neural_workshop.ui import cursor, taskoptions
     from neural_workshop.ui.menu import Menu
     bootstrap.build_application()
     _IMPORT_ERROR = None
@@ -475,6 +477,82 @@ class TaskOptionsTests(unittest.TestCase):
         hub = TaskHub(category='long_term_memory')
         self.assertIsNone(hub.selected_task())
         hub.on_key_press(key.C, 0)
+
+
+@unittest.skipIf(_IMPORT_ERROR is not None,
+                 'cannot build application: %s' % (_IMPORT_ERROR,))
+class HandCursorTests(unittest.TestCase):
+    """The mouse-driven screens wear the hand from res/misc/cursor."""
+
+    def setUp(self):
+        cursor.reset()
+
+    def tearDown(self):
+        for screen in (MonkeyLadder.instance, NCupMonte.instance,
+                       TaskHub.instance):
+            if screen is not None:
+                screen.close()
+        cursor.reset()
+        state.window.set_mouse_cursor(None)
+
+    def test_cursor_builds_at_the_window_size(self):
+        hand = cursor.hand_cursor()
+        self.assertIsNotNone(hand)
+        expected = max(8, scale_to_height(cursor.CURSOR_HEIGHT))
+        self.assertEqual(hand.texture.height, expected)
+        self.assertGreater(hand.texture.width, 0)
+
+    def test_hot_spot_sits_on_the_fingertip(self):
+        hand = cursor.hand_cursor()
+        # The tip is the topmost artwork, so the hot spot is at the top
+        # edge and somewhere across the middle of the image.
+        self.assertEqual(hand.hot_y, hand.texture.height)
+        self.assertGreater(hand.hot_x, 0)
+        self.assertLess(hand.hot_x, hand.texture.width)
+
+    def test_cursor_is_cached_until_the_size_changes(self):
+        first = cursor.hand_cursor()
+        self.assertIs(cursor.hand_cursor(), first)
+        cursor.reset()
+        self.assertIsNot(cursor.hand_cursor(), first)
+
+    def test_mouse_tasks_take_and_give_back_the_cursor(self):
+        for task_class in (MonkeyLadder, NCupMonte):
+            task = task_class()
+            self.assertEqual(cursor.holders(), 1, task_class.__name__)
+            self.assertIsInstance(state.window._mouse_cursor,
+                                  pyglet.window.ImageMouseCursor)
+            task.close()
+            self.assertEqual(cursor.holders(), 0, task_class.__name__)
+            self.assertNotIsInstance(state.window._mouse_cursor,
+                                     pyglet.window.ImageMouseCursor)
+
+    def test_nesting_keeps_the_hand_until_the_last_screen_closes(self):
+        hub = TaskHub()
+        task = MonkeyLadder()
+        self.assertEqual(cursor.holders(), 2)
+        task.close()
+        self.assertEqual(cursor.holders(), 1)
+        self.assertIsInstance(state.window._mouse_cursor,
+                              pyglet.window.ImageMouseCursor)
+        hub.close()
+        self.assertEqual(cursor.holders(), 0)
+        self.assertNotIsInstance(state.window._mouse_cursor,
+                                 pyglet.window.ImageMouseCursor)
+
+    def test_missing_artwork_falls_back_to_the_system_cursor(self):
+        from neural_workshop import resources
+        saved = resources.resourcepaths['misc'].pop('cursor')
+        try:
+            cursor.reset()
+            self.assertIsNone(cursor.hand_cursor())
+            task = MonkeyLadder()
+            self.assertNotIsInstance(state.window._mouse_cursor,
+                                     pyglet.window.ImageMouseCursor)
+            task.close()
+        finally:
+            resources.resourcepaths['misc']['cursor'] = saved
+            cursor.reset()
 
 
 if __name__ == '__main__':

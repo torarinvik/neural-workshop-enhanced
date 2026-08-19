@@ -10,3 +10,6 @@ build/
 *.pyd
 *.dll
 bwcore.*.so
+
+# macOS Finder metadata
+.DS_Store
