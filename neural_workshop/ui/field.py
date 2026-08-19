@@ -172,6 +172,7 @@ class Visual:
         self.square: object = None
         self.square_size_scaled = 0
         self.poly_3d: List[object] = []
+        self.poly_3d_pulse: List[object] = []
 
         font_size = state.field.size // 6
         self.label = pyglet.text.Label(
@@ -284,6 +285,7 @@ class Visual:
         start_y = state.field.center_y + total_h / 2
 
         self.poly_3d = []
+        self.poly_3d_pulse = []
         for index, face in enumerate(faces):
             row, col = divmod(index, cols)
             # Centre the final incomplete row.
@@ -292,6 +294,10 @@ class Visual:
             cx = start_x + row_offset + col * (tile + gap) + tile / 2
             cy = start_y - row * (tile + gap) - tile / 2
             self._draw_pattern_cube(cx, cy, tile, face)
+        self.age = 0.0
+        pyglet.clock.unschedule(self.animate_3d_pattern)
+        if state.cfg.ANIMATE_SQUARES:
+            pyglet.clock.schedule_interval(self.animate_3d_pattern, 1 / 60.)
 
     @staticmethod
     def _inset_polygon(points: Sequence[Tuple[float, float]],
@@ -326,6 +332,11 @@ class Visual:
             (31, 47, 72, 255), (24, 38, 61, 255),
             (16, 28, 47, 255), (27, 42, 65, 255)]
         r, g, b = self.color[:3]
+        # Keep saturated configured colours while adding enough white light
+        # to reveal surface detail, especially for pure blue.
+        light = (0.18, 0.10, 0.04, 0.12)[highlighted]
+        lit = tuple(min(255, int(c + (255 - c) * light))
+                    for c in (r, g, b))
 
         # Shadow grounds each cube without obscuring neighbouring tiles.
         self.poly_3d.append(pyglet.shapes.Rectangle(
@@ -333,14 +344,21 @@ class Visual:
             half * 2, half * 2, color=(0, 0, 0, 95), batch=state.batch))
         for index, points in enumerate(face_points):
             if index == highlighted:
-                self.poly_3d.append(pyglet.shapes.Polygon(
-                    *points, color=(r, g, b, 85), batch=state.batch))
+                glow = pyglet.shapes.Polygon(
+                    *points, color=(*lit, 105), batch=state.batch)
+                self.poly_3d.append(glow)
+                self.poly_3d_pulse.append(glow)
                 inset = self._inset_polygon(points, 0.07)
                 self.poly_3d.append(pyglet.shapes.Polygon(
                     *inset,
-                    color=(min(255, int(r * 1.18)),
-                           min(255, int(g * 1.18)),
-                           min(255, int(b * 1.18)), 245),
+                    color=(*lit, 245),
+                    batch=state.batch))
+                specular = self._inset_polygon(points, 0.16)
+                self.poly_3d.append(pyglet.shapes.Polygon(
+                    *specular,
+                    color=(min(255, lit[0] + 12),
+                           min(255, lit[1] + 12),
+                           min(255, lit[2] + 12), 70),
                     batch=state.batch))
             else:
                 self.poly_3d.append(pyglet.shapes.Polygon(
@@ -366,9 +384,25 @@ class Visual:
                 color=inner_edge, batch=state.batch))
         active = face_points[highlighted]
         for p1, p2 in zip(active, active[1:] + active[:1]):
-            self.poly_3d.append(pyglet.shapes.Line(
+            line = pyglet.shapes.Line(
                 *p1, *p2, thickness=max(4.0, size * 0.024),
-                color=active_edge, batch=state.batch))
+                color=active_edge, batch=state.batch)
+            self.poly_3d.append(line)
+            self.poly_3d_pulse.append(line)
+
+    def animate_3d_pattern(self, dt: float) -> None:
+        """Ease the active-face glow in once, without continuous motion."""
+        self.age += dt
+        duration = 0.24
+        progress = min(1.0, self.age / duration)
+        # A single overshoot gives a tactile flash while keeping geometry still.
+        pulse = 0.72 + 0.28 * math.sin(progress * math.pi)
+        for shape in self.poly_3d_pulse:
+            shape.opacity = int(255 * pulse)
+        if progress >= 1.0:
+            for shape in self.poly_3d_pulse:
+                shape.opacity = 255
+            pyglet.clock.unschedule(self.animate_3d_pattern)
 
 
     def spawn(self, position: int = 0, color: int = 1, vis: int = 0,
@@ -444,12 +478,14 @@ class Visual:
         self.label.text = ''
         self.variable_label.text = ''
         if self.poly_3d:
+            pyglet.clock.unschedule(self.animate_3d_pattern)
             for shape in self.poly_3d:
                 try:
                     shape.delete()
                 except Exception:
                     pass
             self.poly_3d = []
+            self.poly_3d_pulse = []
         if self._is_pictogram_mode():
             self.square.batch = None
             pyglet.clock.unschedule(self.animate_square)
