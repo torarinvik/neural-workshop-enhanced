@@ -15,6 +15,7 @@ from pyglet.window import key
 from .. import state
 from ..constants import FONTLIST
 from ..geometry import calc_fontsize, from_bottom_edge, from_top_edge, width_center
+from . import taskoptions
 from ..i18n import _
 
 
@@ -27,6 +28,7 @@ class NCupMonte:
         if NCupMonte.instance is not None:
             NCupMonte.instance.close()
         self.cups = 3
+        self._read_options()
         self.ball = 0
         self.order: List[int] = list(range(self.cups))
         self.xs: List[float] = []
@@ -36,7 +38,6 @@ class NCupMonte:
         self.swaps: List[Tuple[int, int]] = []
         self.swap_i = 0
         self.swap_t = 0.0
-        self.swap_duration = 0.28
         self.reveal_until = 0.0
         self.message = _('Press Space to hide the ball')
         self.guess: Optional[int] = None
@@ -56,7 +57,7 @@ class NCupMonte:
             batch=self.batch, x=width_center(), y=from_top_edge(70),
             anchor_x='center', anchor_y='center', font_name=FONTLIST)
         self.footnote = pyglet.text.Label(
-            _('Esc: task menu     Space: next round'),
+            _('Esc: task menu     Space: next round     C: options'),
             font_size=calc_fontsize(12), color=self.textcolor,
             batch=self.batch, x=width_center(), y=from_bottom_edge(30),
             anchor_x='center', anchor_y='center')
@@ -70,6 +71,35 @@ class NCupMonte:
         except Exception:
             pass
         NCupMonte.instance = self
+
+    # --- options ---------------------------------------------------------
+
+    def _read_options(self) -> None:
+        """Load this task's settings from the config."""
+        opts = taskoptions.settings(taskoptions.NCUP_MONTE)
+        self.start_cups = int(opts['NCUP_MONTE_START_CUPS'])
+        self.max_cups = max(self.start_cups, int(opts['NCUP_MONTE_MAX_CUPS']))
+        self.adaptive = bool(opts['NCUP_MONTE_ADAPTIVE'])
+        self.swap_count = int(opts['NCUP_MONTE_SWAPS'])
+        self.swap_duration = int(opts['NCUP_MONTE_SWAP_MS']) / 1000.
+        self.reveal_seconds = int(opts['NCUP_MONTE_REVEAL_MS']) / 1000.
+        self.show_numbers = bool(opts['NCUP_MONTE_SHOW_CUP_NUMBERS'])
+        self.cups = min(max(3, self.start_cups), self.max_cups)
+
+    def open_options(self) -> None:
+        """Show this task's settings screen."""
+        taskoptions.open_task_options('ncup_monte', on_apply=self.apply_options)
+
+    def apply_options(self) -> None:
+        """Re-read the settings and reset to a fresh round."""
+        self._read_options()
+        self.phase = 'ready'
+        self.guess = None
+        self.swaps = []
+        self.swap_i = 0
+        self.message = _('Press Space to hide the ball')
+        self._place_cups()
+        self._redraw()
 
     def _slot_positions(self, count: int) -> List[float]:
         window = state.window
@@ -88,19 +118,18 @@ class NCupMonte:
         self.ball = random.randrange(self.cups)
         self.guess = None
         self.phase = 'reveal'
-        self.reveal_until = time.time() + 1.15
+        self.reveal_until = time.time() + self.reveal_seconds
         self.message = _('Watch the ball')
         self._redraw()
 
     def _plan_swaps(self) -> None:
-        count = 6 + self.cups
+        count = max(1, self.swap_count + self.cups)
         swaps = []
-        for _ in range(count):
+        for _swap in range(count):
             a, b = random.sample(range(self.cups), 2)
             swaps.append((a, b))
         self.swaps = swaps
         self.swap_i = 0
-        self.swap_duration = max(0.16, 0.34 - 0.02 * self.cups)
 
     def _begin_swap(self) -> None:
         if self.swap_i >= len(self.swaps):
@@ -170,11 +199,15 @@ class NCupMonte:
         self.guess = cup_id
         self.phase = 'result'
         if cup_id == self.ball:
-            self.cups = min(8, self.cups + 1)
-            self.message = _('Caught it — now %d cups') % self.cups
+            if self.adaptive:
+                self.cups = min(self.max_cups, self.cups + 1)
+            self.message = (_('Caught it — now %d cups') % self.cups
+                            if self.adaptive else _('Caught it'))
         else:
-            self.cups = max(3, self.cups - 1)
-            self.message = _('Miss — back to %d cups') % self.cups
+            if self.adaptive:
+                self.cups = max(3, self.cups - 1)
+            self.message = (_('Miss — back to %d cups') % self.cups
+                            if self.adaptive else _('Miss'))
         self._place_cups()
         self._redraw()
 
@@ -213,12 +246,13 @@ class NCupMonte:
                     cx, base_y + 16, 11, color=(240, 220, 70, 255),
                     batch=self.batch)
                 self.shapes.append(ball)
-            label = pyglet.text.Label(
-                str(cup_id + 1), font_size=calc_fontsize(14), weight='bold',
-                color=(255, 255, 255, 255), batch=self.batch,
-                x=cx, y=base_y + cup_h / 2,
-                anchor_x='center', anchor_y='center', font_name=FONTLIST)
-            self.cup_labels.append(label)
+            if self.show_numbers:
+                label = pyglet.text.Label(
+                    str(cup_id + 1), font_size=calc_fontsize(14),
+                    weight='bold', color=(255, 255, 255, 255),
+                    batch=self.batch, x=cx, y=base_y + cup_h / 2,
+                    anchor_x='center', anchor_y='center', font_name=FONTLIST)
+                self.cup_labels.append(label)
         self.status.text = _('Cups %d — %s') % (self.cups, self.message)
 
     def close(self) -> None:
@@ -239,6 +273,8 @@ class NCupMonte:
             self.return_to_hub()
         elif symbol == key.SPACE and self.phase in ('ready', 'result'):
             self.start_round()
+        elif symbol == key.C:
+            self.open_options()
         return pyglet.event.EVENT_HANDLED
 
     def on_mouse_press(self, x: int, y: int, button: int,

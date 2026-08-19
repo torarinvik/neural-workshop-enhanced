@@ -43,6 +43,8 @@ try:
                                             OptionsScreen, SoundSelect,
                                             UserScreen)
     from neural_workshop.ui.taskhub import TASKS, TaskHub, tasks_for
+    from neural_workshop.ui import taskoptions
+    from neural_workshop.ui.menu import Menu
     bootstrap.build_application()
     _IMPORT_ERROR = None
 except Exception as exc:  # pragma: no cover - no GL context available
@@ -339,6 +341,140 @@ class KeyDispatchTests(unittest.TestCase):
     def test_unbound_key_is_harmless(self):
         state.mode.title_screen = False
         on_key_press(key.Z, 0)
+
+
+@unittest.skipIf(_IMPORT_ERROR is not None,
+                 'cannot build application: %s' % (_IMPORT_ERROR,))
+class TaskOptionsTests(unittest.TestCase):
+    """Every task owns a settings screen, opened with C."""
+
+    def setUp(self):
+        self.saved = {option.key: state.cfg[option.key]
+                      for spec in taskoptions.TASK_SPECS.values()
+                      for option in spec.options}
+
+    def tearDown(self):
+        for screen in (Menu.instance, TaskHub.instance,
+                       MonkeyLadder.instance, NCupMonte.instance):
+            if screen is not None:
+                screen.close()
+        state.cfg.update(self.saved)
+
+    def test_every_hub_task_has_options(self):
+        for tasks in TASKS.values():
+            for task_id, _name in tasks:
+                self.assertTrue(taskoptions.has_options(task_id), task_id)
+
+    def test_specs_build_render_and_close(self):
+        for task_id, spec in taskoptions.TASK_SPECS.items():
+            menu = taskoptions.open_task_options(task_id)
+            self.assertIsNotNone(menu, task_id)
+            self.assertEqual(menu.title.text, spec.title)
+            self.assertEqual(len(menu.options), len(spec.options))
+            menu.on_draw()
+            menu.move_selection(1)
+            menu.select()
+            menu.close()
+
+    def test_settings_survive_a_junk_config(self):
+        for spec in taskoptions.TASK_SPECS.values():
+            for option in spec.options:
+                state.cfg[option.key] = object()
+            values = taskoptions.settings(spec)
+            for option in spec.options:
+                if option.values is None:
+                    self.assertIsInstance(values[option.key], bool)
+                else:
+                    self.assertIn(values[option.key], option.values)
+
+    def test_enter_applies_and_escape_does_not(self):
+        state.cfg.MONKEY_LADDER_GRID = 5
+        menu = taskoptions.open_task_options('monkey_ladder')
+        menu.values['MONKEY_LADDER_GRID'].choose(7)
+        menu.on_key_press(key.ESCAPE, 0)
+        self.assertEqual(state.cfg.MONKEY_LADDER_GRID, 5)
+
+        menu = taskoptions.open_task_options('monkey_ladder')
+        menu.values['MONKEY_LADDER_GRID'].choose(7)
+        menu.on_key_press(key.RETURN, 0)
+        self.assertEqual(state.cfg.MONKEY_LADDER_GRID, 7)
+
+    def test_monkey_ladder_c_opens_and_applies(self):
+        task = MonkeyLadder()
+        task.on_key_press(key.C, 0)
+        menu = Menu.instance
+        self.assertIsInstance(menu, taskoptions.TaskOptions)
+        menu.values['MONKEY_LADDER_GRID'].choose(6)
+        menu.values['MONKEY_LADDER_START_LENGTH'].choose(5)
+        menu.on_key_press(key.RETURN, 0)
+        self.assertEqual(task.grid, 6)
+        self.assertEqual(task.level, 5)
+        self.assertEqual(task.phase, 'ready')
+        task.start_round()
+        self.assertEqual(len(task.sequence), 5)
+
+    def test_monkey_ladder_can_stop_adapting(self):
+        task = MonkeyLadder()
+        task.on_key_press(key.C, 0)
+        menu = Menu.instance
+        menu.values['MONKEY_LADDER_ADAPTIVE'] = False
+        menu.on_key_press(key.RETURN, 0)
+        self.assertFalse(task.adaptive)
+        task.start_round()
+        before = task.level
+        task.click_cell(task.sequence[0])
+        cells = ((r, c) for r in range(task.grid) for c in range(task.grid))
+        task.click_cell(next(c for c in cells if c not in task.sequence))
+        self.assertEqual(task.level, before)
+
+    def test_ncup_monte_c_opens_and_applies(self):
+        task = NCupMonte()
+        task.on_key_press(key.C, 0)
+        menu = Menu.instance
+        self.assertIsInstance(menu, taskoptions.TaskOptions)
+        menu.values['NCUP_MONTE_START_CUPS'].choose(5)
+        menu.values['NCUP_MONTE_SWAPS'].choose(2)
+        menu.on_key_press(key.RETURN, 0)
+        self.assertEqual(task.cups, 5)
+        task.start_round()
+        task._plan_swaps()
+        self.assertEqual(len(task.swaps), 2 + task.cups)
+        task.skip_to_guess()
+        task.choose_cup(0)
+
+    def test_ncup_monte_max_cups_caps_growth(self):
+        task = NCupMonte()
+        task.on_key_press(key.C, 0)
+        menu = Menu.instance
+        menu.values['NCUP_MONTE_START_CUPS'].choose(4)
+        menu.values['NCUP_MONTE_MAX_CUPS'].choose(4)
+        menu.on_key_press(key.RETURN, 0)
+        self.assertEqual(task.cups, 4)
+        task.start_round()
+        task.skip_to_guess()
+        task.choose_cup(task.ball)
+        self.assertEqual(task.cups, 4)
+
+    def test_hub_c_opens_the_highlighted_task(self):
+        hub = TaskHub(category='misc')
+        self.assertEqual(hub.selected_task(), 'ncup_monte')
+        hub.on_key_press(key.C, 0)
+        self.assertIsInstance(Menu.instance, taskoptions.TaskOptions)
+        self.assertEqual(Menu.instance.title.text,
+                         taskoptions.NCUP_MONTE.title)
+        Menu.instance.on_key_press(key.ESCAPE, 0)
+
+    def test_hub_c_on_nback_opens_game_select(self):
+        hub = TaskHub(category='working_memory')
+        self.assertEqual(hub.selected_task(), 'nback')
+        hub.on_key_press(key.C, 0)
+        self.assertIsInstance(Menu.instance, GameSelect)
+        Menu.instance.on_key_press(key.ESCAPE, 0)
+
+    def test_hub_c_in_an_empty_category_is_harmless(self):
+        hub = TaskHub(category='long_term_memory')
+        self.assertIsNone(hub.selected_task())
+        hub.on_key_press(key.C, 0)
 
 
 if __name__ == '__main__':

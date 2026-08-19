@@ -469,6 +469,41 @@ KEY_AUDIOVIS = 106
 # You may also like space (32).
 KEY_ADVANCE = 65293
 
+
+######################################################################
+# Per-task options
+#
+# Each workshop task owns a settings screen, opened with C from inside
+# the task. The values below are what those screens start from.
+######################################################################
+
+# Monkey Ladder: an N-by-N board of tiles, lit in a numbered order.
+# The board is MONKEY_LADDER_GRID cells on a side, and a round shows
+# MONKEY_LADDER_START_LENGTH tiles. With MONKEY_LADDER_ADAPTIVE the
+# length follows your performance, up or down one tile at a time;
+# without it the length stays where you set it.
+# The tiles stay visible for MONKEY_LADDER_SHOW_MS plus
+# MONKEY_LADDER_PER_TILE_MS for every tile in the sequence.
+MONKEY_LADDER_GRID = 5
+MONKEY_LADDER_START_LENGTH = 3
+MONKEY_LADDER_ADAPTIVE = True
+MONKEY_LADDER_SHOW_MS = 700
+MONKEY_LADDER_PER_TILE_MS = 280
+MONKEY_LADDER_REVEAL_ANSWER = True
+
+# N-Cup Monte: a ball hides under one of several cups, which then swap
+# places. A round runs NCUP_MONTE_SWAPS swaps plus one per cup, each
+# taking NCUP_MONTE_SWAP_MS, after the ball has been visible for
+# NCUP_MONTE_REVEAL_MS. With NCUP_MONTE_ADAPTIVE the cup count moves
+# between NCUP_MONTE_START_CUPS and NCUP_MONTE_MAX_CUPS as you play.
+NCUP_MONTE_START_CUPS = 3
+NCUP_MONTE_MAX_CUPS = 8
+NCUP_MONTE_ADAPTIVE = True
+NCUP_MONTE_SWAPS = 6
+NCUP_MONTE_SWAP_MS = 340
+NCUP_MONTE_REVEAL_MS = 1150
+NCUP_MONTE_SHOW_CUP_NUMBERS = True
+
 ######################################################################
 # This is the end of the configuration file.
 ######################################################################

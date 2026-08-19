@@ -15,6 +15,7 @@ from pyglet.window import key
 from .. import state
 from ..constants import FONTLIST
 from ..geometry import calc_fontsize, from_bottom_edge, from_top_edge, width_center
+from . import taskoptions
 from ..i18n import _
 
 GridCell = Tuple[int, int]
@@ -30,6 +31,7 @@ class MonkeyLadder:
             MonkeyLadder.instance.close()
         self.grid = 5
         self.level = 3
+        self._read_options()
         self.phase = 'ready'
         self.sequence: List[GridCell] = []
         self.next_index = 0
@@ -53,7 +55,7 @@ class MonkeyLadder:
             batch=self.batch, x=width_center(), y=from_top_edge(70),
             anchor_x='center', anchor_y='center', font_name=FONTLIST)
         self.footnote = pyglet.text.Label(
-            _('Esc: task menu     Space: next round'),
+            _('Esc: task menu     Space: next round     C: options'),
             font_size=calc_fontsize(12), color=self.textcolor,
             batch=self.batch, x=width_center(), y=from_bottom_edge(30),
             anchor_x='center', anchor_y='center')
@@ -67,6 +69,36 @@ class MonkeyLadder:
         except Exception:
             pass
         MonkeyLadder.instance = self
+
+    # --- options ---------------------------------------------------------
+
+    def _read_options(self) -> None:
+        """Load this task's settings from the config."""
+        opts = taskoptions.settings(taskoptions.MONKEY_LADDER)
+        self.grid = int(opts['MONKEY_LADDER_GRID'])
+        self.start_level = int(opts['MONKEY_LADDER_START_LENGTH'])
+        self.adaptive = bool(opts['MONKEY_LADDER_ADAPTIVE'])
+        self.show_ms = int(opts['MONKEY_LADDER_SHOW_MS'])
+        self.per_tile_ms = int(opts['MONKEY_LADDER_PER_TILE_MS'])
+        self.reveal_answer = bool(opts['MONKEY_LADDER_REVEAL_ANSWER'])
+        self.level = min(max(2, self.start_level), self.grid * self.grid)
+
+    def open_options(self) -> None:
+        """Show this task's settings screen."""
+        taskoptions.open_task_options('monkey_ladder',
+                                      on_apply=self.apply_options)
+
+    def apply_options(self) -> None:
+        """Re-read the settings and start a fresh round from scratch."""
+        self._read_options()
+        self.phase = 'ready'
+        self.sequence = []
+        self.clicked = []
+        self.wrong = None
+        self.next_index = 0
+        self.message = _('Press Space to watch the numbers')
+        self._layout_grid()
+        self._redraw()
 
     def _layout_grid(self) -> None:
         window = state.window
@@ -90,7 +122,8 @@ class MonkeyLadder:
         self.clicked = []
         self.wrong = None
         self.phase = 'show'
-        self.show_until = time.time() + 0.7 + 0.28 * count
+        self.show_until = time.time() + (self.show_ms
+                                         + self.per_tile_ms * count) / 1000.
         self.message = _('Remember the order')
         self._redraw()
 
@@ -109,14 +142,18 @@ class MonkeyLadder:
             self.clicked.append(cell)
             self.next_index += 1
             if self.next_index >= len(self.sequence):
-                self.level = min(self.grid * self.grid, self.level + 1)
+                if self.adaptive:
+                    self.level = min(self.grid * self.grid, self.level + 1)
                 self.phase = 'result'
-                self.message = _('Correct — next length %d') % self.level
+                self.message = (_('Correct — next length %d') % self.level
+                                if self.adaptive else _('Correct'))
         else:
             self.wrong = cell
-            self.level = max(2, self.level - 1)
+            if self.adaptive:
+                self.level = max(2, self.level - 1)
             self.phase = 'result'
-            self.message = _('Miss — back to length %d') % self.level
+            self.message = (_('Miss — back to length %d') % self.level
+                            if self.adaptive else _('Miss'))
         self._redraw()
 
     def _cell_color(self, cell: GridCell) -> Tuple[int, int, int, int]:
@@ -142,7 +179,8 @@ class MonkeyLadder:
         self.cell_labels = []
         gap = max(3, int(self.cell * 0.08))
         numbers = {cell: index + 1 for index, cell in enumerate(self.sequence)}
-        show_numbers = self.phase in ('show', 'result')
+        show_numbers = (self.phase == 'show'
+                        or (self.phase == 'result' and self.reveal_answer))
         for row in range(self.grid):
             for col in range(self.grid):
                 cell = (row, col)
@@ -182,6 +220,8 @@ class MonkeyLadder:
             self.return_to_hub()
         elif symbol == key.SPACE and self.phase in ('ready', 'result'):
             self.start_round()
+        elif symbol == key.C:
+            self.open_options()
         return pyglet.event.EVENT_HANDLED
 
     def on_mouse_press(self, x: int, y: int, button: int,

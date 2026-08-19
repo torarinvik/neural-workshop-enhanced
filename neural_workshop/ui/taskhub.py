@@ -82,7 +82,8 @@ class TaskHub:
             batch=self.batch,             x=width_center(), y=from_top_edge(280),
             anchor_x='center', anchor_y='center', font_name=FONTLIST)
         self.footnote = pyglet.text.Label(
-            _('Esc: back     ← → category     ↑ ↓ task     Enter: start'),
+            _('Esc: back     ← → category     ↑ ↓ task'
+              '     C: options     Enter: start'),
             font_size=calc_fontsize(12), weight='bold',
             color=self.textcolor, batch=self.batch,
             x=width_center(), y=from_bottom_edge(36),
@@ -218,12 +219,24 @@ class TaskHub:
         self.selected = (self.selected + step) % len(tasks)
         self._rebuild()
 
-    def launch(self, task_id: Optional[str] = None) -> None:
+    def selected_task(self) -> Optional[str]:
+        """The task id under the highlight, if the category has any."""
         tasks = tasks_for(self.category)
+        if not tasks:
+            return None
+        return tasks[min(self.selected, len(tasks) - 1)][0]
+
+    def open_options(self, task_id: Optional[str] = None) -> None:
+        """Open the settings screen of the highlighted task."""
+        from .taskoptions import open_task_options
+        task_id = task_id or self.selected_task()
+        if task_id is not None:
+            open_task_options(task_id)
+
+    def launch(self, task_id: Optional[str] = None) -> None:
+        task_id = task_id or self.selected_task()
         if task_id is None:
-            if not tasks:
-                return
-            task_id = tasks[self.selected][0]
+            return
         launch_task(task_id, from_hub=self)
 
     def close(self) -> None:
@@ -245,6 +258,8 @@ class TaskHub:
             self.cycle_category(-1)
         elif symbol == key.RIGHT:
             self.cycle_category(1)
+        elif symbol == key.C:
+            self.open_options()
         return pyglet.event.EVENT_HANDLED
 
     def on_text_motion(self, motion: int) -> bool:

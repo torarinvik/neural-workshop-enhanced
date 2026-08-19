@@ -167,8 +167,8 @@ class Menu:
             return ''
         value = self.values.get(option)
         if option in self.values and value is not None:
-            return '%s:%7s' % (self.names[option].ljust(52),
-                               self.textify(value))
+            return '%s: %7s' % (self.names[option].ljust(51),
+                                self.textify(value))
         return self.names[option]
 
     def update_labels(self) -> None:
