@@ -86,21 +86,43 @@ Fetch the libraries once:
 .venv/bin/python -m neural_workshop.datasets
 ```
 
-That pulls 5,000 photographs from `thethinkmachine/tiny-imagenet`
-(~10 MB) and 500 sound clips from `renumics/esc50` (~220 MB) into
-`<data dir>/datasets/`. Name one to fetch only that, and add a number
-for a different size:
+That pulls 5,000 photographs from `thethinkmachine/tiny-imagenet` and
+500 sound clips from `renumics/esc50` into `<data dir>/datasets/`.
+Name one to fetch only that, and add a number for a different size —
+the whole of either split, if you have the room:
 
 ```bash
-.venv/bin/python -m neural_workshop.datasets tiny-imagenet 2000
+.venv/bin/python -m neural_workshop.datasets tiny-imagenet 100000
+.venv/bin/python -m neural_workshop.datasets esc50 2000
 ```
+
+| Library | Full split | On disk |
+| --- | --- | --- |
+| `tiny-imagenet` | 100,000 photographs, 64x64 | ~194 MB |
+| `esc50` | 2,000 clips, 5s, 50 classes | ~882 MB |
+
+The full ESC-50 is worth having if you play the sound modes: it is 50
+classes of 40 clips each, so a complete set gives many different
+recordings *within* a class. That is what stops "have I heard this?"
+being answerable from the category alone.
 
 Fetching is resumable and idempotent — it skips what is already on
 disk, so an interrupted download is finished by running it again.
 Nothing downloads on its own; a game whose library is missing says so
-and stays playable in the other medium. `neural_workshop/datasets.py`
-uses only the standard library, going through Hugging Face's
-datasets-server rather than needing `datasets`, `pyarrow` or `pillow`.
+and stays playable in the other medium.
+
+`neural_workshop/datasets.py` needs only the standard library, going
+through Hugging Face's datasets-server rather than `datasets` or
+`pillow`. A large request additionally tries the dataset's parquet
+files, which is one download instead of tens of thousands and turns an
+hour into a couple of minutes; that path wants `pyarrow`, and falls
+back to fetching item by item when it is absent or fails. The media
+column holds encoded bytes, so files are written straight out and no
+image or audio library is involved either way.
+
+```bash
+.venv/bin/python -m pip install pyarrow   # optional, for bulk fetches
+```
 
 ### Window size, full screen, and the two coordinate spaces
 

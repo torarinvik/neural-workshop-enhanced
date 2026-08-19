@@ -6,11 +6,16 @@ should carry — the point of "have you seen this before?" is that you
 have not seen it a hundred times already. So the material is fetched
 once into the user's data directory and reused from there.
 
-Everything here is standard library. Hugging Face's datasets-server
-serves each row as JSON with a link to the decoded asset, so a plain
-``urllib`` fetch gets a JPEG or a WAV without ``datasets``, ``pyarrow``
-or ``pillow``. Those links are signed and expire, so a batch is
-downloaded as soon as it is listed rather than saved for later.
+Two routes, both standard library at heart. Item by item, Hugging
+Face's datasets-server serves each row as JSON with a link to the
+decoded asset, so a plain ``urllib`` fetch gets a JPEG or a WAV without
+``datasets`` or ``pillow``; those links are signed and expire, so a
+batch is downloaded as soon as it is listed. For a large request that
+is tens of thousands of round trips, so the dataset's parquet files
+are pulled instead when ``pyarrow`` is installed — one download, and
+the media column already holds the encoded bytes. Neither route needs
+an image or audio library, and the parquet route is optional: without
+it everything still works, just slower.
 
 Fetching is resumable and idempotent: files are named after their row
 index, and a row already on disk is skipped. Nothing here downloads
@@ -43,6 +48,17 @@ _WORKERS = 8
 
 _ROWS_URL = ('https://datasets-server.huggingface.co/rows'
              '?dataset=%s&config=%s&split=%s&offset=%d&length=%d')
+
+_PARQUET_URL = 'https://datasets-server.huggingface.co/parquet?dataset=%s'
+
+#: Above this many items, one parquet download beats thousands of
+#: single-asset requests by a wide enough margin to be worth the extra
+#: bytes it pulls for rows we may not keep.
+_BULK_THRESHOLD = 2000
+
+#: Asking for this share of a split means asking for the split, and
+#: sampling pages at random is a poor way to collect all of them.
+_BULK_SHARE = 0.4
 
 _HEADERS = {'User-Agent': 'neural-workshop'}
 
@@ -200,6 +216,88 @@ def _download_batch(dataset: Dataset,
     return saved[0]
 
 
+def parquet_parts(dataset: Dataset) -> List[Tuple[str, int]]:
+    """``(url, bytes)`` for the parquet files behind *dataset*'s split."""
+    payload = json.loads(_get(_PARQUET_URL % dataset.repo))
+    parts = [(entry['url'], int(entry.get('size') or 0))
+             for entry in payload.get('parquet_files', [])
+             if entry.get('split') == dataset.split
+             and entry.get('config') == dataset.config]
+    return parts
+
+
+def _stream_to_file(url: str, path: str,
+                    progress: Optional[Callable[[int], None]] = None) -> None:
+    """Download *url* to *path* without holding it all in memory."""
+    request = urllib.request.Request(url, headers=_HEADERS)
+    with urllib.request.urlopen(request, timeout=_TIMEOUT) as response:
+        with open(path, 'wb') as handle:
+            while True:
+                chunk = response.read(1 << 20)
+                if not chunk:
+                    break
+                handle.write(chunk)
+                if progress:
+                    progress(len(chunk))
+
+
+def fetch_bulk(dataset: Dataset, wanted: int,
+               progress: Optional[Progress] = None,
+               should_stop: Optional[Callable[[], bool]] = None) -> int:
+    """Fill the library from the dataset's parquet files.
+
+    One large download instead of one request per item, which for a
+    whole split is the difference between minutes and an hour. The
+    media column holds the encoded bytes already, so the files are
+    written straight out — no image or audio library involved.
+
+    Rows are numbered as the datasets-server numbers them, so the
+    files land on exactly the names :func:`fetch` would have given
+    them and the two routes can be mixed freely.
+
+    Raises ImportError when pyarrow is absent; callers fall back.
+    """
+    import pyarrow.parquet as pq       # optional, see fetch()
+
+    folder = local_dir(dataset)
+    scratch = os.path.join(folder, '_download.parquet')
+    count = have(dataset)
+    row_base = 0
+    try:
+        for url, _size in parquet_parts(dataset):
+            if count >= wanted or (should_stop is not None and should_stop()):
+                break
+            _stream_to_file(url, scratch)
+            handle = pq.ParquetFile(scratch)
+            for batch in handle.iter_batches(batch_size=256,
+                                             columns=[dataset.column]):
+                cells = batch.column(dataset.column).to_pylist()
+                for offset, cell in enumerate(cells):
+                    blob = cell.get('bytes') if isinstance(cell, dict) else None
+                    if not blob:
+                        continue
+                    path = os.path.join(
+                        folder, '%07d%s' % (row_base + offset, dataset.suffix))
+                    if not os.path.exists(path):
+                        partial = path + '.part'
+                        with open(partial, 'wb') as out:
+                            out.write(blob)
+                        os.replace(partial, path)
+                        count += 1
+                row_base += len(cells)
+                if progress:
+                    progress(min(count, wanted), wanted)
+                if count >= wanted:
+                    break
+                if should_stop is not None and should_stop():
+                    break
+            del handle
+    finally:
+        if os.path.exists(scratch):
+            os.remove(scratch)
+    return have(dataset)
+
+
 def fetch(dataset: Dataset, wanted: int,
           progress: Optional[Progress] = None,
           rng: Optional[random.Random] = None,
@@ -209,6 +307,10 @@ def fetch(dataset: Dataset, wanted: int,
     Pages are taken from random offsets so a small library is spread
     across the whole split rather than being the first N rows, which in
     a sorted-by-class dataset would be a handful of classes.
+
+    A large request goes through :func:`fetch_bulk` when pyarrow is
+    installed, which is far quicker for a whole split; without it, or
+    if that fails, everything still works one item at a time.
 
     Stops early and keeps what it has if the network fails or
     *should_stop* returns True, so a cancelled or offline fetch still
@@ -221,30 +323,48 @@ def fetch(dataset: Dataset, wanted: int,
     if progress:
         progress(count, wanted)
 
-    span = max(1, dataset.rows - _PAGE)
+    if (wanted - count >= _BULK_THRESHOLD
+            or wanted >= dataset.rows * _BULK_SHARE):
+        try:
+            return fetch_bulk(dataset, wanted, progress, should_stop)
+        except ImportError:
+            runtime.debug_msg('pyarrow absent; fetching %s item by item'
+                              % dataset.key)
+        except Exception as exc:
+            # A failed bulk pull leaves whatever it wrote; carry on
+            # item by item rather than losing the whole request.
+            runtime.debug_msg('bulk fetch of %s failed: %s'
+                              % (dataset.key, exc))
+        count = have(dataset)
+        if count >= wanted:
+            return count
+
+    pages = max(1, (dataset.rows + _PAGE - 1) // _PAGE)
     tried: set = set()
-    stalled = 0
-    while count < wanted and stalled < 5:
+    failures = 0
+    while count < wanted and len(tried) < pages and failures < 5:
         if should_stop is not None and should_stop():
             break
-        offset = rng.randrange(0, span)
-        offset -= offset % _PAGE          # page-aligned, so retries collide
-        if offset in tried:
-            stalled += 1
-            continue
-        tried.add(offset)
+        # Random pages, so a small library spans the whole split rather
+        # than being its first few classes. Once a page has been taken,
+        # walk on to the next untried one: re-drawing at random would
+        # stall long before the split was covered, which is how asking
+        # for all of something used to come back short.
+        offset = (rng.randrange(0, pages) * _PAGE)
+        while offset // _PAGE in tried:
+            offset = ((offset // _PAGE + 1) % pages) * _PAGE
+        tried.add(offset // _PAGE)
         try:
             rows = _list_rows(dataset, offset,
                               min(_PAGE, wanted - count + _PAGE // 2))
         except Exception as exc:
             runtime.debug_msg('%s rows at %d: %s' % (dataset.key, offset, exc))
-            stalled += 1
+            failures += 1
             continue
         if not rows:
-            stalled += 1
             continue
-        added = _download_batch(dataset, rows[:max(1, wanted - count)])
-        stalled = 0 if added else stalled + 1
+        _download_batch(dataset, rows[:max(1, wanted - count)])
+        failures = 0
         count = have(dataset)
         if progress:
             progress(count, wanted)
