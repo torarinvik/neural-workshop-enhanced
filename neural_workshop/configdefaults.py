@@ -565,7 +565,10 @@ COUNT_SHOW_ANSWER = True
 # whether one is the other redrawn. GRAPH_MAP_DENSITY is 'sparse',
 # 'medium' or 'dense'. With GRAPH_MAP_SUBTLE a mismatched pair keeps
 # every dot's connection count identical, so counting the lines at
-# each dot settles nothing and the structure has to be walked.
+# each dot settles nothing and the structure has to be walked. No such
+# pair exists below six dots (five, when sparse), so GRAPH_MAP_SUBTLE
+# holds GRAPH_MAP_NODES up to there rather than quietly handing out
+# the easier kind of mismatch instead.
 GRAPH_MAP_NODES = 6
 GRAPH_MAP_DENSITY = 'medium'
 GRAPH_MAP_TRIALS = 20

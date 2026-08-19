@@ -24,6 +24,10 @@ from neural_workshop.ui.graphmapping import DIFFERENT, SAME, GraphMapping
 #: Enough pairs that a rare dishonest one still shows up.
 SAMPLE = 120
 
+#: Config values to put back after a test changes them.
+DEFAULTS = {'GRAPH_MAP_NODES': 6, 'GRAPH_MAP_SUBTLE': True,
+            'GRAPH_MAP_DENSITY': 'medium'}
+
 #: Sizes small enough to check every relabelling of.
 BRUTE_SIZES = (3, 4, 5, 6)
 
@@ -171,44 +175,62 @@ class PairTests(unittest.TestCase):
     def test_the_answer_it_reports_is_the_truth(self):
         for size in range(gm.MIN_NODES, gm.MAX_NODES + 1):
             for same in (True, False):
-                for first, second, was_same in self.pairs(size, same=same):
-                    self.assertEqual(gm.isomorphic(first, second), was_same,
+                for pair in self.pairs(size, same=same):
+                    self.assertEqual(gm.isomorphic(pair.first, pair.second),
+                                     pair.same,
                                      'a pair reported the wrong answer')
 
     def test_matching_pairs_always_match(self):
         for size in range(gm.MIN_NODES, gm.MAX_NODES + 1):
-            for _first, _second, was_same in self.pairs(size, same=True):
-                self.assertTrue(was_same)
+            for pair in self.pairs(size, same=True):
+                self.assertTrue(pair.same)
+                self.assertFalse(pair.subtle, 'a match has no counts to keep')
 
     def test_counting_dots_or_lines_never_answers_a_trial(self):
         for size in range(gm.MIN_NODES, gm.MAX_NODES + 1):
             for density in ('sparse', 'medium', 'dense'):
                 for same in (True, False):
-                    for first, second, _was in self.pairs(
-                            size, density=density, same=same, count=40):
-                        self.assertEqual(first.size, second.size)
-                        self.assertEqual(len(first.edges), len(second.edges))
+                    for pair in self.pairs(size, density=density, same=same,
+                                           count=40):
+                        self.assertEqual(pair.first.size, pair.second.size)
+                        self.assertEqual(len(pair.first.edges),
+                                         len(pair.second.edges))
 
-    def test_subtle_mismatches_keep_the_counts_where_that_is_possible(self):
-        # Below seven dots there is not always a second graph with the
-        # same degrees, so only the sizes that have one are asserted on.
-        for size in range(7, gm.MAX_NODES + 1):
-            kept = sum(1 for first, second, was_same
-                       in self.pairs(size, subtle=True)
-                       if not was_same
-                       and sorted(gm.degrees(first))
-                       == sorted(gm.degrees(second)))
-            self.assertGreater(kept, SAMPLE * 0.8,
-                               'subtle mismatches are not staying subtle '
-                               'at %d dots' % size)
+    def test_a_pair_that_claims_to_keep_the_counts_does(self):
+        for size in range(gm.MIN_NODES, gm.MAX_NODES + 1):
+            for density in ('sparse', 'medium', 'dense'):
+                for pair in self.pairs(size, density=density, count=40):
+                    if not pair.subtle:
+                        continue
+                    self.assertEqual(sorted(gm.degrees(pair.first)),
+                                     sorted(gm.degrees(pair.second)))
+
+    def test_every_mismatch_keeps_the_counts_at_or_above_the_floor(self):
+        # Not "most": above the floor a partner always exists, and
+        # fresh base graphs are tried until one is found.
+        for density in ('sparse', 'medium', 'dense'):
+            for size in range(gm.subtle_floor(density), gm.MAX_NODES + 1):
+                settled = [pair for pair in self.pairs(size, density=density,
+                                                       subtle=True)
+                           if not pair.subtle]
+                self.assertEqual(settled, [],
+                                 'settled for an easier mismatch at %d dots, '
+                                 '%s' % (size, density))
+
+    def test_below_the_floor_it_settles_rather_than_lying(self):
+        # Where no count-keeping mismatch exists, the trial must still
+        # be a real mismatch — an easier one, never a secret match.
+        for density in ('medium', 'dense'):
+            for pair in self.pairs(4, density=density, subtle=True):
+                self.assertFalse(pair.same, 'turned a mismatch into a match')
+                self.assertFalse(pair.subtle)
 
     def test_plain_mismatches_are_usually_answerable_by_counting(self):
         for size in range(6, gm.MAX_NODES + 1):
-            told = sum(1 for first, second, was_same
-                       in self.pairs(size, subtle=False)
-                       if not was_same
-                       and sorted(gm.degrees(first))
-                       != sorted(gm.degrees(second)))
+            told = sum(1 for pair in self.pairs(size, subtle=False)
+                       if not pair.same
+                       and sorted(gm.degrees(pair.first))
+                       != sorted(gm.degrees(pair.second)))
             self.assertGreater(told, SAMPLE * 0.5,
                                'the easy mode is not easier at %d dots' % size)
 
@@ -228,6 +250,50 @@ class PairTests(unittest.TestCase):
             size = self.rng.randrange(gm.MIN_NODES, gm.MAX_NODES + 1)
             spots = gm.ring_positions(size, self.rng)
             self.assertEqual(len(set(spots)), size)
+
+
+class SubtleFloorTests(unittest.TestCase):
+    """Where the count-keeping mismatch stops existing.
+
+    This is arithmetic rather than a tuning choice, so it is worked
+    out here from scratch instead of being trusted: every connected
+    graph of the size is enumerated and grouped by its connection
+    counts, and a second network sharing a group is what makes the
+    option possible at all.
+    """
+
+    def two_networks_share_their_counts(self, size, density):
+        """True when some profile of counts describes two networks."""
+        lines = gm.edge_count(size, density)
+        possible = [(first, second) for first in range(size)
+                    for second in range(first + 1, size)]
+        by_counts = {}
+        for chosen in itertools.combinations(possible, lines):
+            graph = gm.Graph(size, tuple(chosen))
+            if not gm.connected(graph):
+                continue
+            found = by_counts.setdefault(tuple(sorted(gm.degrees(graph))), [])
+            if not any(gm.isomorphic(graph, seen) for seen in found):
+                found.append(graph)
+                if len(found) > 1:
+                    return True
+        return False
+
+    def test_the_floor_is_where_the_networks_run_out(self):
+        # Only up to six dots: seven means a third of a million
+        # graphs, and the floor is settled well below that.
+        for density in ('sparse', 'medium', 'dense'):
+            for size in range(gm.MIN_NODES, 7):
+                self.assertEqual(
+                    self.two_networks_share_their_counts(size, density),
+                    size >= gm.subtle_floor(density),
+                    'SUBTLE_FLOOR[%r] disagrees with the graphs at %d dots'
+                    % (density, size))
+
+    def test_the_floor_never_goes_below_the_smallest_size(self):
+        for density in ('sparse', 'medium', 'dense'):
+            self.assertGreaterEqual(gm.subtle_floor(density), gm.MIN_NODES)
+            self.assertLessEqual(gm.subtle_floor(density), gm.MAX_NODES)
 
 
 class ReasoningCategoryTests(unittest.TestCase):
@@ -411,9 +477,90 @@ class GraphMappingScreenTests(unittest.TestCase):
         self.task.nodes = gm.MAX_NODES
         self.task._adapt(True)
         self.assertEqual(self.task.nodes, gm.MAX_NODES)
-        self.task.nodes = gm.MIN_NODES
+        self.task.nodes = self.task.floor()
         self.task._adapt(False)
-        self.assertEqual(self.task.nodes, gm.MIN_NODES)
+        self.assertEqual(self.task.nodes, self.task.floor())
+
+    def test_asking_to_keep_the_counts_holds_the_size_up(self):
+        self.task.subtle = True
+        self.task.density = 'medium'
+        self.assertEqual(self.task.floor(), gm.subtle_floor('medium'))
+        self.assertGreater(self.task.floor(), gm.MIN_NODES)
+        self.assertEqual(self.task.clamped(gm.MIN_NODES), self.task.floor())
+
+    def test_without_that_it_goes_all_the_way_down(self):
+        self.task.subtle = False
+        self.assertEqual(self.task.floor(), gm.MIN_NODES)
+        self.assertEqual(self.task.clamped(gm.MIN_NODES), gm.MIN_NODES)
+
+    def test_a_losing_run_never_drops_below_the_floor(self):
+        self.task.subtle = True
+        self.task.adaptive = True
+        self.task.total_trials = 30
+        self.task.start_run()
+        for _trial in range(20):
+            # answer wrong every time, whatever the pair is
+            self.task.answer(DIFFERENT if self.task.really_same else SAME)
+            self.advance()
+            self.assertGreaterEqual(self.task.nodes, self.task.floor())
+
+    def test_a_run_that_keeps_the_counts_never_has_to_settle(self):
+        self.task.subtle = True
+        self.task.total_trials = 24
+        self.task.start_run()
+        for _trial in range(24):
+            self.task.answer(SAME)
+            self.advance()
+        self.assertEqual(self.task.settled_for, 0)
+        self.assertNotIn('counts', self.task.message)
+
+    def test_it_says_so_on_the_way_in_not_only_after_a_run(self):
+        # The waiting message is built from the options, so it has to
+        # be built after they are read.
+        close_overlays()
+        state.cfg['GRAPH_MAP_NODES'] = gm.MIN_NODES
+        state.cfg['GRAPH_MAP_SUBTLE'] = True
+        state.cfg['GRAPH_MAP_DENSITY'] = 'medium'
+        try:
+            fresh = GraphMapping()
+            self.assertEqual(fresh.nodes, gm.subtle_floor('medium'))
+            self.assertIn(str(gm.subtle_floor('medium')), fresh.message)
+        finally:
+            for key in ('GRAPH_MAP_NODES', 'GRAPH_MAP_SUBTLE',
+                        'GRAPH_MAP_DENSITY'):
+                state.cfg[key] = DEFAULTS[key]
+
+    def test_it_says_so_when_the_size_had_to_come_up(self):
+        self.task.subtle = True
+        self.task.density = 'medium'
+        self.task.start_nodes = gm.MIN_NODES
+        self.task._reset()
+        self.assertIn(str(self.task.floor()), self.task.message)
+        self.task.subtle = False
+        self.task._reset()
+        self.assertNotIn(str(gm.subtle_floor('medium')), self.task.message)
+
+    def test_settling_is_counted_when_it_does_happen(self):
+        # Forced below the floor, past the clamp that normally
+        # prevents this, so the counter itself is exercised.
+        self.task.subtle = True
+        self.task.density = 'medium'
+        self.task.total_trials = 6
+        self.task.adaptive = False
+        self.task.start_run()
+        self.task.settled_for = 0
+        self.task.nodes = gm.MIN_NODES
+        self.task._deck = [False]
+        self.task._next_trial()
+        self.assertEqual(self.task.settled_for, 1)
+        self.assertFalse(self.task.really_same)
+
+    def test_a_run_that_had_to_settle_says_so_afterwards(self):
+        self.task.total_trials = 1
+        self.task.start_run()
+        self.task.settled_for = 3
+        self.task._finish()
+        self.assertIn('3', self.task.message)
 
     def test_it_does_not_adapt_when_told_not_to(self):
         self.task.adaptive = False

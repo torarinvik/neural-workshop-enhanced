@@ -23,11 +23,22 @@ ask for different work:
 Neither kind ever changes the number of dots or the number of lines,
 so counting those can never answer a trial.
 
-At four or five dots the second kind is not always available: there
-are few enough connected graphs that size that no second one shares
-the degrees. Such a trial falls back to the first kind — an easier
-trial — rather than to a match, which would bend the run's balance
-between the two answers.
+The second kind runs out at the bottom of the range. At four dots,
+and at five once there are more than six lines, every profile of
+connection counts describes exactly one network, so there is no second
+one to reach — the option is not merely hard to satisfy there but
+impossible. Rather than hand out the easier kind under the name of the
+harder one, asking for it holds the size up to :data:`SUBTLE_FLOOR`,
+where such a network exists.
+
+Above that floor a partner always exists, though not for every base
+graph: at six dots and a dense graph only four of the nine networks
+have one. So a base that cannot be rewired is replaced rather than
+settled for. If both ever fail anyway, the trial becomes an easier
+mismatch — never a match, which would bend the run's balance between
+the two answers — and the run says so at the end. It is never said
+during a trial: which kind a mismatch is would give away that it is
+one.
 
 SPDX-License-Identifier: GPL-2.0-or-later
 """
@@ -71,7 +82,42 @@ MAX_FILL = 0.6
 REWIRE_ATTEMPTS = 200
 
 #: How many fresh base graphs to try before giving up on a mismatch.
-BASE_ATTEMPTS = 12
+#: Whether a mismatch of the kind asked for exists at all depends on
+#: the base graph, not only on its size: at six dots and a dense graph
+#: only four of the nine networks have a partner that keeps every
+#: count. Trying one base and settling for the easier kind dropped out
+#: of the count-keeping kind about half the time there; trying fresh
+#: ones takes every reachable case to all of them.
+BASE_ATTEMPTS = 20
+
+#: Fewest dots that can carry a mismatch keeping every count, by
+#: density. Below this there is no second network to reach: every
+#: profile of connection counts describes exactly one network, so the
+#: count-keeping mismatch is not merely hard to find but absent.
+#:
+#: Worked out by enumerating every connected graph of each size, and
+#: re-derived from scratch by ``test_the_floor_is_where_the_networks
+#: _run_out`` rather than trusted — change :data:`DENSITY_FACTORS` and
+#: that test says so.
+SUBTLE_FLOOR: Dict[str, int] = {'sparse': 5, 'medium': 6, 'dense': 6}
+
+
+def subtle_floor(density: str) -> int:
+    """Fewest dots at which a mismatch can keep every count."""
+    return max(MIN_NODES, SUBTLE_FLOOR.get(density, 6))
+
+
+class Pair(NamedTuple):
+    """The two graphs a trial shows, and the truth about them."""
+
+    first: 'Graph'
+    second: 'Graph'
+    #: Whether the two are the same network drawn differently.
+    same: bool
+    #: For a mismatch, whether it keeps every connection count — the
+    #: kind tallying cannot answer. False for a match, which has no
+    #: counts to keep, and for a mismatch that had to settle.
+    subtle: bool
 
 
 class Graph(NamedTuple):
@@ -281,30 +327,34 @@ def rewired(graph: Graph, rng: random.Random,
 
 
 def build_pair(size: int, lines: int, same: bool, subtle: bool,
-               rng: random.Random) -> Tuple[Graph, Graph, bool]:
-    """Two graphs to show, and whether they really are the same.
+               rng: random.Random) -> Pair:
+    """Two graphs to show, and the truth about them.
 
     The answer comes back rather than going in, because a mismatch is
-    not always reachable: some sizes and densities have no second graph
-    with the same degrees, and a couple have no second graph at all. In
-    that case the trial becomes an honest *same* pair instead of a
-    "different" one that is secretly identical.
+    not always reachable: below :data:`SUBTLE_FLOOR` no second network
+    shares its connection counts, and at four dots there is barely a
+    second network at all.
 
-    A mismatch that has to keep the counts falls back to one that does
-    not, rather than falling back to *same* — an easier trial keeps the
-    two answers evenly spread, and a silently converted one would not.
+    A mismatch that has to keep the counts is tried against fresh base
+    graphs before settling for one that does not, because whether a
+    partner exists depends on the base and not only on the size. Only
+    when no base yields one does it drop to the easier kind — never to
+    a match, which would quietly bend the run's balance between the
+    two answers. The pair reports which kind it ended up being, so a
+    run that had to settle can say so afterwards.
     """
-    for _attempt in range(BASE_ATTEMPTS):
+    if same:
         base = random_graph(size, lines, rng)
-        if same:
-            return base, shuffled(base, rng), True
-        other = rewired(base, rng, keep_degrees=subtle)
-        if other is None and subtle:
-            other = rewired(base, rng, keep_degrees=False)
-        if other is not None:
-            return base, shuffled(other, rng), False
+        return Pair(base, shuffled(base, rng), True, False)
+    for keep_degrees in ((True, False) if subtle else (False,)):
+        for _attempt in range(BASE_ATTEMPTS):
+            base = random_graph(size, lines, rng)
+            other = rewired(base, rng, keep_degrees=keep_degrees)
+            if other is not None:
+                return Pair(base, shuffled(other, rng), False, keep_degrees)
+    # No second network at all at this size and density.
     base = random_graph(size, lines, rng)
-    return base, shuffled(base, rng), True
+    return Pair(base, shuffled(base, rng), True, False)
 
 
 def ring_positions(size: int, rng: random.Random,
@@ -342,13 +392,17 @@ class GraphMapping:
         self.nodes = MIN_NODES
         self.trial = 0
         self.correct = 0
+        self.settled_for = 0
         self.asked_at = 0.0
         self.feedback_until = 0.0
         self.results: List[Tuple[bool, bool, float]] = []
         self.phase = 'ready'
-        self.message = _('Press Space to start')
         self._deck: List[bool] = []
         self._read_options()
+        # After the options, not before: the waiting message depends on
+        # them, and entering the task is exactly when a size that had
+        # to come up is worth saying.
+        self.message = self._ready_message()
         self.drawn: List[object] = []
         self._build_chrome()
         state.window.push_handlers(self.on_key_press, self.on_mouse_press,
@@ -369,7 +423,21 @@ class GraphMapping:
         self.exposure_ms = int(opts['GRAPH_MAP_EXPOSURE_MS'])
         self.adaptive = bool(opts['GRAPH_MAP_ADAPTIVE'])
         self.feedback = bool(opts['GRAPH_MAP_FEEDBACK'])
-        self.nodes = max(MIN_NODES, min(MAX_NODES, self.start_nodes))
+        self.nodes = self.clamped(self.start_nodes)
+
+    def floor(self) -> int:
+        """Fewest dots this run will go down to.
+
+        Asking for mismatches that keep the counts holds the size up
+        to where such a mismatch exists — below that the option cannot
+        be honoured, and quietly handing out the easier kind instead
+        would be the option failing in silence.
+        """
+        return subtle_floor(self.density) if self.subtle else MIN_NODES
+
+    def clamped(self, nodes: int) -> int:
+        """*nodes*, kept inside what this run can actually show."""
+        return max(self.floor(), min(MAX_NODES, nodes))
 
     def open_options(self) -> None:
         taskoptions.open_task_options('graph_mapping',
@@ -457,10 +525,18 @@ class GraphMapping:
         self.spots = []
         self.trial = 0
         self.correct = 0
+        self.settled_for = 0
         self.results = []
         self._deck = []
         self.phase = 'ready'
-        self.message = _('Press Space to start')
+        self.message = self._ready_message()
+
+    def _ready_message(self) -> str:
+        """The waiting message, saying so if the size had to come up."""
+        if self.subtle and self.start_nodes < self.floor():
+            return _('Press Space to start — keeping the counts '
+                     'needs %d dots') % self.floor()
+        return _('Press Space to start')
 
     def _draw_answer(self) -> bool:
         """Whether the next pair should match.
@@ -476,7 +552,7 @@ class GraphMapping:
 
     def start_run(self) -> None:
         self._reset()
-        self.nodes = max(MIN_NODES, min(MAX_NODES, self.start_nodes))
+        self.nodes = self.clamped(self.start_nodes)
         self._next_trial()
 
     def _next_trial(self) -> None:
@@ -485,12 +561,14 @@ class GraphMapping:
             return
         self.trial += 1
         lines = edge_count(self.nodes, self.density)
-        first, second, same = build_pair(
-            self.nodes, lines, self._draw_answer(), self.subtle, self.rng)
-        self.graphs = [first, second]
+        pair = build_pair(self.nodes, lines, self._draw_answer(),
+                          self.subtle, self.rng)
+        if self.subtle and not pair.same and not pair.subtle:
+            self.settled_for += 1
+        self.graphs = [pair.first, pair.second]
         self.spots = [ring_positions(self.nodes, self.rng),
                       ring_positions(self.nodes, self.rng)]
-        self.really_same = same
+        self.really_same = pair.same
         self.asked_at = time.time()
         self.phase = 'asking'
         self.message = _('The same network?')
@@ -520,8 +598,7 @@ class GraphMapping:
     def _adapt(self, right: bool) -> None:
         if not self.adaptive:
             return
-        self.nodes = (min(MAX_NODES, self.nodes + 1) if right
-                      else max(MIN_NODES, self.nodes - 1))
+        self.nodes = self.clamped(self.nodes + (1 if right else -1))
 
     def _finish(self) -> None:
         self.phase = 'done'
@@ -533,6 +610,11 @@ class GraphMapping:
                               tally['different_right'],
                               tally['different_total'],
                               tally['mean_seconds'])
+        if self.settled_for:
+            # Never said during a trial: which kind a mismatch is
+            # would give away that it is one.
+            self.message += _('     (%d had to differ by their counts)'
+                              ) % self.settled_for
         self._redraw()
 
     def score(self) -> Dict[str, float]:

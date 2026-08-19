@@ -183,10 +183,21 @@ have been crossed over instead, which leaves every count exactly as it
 was: the tallies agree, tell you nothing, and the structure has to be
 walked.
 
-At four or five dots there are few enough connected networks that no
-second one shares the counts, so those trials quietly fall back to the
-first kind rather than to a match — an easier trial, rather than one
-where the honest answer would have to change.
+That second kind runs out at the bottom of the range. At four dots —
+and at five, once there are more than six lines — every profile of
+connection counts describes exactly one network, so there is no second
+one to cross lines into. Asking to keep the counts therefore holds the
+size up to where such a network exists: six dots, or five when sparse.
+If you had picked fewer, the waiting screen says so before you start.
+
+Above that floor a partner always exists, but not for every starting
+network — at six dots and a dense graph only four of the nine have
+one — so a network that cannot be rewired is thrown away and another
+drawn, rather than settled for. If that ever fails anyway the trial
+becomes the easier kind of mismatch, never a match, and the summary
+at the end of the run says how many did. It is never said during a
+trial: knowing which kind a mismatch is would give away that it is
+one.
 
 *How many connections* sets the density, *Hide the graphs after* puts
 the pair under time pressure, and with *Add a dot when right* the size
