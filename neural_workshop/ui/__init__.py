@@ -4,8 +4,10 @@
 ``message`` / ``menu`` / ``textinput``
     Reusable pieces: a modal notice, the generic menu with its value
     cyclers, and a one-line text prompt.
-``screens`` / ``gameselect``
-    The concrete menu screens.
+``screens`` / ``gameselect`` / ``taskhub``
+    The concrete menu screens, plus the category task hub.
+``monkeyladder`` / ``ncupmonte``
+    Standalone working-memory and misc tasks launched from the hub.
 ``field``
     The board and the stimuli on it.
 ``hud`` / ``trialui`` / ``readouts``

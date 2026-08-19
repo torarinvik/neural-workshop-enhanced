@@ -186,7 +186,7 @@ class KeysListLabel:
                 _('W: Brain Workshop Web Site\n')])
         if cfg.WINDOW_FULLSCREEN:
             parts.append(_('E: Saccadic Eye Exercise\n'))
-        parts.extend(['\n', _('ESC: Exit\n')])
+        parts.extend(['\n', _('ESC: Task menu\n')])
         return parts
 
     def update(self) -> None:
@@ -235,7 +235,9 @@ class TitleKeysLabel:
         cfg = state.cfg
         parts: List[str] = []
         if not (cfg.JAEGGI_MODE or CLINICAL_MODE):
-            parts.extend([_('C: Choose Game Mode\n'), _('S: Choose Sounds\n'),
+            parts.extend([_('SPACE: Task menu\n'),
+                          _('C: Choose N-Back mode\n'),
+                          _('S: Choose Sounds\n'),
                           _('I: Choose Images\n')])
         if not CLINICAL_MODE:
             parts.extend([_('U: Choose User\n'),

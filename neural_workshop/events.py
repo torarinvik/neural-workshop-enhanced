@@ -78,6 +78,9 @@ def _on_key_title_screen(symbol: int, modifiers: int) -> None:
         state.window.on_close()
     elif symbol == key.SPACE:
         mode.title_screen = False
+        if not CLINICAL_MODE:
+            from .ui.taskhub import TaskHub
+            TaskHub(return_to_title=True)
     elif symbol == key.C and not cfg.JAEGGI_MODE:
         GameSelect()
     elif symbol == key.I and not cfg.JAEGGI_MODE:
@@ -140,10 +143,14 @@ def _on_key_hub(symbol: int, modifiers: int) -> None:
     cfg, mode = state.cfg, state.mode
 
     if symbol in (key.ESCAPE, key.X):
-        if cfg.SKIP_TITLE_SCREEN:
-            state.window.on_close()
-        else:
-            mode.title_screen = True
+        if CLINICAL_MODE:
+            if cfg.SKIP_TITLE_SCREEN:
+                state.window.on_close()
+            else:
+                mode.title_screen = True
+            return
+        from .ui.taskhub import TaskHub
+        TaskHub(return_to_title=not cfg.SKIP_TITLE_SCREEN)
         return
     if symbol == key.SPACE:
         new_session()

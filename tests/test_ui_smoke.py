@@ -37,9 +37,12 @@ try:
     from neural_workshop.session import end_session, new_session
     from neural_workshop.ui.gameselect import GameSelect
     from neural_workshop.ui.menu import AllCycler, Cycler, PercentCycler
+    from neural_workshop.ui.monkeyladder import MonkeyLadder
+    from neural_workshop.ui.ncupmonte import NCupMonte
     from neural_workshop.ui.screens import (ImageSelect, LanguageScreen,
                                             OptionsScreen, SoundSelect,
                                             UserScreen)
+    from neural_workshop.ui.taskhub import TASKS, TaskHub, tasks_for
     bootstrap.build_application()
     _IMPORT_ERROR = None
 except Exception as exc:  # pragma: no cover - no GL context available
@@ -63,6 +66,29 @@ class MenuTests(unittest.TestCase):
         menu = GameSelect()
         self.assertTrue(menu.newmode)
         self._exercise(menu)
+
+    def test_task_hub_switches_categories(self):
+        hub = TaskHub()
+        try:
+            self.assertEqual([task[0] for task in tasks_for('working_memory')],
+                             ['nback', 'monkey_ladder'])
+            self.assertEqual(TASKS['long_term_memory'], [])
+            self.assertEqual([task[0] for task in tasks_for('misc')],
+                             ['ncup_monte'])
+            hub.set_category('misc')
+            self.assertEqual(hub.category, 'misc')
+            self.assertEqual(len(hub.task_rects), 1)
+            hub.set_category('long_term_memory')
+            self.assertEqual(hub.empty.text, 'No tasks in this category yet.')
+            hub.on_draw()
+        finally:
+            hub.close()
+
+    def test_task_hub_launches_nback(self):
+        hub = TaskHub()
+        hub.launch('nback')
+        self.assertIsNone(TaskHub.instance)
+        self.assertFalse(state.mode.title_screen)
 
     def test_3d_game_select_toggle(self):
         menu = GameSelect()
@@ -158,6 +184,12 @@ class ScreenDrawTests(unittest.TestCase):
     """Each top-level screen state must draw."""
 
     def tearDown(self):
+        if TaskHub.instance:
+            TaskHub.instance.close()
+        if MonkeyLadder.instance:
+            MonkeyLadder.instance.close()
+        if NCupMonte.instance:
+            NCupMonte.instance.close()
         state.mode.title_screen = False
         state.mode.draw_graph = False
         state.mode.saccadic = False
@@ -171,6 +203,29 @@ class ScreenDrawTests(unittest.TestCase):
     def test_hub_draws(self):
         state.mode.title_screen = False
         on_draw()
+
+    def test_monkey_ladder_round(self):
+        game = MonkeyLadder()
+        try:
+            game.start_round()
+            game.phase = 'input'
+            first = game.sequence[0]
+            game.click_cell(first)
+            self.assertEqual(game.next_index, 1)
+            game.on_draw()
+        finally:
+            game.close()
+
+    def test_ncup_monte_guess(self):
+        game = NCupMonte()
+        try:
+            game.skip_to_guess()
+            game.choose_cup(game.ball)
+            self.assertEqual(game.phase, 'result')
+            self.assertGreaterEqual(game.cups, 3)
+            game.on_draw()
+        finally:
+            game.close()
 
     def test_graph_draws(self):
         state.graph.parse_stats()
@@ -236,6 +291,12 @@ class ScreenDrawTests(unittest.TestCase):
 class KeyDispatchTests(unittest.TestCase):
 
     def tearDown(self):
+        if TaskHub.instance:
+            TaskHub.instance.close()
+        if MonkeyLadder.instance:
+            MonkeyLadder.instance.close()
+        if NCupMonte.instance:
+            NCupMonte.instance.close()
         state.mode.title_screen = False
         state.mode.draw_graph = False
         if state.mode.started:
@@ -245,6 +306,7 @@ class KeyDispatchTests(unittest.TestCase):
         state.mode.title_screen = True
         on_key_press(key.SPACE, 0)
         self.assertFalse(state.mode.title_screen)
+        self.assertIsNotNone(TaskHub.instance)
 
     def test_g_opens_and_closes_the_graph(self):
         state.mode.title_screen = False
