@@ -19,6 +19,11 @@
 ``graph`` / ``effects``
     The progress chart, and the two full-screen extras.
 
+Every screen here that pushes its own ``on_draw`` is an *overlay*: it
+registers with :mod:`neural_workshop.display` while it is open, offers
+``relayout()``, and calls ``display.ensure_laid_out()`` before drawing,
+so a window resize reaches it too.
+
 SPDX-License-Identifier: GPL-2.0-or-later
 """
 from __future__ import annotations

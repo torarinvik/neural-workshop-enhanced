@@ -16,7 +16,7 @@ from typing import (Any, Callable, Dict, Iterable, List, Optional, Sequence,
 import pyglet
 from pyglet.window import key
 
-from .. import state
+from .. import display, state
 from ..geometry import calc_fontsize, from_bottom_edge, width_center
 from ..constants import FONTLIST
 from ..i18n import _
@@ -124,6 +124,7 @@ class Menu:
         self.update_labels()
         state.window.push_handlers(self.on_key_press, self.on_text,
                                    self.on_text_motion, self.on_draw)
+        display.register_overlay(self)
         Menu.instance = self
 
     def build_chrome(self) -> None:
@@ -261,6 +262,7 @@ class Menu:
 
     def close(self) -> None:
         self.closed = True
+        display.unregister_overlay(self)
         state.window.remove_handlers(self.on_key_press, self.on_text,
                                      self.on_text_motion, self.on_draw)
 
@@ -275,7 +277,6 @@ class Menu:
         elif sym == key.SPACE:
             self.select()
         elif sym == key.F11:
-            from .. import display
             display.toggle_fullscreen()
         return pyglet.event.EVENT_HANDLED
 
@@ -294,6 +295,7 @@ class Menu:
         return pyglet.event.EVENT_HANDLED
 
     def on_draw(self) -> bool:
+        display.ensure_laid_out()
         state.window.clear()
         self.batch.draw()
         return pyglet.event.EVENT_HANDLED

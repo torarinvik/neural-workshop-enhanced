@@ -63,14 +63,50 @@ rather than imported by value, because switching user profile rebinds
 some of them. `bootstrap.build_application()` populates that module in
 the one order that works; nothing else touches a singleton before it has.
 
-### Full screen
+### Window size, full screen, and the two coordinate spaces
 
-**F11** switches between windowed and full screen from any screen, and
-`WINDOW_FULLSCREEN` in `config.ini` decides which one the game starts
-in. Every widget is sized from the window when it is built, so changing
-the size rebuilds them (`display.relayout()`); the session, the level
-and the stats are untouched, and a stimulus on screen mid-trial stays
-on screen.
+The window is resizable, and **F11** switches to and from full screen
+on any screen. `WINDOW_FULLSCREEN` in `config.ini` decides which one
+the game starts in.
+
+Widgets are positioned from the window size when they are built and
+there is no per-frame layout pass, so a size change rebuilds them.
+Nothing has to remember to ask: `display.on_resize` is pushed onto the
+window, `geometry.set_window_size` notifies its listeners, and every
+`on_draw` calls `display.ensure_laid_out()` as a last check. Rebuilds
+are coalesced, so dragging the window edge costs one rebuild when the
+drag settles rather than one per event. The session, the level and the
+stats live outside the widgets and are untouched; a stimulus on screen
+mid-trial is put back.
+
+A screen that pushes its own `on_draw` must call
+`display.register_overlay(self)`, `display.unregister_overlay(self)`
+when it closes, and provide `relayout()`. `tests/test_ui_units.py`
+fails the build if one does not.
+
+**Pixels are not points.** On a scaled display (Retina, Windows display
+scaling) a window has a drawing surface in *pixels* — `window.width`,
+the GL viewport, every widget coordinate — and a size in *points*,
+which is what the OS API takes. `pixels = points * window.scale`, and
+on an unscaled display the two are equal, which is why mixing them up
+survives testing on one machine and doubles the window on another.
+pyglet gets this wrong itself: `set_fullscreen` saves the windowed size
+in pixels and restores it as points, so leaving full screen would
+double the window on every toggle.
+
+`neural_workshop/geometry.py` owns the distinction and every call into
+pyglet's point-space API:
+
+| Need | Use |
+| --- | --- |
+| lay something out | `window.width` / `window.height`, or the `from_*` helpers — pixels, as always |
+| resize the window | `geometry.set_window_size(width, height)` — points, clamped, verified |
+| the window in OS terms | `geometry.point_size()` |
+| the buffer to read pixels from | `geometry.framebuffer_size(window)` |
+
+Nothing else may call `set_size`, `get_size`, `get_framebuffer_size`,
+`set_minimum_size`, or read `window.scale`; the same test enforces that
+by scanning the source.
 
 ### Trial timing (milliseconds)
 

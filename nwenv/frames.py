@@ -32,15 +32,16 @@ def flip_rgba(raw: bytes, width: int, height: int) -> bytes:
 
 
 def capture_rgba(window: Any) -> Tuple[int, int, bytes]:
-    """Read the window's framebuffer as top-down RGBA bytes."""
+    """Read the window's framebuffer as top-down RGBA bytes.
+
+    The frame is pixels, not points — see
+    :mod:`neural_workshop.geometry`, which owns that distinction.
+    """
     from pyglet.gl import (GL_PACK_ALIGNMENT, GL_RGBA, GL_UNSIGNED_BYTE,
                            GLubyte, glPixelStorei, glReadPixels)
+    from neural_workshop.geometry import framebuffer_size
     glPixelStorei(GL_PACK_ALIGNMENT, 1)
-    try:
-        width, height = window.get_framebuffer_size()
-    except Exception:
-        width, height = window.width, window.height
-    width, height = int(width), int(height)
+    width, height = framebuffer_size(window)
     count = width * height * 4
     if count <= 0:
         return width, height, b''

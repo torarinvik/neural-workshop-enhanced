@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import pyglet
 
-from .. import state
+from .. import display, state
 from ..geometry import calc_fontsize, height_center, width_center
 from ..constants import FONTLIST_SERIF
 
@@ -24,9 +24,17 @@ class Message:
             print(msg)                      # console, in case we never show it
             state.message_queue.append(msg)  # and display it once we can
             return
+        self.msg = msg
+        self.build_chrome()
+        state.window.push_handlers(self.on_key_press, self.on_draw)
+        display.register_overlay(self)
+        self.on_draw()
+
+    def build_chrome(self) -> None:
+        """Create the batch and the label, sized to the window."""
         self.batch = pyglet.graphics.Batch()
         self.label = pyglet.text.Label(
-            msg,
+            self.msg,
             font_name=FONTLIST_SERIF,
             color=state.cfg.COLOR_TEXT,
             batch=self.batch,
@@ -35,8 +43,10 @@ class Message:
             font_size=calc_fontsize(14),
             x=width_center(), y=height_center(),
             anchor_x='center', anchor_y='center')
-        state.window.push_handlers(self.on_key_press, self.on_draw)
-        self.on_draw()
+
+    def relayout(self) -> None:
+        """Rebuild at the window's current size."""
+        self.build_chrome()
 
     def on_key_press(self, sym: int, mod: int) -> bool:
         if sym:
@@ -44,9 +54,11 @@ class Message:
         return pyglet.event.EVENT_HANDLED
 
     def close(self) -> None:
+        display.unregister_overlay(self)
         state.window.remove_handlers(self.on_key_press, self.on_draw)
 
     def on_draw(self) -> bool:
+        display.ensure_laid_out()
         state.window.clear()
         self.batch.draw()
         return pyglet.event.EVENT_HANDLED

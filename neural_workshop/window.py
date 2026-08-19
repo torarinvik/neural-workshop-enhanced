@@ -5,6 +5,12 @@
 live in :mod:`neural_workshop.events` and are pushed onto the window
 after everything else is built.
 
+The window is resizable, and the layout follows it — see
+:mod:`neural_workshop.display`. Sizes here are in **points**, the space
+the operating system works in; :mod:`neural_workshop.geometry` explains
+why that is not the same as the pixels every widget is drawn in, and
+owns the conversion.
+
 SPDX-License-Identifier: GPL-2.0-or-later
 """
 from __future__ import annotations
@@ -15,6 +21,8 @@ import pyglet
 
 from . import runtime, state
 from .constants import CLINICAL_MODE, VERSION
+from .geometry import (MIN_WINDOW_HEIGHT, MIN_WINDOW_WIDTH,
+                       apply_minimum_size, point_size, set_window_size)
 from .paths import load_pyglet_image
 
 
@@ -29,8 +37,15 @@ class MyWindow(pyglet.window.Window):
 
 
 def enter_fullscreen(window: MyWindow) -> None:
-    """Take over the default screen and hide the system cursor."""
+    """Take over the default screen and hide the system cursor.
+
+    The windowed size is remembered first: pyglet stores its own copy
+    in the wrong coordinate space, so :func:`leave_fullscreen` cannot
+    trust it.
+    """
+    state.cfg.WINDOW_WIDTH, state.cfg.WINDOW_HEIGHT = point_size()
     screen = pyglet.display.get_display().get_default_screen()
+    # Screen dimensions are points, like every other OS-space size.
     state.cfg.WINDOW_WIDTH_FULLSCREEN = screen.width
     state.cfg.WINDOW_HEIGHT_FULLSCREEN = screen.height
     window.set_fullscreen(True, screen=screen)
@@ -40,11 +55,16 @@ def enter_fullscreen(window: MyWindow) -> None:
 
 
 def leave_fullscreen(window: MyWindow) -> None:
-    """Give the screen back, at the size the config asks for."""
+    """Give the screen back, at the size the player last had.
+
+    The explicit resize is not redundant: pyglet saves the windowed
+    size in pixels and restores it as points, so on a scaled display
+    the window would come back twice as large on every toggle.
+    """
     if sys.platform == 'darwin':
         window.set_exclusive_keyboard(False)
     window.set_fullscreen(False)
-    window.set_size(state.cfg.WINDOW_WIDTH, state.cfg.WINDOW_HEIGHT)
+    set_window_size(state.cfg.WINDOW_WIDTH, state.cfg.WINDOW_HEIGHT)
     window.set_mouse_visible(True)
 
 
@@ -60,10 +80,12 @@ def create_window() -> MyWindow:
     """Build the window described by the config and prepare its GL state."""
     cfg = state.cfg
     fullscreen = bool(cfg.WINDOW_FULLSCREEN) and not runtime.HEADLESS
-    window = MyWindow(cfg.WINDOW_WIDTH, cfg.WINDOW_HEIGHT,
+    window = MyWindow(max(MIN_WINDOW_WIDTH, int(cfg.WINDOW_WIDTH)),
+                      max(MIN_WINDOW_HEIGHT, int(cfg.WINDOW_HEIGHT)),
                       caption=_caption(),
                       style=pyglet.window.Window.WINDOW_STYLE_DEFAULT,
-                      vsync=runtime.VSYNC)
+                      resizable=True, vsync=runtime.VSYNC)
+    apply_minimum_size(window)
 
     if sys.platform.startswith('linux'):
         from . import resources

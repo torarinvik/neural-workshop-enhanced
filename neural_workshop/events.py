@@ -269,6 +269,7 @@ def on_key_press(symbol: int, modifiers: int) -> bool:
 
 def on_draw() -> None:
     """Redraw the window for the current screen."""
+    display.ensure_laid_out()
     mode = state.mode
     if mode.shrink_brain:
         return

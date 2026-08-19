@@ -8,10 +8,10 @@ from __future__ import annotations
 
 import unittest
 
-from uisupport import (Menu, MonkeyLadder, NCupMonte, TaskHub, display,
-                       end_session, key, needs_ui, new_session, on_draw,
-                       on_key_press, state, taskoptions,
-                       trial_advance_significant)
+from uisupport import (MonkeyLadder, NCupMonte, TaskHub, close_overlays,
+                       display, end_session, geometry, key, needs_ui,
+                       new_session, on_draw, on_key_press, reset_window, state,
+                       taskoptions, trial_advance_significant)
 
 
 @needs_ui
@@ -26,17 +26,17 @@ class RelayoutTests(unittest.TestCase):
     #: pixels, which on a scaled display is not what set_size takes.
     SIZES = ((1024, 768), (912, 684))
 
+    def setUp(self):
+        close_overlays()
+
     def tearDown(self):
-        for screen in (Menu.instance, MonkeyLadder.instance,
-                       NCupMonte.instance, TaskHub.instance):
-            if screen is not None and not getattr(screen, 'closed', False):
-                screen.close()
+        close_overlays()
         if state.mode.started:
             end_session(cancelled=True)
-        self._resize(state.cfg.WINDOW_WIDTH, state.cfg.WINDOW_HEIGHT)
+        reset_window()
 
     def _resize(self, width, height):
-        state.window.set_size(width, height)
+        geometry.set_window_size(width, height)
         display.relayout()
 
     def test_widgets_follow_the_window(self):

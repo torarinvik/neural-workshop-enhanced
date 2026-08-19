@@ -10,7 +10,7 @@ from typing import Callable, List, Optional
 import pyglet
 from pyglet.window import key
 
-from .. import state
+from .. import display, state
 
 
 class TextInputScreen:
@@ -29,19 +29,29 @@ class TextInputScreen:
         self.cursor_pos = 0
         self.cursor_visible = True
 
+        self.build_chrome()
+        window.push_handlers(self.on_key_press, self.on_draw, self.on_text)
+        display.register_overlay(self)
+        pyglet.clock.schedule_interval(self.update_cursor, 0.5)
+        self.update_display()
+
+    def build_chrome(self) -> None:
+        """Create the batch, the colours and the prompt, sized to the window."""
+        window = state.window
         self.bgcolor = (255 * int(not state.cfg.BLACK_BACKGROUND),) * 3
         self.textcolor = (255 * int(state.cfg.BLACK_BACKGROUND),) * 3 + (255,)
         self.batch = pyglet.graphics.Batch()
         self.title = pyglet.text.Label(
-            title, font_size=10, weight='normal', color=self.textcolor,
-            batch=self.batch,
+            self.titletext, font_size=10, weight='normal',
+            color=self.textcolor, batch=self.batch,
             x=int(window.width / 2), y=(window.height * 8) / 10 + 24,
             anchor_x='center', anchor_y='center')
-
         self.x_input = 250
         self.y_input = (window.height * 8) / 10 - 18
-        window.push_handlers(self.on_key_press, self.on_draw, self.on_text)
-        pyglet.clock.schedule_interval(self.update_cursor, 0.5)
+
+    def relayout(self) -> None:
+        """Rebuild at the window's current size, keeping what is typed."""
+        self.build_chrome()
         self.update_display()
 
     def on_text(self, text: str) -> None:
@@ -67,6 +77,7 @@ class TextInputScreen:
         return pyglet.event.EVENT_HANDLED
 
     def close(self) -> None:
+        display.unregister_overlay(self)
         self.cursor_pos = 0
         self.input_text = []
         pyglet.clock.unschedule(self.update_cursor)
@@ -77,6 +88,7 @@ class TextInputScreen:
         self.update_display()
 
     def on_draw(self) -> bool:
+        display.ensure_laid_out()
         self.batch.draw()
         return pyglet.event.EVENT_HANDLED
 

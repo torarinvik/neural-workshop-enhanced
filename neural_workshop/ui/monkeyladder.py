@@ -46,6 +46,7 @@ class MonkeyLadder:
                                    self.on_draw)
         pyglet.clock.schedule_interval(self.update, 1 / 30.)
         cursor.acquire()
+        display.register_overlay(self)
         MonkeyLadder.instance = self
 
     # --- layout ----------------------------------------------------------
@@ -218,6 +219,7 @@ class MonkeyLadder:
         if MonkeyLadder.instance is not self:
             return
         pyglet.clock.unschedule(self.update)
+        display.unregister_overlay(self)
         state.window.remove_handlers(self.on_key_press, self.on_mouse_press,
                                      self.on_draw)
         cursor.release()
@@ -247,6 +249,7 @@ class MonkeyLadder:
         return pyglet.event.EVENT_HANDLED
 
     def on_draw(self) -> bool:
+        display.ensure_laid_out()
         state.window.clear()
         self.batch.draw()
         return pyglet.event.EVENT_HANDLED

@@ -18,10 +18,12 @@ import urllib.request
 
 import pyglet
 
-from . import audio, config, events, resources, runtime, state
+from . import (audio, config, display, events, resources, runtime,
+               state)
 from .constants import (CLINICAL_MODE, TIMEOUT_SILENT, VERSION,
                         WEB_VERSION_CHECK)
 from .gamemode import Mode
+from . import geometry
 from .geometry import scale_to_height, scale_to_width
 from .paths import ensure_data_dir, load_pyglet_image, quit_with_error
 from .stats import Stats
@@ -170,7 +172,9 @@ def _install_handlers() -> None:
     state.window.push_handlers(
         on_key_press=events.on_key_press,
         on_draw=events.on_draw,
-        on_mouse_press=events.on_mouse_press)
+        on_mouse_press=events.on_mouse_press,
+        on_resize=display.on_resize)
+    geometry.add_size_listener(display.request_relayout)
     pyglet.clock.schedule_interval(events.update, runtime.TICK_DURATION)
 
 

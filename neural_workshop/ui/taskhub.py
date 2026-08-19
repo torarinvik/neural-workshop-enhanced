@@ -70,6 +70,7 @@ class TaskHub:
         window.push_handlers(self.on_key_press, self.on_text_motion,
                              self.on_mouse_press, self.on_draw)
         cursor.acquire()
+        display.register_overlay(self)
         TaskHub.instance = self
         state.mode.task_category = self.category
 
@@ -255,6 +256,7 @@ class TaskHub:
         if TaskHub.instance is not self:
             return
         self._clear_shapes()
+        display.unregister_overlay(self)
         state.window.remove_handlers(self.on_key_press, self.on_text_motion,
                                      self.on_mouse_press, self.on_draw)
         cursor.release()
@@ -301,6 +303,7 @@ class TaskHub:
         return pyglet.event.EVENT_HANDLED
 
     def on_draw(self) -> bool:
+        display.ensure_laid_out()
         state.window.clear()
         self.batch.draw()
         return pyglet.event.EVENT_HANDLED

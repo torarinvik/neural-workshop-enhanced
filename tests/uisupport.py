@@ -29,7 +29,9 @@ try:
     import pyglet
     from pyglet.window import key
 
-    from neural_workshop import bootstrap, display, state
+    from neural_workshop import bootstrap, display, geometry, state
+    from neural_workshop.constants import (DEFAULT_WINDOW_HEIGHT,
+                                           DEFAULT_WINDOW_WIDTH)
     from neural_workshop.events import (on_draw, on_key_press,
                                         trial_advance_significant)
     from neural_workshop.geometry import scale_to_height
@@ -41,6 +43,7 @@ try:
     from neural_workshop.ui import cursor, taskoptions
     from neural_workshop.ui.gameselect import GameSelect
     from neural_workshop.ui.menu import AllCycler, Cycler, Menu, PercentCycler
+    from neural_workshop.ui.message import Message
     from neural_workshop.ui.monkeyladder import MonkeyLadder
     from neural_workshop.ui.ncupmonte import NCupMonte
     from neural_workshop.ui.screens import (ImageSelect, LanguageScreen,
@@ -61,8 +64,26 @@ def needs_ui(cls):
 
 
 def close_overlays() -> None:
-    """Shut every overlay that a test may have left open."""
-    for screen in (Menu.instance, MonkeyLadder.instance, NCupMonte.instance,
-                   TaskHub.instance):
-        if screen is not None and not getattr(screen, 'closed', False):
+    """Shut every overlay that is on screen.
+
+    Reads the display registry rather than a list of classes, so an
+    overlay a test did not open — the donation nag turns up on its own
+    after enough sessions — is closed too.
+    """
+    for screen in display.open_overlays():
+        try:
             screen.close()
+        except Exception:
+            display.unregister_overlay(screen)
+
+
+def reset_window() -> None:
+    """Put the window back to a plain windowed default size.
+
+    Fullscreen really does engage on a hidden window, and while it is
+    on, resizes are refused — so a test that forgets to come back would
+    quietly break every test after it.
+    """
+    display.set_fullscreen(False)
+    geometry.set_window_size(DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT)
+    display.relayout()

@@ -11,8 +11,8 @@ import unittest
 import pyglet
 
 from uisupport import (GameSelect, Menu, MonkeyLadder, NCupMonte, TASKS,
-                       TaskHub, cursor, key, needs_ui, scale_to_height,
-                       state, taskoptions)
+                       TaskHub, close_overlays, cursor, key, needs_ui,
+                       scale_to_height, state, taskoptions)
 
 
 @needs_ui
@@ -25,10 +25,7 @@ class TaskOptionsTests(unittest.TestCase):
                       for option in spec.options}
 
     def tearDown(self):
-        for screen in (Menu.instance, TaskHub.instance,
-                       MonkeyLadder.instance, NCupMonte.instance):
-            if screen is not None:
-                screen.close()
+        close_overlays()
         state.cfg.update(self.saved)
 
     def test_every_hub_task_has_options(self):
@@ -156,10 +153,7 @@ class HandCursorTests(unittest.TestCase):
         cursor.reset()
 
     def tearDown(self):
-        for screen in (MonkeyLadder.instance, NCupMonte.instance,
-                       TaskHub.instance):
-            if screen is not None:
-                screen.close()
+        close_overlays()
         cursor.reset()
         state.window.set_mouse_cursor(None)
 
