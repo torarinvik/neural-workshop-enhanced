@@ -270,7 +270,7 @@ class Visual:
                                             batch=state.batch)
 
     def _spawn_3d_voxel(self, position: int) -> None:
-        """Render the complete pattern of four-faced perspective cubes."""
+        """Render the complete pattern of six-faced perspective cubes."""
         count = current_3d_cube_count()
         faces = decode_3d_pattern(position, count)
         cols = int(math.ceil(math.sqrt(count)))
@@ -309,7 +309,7 @@ class Visual:
 
     def _draw_pattern_cube(self, cx: float, cy: float, size: float,
                            highlighted: int) -> None:
-        """Draw one four-faced cube card with an unmistakable active face."""
+        """Draw one six-faced cube card with an unmistakable active face."""
         half = size * 0.43
         inner = size * 0.17
         # A small offset avoids sterile symmetry and strengthens perspective.
@@ -334,7 +334,7 @@ class Visual:
         r, g, b = self.color[:3]
         # Keep saturated configured colours while adding enough white light
         # to reveal surface detail, especially for pure blue.
-        light = (0.18, 0.10, 0.04, 0.12)[highlighted]
+        light = (0.18, 0.10, 0.04, 0.12, 0.22, 0.08)[highlighted]
         lit = tuple(min(255, int(c + (255 - c) * light))
                     for c in (r, g, b))
 
@@ -364,8 +364,30 @@ class Visual:
                 self.poly_3d.append(pyglet.shapes.Polygon(
                     *points, color=inactive[index], batch=state.batch))
 
-        self.poly_3d.append(pyglet.shapes.Polygon(
-            *inside, color=(5, 9, 17, 255), batch=state.batch))
+        # Back is the recessed square; front is a translucent plane across
+        # the opening. Their very different projected sizes remove ambiguity.
+        if highlighted == 5:
+            glow = pyglet.shapes.Polygon(
+                *inside, color=(*lit, 120), batch=state.batch)
+            self.poly_3d.extend([
+                glow,
+                pyglet.shapes.Polygon(
+                    *self._inset_polygon(inside, 0.08),
+                    color=(*lit, 250), batch=state.batch),
+            ])
+            self.poly_3d_pulse.append(glow)
+        else:
+            self.poly_3d.append(pyglet.shapes.Polygon(
+                *inside, color=(5, 9, 17, 255), batch=state.batch))
+
+        if highlighted == 4:
+            glow = pyglet.shapes.Polygon(
+                *outer, color=(*lit, 55), batch=state.batch)
+            glass = pyglet.shapes.Polygon(
+                *self._inset_polygon(outer, 0.045),
+                color=(*lit, 105), batch=state.batch)
+            self.poly_3d.extend([glow, glass])
+            self.poly_3d_pulse.extend([glow, glass])
 
         edge = (225, 238, 255, 255)
         inner_edge = (145, 175, 210, 235)
@@ -382,7 +404,8 @@ class Visual:
             self.poly_3d.append(pyglet.shapes.Line(
                 *p1, *p2, thickness=max(1.5, size * 0.008),
                 color=inner_edge, batch=state.batch))
-        active = face_points[highlighted]
+        active = (face_points[highlighted] if highlighted < 4
+                  else outer if highlighted == 4 else inside)
         for p1, p2 in zip(active, active[1:] + active[:1]):
             line = pyglet.shapes.Line(
                 *p1, *p2, thickness=max(4.0, size * 0.024),

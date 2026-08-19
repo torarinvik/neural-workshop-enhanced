@@ -73,9 +73,9 @@ class MenuTests(unittest.TestCase):
             menu.save()
             self.assertTrue(state.cfg.GRID_3D)
             self.assertEqual(state.cfg.GRID_3D_CUBES, 3)
-            self.assertEqual(current_cell_count(), 64)
-            self.assertEqual(len(current_active_position_ids()), 64)
-            self.assertEqual(decode_3d_pattern(58, 3), [1, 2, 3])
+            self.assertEqual(current_cell_count(), 216)
+            self.assertEqual(len(current_active_position_ids()), 216)
+            self.assertEqual(decode_3d_pattern(122, 3), [1, 2, 3])
         finally:
             menu.values['grid_3d'] = False
             menu.values['grid_3d_cubes'].choose(1)

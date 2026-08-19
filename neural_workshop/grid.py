@@ -57,7 +57,7 @@ def current_grid_3d() -> bool:
 
 
 def current_3d_cube_count() -> int:
-    """Number of four-faced cubes composing one 3D position pattern."""
+    """Number of six-faced cubes composing one 3D position pattern."""
     try:
         return max(1, min(6, int(state.cfg.GRID_3D_CUBES)))
     except Exception:
@@ -70,15 +70,15 @@ def decode_3d_pattern(position: int, count: int | None = None) -> List[int]:
     value = max(0, int(position) - 1)
     faces = []
     for _ in range(count):
-        faces.append(value % 4)
-        value //= 4
+        faces.append(value % 6)
+        value //= 6
     return faces
 
 
 def current_cell_count() -> int:
     """How many cells the board has."""
     if current_grid_3d():
-        return 4 ** current_3d_cube_count()
+        return 6 ** current_3d_cube_count()
     dim = 3 if current_grid_3d() else 2
     return bwaccel.grid_cell_count(
         current_grid_size(), current_include_center(), dim=dim)

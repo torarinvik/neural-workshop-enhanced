@@ -131,7 +131,7 @@ CROSSHAIRS = True
 # Even sizes (4, 6, ...) use every cell. Odd sizes skip the center unless
 # GRID_INCLUDE_CENTER is True.
 # GRID_SIZE_MAX is the upper bound for config and the in-game cycler (2..max).
-# GRID_3D renders one or more four-faced perspective cubes. Their highlighted
+# GRID_3D renders one or more six-faced perspective cubes. Their highlighted
 # faces form one pattern and therefore use one position-match input.
 GRID_SIZE = 3
 GRID_SIZE_MIN = 2
