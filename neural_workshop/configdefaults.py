@@ -547,6 +547,19 @@ REFLEX_MAX_ACTIVE = 3
 REFLEX_SIZE = 130
 REFLEX_ADAPTIVE = True
 
+
+# Count: a tangle of overlapping outlines, and the question is how
+# many. COUNT_SHAPE is 'lines', 'circles', 'triangles', 'rectangles'
+# or 'mixed'. COUNT_EXPOSURE_MS hides the shapes after a while so the
+# answer comes from perception rather than from patiently ticking them
+# off; 0 leaves them up until you answer.
+COUNT_SHAPE = 'lines'
+COUNT_START = 8
+COUNT_TRIALS = 15
+COUNT_EXPOSURE_MS = 0
+COUNT_ADAPTIVE = True
+COUNT_SHOW_ANSWER = True
+
 ######################################################################
 # This is the end of the configuration file.
 ######################################################################

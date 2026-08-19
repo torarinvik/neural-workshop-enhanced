@@ -21,6 +21,7 @@ from test_ui_attention import *   # noqa: F401,F403,E402
 from test_ui_display import *     # noqa: F401,F403,E402
 from test_ui_longterm import *    # noqa: F401,F403,E402
 from test_ui_menus import *       # noqa: F401,F403,E402
+from test_ui_perception import *  # noqa: F401,F403,E402
 from test_ui_screens import *     # noqa: F401,F403,E402
 from test_ui_tasks import *       # noqa: F401,F403,E402
 from test_ui_units import *       # noqa: F401,F403,E402

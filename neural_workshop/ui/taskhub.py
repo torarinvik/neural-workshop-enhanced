@@ -25,6 +25,7 @@ CATEGORIES: Sequence[Tuple[str, str]] = (
     ('working_memory', _('Working memory')),
     ('long_term_memory', _('Long-term memory')),
     ('attention', _('Attention')),
+    ('perception', _('Perception')),
     ('misc', _('Misc')),
 )
 
@@ -40,6 +41,9 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
     ],
     'attention': [
         ('reflex', _('Reflex')),
+    ],
+    'perception': [
+        ('count', _('Count')),
     ],
     'misc': [
         ('ncup_monte', _('N-Cup Monte')),
@@ -350,6 +354,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'reflex':
         from .reflex import Reflex
         Reflex()
+        return
+    if task_id == 'count':
+        from .counting import Counting
+        Counting()
         return
     # Unknown task: restore the hub rather than dropping the player.
     TaskHub(return_to_title=return_to_title, category=category)

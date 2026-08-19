@@ -217,6 +217,25 @@ REFLEX = TaskSpec(
                True),
     ))
 
+COUNTING = TaskSpec(
+    title=_('Count options'),
+    options=(
+        Option('COUNT_SHAPE', _('Shapes to count'), 'lines',
+               values=('lines', 'circles', 'triangles', 'rectangles',
+                       'mixed')),
+        Option('COUNT_START', _('Shapes to start with'), 8,
+               values=(2, 4, 6, 8, 10, 12, 16, 20, 25, 30)),
+        Option('COUNT_TRIALS', _('Trials per run'), 15,
+               values=(5, 10, 15, 20, 30, 50)),
+        Option('COUNT_EXPOSURE_MS', _('Hide the shapes after'), 0,
+               values=(0, 200, 350, 500, 750, 1000, 2000, 4000),
+               suffix=' ms'),
+        Option('COUNT_ADAPTIVE', _('Add a shape when right, drop one when wrong'),
+               True),
+        Option('COUNT_SHOW_ANSWER', _('Show the true count after each trial'),
+               True),
+    ))
+
 #: Task id → the settings screen it owns.
 TASK_SPECS: Dict[str, TaskSpec] = {
     'monkey_ladder': MONKEY_LADDER,
@@ -224,6 +243,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'concentration': CONCENTRATION,
     'recognition': RECOGNITION,
     'reflex': REFLEX,
+    'count': COUNTING,
 }
 
 

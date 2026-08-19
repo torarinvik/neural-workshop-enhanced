@@ -143,6 +143,23 @@ It draws from the same photograph library as the long-term-memory
 games, so `python -m neural_workshop.datasets tiny-imagenet` is all it
 needs.
 
+### Perception
+
+The *Perception* category holds **Count**: a tangle of overlapping
+outlines, and the question is how many there are. Type the number and
+press Enter. Past four or five, counting stops being a glance and
+becomes work — the eye has to keep track of what it has already
+counted while the crossings actively mislead it.
+
+*Shapes to count* picks lines, circles, triangles, rectangles or a
+mixture. Lines run edge to edge so they cross rather than huddle,
+which is what makes them hard to tell apart. *Hide the shapes after*
+takes the tangle away once the time is up so the answer comes from
+perception rather than from patiently ticking shapes off, and with
+*Add a shape when right* the count follows how you do.
+
+Nothing is downloaded for this one — the shapes are generated.
+
 ### Window size, full screen, and the two coordinate spaces
 
 The window is resizable, and **F11** switches to and from full screen

@@ -14,6 +14,9 @@
 ``reflex``
     The attention task. The one screen here that animates, so it keeps
     its sprites between frames rather than rebuilding them.
+``counting``
+    The perception task. Generates its own shapes, so it needs no
+    downloaded media.
 ``taskoptions`` / ``cursor``
     The per-task settings screens reached with C, and the pointing-hand
     cursor the mouse-driven screens wear.

@@ -43,6 +43,7 @@ try:
     from neural_workshop.session import end_session, new_session
     from neural_workshop.ui import cursor, taskoptions
     from neural_workshop.ui.concentration import Concentration
+    from neural_workshop.ui.counting import Counting
     from neural_workshop.ui.gameselect import GameSelect
     from neural_workshop.ui.menu import AllCycler, Cycler, Menu, PercentCycler
     from neural_workshop.ui.message import Message
