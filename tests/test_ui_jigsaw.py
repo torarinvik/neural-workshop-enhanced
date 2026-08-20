@@ -259,6 +259,52 @@ class JigsawScreenTests(unittest.TestCase):
             self.task._pick(home)
         self.assertEqual(self.task.side, 3)
 
+    def test_a_run_never_repeats_an_image_while_it_can_help_it(self):
+        self.task.total_puzzles = 3
+        self.task.start_run()
+        shown = [self.task.shown[-1]]
+        for _puzzle in range(2):
+            self._solve()
+            self.task.feedback_until = 0
+            self.task.update(0)
+        shown = self.task.shown
+        self.assertEqual(len(shown), 3)
+        self.assertEqual(len(set(shown)), 3)
+
+    def test_the_rotation_survives_a_new_task(self):
+        """A jigsaw of a picture already assembled is a memory task,
+        not a reasoning one, so what has been shown is remembered on
+        disk — closing the task, or the whole program, does not deal
+        the same photographs again while unseen ones remain."""
+        self.task.total_puzzles = 1
+        self.task.start_run()
+        first = os.path.basename(self.task.shown[0])
+        self.task.close()
+        self.task = JigsawPuzzle()
+        self.task.pool = media.MediaPool(self.STUB, self.task.rng)
+        self.task.total_puzzles = 2
+        self.task.adaptive = False
+        self.task.start_run()
+        self._solve()
+        self.task.feedback_until = 0
+        self.task.update(0)
+        later = [os.path.basename(path) for path in self.task.shown]
+        self.assertEqual(len(later), 2)
+        self.assertNotIn(first, later)
+
+    def test_an_exhausted_library_starts_the_rotation_over(self):
+        self.task.total_puzzles = 5     # more puzzles than photographs
+        self.task.start_run()
+        while self.task.phase != 'done':
+            self._solve()
+            self.task.feedback_until = 0
+            self.task.update(0)
+        shown = [os.path.basename(path) for path in self.task.shown]
+        self.assertEqual(len(shown), 5)
+        # all three photographs served before any second helping
+        self.assertEqual(len(set(shown[:3])), 3)
+        self.assertEqual(len(set(shown)), 3)
+
     def test_a_run_ends_with_a_score_on_both_axes(self):
         self.task.start_run()
         for _puzzle in range(2):

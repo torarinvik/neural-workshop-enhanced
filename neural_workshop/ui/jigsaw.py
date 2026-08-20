@@ -21,10 +21,18 @@ that a tile from the sky and a tile from the sea genuinely take
 looking at. The library is downloaded once — see the Readme — and the
 task says so if it is missing rather than failing.
 
+Every image in the library is shown before any is shown again, and
+the rotation is remembered *across sessions* in a small file beside
+the library. A jigsaw of a picture you have already assembled is a
+memory task, not a reasoning one — you place tiles by recalling where
+they went — so freshness is part of what the puzzle is, and a session
+boundary should not quietly reset it.
+
 SPDX-License-Identifier: GPL-2.0-or-later
 """
 from __future__ import annotations
 
+import os
 import random
 import time
 from typing import Dict, List, Optional, Tuple
@@ -32,7 +40,7 @@ from typing import Dict, List, Optional, Tuple
 import pyglet
 from pyglet.window import key
 
-from .. import display, media, state
+from .. import datasets, display, media, state
 from ..constants import FONTLIST
 from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
                         width_center)
@@ -98,6 +106,9 @@ class JigsawPuzzle:
             JigsawPuzzle.instance.close()
         self.rng = random.Random()
         self.pool = media.jigsaw_pool(self.rng)
+        #: Paths shown this run, so that even a library too small for
+        #: the run repeats as late as it can.
+        self.shown: List[str] = []
         self.image = None
         self.tiles: List[pyglet.image.AbstractImage] = []
         self.order: List[int] = []
@@ -228,8 +239,55 @@ class JigsawPuzzle:
 
     def start_run(self) -> None:
         self._reset()
+        self.shown = []
         self.side = self.clamped(self.start_side)
         self._next_puzzle()
+
+    # --- picking a photograph nobody has assembled lately ----------------
+
+    def _seen_file(self) -> str:
+        return os.path.join(datasets.local_dir(self.pool.dataset),
+                            'seen.txt')
+
+    def _seen(self) -> List[str]:
+        try:
+            with open(self._seen_file()) as handle:
+                return [line.strip() for line in handle if line.strip()]
+        except OSError:
+            return []
+
+    def _take_fresh(self) -> Optional[str]:
+        """A photograph not assembled before, if one is left.
+
+        The rotation lives on disk, not in this object: every image in
+        the library gets a turn before any gets a second, whether the
+        turns fall in one evening or across a month. When the library
+        has been exhausted the rotation starts over — there is nothing
+        else it could do — still holding back anything already shown
+        in this run for as long as the library allows.
+        """
+        self.pool.reload()
+        paths = list(self.pool.paths)
+        if not paths:
+            return None
+        seen = set(self._seen())
+        unseen = [path for path in paths
+                  if os.path.basename(path) not in seen]
+        if not unseen:
+            try:
+                os.remove(self._seen_file())
+            except OSError:
+                pass
+            unseen = [path for path in paths
+                      if path not in self.shown] or paths
+        path = self.rng.choice(unseen)
+        self.shown.append(path)
+        try:
+            with open(self._seen_file(), 'a') as handle:
+                handle.write(os.path.basename(path) + '\n')
+        except OSError:
+            pass                    # a read-only disk only loses rotation
+        return path
 
     def _cut(self, image) -> List[pyglet.image.AbstractImage]:
         """The largest centred square of *image*, in reading order."""
@@ -250,12 +308,7 @@ class JigsawPuzzle:
         if self.puzzle >= self.total_puzzles:
             self._finish()
             return
-        self.pool.reload()
-        path = self.pool.take()
-        if path is None:
-            self.pool.given = []
-            self.pool.reload()
-            path = self.pool.take()
+        path = self._take_fresh()
         image = self.pool.item(path) if path else None
         if image is None:
             self.phase = 'ready'
