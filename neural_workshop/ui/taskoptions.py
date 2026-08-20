@@ -115,8 +115,8 @@ class TaskOptions(Menu):
         names: Dict[str, str] = {option.key: option.label
                                  for option in spec.options}
         Menu.__init__(self, options, values, names=names, title=spec.title,
-                      footnote=_('Esc: cancel     Space: modify option'
-                                 '     Enter: apply'))
+                      footnote=_('Esc: cancel     \u2190 \u2192 or Space: modify'
+                                 ' option     Enter: apply'))
 
     def build_chrome(self) -> None:
         """The menu's own furniture, plus the note under it."""

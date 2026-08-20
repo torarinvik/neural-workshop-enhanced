@@ -47,6 +47,11 @@ class Cycler:
         self.i = (self.i + 1) % len(self.values)
         return self.value()
 
+    def prv(self) -> Any:
+        """Step back to the previous value."""
+        self.i = (self.i - 1) % len(self.values)
+        return self.value()
+
     def value(self) -> Any:
         return self.values[self.i]
 
@@ -97,7 +102,8 @@ class Menu:
                  choose_once: bool = False,
                  default: int = 0) -> None:
         if footnote is None:
-            footnote = _('Esc: cancel     Space: modify option     Enter: apply')
+            footnote = _('Esc: cancel     \u2190 \u2192 or Space: modify option'
+                         '     Enter: apply')
         self.footnote_text = footnote
         self.title_text = title
 
@@ -236,8 +242,13 @@ class Menu:
 
     # --- behaviour -------------------------------------------------------
 
-    def select(self) -> None:
-        """Act on the highlighted option: toggle, cycle or choose."""
+    def select(self, steps: int = 1) -> None:
+        """Act on the highlighted option: toggle, cycle or choose.
+
+        ``steps`` gives the direction: the right arrow passes 1 and the
+        left arrow -1, so cyclers can be walked both ways.  Toggles and
+        commands behave the same in either direction.
+        """
         k = self.options[self.selpos]
         if k == BLANK_LINE:
             pass
@@ -246,7 +257,10 @@ class Menu:
         elif isinstance(self.values[k], bool):
             self.values[k] = not self.values[k]
         elif isinstance(self.values[k], Cycler):
-            self.values[k].nxt()
+            if steps >= 0:
+                self.values[k].nxt()
+            else:
+                self.values[k].prv()
         elif self.values[k] is None:
             self.choose(k, self.selpos)
             self.close()
@@ -289,6 +303,13 @@ class Menu:
             self.move_selection(steps=-self.pagesize)
         elif evt == key.MOTION_NEXT_PAGE:
             self.move_selection(steps=self.pagesize)
+        elif evt in (key.MOTION_RIGHT, key.MOTION_LEFT):
+            # Arrows cycle values back and forth; unlike Space they
+            # leave command rows alone, since "choose and close" is not
+            # a thing one cycles through.
+            k = self.options[self.selpos]
+            if k in self.actions or self.values.get(k) is not None:
+                self.select(1 if evt == key.MOTION_RIGHT else -1)
         return pyglet.event.EVENT_HANDLED
 
     def on_text(self, evt: str) -> bool:

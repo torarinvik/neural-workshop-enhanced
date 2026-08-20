@@ -97,8 +97,8 @@ class ImageSelect(Menu):
         Menu.close(self)
         update_all_labels()
 
-    def select(self) -> None:
-        Menu.select(self)
+    def select(self, steps: int = 1) -> None:
+        Menu.select(self, steps)
         # At least one set must stay enabled.
         if not [v for v in self.values.values()
                 if v and not isinstance(v, Cycler)]:
@@ -158,8 +158,8 @@ class SoundSelect(Menu):
         Menu.close(self)
         update_all_labels()
 
-    def select(self) -> None:
-        Menu.select(self)
+    def select(self, steps: int = 1) -> None:
+        Menu.select(self, steps)
         from .. import resources
         # Each channel must keep at least one sound set.
         for channel in ('1', '2'):

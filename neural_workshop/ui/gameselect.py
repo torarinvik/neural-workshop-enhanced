@@ -266,9 +266,9 @@ class GameSelect(Menu):
             values[previous] = values[other]
             values[other] = False
 
-    def select(self) -> None:
+    def select(self, steps: int = 1) -> None:
         self._apply_interlocks(self.options[self.selpos])
-        Menu.select(self)
+        Menu.select(self, steps)
         # Never leave the player with nothing to match.
         enabled = [k for k, v in self.values.items() if v]
         substantive = [v for k, v in self.values.items()

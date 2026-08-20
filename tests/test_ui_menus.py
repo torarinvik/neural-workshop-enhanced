@@ -118,6 +118,50 @@ class MenuTests(unittest.TestCase):
         menu.update_labels()
         menu.close()
 
+    def test_arrow_keys_cycle_a_value_both_ways(self):
+        from neural_workshop.ui import taskoptions
+        menu = taskoptions.open_task_options('matrix_reasoning')
+        try:
+            cyclers = [k for k, v in menu.values.items()
+                       if isinstance(v, Cycler) and len(v.values) > 2]
+            self.assertTrue(cyclers)
+            k = cyclers[0]
+            menu.move_selection(menu.options.index(k), relative=False)
+            before = menu.values[k].value()
+            menu.on_text_motion(key.MOTION_RIGHT)
+            forward = menu.values[k].value()
+            self.assertNotEqual(forward, before)
+            menu.on_text_motion(key.MOTION_LEFT)
+            self.assertEqual(menu.values[k].value(), before)
+            menu.on_text_motion(key.MOTION_LEFT)
+            backward = menu.values[k].value()
+            self.assertNotEqual(backward, before)
+            self.assertNotEqual(backward, forward)
+        finally:
+            menu.close()
+
+    def test_arrow_keys_toggle_a_boolean(self):
+        menu = GameSelect()
+        try:
+            menu.move_selection(menu.options.index('selfpaced'),
+                                relative=False)
+            before = menu.values['selfpaced']
+            menu.on_text_motion(key.MOTION_LEFT)
+            self.assertEqual(menu.values['selfpaced'], not before)
+            menu.on_text_motion(key.MOTION_RIGHT)
+            self.assertEqual(menu.values['selfpaced'], before)
+        finally:
+            menu.close()
+
+    def test_arrow_keys_leave_command_rows_alone(self):
+        menu = UserScreen()
+        try:
+            menu.on_text_motion(key.MOTION_LEFT)
+            menu.on_text_motion(key.MOTION_RIGHT)
+            self.assertFalse(menu.closed)
+        finally:
+            menu.close()
+
     def test_game_select_resolves_every_base_mode(self):
         """Ticking a mode's own modalities must resolve back to that mode."""
         menu = GameSelect()
@@ -146,6 +190,12 @@ class CyclerTests(unittest.TestCase):
         self.assertEqual(cycler.nxt(), 2)
         cycler.nxt()
         self.assertEqual(cycler.nxt(), 1)
+
+    def test_cycler_steps_backward_and_wraps(self):
+        cycler = Cycler([1, 2, 3])
+        self.assertEqual(cycler.prv(), 3)
+        self.assertEqual(cycler.prv(), 2)
+        self.assertEqual(cycler.prv(), 1)
 
     def test_cycler_choose(self):
         cycler = Cycler(['a', 'b'])
