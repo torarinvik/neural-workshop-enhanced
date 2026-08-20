@@ -24,7 +24,7 @@ from .constants import (CLINICAL_MODE, TIMEOUT_SILENT, VERSION,
                         WEB_VERSION_CHECK)
 from .gamemode import Mode
 from . import geometry
-from .geometry import scale_to_height, scale_to_width
+from .geometry import from_bottom_edge, scale_to_height, scale_to_width
 from .paths import ensure_data_dir, load_pyglet_image, quit_with_error
 from .stats import Stats
 from .timing import apply_trial_interval_override, tick_duration_ms, trial_interval_ms
@@ -122,6 +122,15 @@ def _build_widgets() -> None:
     state.input_labels = []
 
 
+#: Reference-pixel room the title logo gets: the gap between the version
+#: banner above it and the key list below. The artwork is fitted to this
+#: rather than drawn at whatever resolution the file happens to be, so a
+#: replacement logo cannot land half off the screen.
+SPLASH_WIDTH = 360
+SPLASH_HEIGHT = 316
+SPLASH_BOTTOM = 268
+
+
 def _load_title_artwork() -> None:
     """The brain icon on the hub and the splash image on the title screen."""
     misc = resources.resourcepaths['misc']
@@ -134,28 +143,31 @@ def _load_title_artwork() -> None:
     splash = 'splash-black' if state.cfg.BLACK_BACKGROUND else 'splash'
     state.brain_graphic = pyglet.sprite.Sprite(
         load_pyglet_image(random.choice(misc[splash])))
-    state.brain_graphic.position = (
-        state.field.center_x - state.brain_graphic.width // 2,
-        state.field.center_y - state.brain_graphic.height // 2 + 40, 0)
+    _place_splash()
 
 
-def scale_brain(dt: float) -> None:
-    """Shrink the splash brain into the hub icon. Scheduled per frame."""
+def _place_splash(fraction: float = 1.0) -> None:
+    """Size the title logo to *fraction* of the room it is allowed."""
     graphic = state.brain_graphic
-    graphic.scale = dt
-    graphic.x = (state.field.center_x - graphic.image.width // 2
-                 + scale_to_width(2) + (graphic.image.width - graphic.width) // 2)
-    graphic.y = (state.field.center_y - graphic.image.height // 2
-                 + scale_to_height(60)
-                 + (graphic.image.height - graphic.height) // 2)
+    room_width = scale_to_width(SPLASH_WIDTH)
+    room_height = scale_to_height(SPLASH_HEIGHT)
+    graphic.scale = fraction * min(room_width / graphic.image.width,
+                                   room_height / graphic.image.height)
+    graphic.position = (
+        state.field.center_x - graphic.width // 2,
+        from_bottom_edge(SPLASH_BOTTOM) + (room_height - graphic.height) // 2,
+        0)
+
+
+def scale_brain(fraction: float) -> None:
+    """Shrink the splash logo into the hub icon. Scheduled per frame."""
+    _place_splash(fraction)
     state.window.clear()
-    graphic.draw()
-    if graphic.width < 56:
+    state.brain_graphic.draw()
+    if state.brain_graphic.width < 56:
         state.mode.shrink_brain = False
         pyglet.clock.unschedule(scale_brain)
-        graphic.scale = 1
-        graphic.position = (state.field.center_x - graphic.width // 2,
-                            state.field.center_y - graphic.height // 2 + 40)
+        _place_splash()
 
 
 def _restore_last_mode() -> None:
@@ -214,7 +226,7 @@ def build_application() -> None:
     _restore_last_mode()
     update_all_labels()
     _load_title_artwork()
-    scale_brain(scale_to_width(1))
+    scale_brain(1.0)
 
     # Anything raised while loading had nowhere to go; show it now.
     state.message_queue.reverse()

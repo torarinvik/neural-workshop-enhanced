@@ -8,8 +8,11 @@ from __future__ import annotations
 
 import unittest
 
-from uisupport import (MonkeyLadder, NCupMonte, TaskHub, end_session, key,
-                       needs_ui, new_session, on_draw, on_key_press, state)
+import pyglet
+
+from uisupport import (MonkeyLadder, NCupMonte, TaskHub, bootstrap, display,
+                       end_session, geometry, key, needs_ui, new_session,
+                       on_draw, on_key_press, reset_window, state)
 
 
 @needs_ui
@@ -171,6 +174,82 @@ class KeyDispatchTests(unittest.TestCase):
     def test_unbound_key_is_harmless(self):
         state.mode.title_screen = False
         on_key_press(key.Z, 0)
+
+
+@needs_ui
+class SplashLogoTests(unittest.TestCase):
+    """The title logo is sized by the window, never by its own file.
+
+    The artwork is a resource anyone may replace, so a logo of any
+    resolution has to land in the gap between the version banner and
+    the key list rather than wherever its own pixels reach to.
+    """
+
+    #: Shapes a replacement logo could plausibly arrive in, including
+    #: the one that used to hang off all four edges.
+    SHAPES = ((1254, 1254), (300, 300), (64, 64), (2000, 500), (400, 1600))
+
+    def tearDown(self):
+        reset_window()
+        bootstrap._load_title_artwork()
+
+    def _room(self):
+        """The gap to stay inside, read off the labels that bound it."""
+        banner = state.title_message_label.native
+        return (state.title_keys_label.keys.y,
+                banner.y - banner.content_height // 2)
+
+    def _assert_it_fits(self, note=''):
+        logo = state.brain_graphic
+        floor, ceiling = self._room()
+        self.assertGreater(logo.width, 0, note)
+        self.assertGreaterEqual(logo.y, floor, note)
+        self.assertLessEqual(logo.y + logo.height, ceiling, note)
+        self.assertGreaterEqual(logo.x, 0, note)
+        self.assertLessEqual(logo.x + logo.width, state.window.width, note)
+
+    def test_the_shipped_logo_clears_the_banner_and_the_key_list(self):
+        self._assert_it_fits()
+
+    def test_it_is_refitted_when_the_window_changes(self):
+        drawn = []
+        for width, height in ((1024, 768), (640, 480)):
+            geometry.set_window_size(width, height)
+            display.relayout()
+            self._assert_it_fits('%dx%d window' % (width, height))
+            drawn.append(state.brain_graphic.width)
+        self.assertNotEqual(drawn[0], drawn[1])
+
+    def test_artwork_of_any_shape_lands_in_the_same_room(self):
+        paper = pyglet.image.SolidColorImagePattern((0, 0, 0, 255))
+        for width, height in self.SHAPES:
+            state.brain_graphic = pyglet.sprite.Sprite(
+                paper.create_image(width, height))
+            bootstrap._place_splash()
+            note = '%dx%d artwork' % (width, height)
+            self._assert_it_fits(note)
+            logo = state.brain_graphic
+            self.assertAlmostEqual(logo.width / logo.height, width / height,
+                                   places=1, msg=note)
+
+    def test_shrinking_the_logo_puts_it_back_when_it_is_done(self):
+        full = state.brain_graphic.width
+        bootstrap.scale_brain(0.05)
+        self.assertEqual(state.brain_graphic.width, full)
+
+    def test_the_dark_logo_is_ink_and_not_a_white_card(self):
+        """On a black screen an opaque logo would be a bright slab."""
+        from neural_workshop import resources
+        misc = resources.resourcepaths['misc']
+        self.assertIn('splash-black', misc)
+        for path in misc['splash-black']:
+            with open(path, 'rb') as handle:
+                image = pyglet.image.load(path, file=handle)
+            pixels = image.get_image_data().get_data('RGBA', image.width * 4)
+            alphas = pixels[3::16 * 4]
+            self.assertGreater(sum(1 for a in alphas if a == 0),
+                               len(alphas) // 2, path)
+            self.assertGreater(sum(1 for a in alphas if a > 200), 0, path)
 
 
 if __name__ == '__main__':

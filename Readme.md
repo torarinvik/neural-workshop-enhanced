@@ -255,6 +255,31 @@ Nothing else may call `set_size`, `get_size`, `get_framebuffer_size`,
 `set_minimum_size`, or read `window.scale`; the same test enforces that
 by scanning the source.
 
+### The title logo
+
+The splash is `res/misc/splash/logo.png`, and the one used when
+`BLACK_BACKGROUND` is on is `res/misc/splash-black/logo_blk.png`. Both
+are ordinary resource sets, so a folder holding several images gives a
+different logo each launch — which also means a second file left in
+beside the first is not a replacement, it is a coin toss.
+
+The artwork is *fitted* to the window rather than drawn at whatever
+resolution the file happens to be. `bootstrap._place_splash` scales it,
+aspect ratio intact, into the gap between the version banner and the
+key list, so a new logo cannot be clipped by the window, land on top of
+the keys, or sit as a speck on a large screen. `tests/test_ui_screens.py`
+holds it to that with artwork from 64x64 to 2000x500.
+
+The dark copy is derived from the light one by `tools/unwhite.py`, which
+reads every pixel as ink laid over white paper and undoes that
+composite. The logo is then unchanged on white and becomes pencil on
+black in the dark theme, instead of a bright card floating on it. Run it
+again after changing the logo:
+
+```bash
+python tools/unwhite.py res/misc/splash/logo.png res/misc/splash-black/logo_blk.png
+```
+
 ### Trial timing (milliseconds)
 
 Human play still defaults to 100 ms ticks and ~3 s per trial. For faster

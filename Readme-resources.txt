@@ -31,6 +31,14 @@ To add new music, just drop an audio file into one of the subfolders of
 res/music.  The music files can be in any format mentioned in the 
 paragraph above on sound sets and can be of any length.
 
+To change the logo on the title screen, replace res/misc/splash/logo.png
+with your own image.  It can be any size and any shape; the program
+scales it to the room the title screen has and leaves its proportions
+alone.  Remove the old file rather than adding yours beside it, or the
+program will pick between them at random.  The dark theme reads its
+logo from res/misc/splash-black/ instead, and the copy there is made
+from the light one by tools/unwhite.py.
+
 If you have a sound set, image set, or music file which you would like
 to share and which is free of copyright restrictions, please submit it
 to the authors and/or announce it on the brain-training@googlegroups.com

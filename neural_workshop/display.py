@@ -28,7 +28,7 @@ from typing import List, Optional, Protocol, Tuple
 import pyglet
 
 from . import runtime, state
-from .geometry import pixel_size, point_size, scale_to_width
+from .geometry import pixel_size, point_size
 
 
 class Relayoutable(Protocol):
@@ -123,7 +123,7 @@ def _rebuild_everything() -> None:
     bootstrap._build_widgets()
     update_all_labels()
     bootstrap._load_title_artwork()
-    bootstrap.scale_brain(scale_to_width(1))
+    bootstrap.scale_brain(1.0)
     state.circles.update()
     cursor.reset()
 
