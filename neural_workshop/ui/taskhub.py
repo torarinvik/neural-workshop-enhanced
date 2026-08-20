@@ -43,6 +43,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
     'attention': [
         ('reflex', _('Reflex')),
         ('ncup_monte', _('N-Cup Monte')),
+        ('moving_targets', _('Moving Targets')),
     ],
     'perception': [
         ('count', _('Count')),
@@ -362,6 +363,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'reflex':
         from .reflex import Reflex
         Reflex()
+        return
+    if task_id == 'moving_targets':
+        from .tracking import MovingTargets
+        MovingTargets()
         return
     if task_id == 'count':
         from .counting import Counting

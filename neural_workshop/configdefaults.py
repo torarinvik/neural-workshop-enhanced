@@ -541,6 +541,19 @@ REFLEX_MAX_ACTIVE = 3
 REFLEX_SIZE = 130
 REFLEX_ADAPTIVE = True
 
+# Moving Targets: TRACK_TARGETS balls flash a colour among TRACK_BALLS,
+# then all look alike and bounce for TRACK_SECONDS; click the flashed
+# ones back out when the motion stops. TRACK_SPEED is roughly the
+# share of the screen a ball covers per second, in per cent. Targets
+# are always at most one fewer than the balls. With TRACK_ADAPTIVE a
+# perfect round asks for one more target, a miss for one fewer.
+TRACK_BALLS = 8
+TRACK_TARGETS = 2
+TRACK_SECONDS = 8
+TRACK_SPEED = 16
+TRACK_ROUNDS = 5
+TRACK_ADAPTIVE = True
+
 
 # Count: a tangle of overlapping outlines, and the question is how
 # many. COUNT_SHAPE is 'lines', 'circles', 'triangles', 'rectangles'

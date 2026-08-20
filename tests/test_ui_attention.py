@@ -34,9 +34,9 @@ class AttentionCategoryTests(unittest.TestCase):
         self.assertIn('attention', ids)
         self.assertIn('attention', TASKS)
 
-    def test_reflex_and_the_cups_are_in_it(self):
+    def test_the_roster_is_complete(self):
         self.assertEqual([task for task, _name in TASKS['attention']],
-                         ['reflex', 'ncup_monte'])
+                         ['reflex', 'ncup_monte', 'moving_targets'])
 
     def test_it_has_an_options_screen(self):
         from neural_workshop.ui import taskoptions
@@ -359,3 +359,147 @@ class ReflexTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
+
+
+class BounceTests(unittest.TestCase):
+    """The wall bounce: pure arithmetic, no window needed."""
+
+    def test_inside_passes_through(self):
+        from neural_workshop.ui.tracking import bounced
+        self.assertEqual(bounced(0.5, 0.2, 0.1, 0.9), (0.5, 0.2))
+
+    def test_overshoot_folds_back_and_reflects(self):
+        from neural_workshop.ui.tracking import bounced
+        position, velocity = bounced(0.95, 0.3, 0.1, 0.9)
+        self.assertAlmostEqual(position, 0.85)
+        self.assertEqual(velocity, -0.3)
+        position, velocity = bounced(0.05, -0.3, 0.1, 0.9)
+        self.assertAlmostEqual(position, 0.15)
+        self.assertEqual(velocity, 0.3)
+
+    def test_the_bounce_never_sticks(self):
+        """A ball glued to a wall with inward velocity keeps it."""
+        from neural_workshop.ui.tracking import bounced
+        _position, velocity = bounced(0.9, 0.3, 0.1, 0.9)
+        self.assertEqual(velocity, 0.3)   # exactly on the wall: unchanged
+
+
+@needs_ui
+class MovingTargetsScreenTests(unittest.TestCase):
+
+    def setUp(self):
+        close_overlays()
+        from uisupport import MovingTargets
+        self.task = MovingTargets()
+        self.task.total_rounds = 2
+        self.task.adaptive = False
+
+    def tearDown(self):
+        self.task.close()
+        close_overlays()
+        reset_window()
+
+    def _to_picking(self):
+        """Walk the phases by backdating the clock, not by sleeping."""
+        self.task.until = time.time() - 1
+        self.task.update(1 / 60.)              # cueing -> tracking
+        self.task.until = time.time() - 1
+        self.task.update(1 / 60.)              # tracking -> picking
+        self.assertEqual(self.task.phase, 'picking')
+
+    def test_it_is_in_the_attention_category(self):
+        self.assertIn('moving_targets',
+                      [task for task, _name in TASKS['attention']])
+
+    def test_a_round_cues_the_right_number_of_targets(self):
+        self.task.start_run()
+        self.assertEqual(self.task.phase, 'cueing')
+        self.assertEqual(len(self.task.balls), self.task.ball_count)
+        self.assertEqual(self.task.tracked_now(), self.task.tracked)
+        self.task.on_draw()
+
+    def test_targets_never_swallow_the_whole_flock(self):
+        self.task.ball_count = 4
+        self.task.start_targets = 99
+        self.assertEqual(self.task.clamped_targets(99), 3)
+
+    def test_tracking_moves_the_balls_and_keeps_them_inside(self):
+        self.task.start_run()
+        self.task.until = time.time() - 1
+        self.task.update(1 / 60.)
+        self.assertEqual(self.task.phase, 'tracking')
+        before = [(ball.x, ball.y) for ball in self.task.balls]
+        for _frame in range(600):              # ten seconds of motion
+            self.task._move(1 / 60.)
+        low_x, high_x, low_y, high_y = self.task._bounds()
+        for ball in self.task.balls:
+            self.assertTrue(low_x <= ball.x <= high_x)
+            self.assertTrue(low_y <= ball.y <= high_y)
+        after = [(ball.x, ball.y) for ball in self.task.balls]
+        self.assertNotEqual(before, after)
+
+    def test_perfect_picks_score_and_reveal(self):
+        self.task.start_run()
+        self._to_picking()
+        for ball in self.task.balls:
+            if ball.target:
+                self.task.pick(ball)
+        self.assertEqual(self.task.phase, 'revealing')
+        self.assertEqual(self.task.results[-1][2], self.task.results[-1][1])
+        self.task.on_draw()
+
+    def test_wrong_picks_score_what_they_caught(self):
+        self.task.start_run()
+        self._to_picking()
+        # Pick only non-targets, as many as there are targets.
+        wanted = self.task.tracked_now()
+        for ball in self.task.balls:
+            if not ball.target and wanted:
+                self.task.pick(ball)
+                wanted -= 1
+        self.assertEqual(self.task.phase, 'revealing')
+        self.assertEqual(self.task.results[-1][2], 0)
+
+    def test_a_pick_can_be_taken_back(self):
+        self.task.start_run()
+        self._to_picking()
+        if self.task.tracked_now() < 2:        # need room to change a mind
+            self.skipTest('one target scores on the first pick')
+        ball = self.task.balls[0]
+        self.task.pick(ball)
+        self.assertTrue(ball.picked)
+        self.task.pick(ball)
+        self.assertFalse(ball.picked)
+        self.assertEqual(self.task.phase, 'picking')
+
+    def test_adaptive_grows_on_perfect_and_shrinks_on_a_miss(self):
+        self.task.adaptive = True
+        self.task.start_run()
+        was = self.task.tracked
+        self._to_picking()
+        for ball in self.task.balls:
+            if ball.target:
+                self.task.pick(ball)
+        self.assertEqual(self.task.tracked,
+                         self.task.clamped_targets(was + 1))
+
+    def test_the_run_finishes_after_its_rounds(self):
+        self.task.start_run()
+        for _round in range(2):
+            self._to_picking()
+            for ball in self.task.balls:
+                if ball.target:
+                    self.task.pick(ball)
+            self.task.until = time.time() - 1
+            self.task.update(1 / 60.)          # revealing -> next round
+        self.assertEqual(self.task.phase, 'done')
+        self.assertEqual(self.task.score()['accuracy'], 100)
+        self.task.on_draw()
+
+    def test_it_has_an_options_screen(self):
+        from neural_workshop.ui import taskoptions
+        self.assertTrue(taskoptions.has_options('moving_targets'))
+        note = taskoptions.TRACKING.note(
+            {'TRACK_BALLS': 4, 'TRACK_TARGETS': 10, 'TRACK_SECONDS': 8,
+             'TRACK_ADAPTIVE': False})
+        self.assertIn('3', note)               # the clamp is spelled out

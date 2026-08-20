@@ -20,10 +20,10 @@ import tempfile
 import unittest
 
 from uisupport import (Concentration, Counting, GraphMapping, JigsawPuzzle,
-                       MatrixReasoning, MonkeyLadder, NCupMonte, Recognition,
-                       Reflex, TowerOfHanoi, TravelingSalesman,
-                       close_overlays, needs_ui, reset_window, state,
-                       taskoptions)
+                       MatrixReasoning, MonkeyLadder, MovingTargets,
+                       NCupMonte, Recognition, Reflex, TowerOfHanoi,
+                       TravelingSalesman, close_overlays, needs_ui,
+                       reset_window, state, taskoptions)
 
 from neural_workshop import datasets, media
 
@@ -211,6 +211,20 @@ class MaximaTests(unittest.TestCase):
             task.start_run()
             self.assertEqual(task.trial_disks, 12)
             self.assertEqual(task.par, 4095)
+            task.on_draw()
+        finally:
+            task.close()
+
+    def test_moving_targets_thirty_balls(self):
+        self._push('moving_targets')
+        task = MovingTargets()
+        try:
+            task.start_run()
+            self.assertEqual(len(task.balls), 30)
+            # Fifteen targets fits under the thirty-ball flock whole.
+            self.assertEqual(task.tracked_now(), 15)
+            for _frame in range(120):
+                task._move(1 / 60.)
             task.on_draw()
         finally:
             task.close()

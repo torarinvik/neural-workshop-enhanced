@@ -446,6 +446,49 @@ HANOI = TaskSpec(
     note=hanoi_note)
 
 
+def tracking_note(chosen: Dict[str, Any]) -> str:
+    """What the chosen flock adds up to, and the one silent clamp.
+
+    Targets are clamped to one fewer than the balls — a trial where
+    every ball is a target answers itself — and the clamp is silent
+    in play, so this is where the player learns their numbers were
+    bent before a run quietly uses different ones.
+    """
+    balls = int(chosen['TRACK_BALLS'])
+    asked = int(chosen['TRACK_TARGETS'])
+    said = []
+    if asked > balls - 1:
+        said.append(_('With %d balls at most %d can be targets, so runs '
+                      'will track %d.') % (balls, balls - 1, balls - 1))
+        asked = balls - 1
+    said.insert(0, _('%d balls bounce for %d seconds; %d of them are '
+                     'yours to follow.') % (balls, int(chosen['TRACK_SECONDS']),
+                                            asked))
+    if chosen['TRACK_ADAPTIVE']:
+        said.append(_('Catch them all and the next round asks for one '
+                      'more; miss and it asks for one fewer.'))
+    return '  '.join(said)
+
+
+TRACKING = TaskSpec(
+    title=_('Moving Targets options'),
+    options=(
+        Option('TRACK_BALLS', _('Balls on screen'), 8,
+               values=(3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30)),
+        Option('TRACK_TARGETS', _('Balls to track'), 2,
+               values=(1, 2, 3, 4, 5, 6, 8, 10, 12, 15)),
+        Option('TRACK_SECONDS', _('Seconds of motion'), 8,
+               values=(3, 5, 8, 10, 15, 20, 30, 45, 60), suffix=' s'),
+        Option('TRACK_SPEED', _('Ball speed'), 16,
+               values=(8, 12, 16, 22, 30, 40, 55, 75)),
+        Option('TRACK_ROUNDS', _('Rounds per run'), 5,
+               values=(3, 5, 8, 10, 15, 20, 30, 50)),
+        Option('TRACK_ADAPTIVE',
+               _('Ask for one more target when you catch them all'), True),
+    ),
+    note=tracking_note)
+
+
 def salesman_note(chosen: Dict[str, Any]) -> str:
     """What the score means at this size, and that it is exact.
 
@@ -489,6 +532,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'concentration': CONCENTRATION,
     'recognition': RECOGNITION,
     'reflex': REFLEX,
+    'moving_targets': TRACKING,
     'count': COUNTING,
     'graph_mapping': GRAPH_MAPPING,
     'matrix_reasoning': MATRIX_REASONING,

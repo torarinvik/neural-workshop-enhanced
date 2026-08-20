@@ -159,6 +159,26 @@ It draws from the same photograph library as the long-term-memory
 games, so `python -m neural_workshop.datasets tiny-imagenet` is all it
 needs.
 
+**N-Cup Monte** hides a ball under one of several cups and shuffles
+them; keep your eye on the right cup through the swaps and click it
+when the music stops. The cup count and the number of swaps are both
+yours to set, and the adaptive option adds cups as you keep finding
+the ball.
+
+**Moving Targets** is the classic multiple-object-tracking task: a
+few balls flash a colour, then every ball looks the same and the
+whole flock bounces around the screen. When the motion stops, click
+the balls that flashed — nothing marks them any more, so the only way
+to know is to have followed them the whole way round. You choose how
+many balls are on screen and how many of them are yours to follow
+(always at least one ball fewer than the flock, or the question would
+answer itself), plus the speed and how long the motion lasts. The
+balls deliberately pass through each other rather than colliding: two
+identical balls crossing is exactly the moment tracking is hard, and
+bouncing them apart would delete the difficulty in the name of
+physics. With the adaptive option a perfect round asks you to follow
+one more ball, and a miss asks for one fewer.
+
 ### Perception
 
 The *Perception* category holds **Count**: a tangle of overlapping
