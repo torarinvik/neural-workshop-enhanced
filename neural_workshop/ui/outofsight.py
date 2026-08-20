@@ -209,6 +209,10 @@ class OutOfSight:
         if OutOfSight.instance is not None:
             OutOfSight.instance.close()
         self.rng = random.Random()
+        #: Every deadline in the task is read through this, so a
+        #: stepped driver can own the clock instead of racing it.
+        #: :mod:`nwenv.sight` replaces it with a virtual one.
+        self.clock = time.time
         self.dots: List[Dot] = []
         self.blinds: List[Blind] = []
         self.blind_shapes: List[object] = []
@@ -451,7 +455,7 @@ class OutOfSight:
         self.round_right = 0
         self.verdict = None
         self.phase = 'cueing'
-        self.until = time.time() + CUE_SECONDS
+        self.until = self.clock() + CUE_SECONDS
         self.message = _('Hold on to the %s') % (
             _('coloured dot') if count == 1 else
             _('%d coloured dots') % count)
@@ -523,7 +527,7 @@ class OutOfSight:
         slabs, neither of which knows which dots are yours, so
         preferring risky dots does not leak the answer.
         """
-        now = time.time()
+        now = self.clock()
         open_air = [dot for dot in self.dots
                     if dot.target == want
                     and not hidden(self.blinds, dot.x, dot.y)]
@@ -553,7 +557,7 @@ class OutOfSight:
             return
         if self.verdict is not None:
             return
-        now = time.time()
+        now = self.clock()
         right = mine == self.probe.target
         self.reaction_times.append(now - self.probe_at)
         if right:
@@ -592,7 +596,7 @@ class OutOfSight:
     # --- the clock -------------------------------------------------------
 
     def update(self, dt: float) -> None:
-        now = time.time()
+        now = self.clock()
         if self.phase == 'cueing':
             if now < self.until:
                 return

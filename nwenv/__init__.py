@@ -41,10 +41,20 @@ Parity tests compare the step driver against the scheduled ``update()``
 clock with the window hidden, so they prove stepped-versus-scheduled
 parity rather than literal visible-window execution.
 
+Two tasks are wrapped. ``NeuralWorkshopEnv`` is the n-back workshop,
+where a trial is a stimulus and one action window per trial. ``sight``
+holds ``OutOfSightEnv``, where the task is a continuous animation the
+driver clocks itself: one step is one rendered tick, a trial is one
+ringed question, and the outcome is read off the ring's colour. The
+public contract is the same either way, and so is
+``verify_public_outcome`` — which takes the frame reader as an argument
+so a third party verifies both the same way.
+
 Modules
 -------
 ``frames``       capturing and digesting the screen
 ``outcome``      deriving and verifying the public outcome
+``sight``        the Out of Sight environment and its outcome
 ``export``       the optional shared-memory framebuffer dump
 ``accounting``   per-run counters
 ``env``          the environment itself
@@ -81,11 +91,14 @@ from .export import FrameExport  # noqa: E402
 from .frames import capture_rgba, digest_rgba, render_significant_frame  # noqa: E402
 from .outcome import (derive_public_outcome, diagnose_public_outcome,  # noqa: E402
                       verify_public_outcome, verify_public_pixels)
+from .sight import (OutOfSightEnv, derive_sight_outcome,  # noqa: E402
+                    make_sight_env, verify_sight_outcome)
 
 __all__ = [
     'Accounting', 'DiagnosticEnv', 'FrameExport', 'NeuralWorkshopEnv',
-    'TestProbe', 'capture_rgba', 'derive_public_outcome',
-    'diagnose_public_outcome', 'digest_rgba', 'format_accounting',
-    'make_env', 'render_significant_frame', 'verify_public_outcome',
-    'verify_public_pixels',
+    'OutOfSightEnv', 'TestProbe', 'capture_rgba', 'derive_public_outcome',
+    'derive_sight_outcome', 'diagnose_public_outcome', 'digest_rgba',
+    'format_accounting', 'make_env', 'make_sight_env',
+    'render_significant_frame', 'verify_public_outcome',
+    'verify_public_pixels', 'verify_sight_outcome',
 ]

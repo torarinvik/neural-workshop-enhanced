@@ -110,6 +110,21 @@ def _clamp_grid_settings(cfg: DotDict) -> None:
     cfg.GRID_3D = bool(cfg.GRID_3D)
 
 
+def shipped_defaults() -> DotDict:
+    """The built-in defaults alone, with no user config layered on.
+
+    :func:`parse_config` reads the same template and then lets the
+    user's file overwrite it, which is right for playing and wrong for
+    anything that has to mean the same thing on two machines — a
+    stepped training environment, say. This is that template read on
+    its own.
+    """
+    parser = configparser.ConfigParser()
+    parser.read_file(StringIO(CONFIGFILE_DEFAULT_CONTENTS))
+    return DotDict((key.upper(), _try_eval(value))
+                   for key, value in parser.items('DEFAULT'))
+
+
 def parse_config(configpath: str) -> DotDict:
     """Load *configpath*, layered on top of the built-in defaults."""
     user_config: Optional[configparser.ConfigParser] = None

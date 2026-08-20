@@ -17,7 +17,8 @@ SPDX-License-Identifier: GPL-2.0-or-later
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
+from typing import (Any, Callable, Dict, Mapping, Optional, Sequence,
+                    Tuple)
 
 import bwaccel
 
@@ -112,10 +113,18 @@ def _receipt_bound_to_evidence(rec: Optional[Mapping[str, Any]],
     return True
 
 
+#: How an outcome's scalar is read back out of a frame. The n-back
+#: workshop counts feedback labels; another task paints its verdict
+#: some other way and passes its own reader in. Everything else about
+#: verifying — the archive, the receipt binding, the fail-closed rules
+#: — is the same whatever painted the frame, so only this varies.
+Derivation = Callable[..., Optional[Dict[str, Any]]]
+
+
 def _pixels_match_outcome(outcome: Optional[Mapping[str, Any]], rgba: bytes,
                           width: int, height: int,
-                          archive: Optional[Mapping[str, bytes]] = None
-                          ) -> bool:
+                          archive: Optional[Mapping[str, bytes]] = None,
+                          derive: Optional[Derivation] = None) -> bool:
     """Re-derive the scalar from pixels. No receipt binding is checked."""
     if not outcome:
         return False
@@ -136,8 +145,8 @@ def _pixels_match_outcome(outcome: Optional[Mapping[str, Any]], rgba: bytes,
             if stored is None or digest_rgba(stored) != digest:
                 return False
 
-    recomputed = derive_public_outcome(rgba, width, height, evidence,
-                                       outcome.get('receipt_id'))
+    recomputed = (derive or derive_public_outcome)(
+        rgba, width, height, evidence, outcome.get('receipt_id'))
     if recomputed is None:
         return False
     return recomputed['scalar'] == outcome.get('scalar')
@@ -145,23 +154,29 @@ def _pixels_match_outcome(outcome: Optional[Mapping[str, Any]], rgba: bytes,
 
 def verify_public_pixels(outcome: Optional[Mapping[str, Any]], rgba: bytes,
                          width: int, height: int,
-                         archive: Optional[Mapping[str, bytes]] = None
-                         ) -> bool:
+                         archive: Optional[Mapping[str, bytes]] = None,
+                         derive: Optional[Derivation] = None) -> bool:
     """Diagnostic pixel-only check. Not the learner-facing verifier."""
-    return _pixels_match_outcome(outcome, rgba, width, height, archive)
+    return _pixels_match_outcome(outcome, rgba, width, height, archive,
+                                 derive)
 
 
 def verify_public_outcome(outcome: Optional[Mapping[str, Any]], rgba: bytes,
                           width: int, height: int,
                           archive: Optional[Mapping[str, bytes]] = None,
-                          receipt_ledger: Optional[Mapping[int, Any]] = None
-                          ) -> bool:
+                          receipt_ledger: Optional[Mapping[int, Any]] = None,
+                          derive: Optional[Derivation] = None) -> bool:
     """Learner-facing verifier: archive, receipt binding and pixel scalar.
 
     An outcome that names a receipt fails closed unless both *archive*
     and *receipt_ledger* are supplied. The receipt must exist and be
     bound to this stimulus digest, trial sequence, action window and
     evidence list; a valid receipt from a different trial is rejected.
+
+    *derive* is how the scalar is read back out of the frame, and
+    defaults to the n-back workshop's feedback labels. A task that
+    paints its verdict differently passes its own reader; none of the
+    archive or receipt rules above change with it.
     """
     if not outcome:
         return False
@@ -172,4 +187,5 @@ def verify_public_outcome(outcome: Optional[Mapping[str, Any]], rgba: bytes,
         rec = receipt_ledger.get(outcome.get('receipt_id'))
         if rec is None or not _receipt_bound_to_evidence(rec, evidence):
             return False
-    return _pixels_match_outcome(outcome, rgba, width, height, archive)
+    return _pixels_match_outcome(outcome, rgba, width, height, archive,
+                                 derive)

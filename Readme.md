@@ -55,7 +55,7 @@ it is now a thin facade over three packages:
 | --- | --- |
 | `neural_workshop/` | the game — config, state, board, modes, scoring, session, events, and everything drawn on screen under `ui/` |
 | `bwaccel/` | the accelerated kernels, dispatching to the `bwcore` C extension when it is built and to `bwaccel/fallback.py` when it is not |
-| `nwenv/` | the agent boundary — frame capture, public outcomes and their verification, and the stepped environment |
+| `nwenv/` | the agent boundary — frame capture, public outcomes and their verification, and the stepped environments |
 
 Inside `neural_workshop`, `ravens/` is the odd one out: it is the
 Matrix Reasoning puzzle generator, and it imports no pyglet and
@@ -758,6 +758,53 @@ env = NeuralWorkshopEnv(
 Do not train by patching a separate Brain Workshop or by poking `bw.cfg`.
 A visible window (`visible=True` and `NW_HEADLESS=0`) is for watching the
 gym; the learner still sees only the public observation.
+
+#### Out of Sight as an environment
+
+`nwenv.OutOfSightEnv` is the same `reset → observe → act → advance`
+boundary over the Out of Sight task. The n-back environment watches a
+game it does not control and has to work out where one trial ends; this
+one is the other way round. The task is a continuous animation, so the
+driver owns its clock outright and **one step is one rendered tick**.
+Nothing moves between steps and two runs under the same seed produce the
+same frames byte for byte.
+
+```python
+from nwenv import OutOfSightEnv, verify_sight_outcome
+env = OutOfSightEnv(seed=1, dots=10, targets=3, blinds=4, frame_hz=60)
+obs = env.reset(1)                      # RGBA + frame_seq + timestamp
+receipt = env.act(1)                    # one of two opaque ports
+obs, events, done = env.step()
+env.close()
+```
+
+- A **trial is one question**: the window opens on the tick a dot is
+  ringed and closes when the ring resolves. Exactly one action may be
+  finalized inside it, and it gets a receipt. Pressing both ports or
+  neither is not an answer.
+- The outcome is `+1` or `-1`, read off the ring's colour in the frame —
+  pixels only, never the task's own verdict — so a third party holding
+  the archive and the ledger can re-derive it. `verify_sight_outcome`
+  applies exactly the rules `verify_public_outcome` does and fails
+  closed the same way; only how the scalar is read differs, which is
+  now an argument to the shared verifier.
+- A question the learner never answers still resolves, and resolves
+  as `-1`. Silence is an answer here, because the ring runs out.
+- The dials (`dots`, `targets`, `speed`, `blinds`, `blind_width`,
+  `cross_ms`, `probes`, `rounds`) default to the values in the source,
+  **not** to the player's `config.ini`, so a run under a given seed
+  means the same thing on two machines. `adaptive` is off by default:
+  a curriculum that moves under the learner is the runtime's business.
+- `frame_hz` is what the task is clocked at, not a wall-clock rate. The
+  task's seconds stay the task's seconds; a lower rate is simply a
+  coarser look at the same motion, which is the observation-rate axis
+  the task is hardest along. Ten is the floor — below it a tick would
+  outrun how far the task will move in one call, and the environment
+  refuses rather than quietly drifting.
+
+```
+.venv/bin/python -m nwenv --sight
+```
 
 ### Grid size
 
