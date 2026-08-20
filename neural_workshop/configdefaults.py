@@ -554,6 +554,19 @@ TRACK_SPEED = 16
 TRACK_ROUNDS = 5
 TRACK_ADAPTIVE = True
 
+# Lookout: LOOKOUT_SHAPES coloured shapes drift and each changes its
+# colour or form about every LOOKOUT_MORPH_MS; a HUD glyph names what
+# to watch for and Space is pressed while it is on screen. LOOKOUT_CUE
+# is 'color' (pop-out, easy), 'form', 'both' (conjunction search, the
+# hard one) or 'mixed'. Scored as hits with reaction time, misses when
+# the match churns away unpressed, and false alarms.
+LOOKOUT_SHAPES = 8
+LOOKOUT_CUE = 'color'
+LOOKOUT_SPEED = 16
+LOOKOUT_MORPH_MS = 2000
+LOOKOUT_CUES = 10
+LOOKOUT_ADAPTIVE = True
+
 
 # Count: a tangle of overlapping outlines, and the question is how
 # many. COUNT_SHAPE is 'lines', 'circles', 'triangles', 'rectangles'

@@ -179,6 +179,22 @@ bouncing them apart would delete the difficulty in the name of
 physics. With the adaptive option a perfect round asks you to follow
 one more ball, and a miss asks for one fewer.
 
+**Lookout** is a vigilance task: coloured shapes drift and bounce,
+and each one changes its colour or its form every couple of seconds.
+A HUD glyph shows the thing to watch for — drawn as the thing itself,
+not a word, so there is no translating to do — and the job is to
+press Space while something matching it is on screen. The cue is
+never satisfied at the moment it is issued; the churn brings the
+match, and the scoring is honest signal detection: a press while a
+match is up is a hit timed from the moment it appeared, a match that
+churns away unpressed is a miss, and a press over nothing is a false
+alarm. The cue type is the difficulty dial, and it is a graded one
+from the attention literature: a colour alone "pops out" and the eye
+finds it in parallel, a shape is a little slower, and a colour *and*
+shape together is a conjunction search that must be done serially —
+Treisman's classic result, playable. The adaptive option adds a
+shape to the flock on a hit and removes one on a mistake.
+
 ### Perception
 
 The *Perception* category holds **Count**: a tangle of overlapping

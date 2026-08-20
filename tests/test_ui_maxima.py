@@ -20,7 +20,7 @@ import tempfile
 import unittest
 
 from uisupport import (Concentration, Counting, GraphMapping, JigsawPuzzle,
-                       MatrixReasoning, MonkeyLadder, MovingTargets,
+                       Lookout, MatrixReasoning, MonkeyLadder, MovingTargets,
                        NCupMonte, Recognition, Reflex, TowerOfHanoi,
                        TravelingSalesman, close_overlays, needs_ui,
                        reset_window, state, taskoptions)
@@ -225,6 +225,20 @@ class MaximaTests(unittest.TestCase):
             self.assertEqual(task.tracked_now(), 15)
             for _frame in range(120):
                 task._move(1 / 60.)
+            task.on_draw()
+        finally:
+            task.close()
+
+    def test_lookout_thirty_shapes(self):
+        self._push('lookout')
+        task = Lookout()
+        try:
+            task.start_run()
+            self.assertEqual(len(task.shapes), 30)
+            self.assertFalse(task.match_on_screen())
+            for _frame in range(120):
+                task._move(1 / 60.)
+            task._sync_shapes()
             task.on_draw()
         finally:
             task.close()

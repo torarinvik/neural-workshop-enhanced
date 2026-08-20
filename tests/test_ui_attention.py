@@ -36,7 +36,8 @@ class AttentionCategoryTests(unittest.TestCase):
 
     def test_the_roster_is_complete(self):
         self.assertEqual([task for task, _name in TASKS['attention']],
-                         ['reflex', 'ncup_monte', 'moving_targets'])
+                         ['reflex', 'ncup_monte', 'moving_targets',
+                          'lookout'])
 
     def test_it_has_an_options_screen(self):
         from neural_workshop.ui import taskoptions
@@ -503,3 +504,145 @@ class MovingTargetsScreenTests(unittest.TestCase):
             {'TRACK_BALLS': 4, 'TRACK_TARGETS': 10, 'TRACK_SECONDS': 8,
              'TRACK_ADAPTIVE': False})
         self.assertIn('3', note)               # the clamp is spelled out
+
+
+class CueTests(unittest.TestCase):
+    """The cue logic: pure functions, no window needed."""
+
+    def test_matches_by_colour_form_and_both(self):
+        from neural_workshop.ui.lookout import Cue, matches
+        self.assertTrue(matches(2, 1, Cue(2, None)))
+        self.assertTrue(matches(2, 1, Cue(None, 1)))
+        self.assertTrue(matches(2, 1, Cue(2, 1)))
+        self.assertFalse(matches(2, 1, Cue(3, 1)))
+        self.assertFalse(matches(2, 1, Cue(2, 0)))
+
+    def test_cue_words_cover_all_three_kinds(self):
+        from neural_workshop.ui.lookout import Cue, cue_words
+        self.assertIn('orange', cue_words(Cue(0, None)))
+        self.assertIn('circle', cue_words(Cue(None, 0)))
+        both = cue_words(Cue(0, 2))
+        self.assertIn('orange', both)
+        self.assertIn('triangle', both)
+
+
+@needs_ui
+class LookoutScreenTests(unittest.TestCase):
+
+    def setUp(self):
+        close_overlays()
+        from uisupport import Lookout
+        self.task = Lookout()
+        self.task.total_cues = 2
+        self.task.adaptive = False
+
+    def tearDown(self):
+        self.task.close()
+        close_overlays()
+        reset_window()
+
+    def _force_match(self, wanted=True):
+        """Set the first shape to satisfy (or spoil) the cue by hand."""
+        from neural_workshop.ui.lookout import COLORS, FORMS, matches
+        cue = self.task.cue
+        for drifter in self.task.shapes:
+            if wanted:
+                drifter.color = cue.color if cue.color is not None else 0
+                drifter.form = cue.form if cue.form is not None else 0
+                return
+        self.fail('no shapes to bend')
+
+    def _no_match(self):
+        from neural_workshop.ui.lookout import matches
+        cue = self.task.cue
+        for drifter in self.task.shapes:
+            while matches(drifter.color, drifter.form, cue):
+                drifter.color = (drifter.color + 1) % 6
+                drifter.form = (drifter.form + 1) % 4
+            drifter.drawn = None
+
+    def test_it_is_in_the_attention_category(self):
+        self.assertIn('lookout',
+                      [task for task, _name in TASKS['attention']])
+
+    def test_a_run_begins_with_the_cue_absent(self):
+        self.task.start_run()
+        self.assertEqual(self.task.phase, 'watching')
+        self.assertFalse(self.task.match_on_screen())
+        self.assertEqual(len(self.task.shapes), self.task.count)
+        self.task.on_draw()
+
+    def test_a_press_on_a_present_match_is_a_timed_hit(self):
+        self.task.start_run()
+        self._force_match()
+        self.task.update(1 / 60.)          # notices the arrival
+        self.assertIsNotNone(self.task.seen_at)
+        self.task.answer()
+        self.assertEqual(self.task.hits, 1)
+        self.assertEqual(len(self.task.reaction_times), 1)
+        self.assertEqual(self.task.phase, 'feedback')
+
+    def test_a_press_on_nothing_is_a_false_alarm(self):
+        self.task.start_run()
+        self.task.answer()
+        self.assertEqual(self.task.false_alarms, 1)
+        self.assertEqual(self.task.hits, 0)
+        self.assertEqual(self.task.phase, 'feedback')
+
+    def test_a_match_that_churns_away_is_a_miss(self):
+        self.task.start_run()
+        self._force_match()
+        self.task.update(1 / 60.)
+        self.assertIsNotNone(self.task.seen_at)
+        self._no_match()
+        self.task.update(1 / 60.)
+        self.assertEqual(self.task.misses, 1)
+        self.assertEqual(self.task.phase, 'feedback')
+
+    def test_a_drought_forces_the_cue_into_the_flock(self):
+        self.task.start_run()
+        self.task.cued_at = time.time() - 60    # a long, dry watch
+        drifter = self.task.shapes[0]
+        drifter.next_morph = time.time() - 1
+        self.task.update(1 / 60.)
+        self.assertTrue(self.task.match_on_screen())
+
+    def test_morphs_always_change_something(self):
+        self.task.start_run()
+        drifter = self.task.shapes[0]
+        for _try in range(30):
+            was = (drifter.color, drifter.form)
+            self.task._morph(drifter, time.time())
+            self.assertNotEqual((drifter.color, drifter.form), was)
+
+    def test_the_run_finishes_after_its_cues(self):
+        self.task.start_run()
+        for _cue in range(2):
+            self.task.answer()                   # false alarm, fine
+            self.task.until = time.time() - 1
+            self.task.update(1 / 60.)            # feedback -> next
+        self.assertEqual(self.task.phase, 'done')
+        self.assertEqual(self.task.score()['false_alarms'], 2)
+        self.task.on_draw()
+
+    def test_adaptive_grows_on_hits_and_shrinks_on_mistakes(self):
+        self.task.adaptive = True
+        self.task.start_run()
+        was = self.task.count
+        self._force_match()
+        self.task.update(1 / 60.)
+        self.task.answer()
+        self.assertEqual(self.task.count, self.task.clamped(was + 1))
+        self.task.until = time.time() - 1
+        self.task.update(1 / 60.)                # next cue, flock grown
+        self.assertEqual(len(self.task.shapes), self.task.count)
+        self.task.answer()                       # false alarm
+        self.assertEqual(self.task.count, self.task.clamped(was))
+
+    def test_it_has_an_options_screen(self):
+        from neural_workshop.ui import taskoptions
+        self.assertTrue(taskoptions.has_options('lookout'))
+        note = taskoptions.LOOKOUT.note(
+            {'LOOKOUT_SHAPES': 8, 'LOOKOUT_CUE': 'both',
+             'LOOKOUT_ADAPTIVE': True})
+        self.assertIn('conjunction', note)

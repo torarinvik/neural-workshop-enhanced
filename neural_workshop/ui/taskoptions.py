@@ -489,6 +489,53 @@ TRACKING = TaskSpec(
     note=tracking_note)
 
 
+def lookout_note(chosen: Dict[str, Any]) -> str:
+    """Why the cue type is the difficulty dial, said where it is set.
+
+    A colour alone pops out — the eye finds it in parallel, almost
+    for free. A colour and a form together is a conjunction search,
+    which takes serial attention. That is a century's worth of
+    attention research folded into one row, and worth a sentence.
+    """
+    kind = str(chosen['LOOKOUT_CUE'])
+    what = {
+        'color': _('The cue is a colour, which "pops out" — the '
+                   'easiest kind of search.'),
+        'form': _('The cue is a shape, found a little slower than a '
+                  'colour.'),
+        'both': _('The cue is a colour AND a shape at once — a '
+                  'conjunction search, which the eye cannot do in '
+                  'parallel. This is the hard setting.'),
+        'mixed': _('The cue varies: sometimes a colour, sometimes a '
+                   'shape, sometimes both at once.'),
+    }.get(kind, '')
+    said = [_('%d shapes drift and change; press Space while the cued '
+              'thing is on screen.') % int(chosen['LOOKOUT_SHAPES']), what]
+    if chosen['LOOKOUT_ADAPTIVE']:
+        said.append(_('A hit adds a shape; a miss or a false alarm '
+                      'takes one away.'))
+    return '  '.join(said)
+
+
+LOOKOUT = TaskSpec(
+    title=_('Lookout options'),
+    options=(
+        Option('LOOKOUT_SHAPES', _('Shapes on screen'), 8,
+               values=(3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30)),
+        Option('LOOKOUT_CUE', _('The cue names'), 'color',
+               values=('color', 'form', 'both', 'mixed')),
+        Option('LOOKOUT_SPEED', _('Drift speed'), 16,
+               values=(8, 12, 16, 22, 30, 40, 55, 75)),
+        Option('LOOKOUT_MORPH_MS', _('A shape changes about every'), 2000,
+               values=(800, 1200, 2000, 3000, 5000, 8000), suffix=' ms'),
+        Option('LOOKOUT_CUES', _('Cues per run'), 10,
+               values=(5, 10, 15, 20, 30, 50)),
+        Option('LOOKOUT_ADAPTIVE',
+               _('Add a shape on a hit, drop one on a mistake'), True),
+    ),
+    note=lookout_note)
+
+
 def salesman_note(chosen: Dict[str, Any]) -> str:
     """What the score means at this size, and that it is exact.
 
@@ -533,6 +580,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'recognition': RECOGNITION,
     'reflex': REFLEX,
     'moving_targets': TRACKING,
+    'lookout': LOOKOUT,
     'count': COUNTING,
     'graph_mapping': GRAPH_MAPPING,
     'matrix_reasoning': MATRIX_REASONING,
