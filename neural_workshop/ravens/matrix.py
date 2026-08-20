@@ -84,6 +84,12 @@ class Grade:
     logic: bool
 
 
+#: The rules the middle grades draw from. The second-order rule — the
+#: rule that changes between rows — is held back for the top grades,
+#: where ``None`` (everything) takes over.
+FIRST_ORDER: Tuple[str, ...] = ('progression', 'distribute three',
+                                'arithmetic')
+
 #: The difficulty ladder, easiest first.
 #:
 #: Grade 1 has no live rule at all: every panel is the same picture,
@@ -100,12 +106,16 @@ GRADES: Tuple[Grade, ...] = (
           0.0, False),
     Grade('one rule', 4, 1, SIMPLE_LAYOUTS,
           ('progression', 'distribute three'), COARSE_SIZES, 0.0, False),
-    Grade('two rules', 8, 2, SIMPLE_LAYOUTS, None, SIZES, 0.0, False),
-    Grade('three rules', 8, 3, SIMPLE_LAYOUTS, None, SIZES, 0.2, False),
-    Grade('two parts', 8, 3, PAIRED_LAYOUTS, None, SIZES, 0.2, False),
-    Grade('four rules', 8, 4, PAIRED_LAYOUTS, None, SIZES, 0.25, False),
-    Grade('five rules', 8, 5, PAIRED_LAYOUTS + (GRID_NINE,), None, SIZES,
-          0.25, True),
+    Grade('two rules', 8, 2, SIMPLE_LAYOUTS, FIRST_ORDER, SIZES,
+          0.0, False),
+    Grade('three rules', 8, 3, SIMPLE_LAYOUTS, FIRST_ORDER, SIZES,
+          0.2, False),
+    Grade('two parts', 8, 3, PAIRED_LAYOUTS, FIRST_ORDER, SIZES,
+          0.2, False),
+    Grade('four rules', 8, 4, PAIRED_LAYOUTS, FIRST_ORDER, SIZES,
+          0.25, False),
+    Grade('five rules', 8, 5, PAIRED_LAYOUTS + (GRID_NINE,), FIRST_ORDER,
+          SIZES, 0.25, True),
     Grade('six rules', 8, 6, (INSIDE_OUTSIDE, TRIPTYCH, GRID_NINE), None,
           FINE_SIZES, 0.3, True),
     Grade('seven rules', 8, 7, (TRIPTYCH, INSIDE_OUTSIDE, GRID_NINE), None,

@@ -334,6 +334,31 @@ class RuleTests(unittest.TestCase):
                     self.assertNotIn(third, (first, second))
                     self.assertTrue(third)
 
+    def test_second_order_steps_further_each_row(self):
+        """Row one holds, row two steps, row three steps twice as far
+        — the progression is of the rules, not the values."""
+        for delta in (1, -1):
+            for _try in range(100):
+                rows = ruleset.SecondOrder(delta).rows(
+                    tuple(range(9)), self.rng)
+                for count, row in enumerate(rows):
+                    steps = [two - one for one, two in zip(row, row[1:])]
+                    self.assertEqual(steps, [delta * count] * 2, rows)
+
+    def test_a_second_order_row_is_free_to_start_anywhere(self):
+        """Tied to one start the item reads as a plain pattern of
+        positions; the only thread through the rows must be the
+        accelerating step."""
+        opened = set()
+        for _try in range(200):
+            rows = ruleset.SecondOrder(1).rows(tuple(range(9)), self.rng)
+            opened.add(tuple(row[0] for row in rows))
+        self.assertGreater(len(opened), 20)
+
+    def test_second_order_needs_a_ladder_of_five(self):
+        self.assertFalse(ruleset.SecondOrder.fits(tuple(range(4))))
+        self.assertTrue(ruleset.SecondOrder.fits(tuple(range(5))))
+
     def test_logic_needs_a_lattice_to_live_on(self):
         self.assertFalse(ruleset.Logic.fits(tuple(range(3))))
         self.assertTrue(ruleset.Logic.fits(tuple(range(4))))
@@ -531,6 +556,54 @@ class PuzzleTests(unittest.TestCase):
         for level in (1, 3, 5, 7):
             self.assertEqual(logical(level, 60), 0, level)
         self.assertGreater(sum(logical(level) for level in (8, 9, 10)), 20)
+
+    def test_second_order_appears_at_the_top_and_never_below(self):
+        """The rule that changes between rows is the hardest thing the
+        real test asks; the middle grades draw from the first-order
+        pool only."""
+        def carrying(level, count):
+            return sum(any('further each row' in line
+                           for line in puzzle.explanation)
+                       for puzzle in every_puzzle(count, level=level))
+
+        for level in (2, 4, 6, 8):
+            self.assertEqual(carrying(level, 80), 0, level)
+        self.assertGreater(carrying(9, 120), 30)
+
+    def test_a_second_order_matrix_shows_its_accelerating_step(self):
+        """Read the values back off the panels: within each row the
+        step is even, and it grows from nothing by one per row.
+        Checked on sizes, where the rungs can be recovered exactly."""
+        seen = 0
+        for puzzle in every_puzzle(300, level=9):
+            for index, (component, describes) in enumerate(
+                    zip(puzzle.layout.components,
+                        puzzle.layout.describes)):
+                said = [line for line in puzzle.explanation
+                        if 'further each row' in line and 'size' in line
+                        and (len(puzzle.layout.components) == 1
+                             or line.startswith(describes))]
+                ladder = sorted(component.sizes
+                                or engine.GRADES[8].sizes)
+                if not said or len(ladder) < 5:
+                    continue
+                seen += 1
+                room = component.slots[0].radius
+                deltas = []
+                for row in range(2):   # the last row's end is hidden
+                    rungs = []
+                    for panel in puzzle.panels[row]:
+                        radius = set(f.radius for f in panel
+                                     if f.component == index).pop()
+                        rungs.append(ladder.index(round(radius / room, 4)))
+                    steps = set(two - one
+                                for one, two in zip(rungs, rungs[1:]))
+                    self.assertEqual(len(steps), 1, rungs)
+                    deltas.append(steps.pop())
+                self.assertEqual(deltas[0], 0, deltas)
+                self.assertIn(deltas[1], (1, -1), deltas)
+        self.assertGreater(seen, 3, 'no second-order size rule was '
+                                    'ever generated at grade nine')
 
     def test_a_logic_puzzle_combines_its_panels_as_it_says(self):
         """Panel three's filled places really are panels one and two

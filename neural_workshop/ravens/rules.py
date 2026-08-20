@@ -172,6 +172,54 @@ class Arithmetic(Rule):
                                         for value in ladder)
 
 
+class SecondOrder(Rule):
+    """The rule itself changes between rows: each steps further.
+
+    The one rule here about a rule. Row one holds its value, row two
+    steps along the ladder, row three steps twice as far — so no row's
+    rule is the answer, and what has to be inferred is the progression
+    *of* rules. These are the items at the very top of the real test's
+    advanced form: solving one means representing "how this row works"
+    as a thing that can itself change, which is a level of abstraction
+    the first-order rules never ask for.
+
+    The rows start where they like. Tying them to one start would let
+    the item be read as a plain pattern of positions; left loose, the
+    only thread through the three rows is the accelerating step.
+    """
+
+    name = 'second order'
+
+    def __init__(self, delta: int) -> None:
+        self.delta = delta
+
+    def rows(self, ladder, rng):
+        rows = []
+        for row in range(ACROSS):
+            step = self.delta * row
+            span = abs(step) * (ACROSS - 1)
+            starts = list(range(len(ladder) - span)) if step >= 0 \
+                else list(range(span, len(ladder)))
+            if not starts:
+                raise ValueError('ladder too short for a second order')
+            start = rng.choice(starts)
+            rows.append([ladder[start + step * column]
+                         for column in range(ACROSS)])
+        return rows
+
+    def describe(self, noun):
+        way = 'up' if self.delta > 0 else 'down'
+        return ('%s steps %s further each row: not at all, then by one, '
+                'then by two' % (noun, way))
+
+    @staticmethod
+    def fits(ladder):
+        # Row three spans four rungs, and the rows must be free to
+        # start in more than one place or the loose starts above are
+        # a promise the ladder cannot keep.
+        return len(ladder) >= 5
+
+
 class Logic(Rule):
     """The third panel's filled places follow from the first two's.
 
@@ -258,6 +306,8 @@ def rule_choices(ladder: Sequence, allow_arithmetic: bool = False,
             choices.append(candidate)
     if allow_arithmetic and Arithmetic.fits(ladder):
         choices.extend([Arithmetic(1), Arithmetic(-1)])
+    if SecondOrder.fits(ladder):
+        choices.extend([SecondOrder(1), SecondOrder(-1)])
     if allowed is not None:
         choices = [rule for rule in choices if rule.name in allowed]
     return choices

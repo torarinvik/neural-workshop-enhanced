@@ -250,9 +250,10 @@ spaced, because what the eye judges is the ratio between two sizes and
 not the difference — an evenly spaced ladder is obvious at the small
 end and guesswork at the large end.
 
-**Rules along the rows.** Five of them, and the same rule governs all
-three rows, which is what makes the third row answerable from the
-first two:
+**Rules along the rows.** Six of them. For the first five the same
+rule governs all three rows, which is what makes the third row
+answerable from the first two; the sixth breaks exactly that
+expectation, on purpose, and is saved for the top of the ladder:
 
 * *Constant* — the value holds, everywhere. Not merely along each row:
   an attribute that changes between rows is doing something, and a
@@ -275,6 +276,13 @@ first two:
   inferred from what two whole panels have to do with a third. These
   are the items at the hard end of the real test, and they only
   appear at the hard end here.
+* *Second order* — the rule itself changes between rows: row one
+  holds its value, row two steps along the ladder, row three steps
+  twice as far. No row's rule is the answer; what has to be inferred
+  is the progression *of* rules, which means representing "how this
+  row works" as a thing that can itself change. These are the items
+  at the very top of the real test's advanced form, and like the
+  logic rules they are kept out of the middle levels.
 
 The attributes a rule can govern are which figure, its size, its
 colour, how many there are, and — where it can be seen — which way it
