@@ -27,6 +27,7 @@ CATEGORIES: Sequence[Tuple[str, str]] = (
     ('attention', _('Attention')),
     ('perception', _('Perception')),
     ('reasoning', _('Reasoning')),
+    ('planning', _('Planning')),
     ('misc', _('Misc')),
 )
 
@@ -50,6 +51,10 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('graph_mapping', _('Graph Mapping')),
         ('matrix_reasoning', _('Matrix Reasoning')),
         ('jigsaw', _('Jigsaw Puzzle')),
+    ],
+    'planning': [
+        ('tower_of_hanoi', _('Tower of Hanoi')),
+        ('salesman', _('Traveling Salesman')),
     ],
     'misc': [
         ('ncup_monte', _('N-Cup Monte')),
@@ -376,6 +381,14 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'jigsaw':
         from .jigsaw import JigsawPuzzle
         JigsawPuzzle()
+        return
+    if task_id == 'tower_of_hanoi':
+        from .hanoi import TowerOfHanoi
+        TowerOfHanoi()
+        return
+    if task_id == 'salesman':
+        from .salesman import TravelingSalesman
+        TravelingSalesman()
         return
     # Unknown task: restore the hub rather than dropping the player.
     TaskHub(return_to_title=return_to_title, category=category)

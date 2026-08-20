@@ -609,6 +609,24 @@ JIGSAW_ADAPTIVE = True
 JIGSAW_PREVIEW = True
 JIGSAW_MARK_PLACED = False
 
+# Tower of Hanoi: rebuild a tower of HANOI_DISKS disks on another peg,
+# one disk at a time, never a disk on a smaller one. The minimum is
+# exactly 2^n - 1 moves and each solve is scored against it; with
+# HANOI_ADAPTIVE a solve near the minimum makes the next tower taller.
+HANOI_DISKS = 4
+HANOI_ROUNDS = 3
+HANOI_ADAPTIVE = True
+
+# Traveling Salesman: click TSP_CITIES cities into the shortest round
+# trip you can see. The shortest possible tour is computed exactly, so
+# the score says precisely how much longer yours was; TSP_SHOW_BEST
+# draws that tour after each answer. With TSP_ADAPTIVE a route within
+# a few per cent of optimal adds a city to the next map.
+TSP_CITIES = 7
+TSP_ROUNDS = 5
+TSP_ADAPTIVE = True
+TSP_SHOW_BEST = True
+
 ######################################################################
 # This is the end of the configuration file.
 ######################################################################

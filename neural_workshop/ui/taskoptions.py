@@ -420,6 +420,58 @@ JIGSAW = TaskSpec(
     note=jigsaw_note)
 
 
+def hanoi_note(chosen: Dict[str, Any]) -> str:
+    """The minimum, spelled out — 2^n - 1 grows faster than a row of
+    numbers suggests, and the difference between five disks and eight
+    is the difference between 31 moves and 255."""
+    disks = int(chosen['HANOI_DISKS'])
+    said = [_('A tower of %d disks moves in %d moves at minimum.')
+            % (disks, (1 << disks) - 1)]
+    if chosen['HANOI_ADAPTIVE']:
+        said.append(_('Solve near that and the next tower is taller; '
+                      'wander and it shrinks.'))
+    return '  '.join(said)
+
+
+HANOI = TaskSpec(
+    title=_('Tower of Hanoi options'),
+    options=(
+        Option('HANOI_DISKS', _('Disks to start with'), 4,
+               values=(3, 4, 5, 6, 7, 8)),
+        Option('HANOI_ROUNDS', _('Towers per run'), 3,
+               values=(1, 2, 3, 5)),
+        Option('HANOI_ADAPTIVE',
+               _('Grow the tower when you solve near the minimum'), True),
+    ),
+    note=hanoi_note)
+
+
+def salesman_note(chosen: Dict[str, Any]) -> str:
+    """What the score means at this size, and that it is exact."""
+    cities = int(chosen['TSP_CITIES'])
+    said = [_('%d cities; the score is your route against the shortest '
+              'one possible, computed exactly.') % cities]
+    if chosen['TSP_ADAPTIVE']:
+        said.append(_('Come within a few per cent of it and the next '
+                      'map grows a city.'))
+    return '  '.join(said)
+
+
+SALESMAN = TaskSpec(
+    title=_('Traveling Salesman options'),
+    options=(
+        Option('TSP_CITIES', _('Cities to start with'), 7,
+               values=(5, 6, 7, 8, 9, 10, 11, 12)),
+        Option('TSP_ROUNDS', _('Routes per run'), 5,
+               values=(3, 5, 8, 10)),
+        Option('TSP_ADAPTIVE',
+               _('Add a city when you come near the optimum'), True),
+        Option('TSP_SHOW_BEST',
+               _('Show the shortest route after each answer'), True),
+    ),
+    note=salesman_note)
+
+
 #: Task id → the settings screen it owns.
 TASK_SPECS: Dict[str, TaskSpec] = {
     'monkey_ladder': MONKEY_LADDER,
@@ -431,6 +483,8 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'graph_mapping': GRAPH_MAPPING,
     'matrix_reasoning': MATRIX_REASONING,
     'jigsaw': JIGSAW,
+    'tower_of_hanoi': HANOI,
+    'salesman': SALESMAN,
 }
 
 

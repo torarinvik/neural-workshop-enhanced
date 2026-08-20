@@ -381,6 +381,23 @@ seven attributes kept every one of them balanced and still gave the
 game away, because the all-correct answer agreed with the wrong ones
 *less* than they agreed with each other.
 
+##### Where this came from
+
+The first version of this task was a port of the Sandia Generated
+Matrix Tool, a Java research tool by Zachary Benz and Kevin Dixon
+released by Sandia Corporation in 2010 under a three-clause BSD
+licence. It generated sound puzzles that did not look like Raven's
+items: it stacked layers of stretched ellipses and trapezoids at the
+same centre and let them overlap, and it walked its rules along
+diagonals and spirals rather than rows. Both are patterns a person can
+eventually find, and neither is what the test is.
+
+The engine here was rebuilt from the ground up around layouts,
+regular figures and row-wise rules. What survives from the port is the
+colour work above and the near-miss idea — which was itself a strategy
+the Sandia tool declared, as `MODIFIED_CORRECT_ANSWER`, and never
+wrote.
+
 #### Jigsaw Puzzle
 
 A photograph is cut into a square grid of tiles and shuffled; click
@@ -404,22 +421,37 @@ two-by-two to six-by-six. The finished picture is shown beside the
 board like the lid of the box; turn it off and the tiles are all
 there is.
 
-##### Where this came from
+Every photograph in the library is used before any is used again, and
+the rotation is remembered across sessions — a jigsaw of a picture
+you have already assembled is a memory task, not a reasoning one. A
+larger library therefore means longer before anything comes round
+again; the default hundred images is a hundred fresh puzzles.
 
-The first version of this task was a port of the Sandia Generated
-Matrix Tool, a Java research tool by Zachary Benz and Kevin Dixon
-released by Sandia Corporation in 2010 under a three-clause BSD
-licence. It generated sound puzzles that did not look like Raven's
-items: it stacked layers of stretched ellipses and trapezoids at the
-same centre and let them overlap, and it walked its rules along
-diagonals and spirals rather than rows. Both are patterns a person can
-eventually find, and neither is what the test is.
+### Planning
 
-The engine here was rebuilt from the ground up around layouts,
-regular figures and row-wise rules. What survives from the port is the
-colour work above and the near-miss idea — which was itself a strategy
-the Sandia tool declared, as `MODIFIED_CORRECT_ANSWER`, and never
-wrote.
+The *Planning* category holds two classics, and both are scored the
+same honest way: against a knowable optimum, because merely finishing
+either one measures patience rather than planning.
+
+**Tower of Hanoi.** Three pegs, a tower of disks, two rules: one disk
+at a time, never a disk on a smaller one. Click a peg (or press
+**1**–**3**) to lift its top disk, click another to set it down. A
+tower of n disks moves in exactly 2^n - 1 moves and no fewer, and
+each solve is reported against that minimum — moving the small disk
+back and forth finishes eventually; knowing *why* it must go where it
+goes finishes at the minimum. With the adaptive option a solve near
+the minimum makes the next tower taller, from three disks (7 moves)
+up to eight (255).
+
+**Traveling Salesman.** Cities scatter across the screen; click them
+into the shortest round trip you can see, and the tour closes itself
+on the last click. Nothing is hidden — the reasoning is planning under
+combinatorics, following the hull and keeping crossings out. The
+shortest possible tour is computed exactly (Held-Karp dynamic
+programming, comfortable up to the twelve cities offered), so the
+score says precisely how much longer your route was, and the shortest
+route is drawn after each answer. People land within a few per cent
+of optimal on sight, which is what makes the gap worth reporting.
 
 ### Window size, full screen, and the two coordinate spaces
 
