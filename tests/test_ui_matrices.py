@@ -16,6 +16,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 """
 from __future__ import annotations
 
+import itertools
 import math
 import random
 import unittest
@@ -40,6 +41,76 @@ SAMPLE = 200
 EVERY_SHAPE = tuple(
     Surface(kind, 50.0, 75.0, Point(50.0, 50.0), surfaces.WHITE)
     for kind in surfaces.SHAPE_KINDS)
+
+
+
+#: The smallest colour difference an ordinary eye can see, in CIELAB.
+#: Anything the puzzle asks a player to tell apart has to clear it by
+#: a wide margin, under every kind of vision.
+JUST_NOTICEABLE = 2.3
+
+#: Linear-RGB to LMS, and the dichromat projections back onto the
+#: colours that kind of eye can form. Vienot, Brettel & Mollon (1999).
+_RGB_TO_LMS = ((17.8824, 43.5161, 4.11935),
+               (3.45565, 27.1554, 3.86714),
+               (0.0299566, 0.184309, 1.46709))
+_LMS_TO_RGB = ((0.0809444479, -0.130504409, 0.116721066),
+               (-0.0102485335, 0.0540193266, -0.113614708),
+               (-0.000365296938, -0.00412161469, 0.693511405))
+VISION = {
+    'ordinary': ((1, 0, 0), (0, 1, 0), (0, 0, 1)),
+    'protanopia': ((0, 2.02344, -2.52581), (0, 1, 0), (0, 0, 1)),
+    'deuteranopia': ((1, 0, 0), (0.494207, 0, 1.24827), (0, 0, 1)),
+    'tritanopia': ((1, 0, 0), (0, 1, 0), (-0.395913, 0.801109, 0)),
+}
+
+
+def _apply(matrix, vector):
+    return tuple(sum(matrix[row][col] * vector[col] for col in range(3))
+                 for row in range(3))
+
+
+def _to_linear(channel):
+    channel /= 255.0
+    return (channel / 12.92 if channel <= 0.04045
+            else ((channel + 0.055) / 1.055) ** 2.4)
+
+
+def on_paper(fill, paper=(255, 255, 255)):
+    """The colour a fill actually shows as, washed over the paper."""
+    share = fill.color[3] / 255.0
+    return tuple(channel * share + under * (1 - share)
+                 for channel, under in zip(fill.color[:3], paper))
+
+
+def as_seen(rgb, vision):
+    """*rgb* as an eye of that kind forms it."""
+    lms = _apply(_RGB_TO_LMS, [_to_linear(c) for c in rgb])
+    return _apply(_LMS_TO_RGB, _apply(VISION[vision], lms))
+
+
+def _lab(rgb, already_linear=False):
+    linear = rgb if already_linear else [_to_linear(c) for c in rgb]
+    x = 0.4124 * linear[0] + 0.3576 * linear[1] + 0.1805 * linear[2]
+    y = 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+    z = 0.0193 * linear[0] + 0.1192 * linear[1] + 0.9505 * linear[2]
+
+    def curve(value):
+        value = max(0.0, value)
+        return value ** (1 / 3.) if value > 0.008856 else 7.787 * value + 16 / 116.
+
+    fx, fy, fz = (curve(x / 0.95047), curve(y / 1.0), curve(z / 1.08883))
+    return (116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz))
+
+
+def delta_e(one, two, linear=False):
+    """How far apart two colours look."""
+    return math.sqrt(sum((a - b) ** 2
+                         for a, b in zip(_lab(one, linear), _lab(two, linear))))
+
+
+def lightness(fill):
+    return _lab(on_paper(fill))[0]
 
 
 def polygon_area(outline):
@@ -153,16 +224,14 @@ class SurfaceTests(unittest.TestCase):
         """Distinct names are not enough; they have to look different.
 
         Each fill is a wash over white paper, so what the player sees
-        is the composite, not the colour.
+        is the composite, not the colour as written down.
         """
-        seen = []
-        for fill in surfaces.ALL_FILLS:
-            red, green, blue, alpha = fill.color
-            over_paper = round(red * alpha / 255. + 255 * (1 - alpha / 255.))
-            for other in seen:
-                self.assertGreater(abs(over_paper - other), 8,
-                                   'fills too close: %s' % fill.name)
-            seen.append(over_paper)
+        for palette in (surfaces.GREYS, surfaces.COLOURS):
+            for one, two in itertools.combinations(palette.ramp, 2):
+                gap = delta_e(on_paper(one), on_paper(two))
+                self.assertGreater(gap, JUST_NOTICEABLE * 2,
+                                   '%s and %s are too close in %s (dE %.1f)'
+                                   % (one.name, two.name, palette.name, gap))
 
     def test_the_same_drawing_at_a_different_scale_is_the_same_drawing(self):
         small = Surface('rectangle', 25.0, 25.0, Point(50, 50),
@@ -210,8 +279,40 @@ class RuleTests(unittest.TestCase):
     def test_scaling_shrinks_by_the_same_factor_at_each_step(self):
         rule = ruleset.ApplyScaling(self.route)
         column = self._down_a_column(rule, [self.shape])
-        self.assertAlmostEqual(column[1][0].scale, ruleset.SCALE_STEP)
-        self.assertAlmostEqual(column[2][0].scale, ruleset.SCALE_STEP ** 2)
+        self.assertAlmostEqual(column[1][0].scale, rule.factor)
+        self.assertAlmostEqual(column[2][0].scale, rule.factor ** 2)
+
+    def test_a_long_route_shrinks_more_gently_than_a_short_one(self):
+        """The factor compounds, so a fixed one ruins the long route.
+
+        Sweeping outward from the top-left corner is eight steps on a
+        three-by-three grid against a column's two. Shrinking by a
+        third each time would end at 3.6% of the size it started —
+        a dot, and eight dots to choose between.
+        """
+        short = ruleset.ApplyScaling(transforms.Vertical(3, 3))
+        long = ruleset.ApplyScaling(transforms.CornerOut(3, 3))
+        self.assertGreater(long.factor, short.factor)
+        for rule in (short, long):
+            steps = len(rule.route.walk(rule.route.bases[0]))
+            self.assertAlmostEqual(rule.factor ** steps,
+                                   ruleset.SMALLEST_SCALE, places=6)
+
+    def test_nothing_is_ever_shrunk_out_of_sight(self):
+        """Whatever route a shrinking rule takes, across every puzzle."""
+        smallest = 1.0
+        for seed in range(400):
+            puzzle = ravens.generate(seed=seed, layers=2, rules_per_layer=3,
+                                     palettes=surfaces.PALETTES)
+            for cell in ([c for row in puzzle.cells for c in row]
+                         + puzzle.choices):
+                for shape in cell:
+                    drawn = (max(shape.width, shape.height) * shape.scale
+                             / float(puzzle.cell_size))
+                    smallest = min(smallest, drawn)
+        self.assertGreater(smallest, 0.05,
+                           'a shape was drawn at %.1f%% of the cell'
+                           % (smallest * 100))
 
     def test_changing_the_fill_moves_one_place_and_wraps(self):
         rule = ruleset.ChangeFill(self.route)
@@ -313,27 +414,6 @@ class PuzzleTests(unittest.TestCase):
         seen = set(puzzle.answer for puzzle in self._puzzles(80))
         self.assertEqual(seen, set(range(8)))
 
-    def test_counting_the_shapes_does_not_give_the_answer_away(self):
-        """A player who finds no rule can still count the shapes in
-        each box and pick the odd one out. That has to be no better
-        than guessing, so the generator holds out for wrong answers
-        that hide the right one's count.
-        """
-        for layers, rules in ((1, 2), (2, 3)):
-            lonely = 0
-            for puzzle in self._puzzles(SAMPLE, layers=layers,
-                                        rules_per_layer=rules):
-                wanted = len(puzzle.choices[puzzle.answer])
-                if sum(1 for choice in puzzle.choices
-                       if len(choice) == wanted) == 1:
-                    lonely += 1
-            # Chance alone would leave the answer alone in its count
-            # about an eighth of the time.
-            self.assertLess(lonely / float(SAMPLE), 0.25,
-                            '%d layers, %d rules: %d of %d puzzles give the '
-                            'answer away by count' % (layers, rules, lonely,
-                                                      SAMPLE))
-
     def test_a_level_carries_the_number_of_rules_it_promises(self):
         """The level is what an adaptive run moves the player along, so
         it has to mean something. A logic layer is the one exception:
@@ -371,6 +451,221 @@ class PuzzleTests(unittest.TestCase):
                 ravens.generate(seed=1, attempts=3)
         finally:
             engine._build_choices = real
+
+
+
+class PaletteTests(unittest.TestCase):
+    """Colour has to be readable by everyone the game is for.
+
+    A rule about colour is unanswerable by a player who cannot see the
+    difference the rule turns on, and roughly one man in twelve has
+    some red-green deficiency. So the palette is not a matter of taste
+    here: every pair is simulated for each kind of dichromacy and
+    checked to stay apart.
+    """
+
+    def test_colours_stay_apart_for_every_kind_of_eye(self):
+        for kind in VISION:
+            for one, two in itertools.combinations(surfaces.COLOUR_FILLS, 2):
+                gap = delta_e(as_seen(on_paper(one), kind),
+                              as_seen(on_paper(two), kind), linear=True)
+                self.assertGreater(
+                    gap, JUST_NOTICEABLE * 4,
+                    '%s and %s are only %.1f apart under %s'
+                    % (one.name, two.name, gap, kind))
+
+    def test_colours_are_no_harder_to_tell_apart_than_the_greys(self):
+        """The claim the palette was chosen on, kept honest."""
+        def worst(fills):
+            return min(delta_e(as_seen(on_paper(one), kind),
+                               as_seen(on_paper(two), kind), linear=True)
+                       for kind in VISION
+                       for one, two in itertools.combinations(fills, 2))
+
+        self.assertGreater(worst(surfaces.COLOUR_FILLS),
+                           worst(surfaces.ALL_FILLS))
+
+    def test_the_colour_ramp_is_also_a_lightness_ramp(self):
+        """So the rule can be followed without seeing colour at all.
+
+        A player who cannot separate the hues still sees the steps get
+        darker, which is the same rule the grey puzzles ask for.
+        """
+        levels = [lightness(fill) for fill in surfaces.COLOUR_FILLS]
+        self.assertEqual(levels, sorted(levels, reverse=True), levels)
+        for brighter, darker in zip(levels, levels[1:]):
+            self.assertGreater(brighter - darker, 5.0, levels)
+
+    def test_a_palette_offers_a_ramp_of_five_and_a_basic_three(self):
+        for palette in (surfaces.GREYS, surfaces.COLOURS):
+            self.assertEqual(len(palette.ramp), 5, palette.name)
+            self.assertEqual(len(palette.basic), 3, palette.name)
+            for fill in palette.basic:
+                self.assertIn(fill, palette.ramp, palette.name)
+
+    def test_a_puzzle_never_mixes_the_two(self):
+        """A wrong answer in the wrong palette would stand out as wrong
+        without any of the rules being read."""
+        for seed in range(120):
+            puzzle = ravens.generate(seed=seed, layers=2, rules_per_layer=3,
+                                     palettes=surfaces.PALETTES)
+            allowed = set(fill.name for fill in puzzle.palette.ramp)
+            everywhere = ([cell for row in puzzle.cells for cell in row]
+                          + puzzle.choices)
+            for cell in everywhere:
+                for shape in cell:
+                    self.assertIn(shape.fill.name, allowed,
+                                  'a %s fill in a %s puzzle'
+                                  % (shape.fill.name, puzzle.palette.name))
+
+    def test_greys_only_unless_colour_is_asked_for(self):
+        for seed in range(60):
+            puzzle = ravens.generate(seed=seed, palettes=(surfaces.GREYS,))
+            self.assertEqual(puzzle.palette.name, 'greys')
+
+    def test_a_colour_puzzle_says_colour_when_it_is_explained(self):
+        said = set()
+        for seed in range(300):
+            puzzle = ravens.generate(seed=seed, layers=1, rules_per_layer=2,
+                                     palettes=(surfaces.COLOURS,))
+            said.update(line for line in puzzle.explanation)
+        self.assertTrue(any('colour' in line for line in said))
+        self.assertFalse(any('shading' in line for line in said), said)
+
+
+class RuleClashTests(unittest.TestCase):
+    """Two rules in a layer must not write the same property."""
+
+    @staticmethod
+    def _families():
+        """Each supplemental rule's opening words, and what it writes."""
+        route = transforms.Vertical(3, 3)
+        found = {}
+        for palette in (surfaces.GREYS, surfaces.COLOURS):
+            for kind in ruleset.SUPPLEMENTALS:
+                if kind is ruleset.Numerosity:
+                    rule = kind(route, 100, 3, 3, 1)
+                elif kind in (ruleset.ChangeFill, ruleset.FillRepetition):
+                    rule = kind(route, palette)
+                else:
+                    rule = kind(route)
+                found[rule.description] = ruleset.RULE_WRITES[kind]
+        return found
+
+    def test_the_rule_descriptions_are_all_accounted_for(self):
+        """Otherwise the test below would read no rules and pass."""
+        families = self._families()
+        self.assertEqual(len(families), 7)   # two of them vary by palette
+        self.assertEqual(set(families.values()), {'turn', 'size', 'fill'})
+
+    def test_no_layer_carries_two_rules_that_overwrite_each_other(self):
+        """The second would simply undo the first, leaving a rule the
+        puzzle claims and never shows — worse than one rule fewer,
+        because a player looks for it."""
+        families = self._families()
+        read = 0
+        for seed in range(400):
+            puzzle = ravens.generate(seed=seed, layers=1, rules_per_layer=3,
+                                     palettes=surfaces.PALETTES)
+            written = []
+            for line in puzzle.explanation:
+                for description, family in families.items():
+                    if line.startswith(description):
+                        written.append(family)
+                        break
+            read += len(written)
+            self.assertEqual(len(written), len(set(written)),
+                             puzzle.explanation)
+        # The loop above is only worth anything if it read some rules.
+        self.assertGreater(read, 300, 'no supplemental rules were read')
+
+    def test_choosing_supplementals_never_repeats_a_property(self):
+        rng = random.Random(4)
+        for _try in range(400):
+            for wanted in (1, 2, 3):
+                chosen = ruleset.choose_supplementals(wanted, rng)
+                written = [ruleset.RULE_WRITES[kind] for kind in chosen]
+                self.assertEqual(len(written), len(set(written)), chosen)
+                self.assertLessEqual(len(chosen), wanted)
+
+    def test_counting_and_scaling_are_treated_as_one_property(self):
+        """Counting sizes its copies to fit the cell; a scaling rule
+        applied afterwards resets that and they spill out."""
+        self.assertEqual(ruleset.RULE_WRITES[ruleset.Numerosity],
+                         ruleset.RULE_WRITES[ruleset.ApplyScaling])
+
+
+class ShallowCueTests(unittest.TestCase):
+    """No property of a choice may pick the answer out on its own.
+
+    A player who has found no rule can still look for the odd one out —
+    the only box with four shapes, the only one holding a triangle, the
+    only blue one. Each of those has to be no better than guessing,
+    which with eight choices means about one time in eight.
+    """
+
+    CUES = {
+        'how many shapes': lambda cell: len(cell),
+        'which shadings': lambda cell: frozenset(shape.fill.name
+                                                 for shape in cell),
+        'which shapes': lambda cell: frozenset(shape.kind for shape in cell),
+    }
+
+    def test_no_single_cue_finds_the_answer_better_than_guessing(self):
+        for layers, rules in ((1, 2), (2, 3)):
+            alone = dict((cue, 0) for cue in self.CUES)
+            for seed in range(SAMPLE):
+                puzzle = ravens.generate(seed=seed, layers=layers,
+                                         rules_per_layer=rules,
+                                         palettes=surfaces.PALETTES)
+                for cue, read in self.CUES.items():
+                    wanted = read(puzzle.choices[puzzle.answer])
+                    if sum(1 for choice in puzzle.choices
+                           if read(choice) == wanted) == 1:
+                        alone[cue] += 1
+            for cue, count in alone.items():
+                self.assertLess(
+                    count / float(SAMPLE), 0.25,
+                    '%d layers, %d rules: "%s" alone picks the answer in '
+                    '%d of %d puzzles' % (layers, rules, cue, count, SAMPLE))
+
+    def test_some_wrong_answers_are_the_right_one_barely_changed(self):
+        """The strategy the original declared and never wrote. Without
+        it the wrong answers all come from elsewhere in the grid, and
+        none of them looks much like the answer."""
+        seen = 0
+        for seed in range(80):
+            puzzle = ravens.generate(seed=seed, layers=2, rules_per_layer=3,
+                                     palettes=surfaces.PALETTES)
+            if engine.NEAR_MISS in puzzle.origins:
+                seen += 1
+        self.assertGreater(seen, 60, '%d of 80 puzzles had a near miss' % seen)
+
+    def test_a_near_miss_holds_the_answer_shapes_and_one_change(self):
+        rng = random.Random(11)
+        for _try in range(300):
+            answer = [Surface('rectangle', 50.0, 75.0, Point(50, 50),
+                              surfaces.WHITE),
+                      Surface('triangle', 25.0, 50.0, Point(50, 50),
+                              surfaces.BLACK)]
+            near = engine._near_miss(answer, surfaces.GREYS, 100, rng)
+            self.assertEqual(len(near), len(answer))
+            self.assertFalse(same_picture(near, answer))
+            differing = sum(1 for one, two in zip(near, answer)
+                            if not one.looks_like(two))
+            self.assertEqual(differing, 1, near)
+
+    def test_a_near_miss_is_never_drawn_bigger_than_its_box(self):
+        """A shape past its own box reads as broken rather than wrong,
+        and a player learns to skip the broken-looking one."""
+        rng = random.Random(5)
+        widest = Surface('rectangle', 75.0, 75.0, Point(50, 50),
+                         surfaces.WHITE)
+        for _try in range(400):
+            near = engine._near_miss([widest], surfaces.GREYS, 100, rng)
+            for shape in near:
+                self.assertLessEqual(
+                    max(shape.width, shape.height) * shape.scale, 90.0)
 
 
 @needs_ui

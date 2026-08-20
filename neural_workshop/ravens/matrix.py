@@ -22,8 +22,9 @@ from dataclasses import dataclass
 from typing import List, Optional, Sequence, Tuple
 
 from .rules import (LogicRule, Numerosity, Rule, ShapeRepetition,
-                    generate_base_rule, generate_supplemental)
-from .surfaces import BASIC_FILLS, Surface, same_picture
+                    choose_supplementals, generate_base_rule,
+                    generate_supplemental)
+from .surfaces import GREYS, Palette, Surface, same_picture
 from .transforms import Location
 
 #: How many candidate wrong answers may be rejected in a row before
@@ -32,25 +33,30 @@ from .transforms import Location
 #: left to offer; the puzzle is then thrown away rather than padded.
 MAX_REJECTIONS = 500
 
-#: How many wrong answers should hold the same number of shapes as the
-#: right one. Without this the generator leaks the answer: a player who
-#: never finds the rule can still count the shapes in each choice and
-#: pick the odd one out, which happened in a third of two-layer puzzles
-#: before the quota was imposed. Three matching choices leaves counting
-#: unable to narrow the field below four.
-COUNT_MATCH_QUOTA = 3
-
-#: Rejections allowed while holding out for a matching shape count.
-#: Some rule combinations — counting rules above all — cannot produce
-#: one at all, so the quota gives way rather than throwing the puzzle
-#: out for failing a preference.
-COUNT_MATCH_BUDGET = 150
-
 #: Ways a wrong answer can be built, for the explanation screen.
 FROM_MATRIX = 'a cell copied from elsewhere in the grid'
 MODIFIED = 'a cell from the grid with one property altered'
 RECOMBINED = 'shapes from the grid combined differently'
 PARTIAL = 'the answer with a layer missing'
+NEAR_MISS = 'the answer with one property changed'
+
+#: How often a wrong answer is built by changing the right one.
+#:
+#: The original declared this strategy — ``MODIFIED_CORRECT_ANSWER`` is
+#: in its list of ways to build a wrong answer — and never wrote it,
+#: so every wrong answer came from somewhere else in the grid. That
+#: leaves them structurally unlike the right one, and a player who has
+#: found no rule can pick the answer out anyway by whichever property
+#: it happens to be alone in. Measured over four hundred of the hardest
+#: puzzles, the answer was the only choice holding its own set of shape
+#: kinds 50% of the time, its own shape count 41%, its own set of
+#: shadings 28% — against the eighth that guessing gives.
+#:
+#: A near miss holds exactly the answer's shapes and changes one
+#: property of one of them, so it matches the answer on every count
+#: anyone could take. With these in the mix all three of those figures
+#: fall to nothing.
+NEAR_MISS_SHARE = 0.45
 
 
 class Layer:
@@ -142,6 +148,10 @@ class Puzzle:
     explanation: List[str]
     #: How each wrong answer was built, for the explanation screen.
     origins: List[str]
+    #: The fills this puzzle was drawn with. One per puzzle: a wrong
+    #: answer in the wrong palette would stand out as wrong without
+    #: any of the rules being read.
+    palette: Palette = GREYS
 
     @property
     def question(self) -> List[Surface]:
@@ -163,7 +173,8 @@ def _composite(layers: Sequence[Layer], location: Location) -> List[Surface]:
 
 def _build_choices(layers: Sequence[Layer], rows: int, columns: int,
                    cells: List[List[List[Surface]]], count: int,
-                   cell_size: int, rng: random.Random
+                   cell_size: int, rng: random.Random,
+                   palette: Palette
                    ) -> Tuple[List[List[Surface]], List[str]]:
     """The wrong answers, built four different ways.
 
@@ -177,8 +188,6 @@ def _build_choices(layers: Sequence[Layer], rows: int, columns: int,
     chosen: List[List[Surface]] = []
     origins: List[str] = []
     rejections = 0
-    matching = 0
-    spent_on_matching = 0
 
     strategies = [FROM_MATRIX, MODIFIED, RECOMBINED]
     if len(layers) > 1:
@@ -187,27 +196,16 @@ def _build_choices(layers: Sequence[Layer], rows: int, columns: int,
     while len(chosen) < count - 1:
         if rejections >= MAX_REJECTIONS:
             raise _Stalled()
-        origin = rng.choice(strategies)
+        origin = (NEAR_MISS if rng.random() < NEAR_MISS_SHARE
+                  else rng.choice(strategies))
         candidate = _candidate(origin, layers, rows, columns, cells,
-                               cell_size, rng)
+                               cell_size, rng, palette)
         if (not candidate
                 or same_picture(candidate, answer)
                 or any(same_picture(candidate, taken) for taken in chosen)):
             rejections += 1
             continue
 
-        # Hold out for choices that hide the answer's shape count,
-        # while there is still room to place them and budget to wait.
-        wanted = COUNT_MATCH_QUOTA - matching
-        if (wanted > 0 and len(candidate) != len(answer)
-                and spent_on_matching < COUNT_MATCH_BUDGET
-                and (count - 1) - len(chosen) <= wanted):
-            spent_on_matching += 1
-            rejections += 1
-            continue
-
-        if len(candidate) == len(answer):
-            matching += 1
         chosen.append(candidate)
         origins.append(origin)
         rejections = 0
@@ -216,8 +214,12 @@ def _build_choices(layers: Sequence[Layer], rows: int, columns: int,
 
 def _candidate(origin: str, layers: Sequence[Layer], rows: int, columns: int,
                cells: List[List[List[Surface]]], cell_size: int,
-               rng: random.Random) -> List[Surface]:
+               rng: random.Random, palette: Palette) -> List[Surface]:
     """One candidate wrong answer, built the way ``origin`` says."""
+    if origin == NEAR_MISS:
+        return _near_miss(cells[rows - 1][columns - 1], palette,
+                          cell_size, rng)
+
     if origin == PARTIAL:
         keep = rng.sample(range(len(layers)),
                           rng.randrange(1, len(layers)))
@@ -229,9 +231,49 @@ def _candidate(origin: str, layers: Sequence[Layer], rows: int, columns: int,
         return list(_composite(layers, _other_cell(rows, columns, rng)))
 
     if origin == MODIFIED:
-        return _modified(layers, rows, columns, cell_size, rng)
+        return _modified(layers, rows, columns, cell_size, rng, palette)
 
     return _recombined(layers, rows, columns, rng)
+
+
+def _near_miss(answer: Sequence[Surface], palette: Palette,
+               cell_size: int, rng: random.Random) -> List[Surface]:
+    """The right answer with exactly one shape changed in one way.
+
+    Which property to change is drawn per candidate, so a run of near
+    misses varies rather than all differing in shading. The change is
+    always to one shape, never to the cell as a whole: a candidate that
+    differs everywhere is answered by noticing that it differs
+    everywhere, which is not the rule.
+    """
+    if not answer:
+        return []
+    index = rng.randrange(len(answer))
+    shape = answer[index]
+
+    ways = ['fill', 'size', 'turn']
+    rng.shuffle(ways)
+    for way in ways:
+        if way == 'fill':
+            spare = [fill for fill in palette.ramp
+                     if fill.name != shape.fill.name]
+            changed = shape.filled(rng.choice(spare))
+        elif way == 'size':
+            # Growing is capped by what the cell can hold. A shape
+            # drawn past its own box does not read as a wrong answer,
+            # it reads as a broken one, and a player learns to skip it.
+            drawn = max(shape.width, shape.height) * shape.scale
+            room = (cell_size * 0.9) / drawn if drawn else 1.0
+            factors = [0.6] + ([1.4] if room >= 1.4 else
+                               [round(room, 2)] if room >= 1.15 else [])
+            changed = shape.scaled(shape.scale * rng.choice(factors))
+        else:
+            changed = shape.rotated(shape.rotation
+                                    + rng.choice((45, 90, 135)))
+        if not changed.looks_like(shape):
+            return [changed if position == index else other
+                    for position, other in enumerate(answer)]
+    return []
 
 
 def _other_cell(rows: int, columns: int, rng: random.Random) -> Location:
@@ -243,7 +285,8 @@ def _other_cell(rows: int, columns: int, rng: random.Random) -> Location:
 
 
 def _modified(layers: Sequence[Layer], rows: int, columns: int,
-              cell_size: int, rng: random.Random) -> List[Surface]:
+              cell_size: int, rng: random.Random,
+              palette: Palette) -> List[Surface]:
     """A cell from one layer with its shading or its size altered.
 
     When the layer counts shapes, every copy is changed the same way.
@@ -257,7 +300,7 @@ def _modified(layers: Sequence[Layer], rows: int, columns: int,
         return []
 
     if rng.random() < 0.5:
-        fill = rng.choice(BASIC_FILLS)
+        fill = rng.choice(list(palette.basic))
         change = lambda shape: shape.filled(fill)
     else:
         change = lambda shape: shape.scaled(shape.scale * 0.66)
@@ -290,7 +333,8 @@ def _recombined(layers: Sequence[Layer], rows: int, columns: int,
 def generate(rows: int = 3, columns: int = 3, layers: int = 1,
              rules_per_layer: int = 1, choices: int = 8,
              cell_size: int = 100, seed: Optional[int] = None,
-             attempts: int = 60) -> Puzzle:
+             attempts: int = 60,
+             palettes: Sequence[Palette] = (GREYS,)) -> Puzzle:
     """Build one puzzle.
 
     ``rules_per_layer`` is how many rules a layer carries, exactly,
@@ -304,16 +348,21 @@ def generate(rows: int = 3, columns: int = 3, layers: int = 1,
     whole of what a layer can say, and the original allowed it no
     further rules; such a layer carries one rule at any setting.
 
+    ``palettes`` are the fill sets a puzzle may be drawn with; one is
+    picked per puzzle, so a run offered both alternates between grey
+    puzzles and coloured ones rather than mixing them within a grid.
+
     A puzzle whose rules leave too few distinct cells to fill the
     answer choices is discarded and rebuilt rather than padded out with
     blanks. Blank choices were what the original did, and they leak the
     answer: a player who sees three empty boxes knows to ignore them.
     """
     rng = random.Random(seed)
+    palette = rng.choice(list(palettes))
     for _ in range(attempts):
         try:
             return _attempt(rows, columns, layers, rules_per_layer,
-                            choices, cell_size, rng)
+                            choices, cell_size, rng, palette)
         except _Stalled:
             continue
     raise RuntimeError('could not build a puzzle with %d layers and %d rules'
@@ -321,16 +370,17 @@ def generate(rows: int = 3, columns: int = 3, layers: int = 1,
 
 
 def _attempt(rows: int, columns: int, layer_count: int, rules_per_layer: int,
-             choices: int, cell_size: int, rng: random.Random) -> Puzzle:
+             choices: int, cell_size: int, rng: random.Random,
+             palette: Palette) -> Puzzle:
     """One try at a puzzle, which may run dry and be thrown away."""
     built: List[Layer] = []
     for _ in range(layer_count):
-        base = generate_base_rule(rows, columns, cell_size, rng)
+        base = generate_base_rule(rows, columns, cell_size, rng, palette)
         rules: List[Rule] = [base]
         if isinstance(base, ShapeRepetition):
-            for _ in range(rules_per_layer - 1):
+            for kind in choose_supplementals(rules_per_layer - 1, rng):
                 rules.append(generate_supplemental(rows, columns, cell_size,
-                                                   rng))
+                                                   rng, palette, kind))
         built.append(Layer(rows, columns, rules))
 
     cells = [[_composite(built, Location(row, column))
@@ -339,7 +389,7 @@ def _attempt(rows: int, columns: int, layer_count: int, rules_per_layer: int,
         raise _Stalled()        # an empty answer cell is not a question
 
     wrong, origins = _build_choices(built, rows, columns, cells,
-                                    choices, cell_size, rng)
+                                    choices, cell_size, rng, palette)
 
     answer_at = rng.randrange(choices)
     ordered = list(wrong)
@@ -354,4 +404,5 @@ def _attempt(rows: int, columns: int, layer_count: int, rules_per_layer: int,
 
     return Puzzle(rows=rows, columns=columns, cell_size=cell_size,
                   cells=cells, choices=ordered, answer=answer_at,
-                  explanation=explanation, origins=placed_origins)
+                  explanation=explanation, origins=placed_origins,
+                  palette=palette)

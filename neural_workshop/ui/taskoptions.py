@@ -329,6 +329,7 @@ MATRIX_REASONING = TaskSpec(
                True),
         Option('RAVENS_EXPLAIN', _('Name the rules after each answer'),
                False),
+        Option('RAVENS_COLOR', _('Mix in coloured puzzles'), True),
     ))
 
 #: Task id → the settings screen it owns.

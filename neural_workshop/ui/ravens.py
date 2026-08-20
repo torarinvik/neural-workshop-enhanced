@@ -50,6 +50,7 @@ from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
                         width_center)
 from ..i18n import _
 from ..ravens import generate
+from ..ravens.surfaces import GREYS, PALETTES
 from ..ravens.geometry import triangulate
 from ..ravens.surfaces import Surface
 from . import cursor, taskoptions
@@ -315,6 +316,7 @@ class MatrixReasoning:
         self.adaptive = bool(opts['RAVENS_ADAPTIVE'])
         self.feedback = bool(opts['RAVENS_FEEDBACK'])
         self.explain = bool(opts['RAVENS_EXPLAIN'])
+        self.palettes = PALETTES if bool(opts['RAVENS_COLOR']) else (GREYS,)
         self.level = self.clamped(self.start_level - 1)
 
     def clamped(self, level: int) -> int:
@@ -507,7 +509,8 @@ class MatrixReasoning:
         layers, rules = LADDER[self.level]
         self.puzzle = generate(layers=layers, rules_per_layer=rules,
                                choices=CHOICE_COUNT, cell_size=CELL_UNITS,
-                               seed=self.rng.randrange(1 << 30))
+                               seed=self.rng.randrange(1 << 30),
+                               palettes=self.palettes)
         self.picked = None
         self.asked_at = time.time()
         self.phase = 'asking'

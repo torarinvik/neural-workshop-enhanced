@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass, replace
-from typing import Dict, Optional, Sequence, Tuple
+from typing import Dict, Sequence, Tuple
 
 from .geometry import Outline, Point, ellipse_outline, transformed
 
@@ -54,13 +54,67 @@ GREY_MID = Fill('grey-mid', (102, 102, 102, 128))
 GREY_DARK = Fill('grey-dark', (26, 26, 26, 153))
 BLACK = Fill('black', (0, 0, 0, 191))
 
-#: Every fill, in the order the original's five-fill rule cycles them.
+#: Every grey, lightest first — the order the cycling rule steps through.
 ALL_FILLS: Tuple[Fill, ...] = (WHITE, GREY_LIGHT, GREY_MID, GREY_DARK, BLACK)
 
-#: The three a fill can be picked from at random, and the three the
-#: fill-repetition rule cycles. Both were three-long in the original.
-BASIC_FILLS: Tuple[Fill, ...] = (WHITE, GREY_LIGHT, BLACK)
-REPETITION_FILLS: Tuple[Fill, ...] = (WHITE, BLACK, GREY_LIGHT)
+#: The three a shape is filled with at random, and the three the
+#: constant-fill rule hands out one per route. Three in the original too.
+BASIC_FILLS: Tuple[Fill, ...] = (WHITE, BLACK, GREY_LIGHT)
+
+#: Colours, at the opacity of the darkest grey so that a shape behind
+#: still shows through by as much as it always did.
+COLOUR_ALPHA = 200
+
+YELLOW = Fill('yellow', (240, 228, 66, COLOUR_ALPHA))
+SKY = Fill('sky', (86, 180, 233, COLOUR_ALPHA))
+VERMILION = Fill('vermilion', (213, 94, 0, COLOUR_ALPHA))
+BLUE = Fill('blue', (0, 114, 178, COLOUR_ALPHA))
+
+#: The colours, lightest first.
+#:
+#: They are four of the Okabe-Ito set, which exists to stay legible to
+#: colour-blind eyes, and they were chosen from it by measurement
+#: rather than by taste: every pair was simulated for each kind of
+#: dichromacy and compared in CIELAB, and this is the four that leave
+#: the largest worst case. That worst case is a little over twice the
+#: grey ramp's own, so a rule about colour is no harder to follow than
+#: a rule about shading, and for some eyes it is easier.
+#:
+#: The order is by lightness, and strictly: 100, 91, 76, 63, 57. That
+#: is deliberate. It means the sequence is a lightness ramp as well as
+#: a colour one, so a player who cannot separate the hues at all can
+#: still follow the rule by how dark each step is — the same rule they
+#: would be following in the grey puzzles.
+COLOUR_FILLS: Tuple[Fill, ...] = (WHITE, YELLOW, SKY, VERMILION, BLUE)
+
+#: The three most widely separated of them.
+BASIC_COLOURS: Tuple[Fill, ...] = (WHITE, YELLOW, BLUE)
+
+
+@dataclass(frozen=True)
+class Palette:
+    """A set of fills, and what to call the thing they vary.
+
+    A puzzle picks one and keeps it. Mixing greys and colours inside a
+    single puzzle would make a wrong answer identifiable by its palette
+    rather than by the rules, which is not the question being asked.
+    """
+
+    name: str
+    #: All five, in cycle order, for the rule that steps along them.
+    ramp: Tuple[Fill, ...]
+    #: The three used for a shape's own fill and for the constant-fill
+    #: rule, which hands one to each route.
+    basic: Tuple[Fill, ...]
+    #: What a rule about these is called when a puzzle is explained.
+    noun: str
+
+
+GREYS = Palette('greys', ALL_FILLS, BASIC_FILLS, 'shading')
+COLOURS = Palette('colours', COLOUR_FILLS, BASIC_COLOURS, 'colour')
+
+#: Both, for a run that wants colour in the mix.
+PALETTES: Tuple[Palette, ...] = (GREYS, COLOURS)
 
 #: The shapes, by name. Only the outline differs between them, so they
 #: are a table of outline builders rather than six near-identical
@@ -196,8 +250,7 @@ def _close(one: float, two: float) -> bool:
 
 
 def generate_surface(cell_size: int, rng: random.Random,
-                     allowed_fills: Optional[Sequence[Fill]] = None
-                     ) -> Surface:
+                     fills: Sequence[Fill] = BASIC_FILLS) -> Surface:
     """A random shape, centred in a cell of ``cell_size``.
 
     The sizes come in quarter-cell steps, and the two dimensions are
@@ -218,9 +271,9 @@ def generate_surface(cell_size: int, rng: random.Random,
     if rng.random() < 0.5:
         width, height = height, width
 
-    fills = BASIC_FILLS if allowed_fills is None else tuple(allowed_fills)
     return Surface(kind=rng.choice(SHAPE_KINDS), width=width, height=height,
-                   position=Point(half, half), fill=rng.choice(fills))
+                   position=Point(half, half),
+                   fill=rng.choice(list(fills)))
 
 
 def same_picture(one: Sequence[Surface], two: Sequence[Surface]) -> bool:

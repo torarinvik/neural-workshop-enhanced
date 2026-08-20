@@ -577,13 +577,17 @@ GRAPH_MAP_FEEDBACK = True
 # five: level 1 is one rule on one layer, level 5 is up to three rules
 # on each of two layers. With RAVENS_EXPLAIN the rules behind a puzzle
 # are named after each answer, which turns a run into practice rather
-# than a test.
+# than a test. RAVENS_COLOR mixes coloured puzzles in among the grey
+# ones; the four colours were picked to stay apart under every kind of
+# colour blindness, and they run light to dark so the rule can be
+# followed by lightness alone.
 RAVENS_LEVEL = 1
 RAVENS_TRIALS = 15
 RAVENS_EXPOSURE_MS = 0
 RAVENS_ADAPTIVE = True
 RAVENS_FEEDBACK = True
 RAVENS_EXPLAIN = False
+RAVENS_COLOR = True
 
 ######################################################################
 # This is the end of the configuration file.

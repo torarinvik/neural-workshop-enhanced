@@ -22,12 +22,20 @@ import random
 from typing import List, Optional, Sequence, Tuple
 
 from .geometry import Point
-from .surfaces import (ALL_FILLS, REPETITION_FILLS, Fill, Surface, WHITE,
-                       generate_surface)
+from .surfaces import (GREYS, Palette, Surface, WHITE, generate_surface)
 from .transforms import CornerOut, LogicRoute, Route, generate_route
 
-#: How much a scaling rule shrinks a shape at each step.
-SCALE_STEP = 0.66
+#: How small a shrinking rule may leave a shape by the end of its
+#: route, as a share of the size it started at.
+#:
+#: The step is worked back from this rather than fixed, because it
+#: compounds and the routes are not the same length. The original
+#: shrank by a third at every step, which is fine down a column of
+#: three — two steps, ending at 44% — and ruinous on the route that
+#: sweeps outward from the top-left corner, which is eight steps long
+#: and ended at 3.6%. Shapes became dots, and a puzzle whose answer
+#: choices are eight indistinguishable dots cannot be answered at all.
+SMALLEST_SCALE = 0.4
 
 #: How far a rotation rule turns a shape at each step, in degrees.
 ROTATION_STEP = 45
@@ -212,12 +220,22 @@ class ApplyRotation(Supplemental):
 
 
 class ApplyScaling(Supplemental):
-    """Each step shrinks the shapes."""
+    """Each step shrinks the shapes, by the same factor every time.
+
+    The factor is chosen so that the far end of this particular route
+    lands on :data:`SMALLEST_SCALE`, whether the route is two steps
+    long or eight.
+    """
 
     description = 'the shape shrinks'
 
+    def __init__(self, route: Route) -> None:
+        super().__init__(route)
+        steps = len(route.walk(route.bases[0])) or 1
+        self.factor = SMALLEST_SCALE ** (1.0 / steps)
+
     def change(self, shape: Surface, source: Surface) -> Surface:
-        return shape.scaled(SCALE_STEP * source.scale)
+        return shape.scaled(self.factor * source.scale)
 
 
 class FillRepetition(Supplemental):
@@ -228,12 +246,14 @@ class FillRepetition(Supplemental):
     black shapes beside a column of white ones.
     """
 
-    description = 'the shading is constant along the route'
-
-    def __init__(self, route: Route,
-                 fills: Sequence[Fill] = REPETITION_FILLS) -> None:
+    def __init__(self, route: Route, palette: Palette = GREYS) -> None:
         super().__init__(route)
-        self.fills = list(fills)
+        self.palette = palette
+        self.fills = list(palette.basic)
+
+    @property
+    def description(self) -> str:
+        return 'the %s is constant along the route' % self.palette.noun
 
     def seed(self, base_index: int,
              existing: Optional[Sequence[Surface]]) -> List[Surface]:
@@ -247,14 +267,16 @@ class FillRepetition(Supplemental):
 
 
 class ChangeFill(Supplemental):
-    """Each step moves the shading one place along a cycle of five."""
+    """Each step moves the fill one place along a cycle of five."""
 
-    description = 'the shading changes'
-
-    def __init__(self, route: Route,
-                 fills: Sequence[Fill] = ALL_FILLS) -> None:
+    def __init__(self, route: Route, palette: Palette = GREYS) -> None:
         super().__init__(route)
-        self.fills = list(fills)
+        self.palette = palette
+        self.fills = list(palette.ramp)
+
+    @property
+    def description(self) -> str:
+        return 'the %s changes' % self.palette.noun
 
     def seed(self, base_index: int,
              existing: Optional[Sequence[Surface]]) -> List[Surface]:
@@ -326,10 +348,45 @@ class Numerosity(Supplemental):
 SUPPLEMENTALS: Tuple[type, ...] = (ApplyScaling, FillRepetition,
                                    ApplyRotation, Numerosity, ChangeFill)
 
+#: Which property of a shape each rule writes.
+#:
+#: Two rules in one layer that write the same property do not stack —
+#: the second simply overwrites the first, and the first becomes a rule
+#: the puzzle claims to follow while showing no sign of it. That is
+#: worse than having one fewer rule: a player who takes the puzzle
+#: seriously looks for it and finds nothing.
+#:
+#: Counting shares the size family because it sizes its copies to fit
+#: the cell. A scaling rule applied afterwards resets that, and the
+#: copies spill out of the cell they were laid out for.
+RULE_WRITES = {
+    ApplyRotation: 'turn',
+    ApplyScaling: 'size',
+    Numerosity: 'size',
+    ChangeFill: 'fill',
+    FillRepetition: 'fill',
+}
+
+
+def choose_supplementals(count: int, rng: random.Random) -> List[type]:
+    """``count`` supplemental rules, no two writing the same property."""
+    spare = list(SUPPLEMENTALS)
+    rng.shuffle(spare)
+    chosen: List[type] = []
+    taken: List[str] = []
+    for kind in spare:
+        if len(chosen) >= count:
+            break
+        if RULE_WRITES[kind] in taken:
+            continue
+        chosen.append(kind)
+        taken.append(RULE_WRITES[kind])
+    return chosen
+
 
 def generate_base_rule(rows: int, columns: int, cell_size: int,
-                       rng: random.Random, kind: type = None,
-                       route_kind: type = None) -> Rule:
+                       rng: random.Random, palette: Palette = GREYS,
+                       kind: type = None, route_kind: type = None) -> Rule:
     """A base rule: shape repetition, or one of the three logic rules.
 
     Logic rules need a grid with room for a two-by-two seed and cells
@@ -346,19 +403,19 @@ def generate_base_rule(rows: int, columns: int, cell_size: int,
         route = generate_route(rows, columns, rng, route_kind)
         return ShapeRepetition(route,
                                _distinct_seeds(len(route.bases), cell_size,
-                                               rng))
+                                               rng, palette))
 
     count = rng.randrange(MIN_LOGIC_SHAPES, MAX_LOGIC_SHAPES + 1)
     shapes: List[Surface] = []
     while len(shapes) < count:
-        candidate = generate_surface(cell_size, rng, allowed_fills=(WHITE,))
+        candidate = generate_surface(cell_size, rng, fills=(WHITE,))
         if not any(candidate.looks_like(chosen) for chosen in shapes):
             shapes.append(candidate)
     return kind(LogicRoute(rows, columns), shapes, rng)
 
 
-def _distinct_seeds(count: int, cell_size: int,
-                    rng: random.Random) -> List[List[Surface]]:
+def _distinct_seeds(count: int, cell_size: int, rng: random.Random,
+                    palette: Palette = GREYS) -> List[List[Surface]]:
     """One shape per starting cell, no two of the same kind.
 
     Repeating a kind across starting cells would make two routes look
@@ -367,16 +424,17 @@ def _distinct_seeds(count: int, cell_size: int,
     seeds: List[List[Surface]] = []
     used: List[str] = []
     for _ in range(count):
-        shape = generate_surface(cell_size, rng)
+        shape = generate_surface(cell_size, rng, palette.basic)
         while shape.kind in used:
-            shape = generate_surface(cell_size, rng)
+            shape = generate_surface(cell_size, rng, palette.basic)
         used.append(shape.kind)
         seeds.append([shape])
     return seeds
 
 
 def generate_supplemental(rows: int, columns: int, cell_size: int,
-                          rng: random.Random, kind: type = None,
+                          rng: random.Random, palette: Palette = GREYS,
+                          kind: type = None,
                           route_kind: type = None) -> Supplemental:
     """One supplemental rule, on a route of its own."""
     route = generate_route(rows, columns, rng, route_kind)
@@ -386,7 +444,7 @@ def generate_supplemental(rows: int, columns: int, cell_size: int,
         return Numerosity(route, cell_size, rows, columns,
                           rng.randrange(1, MAX_INITIAL_COUNT + 1))
     if kind is FillRepetition:
-        return FillRepetition(route)
+        return FillRepetition(route, palette)
     if kind is ChangeFill:
-        return ChangeFill(route)
+        return ChangeFill(route, palette)
     return kind(route)
