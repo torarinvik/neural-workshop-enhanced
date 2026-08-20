@@ -75,6 +75,11 @@ class Dataset(NamedTuple):
     rows: int           # rows in the split, for picking random offsets
     approx_bytes: int   # per item, for reporting a download size
     config: str = 'default'
+    #: Zip archives holding the items, for datasets the
+    #: datasets-server cannot serve item by item. When set,
+    #: fetching goes through :func:`fetch_archives` instead of
+    #: the row and parquet routes.
+    archives: Tuple[str, ...] = ()
 
 
 #: Photographs, 64x64. Recognisable, numerous, and none of them are
@@ -90,10 +95,27 @@ ESC50 = Dataset(
     column='audio', kind='audio', suffix='.wav',
     rows=2000, approx_bytes=386000)
 
+#: 2K-resolution photographs, for the jigsaw puzzles. This Hugging
+#: Face dataset is a loading script over the original NTIRE challenge
+#: archives rather than hosted rows — its columns are file paths on
+#: the server, so the datasets-server cannot hand out the images one
+#: by one and the parquet files hold strings. The archives themselves
+#: are what there is, so this library is fetched by the zip route:
+#: the validation archive first (100 images), the training archive
+#: (800 more) only when more than a hundred are asked for.
+DIV2K = Dataset(
+    key='div2k', repo='eugenesiow/Div2k', split='train', column='hr',
+    kind='image', suffix='.png', rows=900, approx_bytes=4400000,
+    archives=(
+        'https://data.vision.ee.ethz.ch/cvl/DIV2K/DIV2K_valid_HR.zip',
+        'https://data.vision.ee.ethz.ch/cvl/DIV2K/DIV2K_train_HR.zip',
+    ))
+
 #: Everything a game may ask for, by key.
 CATALOGUE: Dict[str, Dataset] = {
     TINY_IMAGENET.key: TINY_IMAGENET,
     ESC50.key: ESC50,
+    DIV2K.key: DIV2K,
 }
 
 
@@ -316,6 +338,9 @@ def fetch(dataset: Dataset, wanted: int,
     *should_stop* returns True, so a cancelled or offline fetch still
     leaves a usable library behind.
     """
+    if dataset.archives:
+        return fetch_archives(dataset, wanted, progress=progress,
+                              should_stop=should_stop)
     rng = rng or random.Random()
     count = have(dataset)
     if count >= wanted:
@@ -371,6 +396,81 @@ def fetch(dataset: Dataset, wanted: int,
     return count
 
 
+def _resume_to_file(url: str, path: str) -> None:
+    """Download *url* to *path*, continuing a partial file if one is
+    there. The archives here run to gigabytes, and a dropped
+    connection at ninety per cent should not mean starting over."""
+    got = os.path.getsize(path) if os.path.exists(path) else 0
+    headers = dict(_HEADERS)
+    if got:
+        headers['Range'] = 'bytes=%d-' % got
+    request = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(request, timeout=_TIMEOUT) as response:
+        resumed = got and getattr(response, 'status', 200) == 206
+        with open(path, 'ab' if resumed else 'wb') as handle:
+            while True:
+                chunk = response.read(1 << 20)
+                if not chunk:
+                    break
+                handle.write(chunk)
+
+
+def fetch_archives(dataset: Dataset, wanted: int,
+                   progress: Optional[Progress] = None,
+                   should_stop: Optional[Callable[[], bool]] = None) -> int:
+    """Fill the library from the dataset's zip archives.
+
+    Each archive is downloaded whole — that is the unit the source
+    offers — and its images are unpacked to the same numbered names
+    the other routes use, so :func:`local_files` and the pools need
+    not know how anything arrived. Item numbering is the archive's
+    position times ten thousand plus the entry's position in name
+    order, which is stable across runs, so unpacking is idempotent
+    and a later archive never collides with an earlier one.
+
+    Archives are taken in order until *wanted* is met: asking for a
+    hundred DIV2K images downloads the validation archive only, and
+    asking for more pulls the training archive too.
+    """
+    import zipfile
+
+    folder = local_dir(dataset)
+    count = have(dataset)
+    for position, url in enumerate(dataset.archives):
+        if count >= wanted or (should_stop is not None and should_stop()):
+            break
+        base = position * 10000
+        scratch = os.path.join(folder, '_archive%d.zip' % position)
+        try:
+            _resume_to_file(url, scratch)
+            with zipfile.ZipFile(scratch) as archive:
+                names = sorted(name for name in archive.namelist()
+                               if name.lower().endswith(dataset.suffix))
+                for offset, name in enumerate(names):
+                    path = os.path.join(
+                        folder, '%07d%s' % (base + offset, dataset.suffix))
+                    if not os.path.exists(path):
+                        partial = path + '.part'
+                        with open(partial, 'wb') as out:
+                            out.write(archive.read(name))
+                        os.replace(partial, path)
+                        count += 1
+                    if progress:
+                        progress(min(count, wanted), wanted)
+                    if should_stop is not None and should_stop():
+                        break
+            os.remove(scratch)
+        except (urllib.error.URLError, OSError,
+                zipfile.BadZipFile) as exc:
+            runtime.debug_msg('%s archive %s: %s' % (dataset.key, url, exc))
+            # A bad or half zip cannot be resumed into sense.
+            if (os.path.exists(scratch)
+                    and isinstance(exc, zipfile.BadZipFile)):
+                os.remove(scratch)
+            break
+    return have(dataset)
+
+
 def by_key(key: str) -> Optional[Dataset]:
     """Look a dataset up by name."""
     return CATALOGUE.get(key)
@@ -383,6 +483,7 @@ def by_key(key: str) -> Optional[Dataset]:
 DEFAULT_COUNTS: Dict[str, int] = {
     TINY_IMAGENET.key: 5000,
     ESC50.key: 500,
+    DIV2K.key: 100,
 }
 
 

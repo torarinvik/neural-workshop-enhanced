@@ -105,6 +105,17 @@ the whole of either split, if you have the room:
 | --- | --- | --- |
 | `tiny-imagenet` | 100,000 photographs, 64x64 | ~194 MB |
 | `esc50` | 2,000 clips, 5s, 50 classes | ~882 MB |
+| `div2k` | 900 photographs, 2K resolution | ~4 GB |
+
+The `div2k` library feeds the jigsaw puzzles and comes by a different
+route: the Hugging Face dataset (`eugenesiow/Div2k`) is a loading
+script over the original NTIRE challenge archives rather than hosted
+rows, so the fetch downloads those zip archives whole and unpacks
+them. The default hundred images is the validation archive alone
+(~430 MB); asking for more pulls the 3.5 GB training archive too. The
+download resumes where it left off if interrupted. DIV2K is published
+for academic research use; the images are collected from the Internet
+and their copyright stays with their owners.
 
 The full ESC-50 is worth having if you play the sound modes: it is 50
 classes of 40 clips each, so a complete set gives many different
@@ -369,6 +380,29 @@ because balance can leak in reverse: a wider design that targeted
 seven attributes kept every one of them balanced and still gave the
 game away, because the all-correct answer agreed with the wrong ones
 *less* than they agreed with each other.
+
+#### Jigsaw Puzzle
+
+A photograph is cut into a square grid of tiles and shuffled; click
+two tiles to swap them, and the puzzle is done when the picture is
+whole. The photographs are the DIV2K set at 2K resolution — detailed
+enough that a tile of sky and a tile of sea genuinely take looking at
+— fetched once with:
+
+```bash
+.venv/bin/python -m neural_workshop.datasets div2k
+```
+
+Finishing is not the score. Any shuffle can be solved in a knowable
+minimum number of swaps — one less than the length of each cycle of
+the shuffle, summed — and the run reports how close each solution
+came to that minimum. Swapping at random finishes eventually; seeing
+where each tile belongs before touching it finishes at the minimum,
+and the gap between the two is what is measured. With *Grow the grid*
+a solve near the minimum takes the next puzzle up a size, from
+two-by-two to six-by-six. The finished picture is shown beside the
+board like the lid of the box; turn it off and the tiles are all
+there is.
 
 ##### Where this came from
 

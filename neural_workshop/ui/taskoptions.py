@@ -380,6 +380,46 @@ MATRIX_REASONING = TaskSpec(
     ),
     note=matrix_reasoning_note)
 
+def jigsaw_note(chosen: Dict[str, Any]) -> str:
+    """What the chosen grid amounts to, and whether it can be played.
+
+    The library line matters most: the photographs are a download the
+    repository does not carry, and this screen is where a player finds
+    that out before a run fails to start.
+    """
+    from .. import datasets
+    side = int(chosen['JIGSAW_SIDE'])
+    said = [_('A %dx%d puzzle is %d tiles of one photograph.')
+            % (side, side, side * side)]
+    if chosen['JIGSAW_ADAPTIVE']:
+        said.append(_('Solve near the minimum swap count and the grid '
+                      'grows; flail and it shrinks.'))
+    stocked = datasets.have(datasets.DIV2K)
+    if stocked:
+        said.append(_('%d photographs downloaded.') % stocked)
+    else:
+        said.append(_('The photograph library is not downloaded yet — '
+                      'see the Readme.'))
+    return '  '.join(said)
+
+
+JIGSAW = TaskSpec(
+    title=_('Jigsaw Puzzle options'),
+    options=(
+        Option('JIGSAW_SIDE', _('Tiles per side'), 3,
+               values=(2, 3, 4, 5, 6)),
+        Option('JIGSAW_PUZZLES', _('Puzzles per run'), 3,
+               values=(1, 2, 3, 5, 8)),
+        Option('JIGSAW_ADAPTIVE',
+               _('Grow the grid when you solve near the minimum'), True),
+        Option('JIGSAW_PREVIEW',
+               _('Show the finished picture beside the board'), True),
+        Option('JIGSAW_MARK_PLACED',
+               _('Outline tiles already in their place'), False),
+    ),
+    note=jigsaw_note)
+
+
 #: Task id → the settings screen it owns.
 TASK_SPECS: Dict[str, TaskSpec] = {
     'monkey_ladder': MONKEY_LADDER,
@@ -390,6 +430,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'count': COUNTING,
     'graph_mapping': GRAPH_MAPPING,
     'matrix_reasoning': MATRIX_REASONING,
+    'jigsaw': JIGSAW,
 }
 
 

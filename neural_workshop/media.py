@@ -141,6 +141,11 @@ def image_pool(rng: Optional[random.Random] = None) -> MediaPool:
     return MediaPool(datasets.TINY_IMAGENET, rng)
 
 
+def jigsaw_pool(rng: Optional[random.Random] = None) -> MediaPool:
+    """The 2K photograph library the jigsaw puzzles are cut from."""
+    return MediaPool(datasets.DIV2K, rng)
+
+
 def sound_pool(rng: Optional[random.Random] = None) -> MediaPool:
     """The environmental-sound library."""
     return MediaPool(datasets.ESC50, rng)

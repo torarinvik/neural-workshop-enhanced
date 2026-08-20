@@ -593,6 +593,22 @@ RAVENS_FEEDBACK = True
 RAVENS_EXPLAIN = False
 RAVENS_COLOR = True
 
+# Jigsaw Puzzle: a photograph cut into JIGSAW_SIDE x JIGSAW_SIDE tiles
+# and shuffled; clicking two tiles swaps them, and the puzzle is done
+# when the picture is whole. Any shuffle has a knowable minimum number
+# of swaps, and the run scores how close each solution came to it.
+# With JIGSAW_ADAPTIVE the grid grows when a solve lands near that
+# minimum and shrinks when it strays far. JIGSAW_PREVIEW shows the
+# finished picture beside the board, like the lid of the box;
+# JIGSAW_MARK_PLACED outlines tiles already where they belong, which
+# makes the search easier and is off by default. The photographs are
+# the DIV2K library, downloaded separately — see the Readme.
+JIGSAW_SIDE = 3
+JIGSAW_PUZZLES = 3
+JIGSAW_ADAPTIVE = True
+JIGSAW_PREVIEW = True
+JIGSAW_MARK_PLACED = False
+
 ######################################################################
 # This is the end of the configuration file.
 ######################################################################
