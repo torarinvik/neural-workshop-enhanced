@@ -595,6 +595,70 @@ PURSUIT = TaskSpec(
     note=pursuit_note)
 
 
+def out_of_sight_note(chosen: Dict[str, Any]) -> str:
+    """What the chosen field hides, and the one silent clamp.
+
+    Two of these rows can switch a whole half of the task off — no
+    crossings, or no slabs — and between them they are what makes a
+    single frame too little to answer from, so a run without either
+    is a much easier game than the name promises. The note says so at
+    the dial rather than leaving it to be discovered.
+    """
+    dots = int(chosen['SIGHT_DOTS'])
+    yours = int(chosen['SIGHT_TARGETS'])
+    said = []
+    if yours > dots - 1:
+        said.append(_('With %d dots at most %d can be yours, so runs '
+                      'will hold %d.') % (dots, dots - 1, dots - 1))
+        yours = dots - 1
+    said.insert(0, _('%d dots drift and %d of them are yours to hold.')
+                % (dots, yours))
+    gap = int(chosen['SIGHT_CROSS_MS'])
+    slabs = int(chosen['SIGHT_BLINDS'])
+    if gap:
+        said.append(_('Two of them meet and pass through each other '
+                      'every %.1f s or so.') % (gap / 1000.))
+    if slabs:
+        said.append(_('Up to %d slabs hide whatever goes behind them '
+                      '— however many of that width fit without '
+                      'taking half the field.') % slabs)
+    if not gap and not slabs:
+        said.append(_('With no crossings and no slabs nothing is ever '
+                      'in doubt — the dots can simply be watched.'))
+    said.append(_('%d questions a round, asked while everything keeps '
+                  'moving.') % int(chosen['SIGHT_PROBES']))
+    if chosen['SIGHT_ADAPTIVE']:
+        said.append(_('A round answered whole asks for one more dot; '
+                      'a mistake asks for one fewer.'))
+    return '  '.join(said)
+
+
+OUT_OF_SIGHT = TaskSpec(
+    title=_('Out of Sight options'),
+    options=(
+        Option('SIGHT_DOTS', _('Dots on screen'), 8,
+               values=(3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30)),
+        Option('SIGHT_TARGETS', _('Dots to hold'), 2,
+               values=(1, 2, 3, 4, 5, 6, 8, 10, 12, 15)),
+        Option('SIGHT_SPEED', _('Dot speed'), 16,
+               values=(8, 12, 16, 22, 30, 40, 55, 75)),
+        Option('SIGHT_CROSS_MS', _('Two dots cross about every'), 1600,
+               values=(0, 600, 900, 1200, 1600, 2200, 3000, 5000),
+               suffix=' ms'),
+        Option('SIGHT_BLINDS', _('Slabs to hide behind'), 3,
+               values=(0, 1, 2, 3, 4, 5, 6, 8)),
+        Option('SIGHT_BLIND_WIDTH', _('How wide a slab is'), 9,
+               values=(4, 6, 9, 12, 16, 20), suffix='%'),
+        Option('SIGHT_PROBES', _('Questions per round'), 6,
+               values=(2, 4, 6, 8, 10, 15, 20)),
+        Option('SIGHT_ROUNDS', _('Rounds per run'), 5,
+               values=(1, 2, 3, 5, 8, 10, 15, 20)),
+        Option('SIGHT_ADAPTIVE',
+               _('Hold one more dot when a round comes back whole'), True),
+    ),
+    note=out_of_sight_note)
+
+
 def sokoban_note(chosen: Dict[str, Any]) -> str:
     """What the chosen rung is made of, and what the par will mean."""
     from ..sokoban import GRADES
@@ -684,6 +748,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'moving_targets': TRACKING,
     'lookout': LOOKOUT,
     'pursuit': PURSUIT,
+    'out_of_sight': OUT_OF_SIGHT,
     'count': COUNTING,
     'graph_mapping': GRAPH_MAPPING,
     'matrix_reasoning': MATRIX_REASONING,

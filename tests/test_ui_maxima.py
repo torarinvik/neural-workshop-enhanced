@@ -21,7 +21,7 @@ import unittest
 
 from uisupport import (Concentration, Counting, GraphMapping, JigsawPuzzle,
                        Lookout, MatrixReasoning, MonkeyLadder, MovingTargets,
-                       Pursuit, SokobanTask,
+                       OutOfSight, Pursuit, SokobanTask,
                        NCupMonte, Recognition, Reflex, TowerOfHanoi,
                        TravelingSalesman, close_overlays, needs_ui,
                        reset_window, state, taskoptions)
@@ -265,6 +265,43 @@ class MaximaTests(unittest.TestCase):
             low_x, high_x, low_y, high_y = task._bounds()
             self.assertTrue(low_x <= quarry.x <= high_x)
             self.assertTrue(low_y <= quarry.y <= high_y)
+            task.on_draw()
+        finally:
+            task.close()
+
+    def test_out_of_sight_a_field_full_of_slabs(self):
+        """Thirty dots, fifteen of them yours, behind the widest slabs.
+
+        The slabs are the maximum that matters here: eight of them at
+        their widest is more than the field can take, so the test is
+        that the field still comes out playable — every dot spawned
+        in the open, the slabs short of half the field between them,
+        and a question that finds something to point at.
+        """
+        from neural_workshop.ui.outofsight import area_in, hidden
+        self._push('out_of_sight')
+        task = OutOfSight()
+        try:
+            task.start_run()
+            self.assertEqual(len(task.dots), 30)
+            self.assertEqual(task.held_now(), 15)
+            self.assertEqual(task.probes_per_round, 20)
+            field = task._bounds()
+            low_x, high_x, low_y, high_y = field
+            taken = sum(area_in(slab, field) for slab in task.blinds)
+            self.assertLess(taken, (high_x - low_x) * (high_y - low_y) * 0.5)
+            for dot in task.dots:
+                self.assertFalse(hidden(task.blinds, dot.x, dot.y))
+            task.until = 0.0
+            task.update(1 / 60.)
+            for _frame in range(600):
+                task._move(1 / 60.)
+            for dot in task.dots:
+                self.assertTrue(low_x <= dot.x <= high_x)
+                self.assertTrue(low_y <= dot.y <= high_y)
+            task.next_probe = 0.0
+            task.update(1 / 60.)
+            self.assertIsNotNone(task.probe)
             task.on_draw()
         finally:
             task.close()

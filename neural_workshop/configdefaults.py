@@ -588,6 +588,27 @@ PURSUIT_SECONDS = 20
 PURSUIT_ROUNDS = 3
 PURSUIT_ADAPTIVE = True
 
+# Out of Sight: SIGHT_TARGETS dots among SIGHT_DOTS flash a colour and
+# then look like all the rest. Two things then make any single frame
+# too little to answer from. SIGHT_CROSS_MS is how often two dots are
+# aimed at the point between them so they meet, overlap and pass
+# through (0 turns crossings off); SIGHT_BLINDS slabs, each
+# SIGHT_BLIND_WIDTH per cent of a screen height across its narrow
+# side, are drawn over the dots so a dot behind one is simply not
+# there (0 turns the slabs off). The question is asked during the
+# motion: SIGHT_PROBES times a round one dot is ringed and J says
+# "mine", F says "not mine". With SIGHT_ADAPTIVE a round answered
+# whole asks you to hold one more dot, and any mistake one fewer.
+SIGHT_DOTS = 8
+SIGHT_TARGETS = 2
+SIGHT_SPEED = 16
+SIGHT_BLINDS = 3
+SIGHT_BLIND_WIDTH = 9
+SIGHT_CROSS_MS = 1600
+SIGHT_PROBES = 6
+SIGHT_ROUNDS = 5
+SIGHT_ADAPTIVE = True
+
 
 # Count: a tangle of overlapping outlines, and the question is how
 # many. COUNT_SHAPE is 'lines', 'circles', 'triangles', 'rectangles'

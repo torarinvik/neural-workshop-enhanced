@@ -10,6 +10,8 @@ SPDX-License-Identifier: GPL-2.0-or-later
 """
 from __future__ import annotations
 
+import math
+import random
 import time
 import unittest
 
@@ -37,7 +39,7 @@ class AttentionCategoryTests(unittest.TestCase):
     def test_the_roster_is_complete(self):
         self.assertEqual([task for task, _name in TASKS['attention']],
                          ['reflex', 'ncup_monte', 'moving_targets',
-                          'lookout', 'pursuit'])
+                          'lookout', 'pursuit', 'out_of_sight'])
 
     def test_it_has_an_options_screen(self):
         from neural_workshop.ui import taskoptions
@@ -806,3 +808,433 @@ class PursuitScreenTests(unittest.TestCase):
              'PURSUIT_SIZE_WOBBLE': 0, 'PURSUIT_MORPH_MS': 0,
              'PURSUIT_ADAPTIVE': True})
         self.assertIn('Switched off', note)
+
+
+class BlindTests(unittest.TestCase):
+    """The slabs: pure rectangles, no window needed."""
+
+    def test_a_slab_covers_only_its_own_rectangle(self):
+        from neural_workshop.ui.outofsight import Blind
+        slab = Blind(0.2, 0.3, 0.1, 0.4)
+        self.assertTrue(slab.covers(0.25, 0.5))
+        self.assertTrue(slab.covers(0.2, 0.3))        # its own corner
+        self.assertFalse(slab.covers(0.31, 0.5))
+        self.assertFalse(slab.covers(0.25, 0.71))
+
+    def test_slabs_that_share_area_overlap(self):
+        from neural_workshop.ui.outofsight import Blind
+        one = Blind(0.2, 0.2, 0.2, 0.2)
+        self.assertTrue(one.overlaps(Blind(0.3, 0.3, 0.2, 0.2)))
+        self.assertFalse(one.overlaps(Blind(0.4, 0.2, 0.2, 0.2)))  # abutting
+        self.assertFalse(one.overlaps(Blind(0.2, 0.5, 0.2, 0.2)))
+
+    def test_only_the_part_inside_the_field_is_charged_for(self):
+        """A slab hanging past the wall costs the flock nothing."""
+        from neural_workshop.ui.outofsight import Blind, area_in
+        field = (0.0, 1.0, 0.0, 1.0)
+        self.assertAlmostEqual(area_in(Blind(0.2, 0.2, 0.4, 0.5), field),
+                               0.2)
+        self.assertAlmostEqual(area_in(Blind(-0.2, 0.0, 0.4, 0.5), field),
+                               0.1)
+        self.assertAlmostEqual(area_in(Blind(2.0, 2.0, 0.4, 0.5), field),
+                               0.0)
+
+    def test_hidden_asks_every_slab(self):
+        from neural_workshop.ui.outofsight import Blind, hidden
+        slabs = [Blind(0.0, 0.0, 0.1, 0.1), Blind(0.8, 0.8, 0.1, 0.1)]
+        self.assertTrue(hidden(slabs, 0.85, 0.85))
+        self.assertFalse(hidden(slabs, 0.5, 0.5))
+        self.assertFalse(hidden([], 0.5, 0.5))
+
+
+class RendezvousTests(unittest.TestCase):
+    """A crossing has to be symmetric or it gives the answer away."""
+
+    @staticmethod
+    def _pair(ax=0.2, ay=0.3, bx=0.8, by=0.7):
+        from neural_workshop.ui.outofsight import Dot
+        return (Dot(ax, ay, 0.0, 0.0, target=True),
+                Dot(bx, by, 0.0, 0.0, target=False))
+
+    def test_both_dots_leave_at_the_asked_speed(self):
+        """Neither hurries, so pace never says which dot is which."""
+        from neural_workshop.ui.outofsight import rendezvous
+        one, other = self._pair()
+        rendezvous(one, other, 0.2, aspect=0.75)
+        self.assertAlmostEqual(math.hypot(one.vx, one.vy), 0.2)
+        self.assertAlmostEqual(math.hypot(other.vx, other.vy), 0.2)
+
+    def test_the_two_velocities_are_exact_opposites(self):
+        from neural_workshop.ui.outofsight import rendezvous
+        one, other = self._pair()
+        rendezvous(one, other, 0.2, aspect=0.75)
+        self.assertAlmostEqual(one.vx, -other.vx)
+        self.assertAlmostEqual(one.vy, -other.vy)
+
+    def test_they_arrive_at_the_same_place_at_the_same_time(self):
+        from neural_workshop.ui.outofsight import rendezvous
+        one, other = self._pair()
+        aspect = 0.75
+        seconds = rendezvous(one, other, 0.2, aspect)
+        self.assertGreater(seconds, 0.0)
+        for dot in (one, other):
+            dot.x += dot.vx * seconds * aspect
+            dot.y += dot.vy * seconds
+        self.assertAlmostEqual(one.x, other.x)
+        self.assertAlmostEqual(one.y, other.y)
+
+    def test_dots_already_in_the_same_place_are_left_alone(self):
+        from neural_workshop.ui.outofsight import rendezvous
+        one, other = self._pair(0.4, 0.4, 0.4, 0.4)
+        self.assertEqual(rendezvous(one, other, 0.2, aspect=0.75), 0.0)
+        self.assertEqual((one.vx, one.vy), (0.0, 0.0))
+
+
+@needs_ui
+class OutOfSightScreenTests(unittest.TestCase):
+    """The whole task, with the clock driven by hand.
+
+    Nothing here sleeps: a phase ends when its deadline is backdated,
+    a question arrives when ``next_probe`` is, and a verdict clears
+    when ``verdict_until`` is. That keeps the tests exact instead of
+    racing the wall clock.
+    """
+
+    def setUp(self):
+        close_overlays()
+        from uisupport import OutOfSight
+        self.task = OutOfSight()
+        self.task.total_rounds = 2
+        self.task.probes_per_round = 4
+        self.task.adaptive = False
+
+    def tearDown(self):
+        self.task.close()
+        close_overlays()
+        reset_window()
+
+    def _to_tracking(self):
+        self.task.start_run()
+        self.task.until = time.time() - 1
+        self.task.update(1 / 60.)
+        self.assertEqual(self.task.phase, 'tracking')
+
+    def _ask(self):
+        """Force the next question up and hand back the ringed dot."""
+        for _frame in range(240):
+            self.task.next_probe = time.time() - 1
+            self.task.update(1 / 60.)
+            if self.task.probe is not None:
+                return self.task.probe
+        self.fail('no question ever came up')
+
+    def _clear(self):
+        self.task.verdict_until = time.time() - 1
+        self.task.update(1 / 60.)
+
+    def _answer_the_round(self, wrong=0):
+        """Answer every question of the round, *wrong* of them badly."""
+        for index in range(self.task.probes_per_round):
+            dot = self._ask()
+            self.task.answer(dot.target if index >= wrong
+                             else not dot.target)
+            self._clear()
+        self.task.update(1 / 60.)          # the round notices it is over
+
+    def _skip_the_reveal(self):
+        """Walk from the reveal into the next round's motion."""
+        self.task.until = time.time() - 1
+        self.task.update(1 / 60.)          # revealing -> cueing
+        if self.task.phase == 'cueing':
+            self.task.until = time.time() - 1
+            self.task.update(1 / 60.)      # cueing -> tracking
+
+    def test_it_is_in_the_attention_category(self):
+        self.assertIn('out_of_sight',
+                      [task for task, _name in TASKS['attention']])
+
+    def test_a_round_deals_the_dots_and_flashes_yours(self):
+        self.task.start_run()
+        self.assertEqual(self.task.phase, 'cueing')
+        self.assertEqual(len(self.task.dots), self.task.dot_count)
+        self.assertEqual(self.task.held_now(), self.task.held)
+        self.task.on_draw()
+
+    def test_no_dot_starts_out_of_sight(self):
+        """Every dot has to be seen at least once, when yours flash."""
+        from neural_workshop.ui.outofsight import hidden
+        self.task.blind_count = 6
+        for _deal in range(20):
+            self.task.start_run()
+            for dot in self.task.dots:
+                self.assertFalse(hidden(self.task.blinds, dot.x, dot.y))
+
+    def test_the_dots_you_hold_never_swallow_the_whole_flock(self):
+        self.task.dot_count = 4
+        self.assertEqual(self.task.clamped_targets(99), 3)
+        self.assertEqual(self.task.clamped_targets(0), 1)
+
+    def test_the_flock_stands_still_for_the_cue(self):
+        self.task.start_run()
+        before = [(dot.x, dot.y) for dot in self.task.dots]
+        for _frame in range(30):
+            self.task.update(1 / 60.)
+        self.assertEqual(self.task.phase, 'cueing')
+        self.assertEqual([(dot.x, dot.y) for dot in self.task.dots], before)
+
+    def test_tracking_moves_the_dots_and_keeps_them_inside(self):
+        self._to_tracking()
+        before = [(dot.x, dot.y) for dot in self.task.dots]
+        for _frame in range(600):              # ten seconds of motion
+            self.task._move(1 / 60.)
+        low_x, high_x, low_y, high_y = self.task._bounds()
+        for dot in self.task.dots:
+            self.assertTrue(low_x <= dot.x <= high_x)
+            self.assertTrue(low_y <= dot.y <= high_y)
+        self.assertNotEqual([(dot.x, dot.y) for dot in self.task.dots],
+                            before)
+
+    def test_the_questions_leave_nothing_to_count(self):
+        """A coin a question, not an even split of the round.
+
+        An even split would pay for counting answers instead of
+        holding dots, so the rounds have to come out uneven — while
+        still landing on half over a run, or a fixed answer would
+        beat the task.
+        """
+        self.task.rng = random.Random(3)
+        self.task.probes_per_round = 6
+        rounds = [self.task._probe_schedule() for _round in range(400)]
+        for schedule in rounds:
+            self.assertEqual(len(schedule), 6)
+        self.assertTrue(any(sum(schedule) != 3 for schedule in rounds))
+        asked = sum(sum(schedule) for schedule in rounds)
+        self.assertAlmostEqual(asked / (400. * 6), 0.5, delta=0.05)
+
+    def test_a_question_asks_about_the_kind_it_scheduled(self):
+        self._to_tracking()
+        self.task.schedule = [True] * self.task.probes_per_round
+        self.assertTrue(self._ask().target)
+        self.task.probes_done = 0
+        self.task.probe = None
+        self.task.verdict = None
+        self.task.schedule = [False] * self.task.probes_per_round
+        self.assertFalse(self._ask().target)
+
+    def test_a_ringed_dot_is_always_one_you_can_see(self):
+        from neural_workshop.ui.outofsight import hidden
+        self.task.blind_count = 6
+        self.task.probes_per_round = 12
+        self._to_tracking()
+        for _question in range(self.task.probes_per_round):
+            dot = self._ask()
+            self.assertFalse(hidden(self.task.blinds, dot.x, dot.y))
+            self.task.answer(dot.target)
+            self._clear()
+
+    def test_the_ring_prefers_a_dot_whose_name_was_just_in_doubt(self):
+        """Risk is dealt by the crossings and the slabs, and neither
+        knows which dots are yours, so preferring it leaks nothing."""
+        self._to_tracking()
+        now = time.time()
+        yours = [dot for dot in self.task.dots if dot.target]
+        for dot in self.task.dots:
+            dot.risky_until = 0.0
+        yours[0].risky_until = now + 5.0
+        for _draw in range(30):
+            self.assertIs(self.task._probeable(True), yours[0])
+
+    def test_the_right_answer_is_a_hit_and_a_wrong_one_is_not(self):
+        self._to_tracking()
+        dot = self._ask()
+        self.task.answer(dot.target)
+        self.assertEqual(self.task.hits, 1)
+        self.assertIs(self.task.verdict, True)
+        self.assertEqual(len(self.task.reaction_times), 1)
+        self._clear()
+        dot = self._ask()
+        self.task.answer(not dot.target)
+        self.assertEqual(self.task.wrong, 1)
+        self.assertIs(self.task.verdict, False)
+        self.task.on_draw()
+
+    def test_a_second_answer_to_one_question_is_ignored(self):
+        self._to_tracking()
+        dot = self._ask()
+        self.task.answer(dot.target)
+        self.task.answer(not dot.target)
+        self.assertEqual((self.task.hits, self.task.wrong), (1, 0))
+        self.assertEqual(self.task.probes_done, 1)
+
+    def test_a_question_left_alone_runs_out(self):
+        self._to_tracking()
+        self._ask()
+        self.task.probe_ends = time.time() - 1
+        self.task.update(1 / 60.)
+        self.assertEqual(self.task.late, 1)
+        self.assertEqual(self.task.hits, 0)
+        self.assertEqual(self.task.probes_done, 1)
+
+    def test_an_answer_before_any_question_does_nothing(self):
+        self._to_tracking()
+        self.task.answer(True)
+        self.assertEqual(self.task.score()['asked'], 0)
+
+    def test_a_crossing_puts_two_dots_in_the_same_place(self):
+        from neural_workshop.ui.outofsight import rendezvous
+        self._to_tracking()
+        one, other = self.task.dots[0], self.task.dots[1]
+        seconds = rendezvous(one, other, self.task.speed, self.task._aspect())
+        closest = 9.0
+        for _frame in range(int(seconds * 60) + 30):
+            self.task._move(1 / 60.)
+            closest = min(closest, math.hypot(
+                (one.x - other.x) * state.window.width,
+                (one.y - other.y) * state.window.height))
+        self.assertLess(closest, self.task.radius() * 0.25)
+
+    def test_a_crossing_marks_both_dots_when_it_happens(self):
+        self._to_tracking()
+        now = time.time()
+        self.task.next_cross = 0.0
+        self.task._maybe_cross(now)
+        committed = [dot for dot in self.task.dots if dot.busy_until]
+        self.assertEqual(len(committed), 2)
+        for dot in committed:
+            self.assertEqual(dot.risky_until, 0.0)   # not yet — it is ahead
+        self.task._mark_risk(committed[0].busy_until + 0.01)
+        for dot in committed:
+            self.assertEqual(dot.busy_until, 0.0)
+            self.assertGreater(dot.risky_until, 0.0)
+
+    def test_a_crossing_is_no_likelier_to_pick_a_dot_of_yours(self):
+        """The pair is drawn from the whole flock, so the crossings
+        themselves never say which dots are yours."""
+        self.task.dot_count = 10
+        self.task.start_targets = 3
+        self.task.held = 3
+        self._to_tracking()
+        self.task.rng = random.Random(11)
+        drawn = {True: 0, False: 0}
+        for _cross in range(600):
+            for dot in self.task.dots:
+                dot.busy_until = 0.0
+            self.task.next_cross = 0.0
+            self.task._maybe_cross(time.time())
+            for dot in self.task.dots:
+                if dot.busy_until:
+                    drawn[dot.target] += 1
+        share = drawn[True] / float(drawn[True] + drawn[False])
+        self.assertAlmostEqual(share, 0.3, delta=0.05)
+
+    def test_turning_the_crossings_off_leaves_the_headings_alone(self):
+        self._to_tracking()
+        self.task.cross_gap = 0.0
+        self.task.next_cross = 0.0
+        before = [(dot.vx, dot.vy) for dot in self.task.dots]
+        self.task._maybe_cross(time.time())
+        self.assertEqual([(dot.vx, dot.vy) for dot in self.task.dots],
+                         before)
+
+    def test_turning_the_slabs_off_hides_nothing(self):
+        from neural_workshop.ui.outofsight import hidden
+        self.task.blind_count = 0
+        self._to_tracking()
+        self.assertEqual(self.task.blinds, [])
+        for _frame in range(600):
+            self.task._move(1 / 60.)
+            for dot in self.task.dots:
+                self.assertFalse(hidden(self.task.blinds, dot.x, dot.y))
+
+    def test_the_slabs_never_pile_up_on_each_other(self):
+        self.task.blind_count = 8
+        for _deal in range(20):
+            self.task._lay_blinds()
+            for index, slab in enumerate(self.task.blinds):
+                for other in self.task.blinds[index + 1:]:
+                    self.assertFalse(slab.overlaps(other))
+
+    def test_a_whole_round_grows_the_flock_and_a_slip_shrinks_it(self):
+        self.task.adaptive = True
+        self._to_tracking()
+        was = self.task.held
+        self._answer_the_round()
+        self.assertEqual(self.task.phase, 'revealing')
+        self.assertEqual(self.task.held, self.task.clamped_targets(was + 1))
+        self.assertEqual(self.task.results[-1][1],
+                         self.task.results[-1][2])
+        self._skip_the_reveal()
+        was = self.task.held
+        self._answer_the_round(wrong=1)
+        self.assertEqual(self.task.held, self.task.clamped_targets(was - 1))
+        self.assertLess(self.task.results[-1][2],
+                        self.task.results[-1][1])
+
+    def test_the_run_finishes_after_its_rounds(self):
+        self._to_tracking()
+        for _round in range(2):
+            self._answer_the_round()
+            self._skip_the_reveal()
+        self.assertEqual(self.task.phase, 'done')
+        self.assertEqual(self.task.score()['accuracy'], 100)
+        self.assertEqual(self.task.score()['rounds'], 2)
+        self.task.on_draw()
+
+    def test_the_tally_adds_up(self):
+        self._to_tracking()
+        dot = self._ask()
+        self.task.answer(dot.target)
+        self._clear()
+        dot = self._ask()
+        self.task.answer(not dot.target)
+        self._clear()
+        self._ask()
+        self.task.probe_ends = time.time() - 1
+        self.task.update(1 / 60.)
+        tally = self.task.score()
+        self.assertEqual((tally['hits'], tally['wrong'], tally['late']),
+                         (1, 1, 1))
+        self.assertEqual(tally['asked'], 3)
+        self.assertEqual(tally['accuracy'], 33)
+
+    def test_a_resize_moves_the_dots_to_the_same_relative_place(self):
+        self.task.start_run()                  # the cue holds them still
+        dot = self.task.dots[0]
+        where = (dot.x, dot.y)
+        geometry.set_window_size(900, 700)
+        display.relayout()
+        self.task.on_draw()
+        self.assertEqual((dot.x, dot.y), where)
+        self.assertAlmostEqual(dot.circle.x, where[0] * state.window.width,
+                               places=3)
+
+    def test_it_draws_in_every_phase(self):
+        self.task.on_draw()                    # ready
+        self.task.start_run()
+        self.task.on_draw()                    # cueing
+        self.task.until = time.time() - 1
+        self.task.update(1 / 60.)
+        self._ask()
+        self.task.on_draw()                    # a question is up
+        self.task.answer(True)
+        self.task.on_draw()                    # its verdict is up
+        self.task._finish()
+        self.task.on_draw()                    # done
+
+    def test_closing_takes_the_dots_and_the_slabs_with_it(self):
+        self._to_tracking()
+        self._ask()
+        self.task.close()
+        self.assertEqual(self.task.dots, [])
+        self.assertEqual(self.task.blind_shapes, [])
+        self.assertIsNone(self.task.ring)
+
+    def test_it_has_an_options_screen(self):
+        from neural_workshop.ui import taskoptions
+        self.assertTrue(taskoptions.has_options('out_of_sight'))
+        note = taskoptions.OUT_OF_SIGHT.note(
+            {'SIGHT_DOTS': 4, 'SIGHT_TARGETS': 10, 'SIGHT_CROSS_MS': 0,
+             'SIGHT_BLINDS': 0, 'SIGHT_PROBES': 6,
+             'SIGHT_ADAPTIVE': False})
+        self.assertIn('3', note)               # the clamp is spelled out
+        self.assertIn('no crossings', note)    # and so is the easy field

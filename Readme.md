@@ -215,6 +215,41 @@ round and it tightens, drop under 40% and it eases — so a run
 settles onto a precise frontier, and the multiplier it settles at is
 reported as part of the score.
 
+**Out of Sight** starts where Moving Targets ends and then takes the
+picture away. A few dots flash a colour among the rest, and two things
+then make the frame on screen too little to answer from. Every so often
+two dots are aimed at the point exactly between them, so they arrive
+together, overlap as one and pass through — at that instant nothing
+visible says which came from which side. And solid slabs are drawn over
+the field, so a dot that goes behind one is simply not there for a
+while; a slab that hangs over the wall lets a dot bounce while it is
+hidden, and come back out somewhere the line it went in on never
+reaches.
+
+The question is asked *during* the motion rather than after it. Now and
+then one dot is ringed and there are two keys — **J** for "that one is
+mine", **F** for "it is not" — with a second and a half to answer while
+everything keeps moving. The ring hunts the moments identity was just
+at risk: the dot that has this second come out from behind a slab, or
+the one that has just passed through another. Each question is a coin —
+deliberately not an even split of the round, because an even split
+would pay for counting answers rather than holding dots, and a coin
+still leaves any fixed answer on fifty per cent. Asking at the end
+would let a good guess in the last moment stand in for having held on
+the whole way; asking in the middle cannot be answered that way.
+
+Every difficulty here is one you can turn off and measure against: the
+crossing rate, the number and width of the slabs, the dot count, how
+many are yours, the speed. What none of the dials can do is make the
+task unfair — the dots move in straight lines and bounce off walls, and
+never change course while hidden, so a tracker that carries a position
+and a velocity for each dot can follow every crossing and predict every
+emergence exactly. Nothing is ever decided by a coin. That is also what
+makes it a hard task for anything reading one frame at a time and a
+fair one for anything carrying state, which is the whole point of it.
+The adaptive option asks you to hold one more dot after a round that
+comes back whole, and one fewer after any mistake.
+
 ### Perception
 
 The *Perception* category holds **Count**: a tangle of overlapping

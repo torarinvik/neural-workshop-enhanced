@@ -46,6 +46,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('moving_targets', _('Moving Targets')),
         ('lookout', _('Lookout')),
         ('pursuit', _('Pursuit')),
+        ('out_of_sight', _('Out of Sight')),
     ],
     'perception': [
         ('count', _('Count')),
@@ -378,6 +379,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'pursuit':
         from .pursuit import Pursuit
         Pursuit()
+        return
+    if task_id == 'out_of_sight':
+        from .outofsight import OutOfSight
+        OutOfSight()
         return
     if task_id == 'count':
         from .counting import Counting
