@@ -555,11 +555,12 @@ TRACK_ROUNDS = 5
 TRACK_ADAPTIVE = True
 
 # Lookout: LOOKOUT_SHAPES coloured shapes drift and each changes its
-# colour or form about every LOOKOUT_MORPH_MS; a HUD glyph names what
-# to watch for and Space is pressed while it is on screen. LOOKOUT_CUE
-# is 'color' (pop-out, easy), 'form', 'both' (conjunction search, the
-# hard one) or 'mixed'. Scored as hits with reaction time, misses when
-# the match churns away unpressed, and false alarms.
+# colour or form about every LOOKOUT_MORPH_MS; the HUD shows one
+# coloured shape and there are two answer keys - F for "that shape is
+# on screen", J for "that colour is on screen". LOOKOUT_CUE picks the
+# live channels: 'color' (pop-out, easy), 'form', or 'both' (divided
+# attention, the hard one). Scored as hits with reaction time, misses
+# when the match churns away unpressed, and false alarms.
 LOOKOUT_SHAPES = 8
 LOOKOUT_CUE = 'color'
 LOOKOUT_SPEED = 16

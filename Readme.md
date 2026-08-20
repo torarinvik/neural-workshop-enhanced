@@ -181,19 +181,21 @@ one more ball, and a miss asks for one fewer.
 
 **Lookout** is a vigilance task: coloured shapes drift and bounce,
 and each one changes its colour or its form every couple of seconds.
-A HUD glyph shows the thing to watch for — drawn as the thing itself,
-not a word, so there is no translating to do — and the job is to
-press Space while something matching it is on screen. The cue is
-never satisfied at the moment it is issued; the churn brings the
-match, and the scoring is honest signal detection: a press while a
-match is up is a hit timed from the moment it appeared, a match that
-churns away unpressed is a miss, and a press over nothing is a false
-alarm. The cue type is the difficulty dial, and it is a graded one
-from the attention literature: a colour alone "pops out" and the eye
-finds it in parallel, a shape is a little slower, and a colour *and*
-shape together is a conjunction search that must be done serially —
-Treisman's classic result, playable. The adaptive option adds a
-shape to the flock on a hit and removes one on a mistake.
+The HUD shows one coloured shape — say an orange triangle — and there
+are two answer keys, the home-row pair every psychophysics lab uses:
+**F** says "a triangle is on screen", **J** says "something orange is
+on screen". The options choose which of the two channels is live:
+just the colour, just the shape, or both at once. No channel is
+satisfied at the moment the glyph is dealt; the churn brings the
+match, and the scoring is honest signal detection per channel: a
+press while that channel's match is up is a hit timed from the
+moment it appeared, a match that churns away unpressed is a miss,
+and a press over nothing is a false alarm. The channel choice is the
+difficulty dial: a colour alone "pops out" and the eye finds it in
+parallel, a shape is a little slower, and watching both at once is
+divided attention — two independent signals through one churn, each
+with its own key. The adaptive option adds a shape to the flock on a
+hit and removes one on a mistake.
 
 ### Perception
 

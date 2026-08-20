@@ -507,23 +507,26 @@ class MovingTargetsScreenTests(unittest.TestCase):
 
 
 class CueTests(unittest.TestCase):
-    """The cue logic: pure functions, no window needed."""
+    """The channel logic: pure functions, no window needed."""
 
-    def test_matches_by_colour_form_and_both(self):
-        from neural_workshop.ui.lookout import Cue, matches
-        self.assertTrue(matches(2, 1, Cue(2, None)))
-        self.assertTrue(matches(2, 1, Cue(None, 1)))
-        self.assertTrue(matches(2, 1, Cue(2, 1)))
-        self.assertFalse(matches(2, 1, Cue(3, 1)))
-        self.assertFalse(matches(2, 1, Cue(2, 0)))
+    def test_channel_match_reads_only_its_channel(self):
+        from neural_workshop.ui.lookout import Cue, channel_match
+        cue = Cue(2, 1)
+        self.assertTrue(channel_match(2, 3, cue, 'color'))
+        self.assertFalse(channel_match(3, 3, cue, 'color'))
+        self.assertTrue(channel_match(5, 1, cue, 'form'))
+        self.assertFalse(channel_match(2, 0, cue, 'form'))
 
-    def test_cue_words_cover_all_three_kinds(self):
-        from neural_workshop.ui.lookout import Cue, cue_words
-        self.assertIn('orange', cue_words(Cue(0, None)))
-        self.assertIn('circle', cue_words(Cue(None, 0)))
-        both = cue_words(Cue(0, 2))
-        self.assertIn('orange', both)
-        self.assertIn('triangle', both)
+    def test_channel_words_name_the_right_half(self):
+        from neural_workshop.ui.lookout import Cue, channel_words
+        self.assertIn('orange', channel_words(Cue(0, 2), 'color'))
+        self.assertIn('triangle', channel_words(Cue(0, 2), 'form'))
+        self.assertNotIn('triangle', channel_words(Cue(0, 2), 'color'))
+
+    def test_the_answer_keys_are_the_home_row_pair(self):
+        from neural_workshop.ui.lookout import CHANNEL_KEYS
+        self.assertEqual(CHANNEL_KEYS[key.F], 'form')
+        self.assertEqual(CHANNEL_KEYS[key.J], 'color')
 
 
 @needs_ui
@@ -535,90 +538,104 @@ class LookoutScreenTests(unittest.TestCase):
         self.task = Lookout()
         self.task.total_cues = 2
         self.task.adaptive = False
+        self.task.watching = 'both'
 
     def tearDown(self):
         self.task.close()
         close_overlays()
         reset_window()
 
-    def _force_match(self, wanted=True):
-        """Set the first shape to satisfy (or spoil) the cue by hand."""
-        from neural_workshop.ui.lookout import COLORS, FORMS, matches
+    def _bend(self, channel, wanted=True):
+        """Make the first shape satisfy (or every shape spoil) *channel*."""
+        from neural_workshop.ui.lookout import channel_match
         cue = self.task.cue
-        for drifter in self.task.shapes:
-            if wanted:
-                drifter.color = cue.color if cue.color is not None else 0
-                drifter.form = cue.form if cue.form is not None else 0
-                return
-        self.fail('no shapes to bend')
-
-    def _no_match(self):
-        from neural_workshop.ui.lookout import matches
-        cue = self.task.cue
-        for drifter in self.task.shapes:
-            while matches(drifter.color, drifter.form, cue):
-                drifter.color = (drifter.color + 1) % 6
-                drifter.form = (drifter.form + 1) % 4
+        if wanted:
+            drifter = self.task.shapes[0]
+            if channel == 'color':
+                drifter.color = cue.color
+            else:
+                drifter.form = cue.form
             drifter.drawn = None
+            return
+        for drifter in self.task.shapes:
+            while channel_match(drifter.color, drifter.form, cue, channel):
+                if channel == 'color':
+                    drifter.color = (drifter.color + 1) % 6
+                else:
+                    drifter.form = (drifter.form + 1) % 4
+                drifter.drawn = None
 
     def test_it_is_in_the_attention_category(self):
         self.assertIn('lookout',
                       [task for task, _name in TASKS['attention']])
 
-    def test_a_run_begins_with_the_cue_absent(self):
+    def test_a_run_begins_below_the_signal_on_every_channel(self):
         self.task.start_run()
         self.assertEqual(self.task.phase, 'watching')
-        self.assertFalse(self.task.match_on_screen())
+        for channel in self.task.channels():
+            self.assertFalse(self.task.channel_on_screen(channel))
         self.assertEqual(len(self.task.shapes), self.task.count)
         self.task.on_draw()
 
-    def test_a_press_on_a_present_match_is_a_timed_hit(self):
+    def test_each_channel_key_hits_its_own_signal(self):
         self.task.start_run()
-        self._force_match()
-        self.task.update(1 / 60.)          # notices the arrival
-        self.assertIsNotNone(self.task.seen_at)
-        self.task.answer()
+        self._bend('form')
+        self.task.update(1 / 60.)
+        self.assertIsNotNone(self.task.seen['form'])
+        self.assertIsNone(self.task.seen['color'])
+        self.task.answer('form')
         self.assertEqual(self.task.hits, 1)
         self.assertEqual(len(self.task.reaction_times), 1)
         self.assertEqual(self.task.phase, 'feedback')
 
-    def test_a_press_on_nothing_is_a_false_alarm(self):
+    def test_the_wrong_key_on_a_present_signal_is_a_false_alarm(self):
         self.task.start_run()
-        self.task.answer()
+        self._bend('form')
+        self.task.update(1 / 60.)
+        self.task.answer('color')       # the shape is there, its colour not
         self.assertEqual(self.task.false_alarms, 1)
         self.assertEqual(self.task.hits, 0)
-        self.assertEqual(self.task.phase, 'feedback')
+
+    def test_a_dead_channels_key_does_nothing(self):
+        self.task.watching = 'color'
+        self.task.start_run()
+        self.task.answer('form')
+        self.assertEqual(self.task.false_alarms, 0)
+        self.assertEqual(self.task.phase, 'watching')
 
     def test_a_match_that_churns_away_is_a_miss(self):
         self.task.start_run()
-        self._force_match()
+        self._bend('color')
         self.task.update(1 / 60.)
-        self.assertIsNotNone(self.task.seen_at)
-        self._no_match()
+        self.assertIsNotNone(self.task.seen['color'])
+        self._bend('color', wanted=False)
         self.task.update(1 / 60.)
         self.assertEqual(self.task.misses, 1)
         self.assertEqual(self.task.phase, 'feedback')
 
-    def test_a_drought_forces_the_cue_into_the_flock(self):
+    def test_a_drought_forces_a_dry_channel_into_the_flock(self):
         self.task.start_run()
         self.task.cued_at = time.time() - 60    # a long, dry watch
         drifter = self.task.shapes[0]
         drifter.next_morph = time.time() - 1
         self.task.update(1 / 60.)
-        self.assertTrue(self.task.match_on_screen())
+        self.assertTrue(any(self.task.channel_on_screen(channel)
+                            for channel in self.task.channels()))
 
     def test_morphs_always_change_something(self):
         self.task.start_run()
         drifter = self.task.shapes[0]
+        self.task.phase = 'ready'               # no drought forcing
         for _try in range(30):
             was = (drifter.color, drifter.form)
             self.task._morph(drifter, time.time())
             self.assertNotEqual((drifter.color, drifter.form), was)
+        self.task.phase = 'watching'
 
     def test_the_run_finishes_after_its_cues(self):
         self.task.start_run()
         for _cue in range(2):
-            self.task.answer()                   # false alarm, fine
+            self.task.answer('color')            # false alarm, fine
             self.task.until = time.time() - 1
             self.task.update(1 / 60.)            # feedback -> next
         self.assertEqual(self.task.phase, 'done')
@@ -629,15 +646,21 @@ class LookoutScreenTests(unittest.TestCase):
         self.task.adaptive = True
         self.task.start_run()
         was = self.task.count
-        self._force_match()
+        self._bend('color')
         self.task.update(1 / 60.)
-        self.task.answer()
+        self.task.answer('color')
         self.assertEqual(self.task.count, self.task.clamped(was + 1))
         self.task.until = time.time() - 1
         self.task.update(1 / 60.)                # next cue, flock grown
         self.assertEqual(len(self.task.shapes), self.task.count)
-        self.task.answer()                       # false alarm
+        self.task.answer('form')                 # false alarm
         self.assertEqual(self.task.count, self.task.clamped(was))
+
+    def test_the_footnote_names_only_live_keys(self):
+        self.task.watching = 'color'
+        line = self.task._keys_line()
+        self.assertIn('J', line)
+        self.assertNotIn('F:', line)
 
     def test_it_has_an_options_screen(self):
         from neural_workshop.ui import taskoptions
@@ -645,4 +668,4 @@ class LookoutScreenTests(unittest.TestCase):
         note = taskoptions.LOOKOUT.note(
             {'LOOKOUT_SHAPES': 8, 'LOOKOUT_CUE': 'both',
              'LOOKOUT_ADAPTIVE': True})
-        self.assertIn('conjunction', note)
+        self.assertIn('Two keys', note)

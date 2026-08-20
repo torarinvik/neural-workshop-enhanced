@@ -490,27 +490,27 @@ TRACKING = TaskSpec(
 
 
 def lookout_note(chosen: Dict[str, Any]) -> str:
-    """Why the cue type is the difficulty dial, said where it is set.
+    """Why the channel choice is the difficulty dial, said at the dial.
 
-    A colour alone pops out — the eye finds it in parallel, almost
-    for free. A colour and a form together is a conjunction search,
-    which takes serial attention. That is a century's worth of
-    attention research folded into one row, and worth a sentence.
+    One channel is a single search — a colour "pops out", the eye
+    finds it in parallel, and a shape is only a little slower. Both
+    at once is divided attention: two independent signals through one
+    churn, each with its own key, and that is the hard setting.
     """
     kind = str(chosen['LOOKOUT_CUE'])
     what = {
-        'color': _('The cue is a colour, which "pops out" — the '
-                   'easiest kind of search.'),
-        'form': _('The cue is a shape, found a little slower than a '
-                  'colour.'),
-        'both': _('The cue is a colour AND a shape at once — a '
-                  'conjunction search, which the eye cannot do in '
-                  'parallel. This is the hard setting.'),
-        'mixed': _('The cue varies: sometimes a colour, sometimes a '
-                   'shape, sometimes both at once.'),
+        'color': _('One key (J): press when anything matches the '
+                   "glyph's colour. Colour \"pops out\" — the easiest "
+                   'search.'),
+        'form': _('One key (F): press when anything matches the '
+                  "glyph's shape, whatever its colour — found a "
+                  'little slower than a colour.'),
+        'both': _('Two keys: F when the shape is on screen, J when '
+                  'the colour is. Two independent signals at once — '
+                  'the hard setting.'),
     }.get(kind, '')
-    said = [_('%d shapes drift and change; press Space while the cued '
-              'thing is on screen.') % int(chosen['LOOKOUT_SHAPES']), what]
+    said = [_('%d shapes drift and change; the HUD glyph is what to '
+              'watch for.') % int(chosen['LOOKOUT_SHAPES']), what]
     if chosen['LOOKOUT_ADAPTIVE']:
         said.append(_('A hit adds a shape; a miss or a false alarm '
                       'takes one away.'))
@@ -522,8 +522,8 @@ LOOKOUT = TaskSpec(
     options=(
         Option('LOOKOUT_SHAPES', _('Shapes on screen'), 8,
                values=(3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30)),
-        Option('LOOKOUT_CUE', _('The cue names'), 'color',
-               values=('color', 'form', 'both', 'mixed')),
+        Option('LOOKOUT_CUE', _('Watch the glyph for its'), 'color',
+               values=('color', 'form', 'both')),
         Option('LOOKOUT_SPEED', _('Drift speed'), 16,
                values=(8, 12, 16, 22, 30, 40, 55, 75)),
         Option('LOOKOUT_MORPH_MS', _('A shape changes about every'), 2000,

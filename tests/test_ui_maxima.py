@@ -233,9 +233,11 @@ class MaximaTests(unittest.TestCase):
         self._push('lookout')
         task = Lookout()
         try:
+            task.watching = 'both'
             task.start_run()
             self.assertEqual(len(task.shapes), 30)
-            self.assertFalse(task.match_on_screen())
+            for channel in task.channels():
+                self.assertFalse(task.channel_on_screen(channel))
             for _frame in range(120):
                 task._move(1 / 60.)
             task._sync_shapes()
