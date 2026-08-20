@@ -21,6 +21,10 @@
     The reasoning task. Its graph arithmetic — building networks,
     rewiring them and deciding whether two are the same — is free
     functions at the top of the module, testable without a window.
+``ravens``
+    The other reasoning task: Raven's-style matrices. The puzzles come
+    from :mod:`neural_workshop.ravens`, which needs no window; this
+    module only draws them and takes the answer.
 ``taskoptions`` / ``cursor``
     The per-task settings screens reached with C, and the pointing-hand
     cursor the mouse-driven screens wear. A spec may carry a *note*: a

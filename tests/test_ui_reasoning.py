@@ -305,8 +305,10 @@ class ReasoningCategoryTests(unittest.TestCase):
         self.assertIn('reasoning', TASKS)
 
     def test_graph_mapping_is_in_it(self):
-        self.assertEqual([task for task, _name in TASKS['reasoning']],
-                         ['graph_mapping'])
+        # Membership, not the whole list: the category is open to
+        # further reasoning tasks, and this one is about Graph Mapping.
+        self.assertIn('graph_mapping',
+                      [task for task, _name in TASKS['reasoning']])
 
     def test_it_has_an_options_screen(self):
         from neural_workshop.ui import taskoptions

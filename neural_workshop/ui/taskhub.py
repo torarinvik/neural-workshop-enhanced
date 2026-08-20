@@ -48,6 +48,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
     ],
     'reasoning': [
         ('graph_mapping', _('Graph Mapping')),
+        ('matrix_reasoning', _('Matrix Reasoning')),
     ],
     'misc': [
         ('ncup_monte', _('N-Cup Monte')),
@@ -366,6 +367,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'graph_mapping':
         from .graphmapping import GraphMapping
         GraphMapping()
+        return
+    if task_id == 'matrix_reasoning':
+        from .ravens import MatrixReasoning
+        MatrixReasoning()
         return
     # Unknown task: restore the hub rather than dropping the player.
     TaskHub(return_to_title=return_to_title, category=category)

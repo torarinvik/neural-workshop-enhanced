@@ -571,6 +571,20 @@ GRAPH_MAP_EXPOSURE_MS = 0
 GRAPH_MAP_ADAPTIVE = True
 GRAPH_MAP_FEEDBACK = True
 
+# Matrix Reasoning: a three-by-three grid of drawings following rules
+# the player has to find, with the last cell missing and eight
+# candidates for it. RAVENS_LEVEL is where a run starts on a ladder of
+# five: level 1 is one rule on one layer, level 5 is up to three rules
+# on each of two layers. With RAVENS_EXPLAIN the rules behind a puzzle
+# are named after each answer, which turns a run into practice rather
+# than a test.
+RAVENS_LEVEL = 1
+RAVENS_TRIALS = 15
+RAVENS_EXPOSURE_MS = 0
+RAVENS_ADAPTIVE = True
+RAVENS_FEEDBACK = True
+RAVENS_EXPLAIN = False
+
 ######################################################################
 # This is the end of the configuration file.
 ######################################################################

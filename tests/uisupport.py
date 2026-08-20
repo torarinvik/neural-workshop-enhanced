@@ -49,6 +49,7 @@ try:
     from neural_workshop.ui.menu import AllCycler, Cycler, Menu, PercentCycler
     from neural_workshop.ui.message import Message
     from neural_workshop.ui.monkeyladder import MonkeyLadder
+    from neural_workshop.ui.ravens import MatrixReasoning
     from neural_workshop.ui.ncupmonte import NCupMonte
     from neural_workshop.ui.recognition import NEW, SEEN, Recognition
     from neural_workshop.ui.reflex import Reflex

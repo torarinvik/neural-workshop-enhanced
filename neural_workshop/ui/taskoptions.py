@@ -314,6 +314,23 @@ GRAPH_MAPPING = TaskSpec(
     ),
     note=graph_mapping_note)
 
+MATRIX_REASONING = TaskSpec(
+    title=_('Matrix Reasoning options'),
+    options=(
+        Option('RAVENS_LEVEL', _('Start at level'), 1,
+               values=(1, 2, 3, 4, 5)),
+        Option('RAVENS_TRIALS', _('Puzzles per run'), 15,
+               values=(5, 10, 15, 20, 30, 50)),
+        Option('RAVENS_EXPOSURE_MS', _('Hide the puzzle after'), 0,
+               values=(0, 10000, 20000, 30000, 45000, 60000), suffix=' ms'),
+        Option('RAVENS_ADAPTIVE',
+               _('Go up a level when right, down when wrong'), True),
+        Option('RAVENS_FEEDBACK', _('Say whether each answer was right'),
+               True),
+        Option('RAVENS_EXPLAIN', _('Name the rules after each answer'),
+               False),
+    ))
+
 #: Task id → the settings screen it owns.
 TASK_SPECS: Dict[str, TaskSpec] = {
     'monkey_ladder': MONKEY_LADDER,
@@ -323,6 +340,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'reflex': REFLEX,
     'count': COUNTING,
     'graph_mapping': GRAPH_MAPPING,
+    'matrix_reasoning': MATRIX_REASONING,
 }
 
 

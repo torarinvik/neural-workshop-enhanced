@@ -57,6 +57,11 @@ it is now a thin facade over three packages:
 | `bwaccel/` | the accelerated kernels, dispatching to the `bwcore` C extension when it is built and to `bwaccel/fallback.py` when it is not |
 | `nwenv/` | the agent boundary — frame capture, public outcomes and their verification, and the stepped environment |
 
+Inside `neural_workshop`, `ravens/` is the odd one out: it is the
+Matrix Reasoning puzzle generator, and it imports no pyglet and
+touches no singleton, so a puzzle can be built and checked without a
+window. Everything else on screen goes through `ui/`.
+
 Inside `neural_workshop`, the live singletons (`cfg`, `window`, `mode`,
 `field`, the labels) live in `state.py` and are reached as `state.mode`
 rather than imported by value, because switching user profile rebinds
@@ -162,7 +167,11 @@ Nothing is downloaded for this one — the shapes are generated.
 
 ### Reasoning
 
-The *Reasoning* category holds **Graph Mapping**: two networks of dots
+The *Reasoning* category holds two tasks.
+
+#### Graph Mapping
+
+Two networks of dots
 and lines, side by side, drawn differently. The question is whether
 one is the other redrawn — whether every dot on the left can be
 matched to a dot on the right with exactly the same connections.
@@ -209,6 +218,84 @@ one.
 the pair under time pressure, and with *Add a dot when right* the size
 follows how you do. Nothing is downloaded for this one either — the
 networks are generated.
+
+#### Matrix Reasoning
+
+A three-by-three grid of drawings that follow rules you have to work
+out, with the bottom-right cell missing and eight candidates for it
+beside the grid. Answer with **1**–**8** or by clicking a box. This is
+the shape of a Raven's Progressive Matrices item, the standard test of
+reasoning that owes nothing to language or to what you already know.
+
+The puzzles are generated rather than drawn. A rule is a change that
+happens along a route through the grid — down the columns, along the
+rows, along either diagonal, or outward from the top-left corner — and
+the changes on offer are: the same shape repeats, the shape turns an
+eighth of a turn, it shrinks, its shading moves along a scale of five,
+its shading stays constant along each route, or it gains a copy at
+every step. A layer is one such rule with up to two more stacked on
+top of it, and a puzzle is one or two layers drawn over one another,
+which is how a cell comes to hold a circle inside a square with each
+obeying a rule of its own. There is also a second kind of rule
+entirely: the top-left two-by-two block is given and every other cell
+is two earlier cells combined, by keeping the shapes in both, in
+either, or in exactly one.
+
+*Start at level* picks a rung of a five-step ladder — one rule on one
+layer at the bottom, three rules on each of two layers at the top —
+and with *Go up a level when right* the run follows how you do. The
+level is exact rather than an upper bound: a level an adaptive run
+moves you along has to mean something, and drawing a random number of
+rules up to the setting, which is what the original did, let the
+hardest rung hand out one-rule puzzles.
+
+*Name the rules after each answer* prints the rules behind the puzzle
+once it has been answered, which turns a run into practice rather than
+a test. Nothing is downloaded — a puzzle costs about a quarter of a
+millisecond to build, so they are made as you play.
+
+The puzzle is drawn on white paper in both themes. The five shadings
+are translucent inks washed over the paper, which is what makes them
+read as an ordered series from unfilled to solid; composited over a
+black background instead, the lightest and the darkest both come out
+black and the series collapses, so two rules differing only in shading
+would become the same rule. Everything around the puzzle follows the
+theme as usual. The drawings themselves are rendered offscreen at
+three times their final size and scaled down, because the outlines
+carry the rules: an eighth of a turn has to be visible as a turn, and
+a staircase of hard pixel edges hides small angles.
+
+##### Where this departs from the Sandia tool
+
+The rules and the ways of building wrong answers come from the Sandia
+Generated Matrix Tool, a Java research tool by Zachary Benz and Kevin
+Dixon, released by Sandia Corporation in 2010 under a three-clause BSD
+licence. `neural_workshop/ravens/` is a rewrite, not
+a translation, and it differs in four ways that matter:
+
+* **No blank answer choices.** When the original ran out of distinct
+  wrong answers it padded the remaining boxes with empty ones, which
+  leaks the answer — three empty boxes are three you know to ignore.
+  Here a puzzle that cannot fill its choices is thrown away and
+  another generated.
+* **Counting the shapes no longer gives the answer away.** Nothing in
+  the original stopped the right answer from being the only choice
+  holding, say, four shapes, and it was the odd one out that way in a
+  third of two-layer puzzles — so a player who found no rule at all
+  could still beat chance by counting. The generator now holds out for
+  wrong answers that share the right one's shape count, which brings
+  it back to about an eighth, where guessing would put it.
+* **Two shadings that were secretly one.** Shadings are compared by
+  name, and the original gave two different greys the same name —
+  `"Red"`, in both, and neither is red. A candidate differing from
+  another only in being 46% grey rather than 70% grey therefore
+  counted as a duplicate of it and was discarded, though the two look
+  nothing alike.
+* **A level means a number of rules.** See above.
+
+The original also shipped without the serialised difficulty model its
+batch generator needs, so that half of it could not be run at all. The
+ladder here replaces it.
 
 ### Window size, full screen, and the two coordinate spaces
 

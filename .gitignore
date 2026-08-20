@@ -13,3 +13,4 @@ bwcore.*.so
 
 # macOS Finder metadata
 .DS_Store
+/SandiaGeneratedMatrixTool-1.0.0-source
