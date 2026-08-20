@@ -37,9 +37,11 @@ from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
 from ..i18n import _
 from . import cursor, taskoptions
 
-#: Cities a round may hold. Five is a warm-up; twelve is the most the
-#: exact solver is asked for, and plenty to plan over.
-FEWEST_CITIES, MOST_CITIES = 5, 12
+#: Cities a round may hold. Five is a warm-up. The ceiling is set by
+#: the exact solver, whose table doubles with every city: eighteen
+#: costs about a second and a half and a few hundred megabytes at the
+#: moment the round starts, and nineteen would double both again.
+FEWEST_CITIES, MOST_CITIES = 5, 18
 
 #: How close to the optimum a tour has to come before an adaptive run
 #: adds a city, and how far off before one is taken away. Closeness
@@ -69,9 +71,9 @@ def optimal_tour(cities: Sequence[Point]) -> Tuple[List[int], float]:
 
     Dynamic programming over subsets: the best way to have visited a
     set of cities and be standing at one of them. Exponential in the
-    number of cities and quadratic on top, which at twelve cities is
-    a few hundred thousand table entries — well under a blink, and it
-    buys the honest word "optimal" for the score.
+    number of cities and quadratic on top: a blink at twelve cities,
+    about a second and a half at eighteen, which is why eighteen is
+    the ceiling. It buys the honest word "optimal" for the score.
 
     The tour starts at city 0 by convention; a round trip has no
     start, so nothing is lost.

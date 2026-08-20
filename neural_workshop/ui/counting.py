@@ -39,7 +39,7 @@ LINES, CIRCLES, TRIANGLES, RECTANGLES, MIXED = (
 MIXED_KINDS: Sequence[str] = (LINES, CIRCLES, TRIANGLES, RECTANGLES)
 
 #: Most shapes a trial will ever show, however well the player does.
-MAX_SHAPES = 40
+MAX_SHAPES = 60
 
 #: Fewest, so a wrong answer cannot make the task trivial.
 MIN_SHAPES = 2

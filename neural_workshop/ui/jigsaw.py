@@ -48,8 +48,11 @@ from ..i18n import _
 from . import cursor, taskoptions
 
 #: Grid sides a puzzle may use. Two-by-two is four tiles a child can
-#: do; six-by-six is thirty-six tiles of one photograph.
-SMALLEST_SIDE, LARGEST_SIDE = 2, 6
+#: do; ten-by-ten is a hundred tiles of one photograph. The ceiling is
+#: the tiles themselves: past ten a side they drop under forty pixels
+#: on an ordinary window, too small to tell one patch of sky from
+#: another.
+SMALLEST_SIDE, LARGEST_SIDE = 2, 10
 
 #: The gap ruled between tiles, in pixels. Wide enough that tile edges
 #: never fuse into a finished-looking picture before it is finished.

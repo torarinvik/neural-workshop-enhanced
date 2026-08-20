@@ -34,8 +34,11 @@ from ..i18n import _
 from . import cursor, taskoptions
 
 #: Towers a puzzle may hold. Three disks is seven moves, a child's
-#: puzzle; eight disks is 255 and a genuine campaign.
-SMALLEST_TOWER, LARGEST_TOWER = 3, 8
+#: puzzle; twelve disks is 4095 and a siege. The ceiling is visual,
+#: not logical: the widths step by widest/16 per disk, and past twelve
+#: neighbouring disks stop being tellable apart at a glance, which is
+#: the one judgement the game needs the eye to make.
+SMALLEST_TOWER, LARGEST_TOWER = 3, 12
 
 #: How efficient a solve has to be before an adaptive run adds a disk,
 #: and how far below that it falls before one is taken away.

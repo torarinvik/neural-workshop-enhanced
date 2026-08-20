@@ -165,9 +165,9 @@ MONKEY_LADDER = TaskSpec(
     title=_('Monkey Ladder options'),
     options=(
         Option('MONKEY_LADDER_GRID', _('Grid size'), 5,
-               values=(3, 4, 5, 6, 7, 8)),
+               values=(3, 4, 5, 6, 7, 8, 9, 10)),
         Option('MONKEY_LADDER_START_LENGTH', _('Starting sequence length'), 3,
-               values=(2, 3, 4, 5, 6, 7, 8, 9, 10, 12)),
+               values=(2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20, 30, 50)),
         Option('MONKEY_LADDER_ADAPTIVE',
                _('Adapt the length to your performance'), True),
         Option('MONKEY_LADDER_SHOW_MS', _('Base display time'), 700,
@@ -184,13 +184,13 @@ NCUP_MONTE = TaskSpec(
     title=_('N-Cup Monte options'),
     options=(
         Option('NCUP_MONTE_START_CUPS', _('Starting number of cups'), 3,
-               values=(3, 4, 5, 6, 7, 8)),
+               values=(3, 4, 5, 6, 7, 8, 10, 12, 14, 16)),
         Option('NCUP_MONTE_MAX_CUPS', _('Maximum number of cups'), 8,
-               values=(3, 4, 5, 6, 7, 8, 10, 12)),
+               values=(3, 4, 5, 6, 7, 8, 10, 12, 14, 16, 18, 20)),
         Option('NCUP_MONTE_ADAPTIVE',
                _('Adapt the cup count to your performance'), True),
         Option('NCUP_MONTE_SWAPS', _('Swaps per round (plus one per cup)'), 6,
-               values=(2, 4, 6, 8, 12, 16, 24, 32)),
+               values=(2, 4, 6, 8, 12, 16, 24, 32, 48, 64, 100)),
         Option('NCUP_MONTE_SWAP_MS', _('Time per swap'), 340,
                values=(60, 100, 160, 220, 280, 340, 500, 750, 1000),
                suffix=' ms'),
@@ -203,7 +203,7 @@ CONCENTRATION = TaskSpec(
     title=_('Concentration options'),
     options=(
         Option('CONCENTRATION_PAIRS', _('Pairs on the board'), 8,
-               values=(4, 6, 8, 10, 12, 15, 18, 21, 24, 30)),
+               values=(4, 6, 8, 10, 12, 15, 18, 21, 24, 30, 36, 42, 50)),
         Option('CONCENTRATION_MEDIUM', _('Cards show'), 'image',
                values=('image', 'sound')),
         Option('CONCENTRATION_PEEK_MS',
@@ -218,13 +218,13 @@ RECOGNITION = TaskSpec(
     title=_('Seen it before? options'),
     options=(
         Option('RECOGNITION_TRIALS', _('Items per run'), 40,
-               values=(10, 20, 30, 40, 60, 80, 100, 150)),
+               values=(10, 20, 30, 40, 60, 80, 100, 150, 200, 300, 500)),
         Option('RECOGNITION_MEDIUM', _('Present'), 'image',
                values=('image', 'sound')),
         Option('RECOGNITION_REPEAT_PERCENT', _('Share of items repeated'), 40,
                values=(20, 30, 40, 50), suffix='%'),
         Option('RECOGNITION_MIN_LAG', _('Smallest gap before a repeat'), 4,
-               values=(1, 2, 3, 4, 6, 8, 12, 20, 30), suffix=' items'),
+               values=(1, 2, 3, 4, 6, 8, 12, 20, 30, 50, 80), suffix=' items'),
         Option('RECOGNITION_STUDY_MS', _('Hide the image after'), 0,
                values=(0, 500, 1000, 1500, 2000, 3000), suffix=' ms'),
         Option('RECOGNITION_FEEDBACK', _('Say whether each answer was right'),
@@ -235,7 +235,7 @@ REFLEX = TaskSpec(
     title=_('Reflex options'),
     options=(
         Option('REFLEX_TARGETS', _('Targets per run'), 40,
-               values=(10, 20, 30, 40, 60, 80, 120, 200)),
+               values=(10, 20, 30, 40, 60, 80, 120, 200, 300, 500)),
         Option('REFLEX_LIFETIME_MS', _('A target takes this long to vanish'),
                1600, values=(400, 600, 800, 1200, 1600, 2200, 3000, 4000),
                suffix=' ms'),
@@ -243,7 +243,7 @@ REFLEX = TaskSpec(
                values=(150, 250, 400, 550, 700, 1000, 1500, 2000),
                suffix=' ms'),
         Option('REFLEX_MAX_ACTIVE', _('Most targets on screen at once'), 3,
-               values=(1, 2, 3, 4, 5, 6, 8)),
+               values=(1, 2, 3, 4, 5, 6, 8, 10, 12)),
         Option('REFLEX_SIZE', _('Size a target starts at'), 130,
                values=(60, 80, 100, 130, 170, 220, 280), suffix=' px'),
         Option('REFLEX_ADAPTIVE', _('Speed up when you hit, ease off when you miss'),
@@ -257,9 +257,9 @@ COUNTING = TaskSpec(
                values=('lines', 'circles', 'triangles', 'rectangles',
                        'mixed')),
         Option('COUNT_START', _('Shapes to start with'), 8,
-               values=(2, 4, 6, 8, 10, 12, 16, 20, 25, 30)),
+               values=(2, 4, 6, 8, 10, 12, 16, 20, 25, 30, 40, 50, 60)),
         Option('COUNT_TRIALS', _('Trials per run'), 15,
-               values=(5, 10, 15, 20, 30, 50)),
+               values=(5, 10, 15, 20, 30, 50, 80, 100)),
         Option('COUNT_EXPOSURE_MS', _('Hide the shapes after'), 0,
                values=(0, 200, 350, 500, 750, 1000, 2000, 4000),
                suffix=' ms'),
@@ -298,11 +298,11 @@ GRAPH_MAPPING = TaskSpec(
     title=_('Graph Mapping options'),
     options=(
         Option('GRAPH_MAP_NODES', _('Dots to start with'), 6,
-               values=(4, 5, 6, 7, 8, 9, 10)),
+               values=(4, 5, 6, 7, 8, 9, 10, 12, 14, 16)),
         Option('GRAPH_MAP_DENSITY', _('How many connections'), 'medium',
                values=('sparse', 'medium', 'dense')),
         Option('GRAPH_MAP_TRIALS', _('Pairs per run'), 20,
-               values=(5, 10, 15, 20, 30, 50)),
+               values=(5, 10, 15, 20, 30, 50, 80, 100)),
         Option('GRAPH_MAP_SUBTLE',
                _('Mismatches keep every connection count the same'), True),
         Option('GRAPH_MAP_EXPOSURE_MS', _('Hide the graphs after'), 0,
@@ -367,7 +367,7 @@ MATRIX_REASONING = TaskSpec(
         Option('RAVENS_LEVEL', _('Start at level'), 1,
                values=tuple(range(1, 13))),
         Option('RAVENS_TRIALS', _('Puzzles per run'), 15,
-               values=(5, 10, 15, 20, 30, 50)),
+               values=(5, 10, 15, 20, 30, 50, 80, 100)),
         Option('RAVENS_EXPOSURE_MS', _('Hide the puzzle after'), 0,
                values=(0, 10000, 20000, 30000, 45000, 60000), suffix=' ms'),
         Option('RAVENS_ADAPTIVE',
@@ -407,9 +407,9 @@ JIGSAW = TaskSpec(
     title=_('Jigsaw Puzzle options'),
     options=(
         Option('JIGSAW_SIDE', _('Tiles per side'), 3,
-               values=(2, 3, 4, 5, 6)),
+               values=(2, 3, 4, 5, 6, 7, 8, 10)),
         Option('JIGSAW_PUZZLES', _('Puzzles per run'), 3,
-               values=(1, 2, 3, 5, 8)),
+               values=(1, 2, 3, 5, 8, 12, 20)),
         Option('JIGSAW_ADAPTIVE',
                _('Grow the grid when you solve near the minimum'), True),
         Option('JIGSAW_PREVIEW',
@@ -437,9 +437,9 @@ HANOI = TaskSpec(
     title=_('Tower of Hanoi options'),
     options=(
         Option('HANOI_DISKS', _('Disks to start with'), 4,
-               values=(3, 4, 5, 6, 7, 8)),
+               values=(3, 4, 5, 6, 7, 8, 9, 10, 11, 12)),
         Option('HANOI_ROUNDS', _('Towers per run'), 3,
-               values=(1, 2, 3, 5)),
+               values=(1, 2, 3, 5, 8, 10)),
         Option('HANOI_ADAPTIVE',
                _('Grow the tower when you solve near the minimum'), True),
     ),
@@ -447,10 +447,20 @@ HANOI = TaskSpec(
 
 
 def salesman_note(chosen: Dict[str, Any]) -> str:
-    """What the score means at this size, and that it is exact."""
+    """What the score means at this size, and that it is exact.
+
+    The exact solver doubles in cost with every city, so the top of
+    the range buys a real pause when a round starts — worth a warning
+    here, where the number is being chosen, rather than a mystery
+    freeze later.
+    """
     cities = int(chosen['TSP_CITIES'])
     said = [_('%d cities; the score is your route against the shortest '
               'one possible, computed exactly.') % cities]
+    if cities >= 16:
+        said.append(_('Fair warning: solving %d cities exactly takes '
+                      'the computer a moment, so each round starts '
+                      'with a short pause.') % cities)
     if chosen['TSP_ADAPTIVE']:
         said.append(_('Come within a few per cent of it and the next '
                       'map grows a city.'))
@@ -461,9 +471,9 @@ SALESMAN = TaskSpec(
     title=_('Traveling Salesman options'),
     options=(
         Option('TSP_CITIES', _('Cities to start with'), 7,
-               values=(5, 6, 7, 8, 9, 10, 11, 12)),
+               values=tuple(range(5, 19))),
         Option('TSP_ROUNDS', _('Routes per run'), 5,
-               values=(3, 5, 8, 10)),
+               values=(3, 5, 8, 10, 15, 20)),
         Option('TSP_ADAPTIVE',
                _('Add a city when you come near the optimum'), True),
         Option('TSP_SHOW_BEST',

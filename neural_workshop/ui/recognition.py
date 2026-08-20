@@ -145,9 +145,16 @@ class Recognition:
     # --- building a run --------------------------------------------------
 
     def needed_items(self) -> int:
-        """Distinct items a full run consumes, worst case."""
-        repeats = int(self.total_trials * self.repeat_percent / 100.)
-        return max(2, self.total_trials - repeats)
+        """Distinct items a full run consumes, worst case.
+
+        The worst case is a run with no repeats at all: whether a
+        trial repeats is a coin flip, and no trial can repeat until
+        ``min_lag`` trials have passed, so budgeting for the average
+        share of repeats runs the fresh list dry on long runs and
+        quietly truncates them. The pool hands back only what it has,
+        so asking for everything costs nothing when there is less.
+        """
+        return max(2, self.total_trials)
 
     def build_run(self) -> List[Trial]:
         """Plan the whole stream up front.

@@ -417,7 +417,7 @@ came to that minimum. Swapping at random finishes eventually; seeing
 where each tile belongs before touching it finishes at the minimum,
 and the gap between the two is what is measured. With *Grow the grid*
 a solve near the minimum takes the next puzzle up a size, from
-two-by-two to six-by-six. The finished picture is shown beside the
+two-by-two to ten-by-ten. The finished picture is shown beside the
 board like the lid of the box; turn it off and the tiles are all
 there is.
 
@@ -441,14 +441,15 @@ each solve is reported against that minimum — moving the small disk
 back and forth finishes eventually; knowing *why* it must go where it
 goes finishes at the minimum. With the adaptive option a solve near
 the minimum makes the next tower taller, from three disks (7 moves)
-up to eight (255).
+up to twelve (4095).
 
 **Traveling Salesman.** Cities scatter across the screen; click them
 into the shortest round trip you can see, and the tour closes itself
 on the last click. Nothing is hidden — the reasoning is planning under
 combinatorics, following the hull and keeping crossings out. The
 shortest possible tour is computed exactly (Held-Karp dynamic
-programming, comfortable up to the twelve cities offered), so the
+programming — instant at twelve cities, a deliberate pause of a
+second or two at the eighteen-city ceiling), so the
 score says precisely how much longer your route was, and the shortest
 route is drawn after each answer. People land within a few per cent
 of optimal on sight, which is what makes the gap worth reporting.

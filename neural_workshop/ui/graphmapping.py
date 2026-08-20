@@ -63,7 +63,7 @@ from ..i18n import _
 SAME, DIFFERENT = 'same', 'different'
 
 #: Most nodes a trial will ever show, however well the player does.
-MAX_NODES = 10
+MAX_NODES = 16
 
 #: Fewest, so a wrong answer cannot make the task trivial.
 MIN_NODES = 4
