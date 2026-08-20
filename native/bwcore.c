@@ -1309,85 +1309,87 @@ static PyObject *py_backend(PyObject *self, PyObject *args)
 /* Sokoban: exact minimum pushes by BFS over (boxes, player region)           */
 /* -------------------------------------------------------------------------- */
 
-/* Boards are at most 256 cells (16x16); a box set is four uint64
- * words. The Python fallback in neural_workshop/sokoban.py defines
- * the contract and the tests hold the two implementations to
- * identical answers. */
+/* A box set is one bit per cell, packed into as many uint64 words as
+ * the board actually needs -- one for a 5x5 room, sixteen for a
+ * 32x32 one. The records in the queue and the visited table carry a
+ * box set plus a little metadata, so their stride is fixed at run
+ * time rather than compiled in: small rooms stop paying for a big
+ * board's words, and big rooms become possible at all. The Python
+ * fallback in neural_workshop/sokoban.py defines the contract and
+ * the tests hold the two implementations to identical answers. */
 
-#define SK_WORDS 4
-#define SK_MAX_CELLS (SK_WORDS * 64)
+#define SK_MAX_WORDS 16
+#define SK_MAX_CELLS (SK_MAX_WORDS * 64)
 
+/* Eight bytes, so every record stays eight-aligned whatever `words`
+ * is and the box words can be read as uint64 without a fuss. */
 typedef struct {
-    uint64_t w[SK_WORDS];
-} sk_bits;
-
-static int sk_get(sk_bits b, int cell)
-{
-    return (int)((b.w[cell >> 6] >> (cell & 63)) & 1u);
-}
-
-static void sk_set(sk_bits *b, int cell)
-{
-    b->w[cell >> 6] |= (uint64_t)1 << (cell & 63);
-}
-
-static void sk_clear(sk_bits *b, int cell)
-{
-    b->w[cell >> 6] &= ~((uint64_t)1 << (cell & 63));
-}
-
-static int sk_equal(sk_bits a, sk_bits b)
-{
-    int i;
-    for (i = 0; i < SK_WORDS; i++)
-        if (a.w[i] != b.w[i]) return 0;
-    return 1;
-}
-
-static int sk_subset(sk_bits a, sk_bits b)   /* a subset of b */
-{
-    int i;
-    for (i = 0; i < SK_WORDS; i++)
-        if (a.w[i] & ~b.w[i]) return 0;
-    return 1;
-}
-
-typedef struct {
-    sk_bits boxes;
-    uint16_t norm;      /* smallest reachable player cell */
+    uint16_t norm;          /* smallest reachable player cell */
     uint16_t pushes;
-} sk_state;
+    uint32_t used;
+} sk_meta;
 
-/* Open-addressed visited set keyed by (boxes, norm). */
-typedef struct {
-    sk_bits boxes;
-    uint16_t norm;
-    uint8_t used;
-} sk_entry;
+#define SK_STRIDE(words) ((size_t)(words) * 8 + sizeof(sk_meta))
+#define SK_REC(base, stride, i) \
+    ((uint64_t *)((char *)(base) + (size_t)(i) * (stride)))
+#define SK_META(rec, words) ((sk_meta *)((rec) + (words)))
 
-static uint64_t sk_hash(sk_bits b, uint16_t norm)
+static int sk_get(const uint64_t *b, int cell)
+{
+    return (int)((b[cell >> 6] >> (cell & 63)) & 1u);
+}
+
+static void sk_set(uint64_t *b, int cell)
+{
+    b[cell >> 6] |= (uint64_t)1 << (cell & 63);
+}
+
+static void sk_clear(uint64_t *b, int cell)
+{
+    b[cell >> 6] &= ~((uint64_t)1 << (cell & 63));
+}
+
+static int sk_equal(const uint64_t *a, const uint64_t *b, int words)
+{
+    int i;
+    for (i = 0; i < words; i++)
+        if (a[i] != b[i]) return 0;
+    return 1;
+}
+
+static int sk_subset(const uint64_t *a, const uint64_t *b, int words)
+{
+    int i;
+    for (i = 0; i < words; i++)
+        if (a[i] & ~b[i]) return 0;
+    return 1;
+}
+
+static uint64_t sk_hash(const uint64_t *b, int words, uint16_t norm)
 {
     uint64_t h = 0x9E3779B97F4A7C15ULL;
     int i;
-    for (i = 0; i < SK_WORDS; i++)
-        h ^= b.w[i] + 0x9E3779B97F4A7C15ULL + (h << 6) + (h >> 2);
+    for (i = 0; i < words; i++)
+        h ^= b[i] + 0x9E3779B97F4A7C15ULL + (h << 6) + (h >> 2);
     h ^= (uint64_t)norm * 0xBF58476D1CE4E5B9ULL;
     return h;
 }
 
-static int sk_seen_add(sk_entry *table, uint64_t mask,
-                       sk_bits boxes, uint16_t norm)
+/* Open-addressed visited set keyed by (boxes, norm). */
+static int sk_seen_add(char *table, size_t stride, int words, uint64_t mask,
+                       const uint64_t *boxes, uint16_t norm)
 {
-    uint64_t at = sk_hash(boxes, norm) & mask;
+    uint64_t at = sk_hash(boxes, words, norm) & mask;
     for (;;) {
-        sk_entry *e = &table[at];
-        if (!e->used) {
-            e->boxes = boxes;
-            e->norm = norm;
-            e->used = 1;
+        uint64_t *rec = SK_REC(table, stride, at);
+        sk_meta *meta = SK_META(rec, words);
+        if (!meta->used) {
+            memcpy(rec, boxes, (size_t)words * 8);
+            meta->norm = norm;
+            meta->used = 1;
             return 1;                       /* newly added */
         }
-        if (sk_equal(e->boxes, boxes) && e->norm == norm)
+        if (meta->norm == norm && sk_equal(rec, boxes, words))
             return 0;                       /* already known */
         at = (at + 1) & mask;
     }
@@ -1395,8 +1397,9 @@ static int sk_seen_add(sk_entry *table, uint64_t mask,
 
 /* Flood the player's region; returns the smallest reachable cell and
  * fills region[]. */
-static int sk_flood(const uint8_t *floor_ok, sk_bits boxes, int start,
-                    int n, int width, uint8_t *region, int *stack)
+static int sk_flood(const uint8_t *floor_ok, const uint64_t *boxes,
+                    int start, int n, int width, uint8_t *region,
+                    int *stack)
 {
     int top = 0, norm = start;
     memset(region, 0, (size_t)n);
@@ -1439,21 +1442,23 @@ static PyObject *py_sokoban_min_pushes(PyObject *self, PyObject *args)
         return NULL;
     {
         int n = width * height;
+        int words = (n + 63) / 64;
         const uint8_t *floor_ok = (const uint8_t *)floor_b.buf;
         const uint8_t *goals = (const uint8_t *)goals_b.buf;
         const uint8_t *alive = (const uint8_t *)alive_b.buf;
         const uint8_t *boxes0 = (const uint8_t *)boxes_b.buf;
-        sk_bits goal_bits, start_boxes;
-        sk_state *queue = NULL;
-        sk_entry *seen = NULL;
+        uint64_t goal_bits[SK_MAX_WORDS];
+        uint64_t cur[SK_MAX_WORDS], moved[SK_MAX_WORDS];
+        char *queue = NULL, *seen = NULL;
+        size_t stride;
         uint64_t mask, capacity = 1;
         long head = 0, tail = 0, queue_cap, seen_count = 0;
         uint8_t region[SK_MAX_CELLS];
         int stack[SK_MAX_CELLS];
         int cell, answer = -1;
 
-        memset(&goal_bits, 0, sizeof(goal_bits));
-        memset(&start_boxes, 0, sizeof(start_boxes));
+        memset(goal_bits, 0, sizeof(goal_bits));
+        memset(cur, 0, sizeof(cur));
         if (n > SK_MAX_CELLS || (Py_ssize_t)n > floor_b.len
                 || (Py_ssize_t)n > goals_b.len
                 || (Py_ssize_t)n > alive_b.len
@@ -1464,21 +1469,22 @@ static PyObject *py_sokoban_min_pushes(PyObject *self, PyObject *args)
                             "board too large or buffers too short");
             return NULL;
         }
+        stride = SK_STRIDE(words);
         for (cell = 0; cell < n; cell++) {
-            if (goals[cell]) sk_set(&goal_bits, cell);
-            if (boxes0[cell]) sk_set(&start_boxes, cell);
+            if (goals[cell]) sk_set(goal_bits, cell);
+            if (boxes0[cell]) sk_set(cur, cell);
         }
         /* Solved already? (boxes subset of goals) */
-        if (sk_subset(start_boxes, goal_bits)) {
+        if (sk_subset(cur, goal_bits, words)) {
             PyBuffer_Release(&floor_b); PyBuffer_Release(&goals_b);
             PyBuffer_Release(&alive_b); PyBuffer_Release(&boxes_b);
             return PyLong_FromLong(0);
         }
         while ((long)capacity < budget * 2 + 16) capacity <<= 1;
         mask = capacity - 1;
-        seen = (sk_entry *)calloc(capacity, sizeof(sk_entry));
+        seen = (char *)calloc(capacity, stride);
         queue_cap = budget + 16;
-        queue = (sk_state *)malloc((size_t)queue_cap * sizeof(sk_state));
+        queue = (char *)malloc((size_t)queue_cap * stride);
         if (!seen || !queue) {
             free(seen); free(queue);
             PyBuffer_Release(&floor_b); PyBuffer_Release(&goals_b);
@@ -1486,40 +1492,44 @@ static PyObject *py_sokoban_min_pushes(PyObject *self, PyObject *args)
             return PyErr_NoMemory();
         }
         {
-            int norm = sk_flood(floor_ok, start_boxes, player, n, width,
+            int norm = sk_flood(floor_ok, cur, player, n, width,
                                 region, stack);
-            queue[tail].boxes = start_boxes;
-            queue[tail].norm = (uint16_t)norm;
-            queue[tail].pushes = 0;
+            uint64_t *slot = SK_REC(queue, stride, tail);
+            memcpy(slot, cur, (size_t)words * 8);
+            SK_META(slot, words)->norm = (uint16_t)norm;
+            SK_META(slot, words)->pushes = 0;
             tail++;
-            sk_seen_add(seen, mask, start_boxes, (uint16_t)norm);
+            sk_seen_add(seen, stride, words, mask, cur, (uint16_t)norm);
             seen_count = 1;
         }
         while (head < tail && answer < 0) {
-            sk_state s = queue[head++];
+            uint64_t *rec = SK_REC(queue, stride, head);
+            sk_meta meta = *SK_META(rec, words);
+            int pushes = (int)meta.pushes;
             int steps[4];
+            head++;
+            memcpy(cur, rec, (size_t)words * 8);
             steps[0] = -width; steps[1] = width;
             steps[2] = -1; steps[3] = 1;
-            sk_flood(floor_ok, s.boxes, s.norm, n, width, region, stack);
+            sk_flood(floor_ok, cur, meta.norm, n, width, region, stack);
             for (cell = 0; cell < n && answer < 0; cell++) {
                 int d;
-                if (!sk_get(s.boxes, cell)) continue;
+                if (!sk_get(cur, cell)) continue;
                 for (d = 0; d < 4; d++) {
                     int behind = cell - steps[d];
                     int ahead = cell + steps[d];
-                    sk_bits moved;
                     int norm2;
                     if (behind < 0 || behind >= n || ahead < 0
                             || ahead >= n)
                         continue;
                     if (!region[behind] || !floor_ok[ahead]
-                            || sk_get(s.boxes, ahead) || !alive[ahead])
+                            || sk_get(cur, ahead) || !alive[ahead])
                         continue;
-                    moved = s.boxes;
-                    sk_clear(&moved, cell);
-                    sk_set(&moved, ahead);
-                    if (sk_subset(moved, goal_bits)) {
-                        answer = s.pushes + 1;
+                    memcpy(moved, cur, (size_t)words * 8);
+                    sk_clear(moved, cell);
+                    sk_set(moved, ahead);
+                    if (sk_subset(moved, goal_bits, words)) {
+                        answer = pushes + 1;
                         break;
                     }
                     {
@@ -1528,20 +1538,23 @@ static PyObject *py_sokoban_min_pushes(PyObject *self, PyObject *args)
                         norm2 = sk_flood(floor_ok, moved, cell, n, width,
                                          region2, stack2);
                     }
-                    if (sk_seen_add(seen, mask, moved, (uint16_t)norm2)) {
+                    if (sk_seen_add(seen, stride, words, mask, moved,
+                                    (uint16_t)norm2)) {
+                        uint64_t *slot;
                         seen_count++;
                         if (seen_count > budget || tail >= queue_cap) {
                             /* Over budget. BFS is level-order, so
                              * every unexplored state needs more than
-                             * s.pushes pushes: report that as a
+                             * `pushes` pushes: report that as a
                              * proven lower bound, encoded negative. */
-                            answer = -(int)(s.pushes + 1) - 1;
+                            answer = -(pushes + 1) - 1;
                             head = tail;
                             break;
                         }
-                        queue[tail].boxes = moved;
-                        queue[tail].norm = (uint16_t)norm2;
-                        queue[tail].pushes = (uint16_t)(s.pushes + 1);
+                        slot = SK_REC(queue, stride, tail);
+                        memcpy(slot, moved, (size_t)words * 8);
+                        SK_META(slot, words)->norm = (uint16_t)norm2;
+                        SK_META(slot, words)->pushes = (uint16_t)(pushes + 1);
                         tail++;
                     }
                 }
