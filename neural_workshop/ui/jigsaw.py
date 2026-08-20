@@ -317,6 +317,13 @@ class JigsawPuzzle:
             return
         self.puzzle += 1
         self.trial_side = self.side
+        # A library smaller than the run cannot help repeating itself,
+        # and that should be said up front rather than discovered.
+        stocked = len(self.pool.paths)
+        self.small_library = (_('only %d photographs downloaded — '
+                                'pictures will repeat; see the Readme')
+                              % stocked
+                              if stocked < self.total_puzzles else '')
         self.image = image
         self.tiles = self._cut(image)
         self.order = scramble(self.trial_side, self.rng)
@@ -460,6 +467,8 @@ class JigsawPuzzle:
                            'tiles %dx%d')
                          % (self.puzzle, self.total_puzzles, self.swaps,
                             self.par, self.trial_side, self.trial_side))
+            if getattr(self, 'small_library', ''):
+                parts.append(self.small_library)
         self.status.text = '     '.join(parts)
 
     # --- lifecycle -------------------------------------------------------

@@ -305,6 +305,17 @@ class JigsawScreenTests(unittest.TestCase):
         self.assertEqual(len(set(shown[:3])), 3)
         self.assertEqual(len(set(shown)), 3)
 
+    def test_a_small_library_says_it_will_repeat(self):
+        self.task.total_puzzles = 5     # three photographs to serve it
+        self.task.start_run()
+        self.assertIn('repeat', self.task.status.text)
+        self.assertIn('3 photographs', self.task.status.text)
+
+    def test_a_large_enough_library_says_nothing_about_it(self):
+        self.task.total_puzzles = 2
+        self.task.start_run()
+        self.assertNotIn('repeat', self.task.status.text)
+
     def test_a_run_ends_with_a_score_on_both_axes(self):
         self.task.start_run()
         for _puzzle in range(2):
