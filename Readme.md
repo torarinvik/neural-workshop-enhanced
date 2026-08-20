@@ -221,12 +221,20 @@ networks are generated.
 
 #### Matrix Reasoning
 
-A three-by-three grid of figures that follow rules you have to work
-out, with the bottom-right panel missing and the candidates for it
-beside the grid — four on the easy levels, eight otherwise. Answer
-with **1**–**8** or by clicking a box. This is the shape of a Raven's
-Progressive Matrices item, the standard test of reasoning that owes
-nothing to language or to what you already know.
+A grid of figures that follow rules you have to work out, with the
+bottom-right panel missing and the candidates for it beside the grid
+— four on the easy levels, eight otherwise. Answer with **1**–**8**
+or by clicking a box. This is the shape of a Raven's Progressive
+Matrices item, the standard test of reasoning that owes nothing to
+language or to what you already know.
+
+The grid itself is one of the difficulty dials: two-by-two at the
+bottom — a rule shown in the least room it can be shown in, which is
+what the easiest items of the real test are — three-by-three through
+the middle, and four-by-four at the top, where the rules get room to
+grow: four values distributed as a Latin square, three panels summed
+into a fourth. Each rule declares what grid it needs, so a rule that
+cannot show itself on a given grid is simply never dealt there.
 
 The puzzles are generated rather than drawn, and the generator is
 built around the three things that make a matrix read as a designed
@@ -262,13 +270,14 @@ expectation, on purpose, and is saved for the top of the ladder:
   so.
 * *Progression* — the value steps along its ladder by the same amount
   each time, up or down, by one or by two.
-* *Distribute three* — three values, and every row holds all three in
-  a different order. Laid out as a Latin square, so every column holds
-  all three as well and the missing value can be read off either. This
-  is the rule people picture when they picture a Raven's item.
-* *Arithmetic* — the third value is the first plus or minus the
-  second. Only ever applied to how many figures there are, where it is
-  something a person can actually do in their head.
+* *Distribute* — a row's worth of values, and every row holds all of
+  them in a different order. Laid out as a Latin square, so every
+  column holds them all as well and the missing value can be read off
+  either. This is the rule people picture when they picture a Raven's
+  item; on a four-by-four grid it distributes four.
+* *Arithmetic* — the last value is the first plus or minus those
+  between. Only ever applied to how many figures there are, where it
+  is something a person can actually do in their head.
 * *Logic* — on a lattice, the places holding a figure in the third
   panel follow from the first two: everything in either, only what is
   in both, or what is in exactly one. Nothing steps or repeats, so the
@@ -295,14 +304,17 @@ turn more dials than one. Level 1 is not a matrix at all but pattern
 completion — every panel the same picture, find the matching piece
 among four — which is the genuinely easy end of the real test,
 answerable by a five-year-old. The early levels offer four candidates,
-keep to a single rule drawn from a narrowed pool, and use a coarse
-three-step size ladder so "bigger" is something you see rather than
-judge. From there each level up adds rules, then more components to
-carry them, then the logic rules, and at the top a seven-step size
-ladder on which a rule you have *found* still takes care to apply.
-Level 12 runs nine rules at once across three components, which is
-more than a person tracks — deliberately so, so the ladder ends past
-everyone. With *Go up a level when right* the run follows how you do.
+keep to a two-by-two grid and a single rule drawn from a narrowed
+pool, and use a coarse three-step size ladder so "bigger" is something
+you see rather than judge. From there each level up adds rules, then
+more components to carry them, then the logic rules, and at the top
+the grid itself widens to four-by-four and the size ladder runs to
+seven steps on which a rule you have *found* still takes care to
+apply. Level 12 runs nine rules at once across three components on a
+four-by-four grid, which is more than a person tracks — deliberately
+so, so the ladder ends past everyone. (The second-order rule sits out
+the four-by-four levels by its own arithmetic: its last row would
+span nine rungs, and no ladder here is ten long.) With *Go up a level when right* the run follows how you do.
 *Name the rules after each answer* prints the rules behind the puzzle
 once it has been answered, which turns a run into practice rather than
 a test. Nothing is downloaded — a puzzle costs under a tenth of a

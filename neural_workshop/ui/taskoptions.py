@@ -323,12 +323,15 @@ def matrix_reasoning_note(chosen: Dict[str, Any]) -> str:
     player can see what a rung means before standing on it.
     """
     from ..ravens.matrix import GRADES
+    from ..ravens.rules import SecondOrder
     level = int(chosen['RAVENS_LEVEL'])
     grade = GRADES[max(0, min(len(GRADES) - 1, level - 1))]
+    grid = {2: _('two-by-two'), 3: _('three-by-three'),
+            4: _('four-by-four')}[grade.across]
     if grade.active == 0:
-        opening = _('Level 1 is matching: every panel draws the same '
-                    'picture, and the question is which of %d pieces '
-                    'fits.') % grade.choices
+        opening = _('Level 1 is matching: every panel of a %s grid '
+                    'draws the same picture, and the question is which '
+                    'of %d pieces fits.') % (grid, grade.choices)
     else:
         parts = max(len(layout.components) for layout in grade.layouts)
         carried = {
@@ -338,12 +341,14 @@ def matrix_reasoning_note(chosen: Dict[str, Any]) -> str:
         }[parts]
         rules = (_('one rule') if grade.active == 1
                  else _('up to %d rules at once') % grade.active)
-        opening = _('Level %d: %s on %s, %d answers offered.') % (
-            level, rules, carried, grade.choices)
+        opening = _('Level %d: a %s grid, %s on %s, %d answers '
+                    'offered.') % (level, grid, rules, carried,
+                                   grade.choices)
     hard = []
     if grade.logic:
         hard.append(_('two panels combining into a third'))
-    if grade.rules is None and grade.active:
+    if (grade.rules is None and grade.active
+            and SecondOrder.fits(grade.sizes, grade.across)):
         hard.append(_('rules that change between rows'))
     if len(grade.sizes) > 5:
         hard.append(_('finely stepped sizes'))

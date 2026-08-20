@@ -360,6 +360,47 @@ class RuleTests(unittest.TestCase):
         self.assertFalse(ruleset.SecondOrder.fits(tuple(range(4))))
         self.assertTrue(ruleset.SecondOrder.fits(tuple(range(5))))
 
+    def test_distribute_four_gives_every_row_and_column_all_four(self):
+        rule = ruleset.DistributeThree()
+        rule.across = 4
+        for _try in range(100):
+            rows = rule.rows(tuple('abcdefg'), self.rng)
+            wanted = set(rows[0])
+            self.assertEqual(len(wanted), 4)
+            for row in rows:
+                self.assertEqual(set(row), wanted)
+            for column in range(4):
+                self.assertEqual(set(row[column] for row in rows), wanted)
+
+    def test_arithmetic_sums_three_panels_into_a_fourth(self):
+        for sign in (1, -1):
+            rule = ruleset.Arithmetic(sign)
+            rule.across = 4
+            for first, second, third, last in rule.rows(
+                    tuple(range(1, 10)), self.rng):
+                self.assertEqual(last, first + sign * (second + third))
+
+    def test_logic_folds_across_a_four_wide_row(self):
+        ops = {'or': lambda a, b: a | b,
+               'and': lambda a, b: a & b,
+               'xor': lambda a, b: a ^ b}
+        for name, combine in ops.items():
+            rule = ruleset.Logic(name)
+            rule.across = 4
+            for _try in range(50):
+                for one, two, three, last in rule.rows(tuple(range(9)),
+                                                       self.rng):
+                    self.assertEqual(last,
+                                     combine(combine(one, two), three))
+
+    def test_second_order_rules_itself_out_of_a_four_by_four(self):
+        """Its last row would span nine rungs, and no ladder here is
+        ten long — the exclusion is arithmetic, not decree."""
+        self.assertTrue(ruleset.SecondOrder.fits(tuple(range(5)), 3))
+        self.assertFalse(ruleset.SecondOrder.fits(tuple(range(9)), 4))
+        self.assertTrue(ruleset.SecondOrder.fits(tuple(range(10)), 4))
+        self.assertFalse(ruleset.SecondOrder.fits(tuple(range(9)), 2))
+
     def test_logic_needs_a_lattice_to_live_on(self):
         self.assertFalse(ruleset.Logic.fits(tuple(range(3))))
         self.assertTrue(ruleset.Logic.fits(tuple(range(4))))
@@ -823,6 +864,38 @@ class DistractorTests(unittest.TestCase):
                     '%s varies across the matrix but no wrong answer '
                     'challenges it' % name)
 
+    def test_the_grid_grows_with_the_grade(self):
+        """Two-by-two at the bottom, as the easiest items of the real
+        test are; four-by-four at the top; and every panel row of a
+        puzzle is as long as the puzzle says it is."""
+        for level, side in ((1, 2), (2, 2), (3, 3), (10, 3), (11, 4),
+                            (12, 4)):
+            puzzle = ravens.generate(level=level, seed=7)
+            self.assertEqual(puzzle.across, side)
+            self.assertEqual(len(puzzle.panels), side)
+            for row in puzzle.panels:
+                self.assertEqual(len(row), side)
+
+    def test_the_top_grades_actually_distribute_four(self):
+        """The wide grid is there to make the rules bigger, so the
+        four-value distribute had better actually turn up."""
+        seen = sum(any('same four each row' in line
+                       for line in puzzle.explanation)
+                   for puzzle in every_puzzle(200, level=12))
+        self.assertGreater(seen, 20)
+
+    def test_a_two_by_two_shows_one_step_and_nothing_it_cannot_show(self):
+        """A two-by-two has room for a constant or a single step, and
+        the real test's easiest items are exactly that. Anything wider
+        — three distributed values, a sum, a rule that accelerates —
+        cannot display itself in two cells and must never be dealt."""
+        for puzzle in every_puzzle(150, level=2):
+            self.assertEqual(puzzle.across, 2)
+            for line in puzzle.explanation:
+                self.assertNotIn('each row, reordered', line)
+                self.assertNotIn('further each row', line)
+                self.assertNotIn('panel', line)
+
     def test_the_easy_grades_offer_four_answers_and_the_rest_eight(self):
         """Four for the easy grades, as the children's form of the
         real test does; eight from grade four up."""
@@ -1129,6 +1202,12 @@ class MatrixScreenTests(unittest.TestCase):
         menu.values['RAVENS_LEVEL'].choose(12)
         menu.update_labels()
         self.assertIn('9 rules', menu.note.text)
+        self.assertIn('four-by-four', menu.note.text)
+        self.assertNotIn('change between rows', menu.note.text,
+                         'second order cannot fit a four-by-four and '
+                         'the note must not claim it')
+        menu.values['RAVENS_LEVEL'].choose(9)
+        menu.update_labels()
         self.assertIn('change between rows', menu.note.text)
         menu.on_key_press(key.ESCAPE, 0)
 

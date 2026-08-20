@@ -382,6 +382,12 @@ class MatrixReasoning:
             return len(self.puzzle.choices)
         return GRADES[self.level].choices
 
+    def _across(self) -> int:
+        """How many panels the grid is on a side, likewise."""
+        if self.puzzle is not None:
+            return self.puzzle.across
+        return GRADES[self.level].across
+
     def _choice_rows(self) -> int:
         count = self._choice_count()
         return (count + CHOICE_COLUMNS - 1) // CHOICE_COLUMNS
@@ -407,12 +413,14 @@ class MatrixReasoning:
         """
         left, bottom, width, height = self._canvas()
         gap = width * 0.04
-        # matrix is 3 cells wide; choices are 2 cells wide. Both share
-        # one cell size, so 5 cells plus the gap fill the width.
-        by_width = (width - gap) / 5.0
-        by_height = min(height / 3.0, height / self._choice_rows())
+        across = self._across()
+        # The matrix is `across` cells wide and the choices two more.
+        # Both share one cell size, so that a candidate is drawn at
+        # exactly the size the cell it would fill is drawn at.
+        by_width = (width - gap) / float(across + CHOICE_COLUMNS)
+        by_height = min(height / float(across), height / self._choice_rows())
         cell = min(by_width, by_height)
-        matrix_side = cell * 3
+        matrix_side = cell * across
         choices_wide = cell * CHOICE_COLUMNS
         used = matrix_side + gap + choices_wide
         origin = left + (width - used) / 2
@@ -449,7 +457,8 @@ class MatrixReasoning:
         """Make the textures at the size the window can show them."""
         self._delete_cards()
         _left, _bottom, width, _height = self._matrix_rect()
-        units = CELL_UNITS * 3 + GAP_UNITS * 4
+        across = self._across()
+        units = CELL_UNITS * across + GAP_UNITS * (across + 1)
         self.matrix_card = Card(units, units, int(width))
         choice = self._choice_rects()[0]
         cell_units = CELL_UNITS + GAP_UNITS * 2
@@ -536,10 +545,14 @@ class MatrixReasoning:
         self.puzzle = generate(level=self.level + 1,
                                seed=self.rng.randrange(1 << 30),
                                palettes=self.palettes)
-        if len(self.choice_cards) != len(self.puzzle.choices):
-            # An adaptive run has crossed between the four-answer
-            # grades and the eight-answer ones, and the cards' size
-            # depends on how many rows they share. Everything is made
+        expected = (CELL_UNITS * self.puzzle.across
+                    + GAP_UNITS * (self.puzzle.across + 1))
+        if (len(self.choice_cards) != len(self.puzzle.choices)
+                or (self.matrix_card is not None
+                    and self.matrix_card.units_wide != expected)):
+            # An adaptive run has crossed between grades that differ
+            # in how many answers they offer or how big the grid is,
+            # and the cards' sizes depend on both. Everything is made
             # afresh, batch included: deleting a texture quietly
             # changes its sprite group's hash, and a batch holding a
             # group whose hash has shifted under it cannot draw.

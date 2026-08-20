@@ -2,9 +2,9 @@
 """How an attribute changes across a row.
 
 Raven's matrices are read along the rows. Every rule here takes the
-three panels of a row and says what one attribute does across them,
-and the same rule governs all three rows — which is what makes the
-third row answerable from the first two.
+panels of a row and says what one attribute does across them, and the
+same rule governs all the rows — which is what makes the last row
+answerable from the ones above it.
 
 That is the second big change from the previous engine. It walked
 rules along routes: down columns, along diagonals, spiralling out from
@@ -15,20 +15,39 @@ convention for a reason: the eye already scans that way, so the work
 left to the player is finding the rule rather than finding where to
 look for it.
 
-The four rules are the ones the literature settles on:
+**The grid is square but not fixed.** A rule carries :attr:`~Rule.across`
+— how many panels a row holds — and generalises by its own logic: a
+two-by-two matrix can only show a progression or a constant, which is
+exactly what the easiest items of the real test are; a four-by-four
+distributes four values as a four-by-four Latin square, sums three
+panels into a fourth, and folds its logic across three. Each rule's
+``fits`` says honestly what it needs, so a rule that cannot show
+itself on a given grid is simply never dealt there — the second-order
+rule, whose last row would span ``(across - 1)²`` rungs, rules itself
+out of anything bigger than three-by-three because no ladder here is
+ten rungs long.
+
+The rules, easiest first:
 
 ``Constant``
-    The value holds across the row.
+    The value holds across the whole matrix.
 ``Progression``
     The value steps along its ladder by the same amount each time.
 ``DistributeThree``
-    Three values, and each row holds all three in some order. Laid out
-    as a Latin square, so each column holds all three as well. This is
-    the rule people picture when they picture a Raven's item.
+    As many values as the row is long, each row holding all of them in
+    some order. Laid out as a Latin square, so each column holds them
+    all as well. This is the rule people picture when they picture a
+    Raven's item. (The name keeps its *three* — that is the classic
+    form and the name the difficulty table filters by — but the rule
+    distributes however many the grid asks.)
 ``Arithmetic``
-    The third is the first plus or minus the second. Only ever applied
-    to how many figures there are, where it is something a person can
-    actually do in their head.
+    The last is the first plus, or minus, all the panels between.
+    Only ever applied to how many figures there are, where it is
+    something a person can actually do in their head.
+``SecondOrder``
+    The rule itself changes between rows: each row steps further.
+``Logic``
+    The last panel's filled places follow from all the others'.
 
 SPDX-License-Identifier: GPL-2.0-or-later
 """
@@ -37,9 +56,9 @@ from __future__ import annotations
 import random
 from typing import List, Optional, Sequence
 
-#: How many panels a row holds. Not a setting — every rule here is
-#: written for three, and Latin squares of three are what the
-#: distribute rule is.
+#: How many panels a row holds unless a rule is told otherwise. Three
+#: is the classic grid, and the default keeps every caller that never
+#: thinks about grid size on it.
 ACROSS = 3
 
 
@@ -48,15 +67,19 @@ class Rule:
 
     name = 'rule'
 
+    #: How many panels a row holds. Set by :func:`choose_rule` and
+    #: :func:`apply_rule`; the default keeps hand-made rules classic.
+    across = ACROSS
+
     def rows(self, ladder: Sequence, rng: random.Random) -> List[List]:
-        """Three rows of three values, drawn from ``ladder``."""
+        """``across`` rows of ``across`` values, drawn from ``ladder``."""
         raise NotImplementedError
 
     def describe(self, noun: str) -> str:
         raise NotImplementedError
 
     @staticmethod
-    def fits(ladder: Sequence) -> bool:
+    def fits(ladder: Sequence, across: int = ACROSS) -> bool:
         return len(ladder) >= 1
 
 
@@ -75,7 +98,7 @@ class Constant(Rule):
 
     def rows(self, ladder, rng):
         value = rng.choice(list(ladder))
-        return [[value] * ACROSS for _row in range(ACROSS)]
+        return [[value] * self.across for _row in range(self.across)]
 
     def describe(self, noun):
         return '%s is the same throughout' % noun
@@ -90,7 +113,7 @@ class Progression(Rule):
         self.step = step
 
     def rows(self, ladder, rng):
-        span = abs(self.step) * (ACROSS - 1)
+        span = abs(self.step) * (self.across - 1)
         starts = range(len(ladder) - span) if self.step > 0 \
             else range(span, len(ladder))
         picks = list(starts)
@@ -98,10 +121,10 @@ class Progression(Rule):
             raise ValueError('ladder too short for this progression')
         rng.shuffle(picks)
         rows = []
-        for index in range(ACROSS):
+        for index in range(self.across):
             start = picks[index % len(picks)]
             rows.append([ladder[start + self.step * step]
-                         for step in range(ACROSS)])
+                         for step in range(self.across)])
         return rows
 
     def describe(self, noun):
@@ -110,36 +133,40 @@ class Progression(Rule):
         return '%s %s' % (noun, way)
 
     @staticmethod
-    def fits(ladder):
-        return len(ladder) >= ACROSS
+    def fits(ladder, across=ACROSS):
+        return len(ladder) >= across
 
 
 class DistributeThree(Rule):
-    """Three values, each row holding all three in a different order.
+    """A row's worth of values, each row holding all of them.
 
-    Rotated rather than shuffled, so each column holds all three too.
-    A player who has found the rule can read the missing value off
-    either the row or the column, and both agree — which is what makes
-    a matrix feel solvable rather than merely consistent.
+    Rotated rather than shuffled, so each column holds all of them
+    too. A player who has found the rule can read the missing value
+    off either the row or the column, and both agree — which is what
+    makes a matrix feel solvable rather than merely consistent.
     """
 
     name = 'distribute three'
 
+    WORDS = {2: 'two', 3: 'three', 4: 'four', 5: 'five'}
+
     def rows(self, ladder, rng):
-        chosen = rng.sample(list(ladder), ACROSS)
-        return [[chosen[(column + row) % ACROSS] for column in range(ACROSS)]
-                for row in range(ACROSS)]
+        chosen = rng.sample(list(ladder), self.across)
+        return [[chosen[(column + row) % self.across]
+                 for column in range(self.across)]
+                for row in range(self.across)]
 
     def describe(self, noun):
-        return '%s: the same three each row, reordered' % noun
+        many = self.WORDS.get(self.across, str(self.across))
+        return '%s: the same %s each row, reordered' % (noun, many)
 
     @staticmethod
-    def fits(ladder):
-        return len(ladder) >= ACROSS
+    def fits(ladder, across=ACROSS):
+        return len(ladder) >= across
 
 
 class Arithmetic(Rule):
-    """The third value is the first plus, or minus, the second."""
+    """The last value is the first plus, or minus, all the between."""
 
     name = 'arithmetic'
 
@@ -150,24 +177,25 @@ class Arithmetic(Rule):
         values = list(ladder)
         lowest, highest = values[0], values[-1]
         rows = []
-        for _row in range(ACROSS):
+        for _row in range(self.across):
             for _try in range(200):
-                first = rng.choice(values)
-                second = rng.choice(values)
-                third = first + self.sign * second
-                if lowest <= third <= highest and second != 0:
-                    rows.append([first, second, third])
+                drawn = [rng.choice(values)
+                         for _panel in range(self.across - 1)]
+                last = drawn[0] + self.sign * sum(drawn[1:])
+                if lowest <= last <= highest and 0 not in drawn[1:]:
+                    rows.append(drawn + [last])
                     break
             else:
                 raise ValueError('no arithmetic row fits this ladder')
         return rows
 
     def describe(self, noun):
-        return ('%s: third is first %s second'
-                % (noun, 'plus' if self.sign > 0 else 'minus'))
+        which = 'the second' if self.across == 3 else 'those between'
+        return ('%s: the last is the first %s %s'
+                % (noun, 'plus' if self.sign > 0 else 'minus', which))
 
     @staticmethod
-    def fits(ladder):
+    def fits(ladder, across=ACROSS):
         return len(ladder) >= 3 and all(isinstance(value, int)
                                         for value in ladder)
 
@@ -195,16 +223,16 @@ class SecondOrder(Rule):
 
     def rows(self, ladder, rng):
         rows = []
-        for row in range(ACROSS):
+        for row in range(self.across):
             step = self.delta * row
-            span = abs(step) * (ACROSS - 1)
+            span = abs(step) * (self.across - 1)
             starts = list(range(len(ladder) - span)) if step >= 0 \
                 else list(range(span, len(ladder)))
             if not starts:
                 raise ValueError('ladder too short for a second order')
             start = rng.choice(starts)
             rows.append([ladder[start + step * column]
-                         for column in range(ACROSS)])
+                         for column in range(self.across)])
         return rows
 
     def describe(self, noun):
@@ -213,31 +241,44 @@ class SecondOrder(Rule):
                 'then by two' % (noun, way))
 
     @staticmethod
-    def fits(ladder):
-        # Row three spans four rungs, and the rows must be free to
-        # start in more than one place or the loose starts above are
-        # a promise the ladder cannot keep.
-        return len(ladder) >= 5
+    def fits(ladder, across=ACROSS):
+        # The last row spans (across - 1)² rungs, so it needs one more
+        # rung than that to exist at all. Two rows cannot show a step
+        # that accelerates; ten rungs, which is what a four-by-four
+        # would need, is longer than any ladder here — so this rule
+        # lives on the three-by-three grid by arithmetic, not by
+        # decree.
+        return across >= 3 and len(ladder) > (across - 1) ** 2
 
 
 class Logic(Rule):
-    """The third panel's filled places follow from the first two's.
+    """The last panel's filled places follow from all the others'.
 
     The one rule here that is not about a ladder. It governs *which*
-    of a lattice's places hold a figure: panel three holds the places
-    in either of the first two, in both, or in exactly one, and the
-    same operation runs down all three rows. These are the items at
-    the hard end of the real test, and they are hard for a reason —
-    nothing steps or repeats, so the rule cannot be spotted by
-    watching one figure. It has to be inferred from what two whole
-    panels have to do with a third.
+    of a lattice's places hold a figure: the last panel of a row holds
+    the places in any of the others, in all of them, or in exactly an
+    odd number (which on three panels reads as "exactly one of the
+    first two"), and the same operation runs down every row. These are
+    the items at the hard end of the real test, and they are hard for
+    a reason — nothing steps or repeats, so the rule cannot be spotted
+    by watching one figure. It has to be inferred from what whole
+    panels have to do with one another.
 
     The ladder handed to :meth:`rows` is the universe of places, and
-    the values produced are frozensets of them.
+    the values produced are frozensets of them. All three operations
+    are associative, which is what lets a row longer than three fold
+    them across every panel before the last.
     """
 
-    #: op → how the third panel is made from the first two.
+    #: op → how the last panel is made from the others. The classic
+    #: three-by-three grid gets the plainer two-operand wording.
     SAYINGS = {
+        'or': 'the last panel gathers everything in the others',
+        'and': 'the last panel keeps only what all the others share',
+        'xor': 'the last panel keeps what is in an odd number of the '
+               'others',
+    }
+    CLASSIC = {
         'or': 'the third panel gathers everything in the first two',
         'and': 'the third panel keeps only what the first two share',
         'xor': 'the third panel keeps what is in exactly one of the '
@@ -249,76 +290,85 @@ class Logic(Rule):
     def __init__(self, op: str) -> None:
         self.op = op
 
-    def _combine(self, one: frozenset, two: frozenset) -> frozenset:
-        if self.op == 'or':
-            return one | two
-        if self.op == 'and':
-            return one & two
-        return one ^ two
+    def _fold(self, panels: List[frozenset]) -> frozenset:
+        folded = panels[0]
+        for panel in panels[1:]:
+            if self.op == 'or':
+                folded = folded | panel
+            elif self.op == 'and':
+                folded = folded & panel
+            else:
+                folded = folded ^ panel
+        return folded
 
     def rows(self, ladder, rng):
         universe = list(ladder)
         rows = []
-        for _row in range(ACROSS):
+        for _row in range(self.across):
             for _try in range(400):
-                first = frozenset(rng.sample(
+                drawn = [frozenset(rng.sample(
                     universe, rng.randint(1, len(universe) - 1)))
-                second = frozenset(rng.sample(
-                    universe, rng.randint(1, len(universe) - 1)))
-                third = self._combine(first, second)
+                    for _panel in range(self.across - 1)]
+                last = self._fold(drawn)
                 # The row has to *show* the operation: identical
                 # operands show nothing, and a result equal to one of
                 # them is explained by "copy that one" just as well.
-                if (third and first != second
-                        and third not in (first, second)):
-                    rows.append([first, second, third])
+                if (last and len(set(drawn)) == len(drawn)
+                        and last not in drawn):
+                    rows.append(drawn + [last])
                     break
             else:
                 raise ValueError('no logic row fits this lattice')
         return rows
 
     def describe(self, noun):
-        return '%s: %s' % (noun, self.SAYINGS[self.op])
+        sayings = self.CLASSIC if self.across == 3 else self.SAYINGS
+        return '%s: %s' % (noun, sayings[self.op])
 
     @staticmethod
-    def fits(ladder):
+    def fits(ladder, across=ACROSS):
         return len(ladder) >= 4
 
 
-#: The rules a rule-carrying attribute may take, and how often each is
-#: drawn. Distribute-three is weighted up because it is the rule that
-#: makes a matrix feel like a Raven's item rather than a sequence.
 def rule_choices(ladder: Sequence, allow_arithmetic: bool = False,
-                 allowed: Optional[Sequence[str]] = None) -> List[Rule]:
+                 allowed: Optional[Sequence[str]] = None,
+                 across: int = ACROSS) -> List[Rule]:
     """Every rule that can actually be applied to this ladder.
 
     ``allowed`` narrows the pool by rule name; ``None`` allows all.
     The easy end of the difficulty ladder is made partly of this — a
     first puzzle offers a progression and nothing else, so the player
-    meets one idea at a time.
+    meets one idea at a time. Every rule returned already knows the
+    grid it was chosen for.
     """
     choices: List[Rule] = []
-    if DistributeThree.fits(ladder):
-        choices.extend([DistributeThree()] * 3)
+    if DistributeThree.fits(ladder, across):
+        choices.extend([DistributeThree() for _copy in range(3)])
     for step in (1, -1, 2, -2):
-        candidate = Progression(step)
-        if Progression.fits(ladder) and abs(step) * (ACROSS - 1) < len(ladder):
-            choices.append(candidate)
-    if allow_arithmetic and Arithmetic.fits(ladder):
+        if abs(step) * (across - 1) < len(ladder):
+            choices.append(Progression(step))
+    if allow_arithmetic and Arithmetic.fits(ladder, across):
         choices.extend([Arithmetic(1), Arithmetic(-1)])
-    if SecondOrder.fits(ladder):
+    if SecondOrder.fits(ladder, across):
         choices.extend([SecondOrder(1), SecondOrder(-1)])
     if allowed is not None:
         choices = [rule for rule in choices if rule.name in allowed]
+    for rule in choices:
+        rule.across = across
     return choices
 
 
 def choose_rule(ladder: Sequence, rng: random.Random,
                 allow_arithmetic: bool = False,
-                allowed: Optional[Sequence[str]] = None) -> Rule:
+                allowed: Optional[Sequence[str]] = None,
+                across: int = ACROSS) -> Rule:
     """One rule that suits this ladder, or ``Constant`` if none does."""
-    choices = rule_choices(ladder, allow_arithmetic, allowed)
-    return rng.choice(choices) if choices else Constant()
+    choices = rule_choices(ladder, allow_arithmetic, allowed, across)
+    if choices:
+        return rng.choice(choices)
+    fallback = Constant()
+    fallback.across = across
+    return fallback
 
 
 def apply_rule(rule: Rule, ladder: Sequence,
@@ -332,4 +382,6 @@ def apply_rule(rule: Rule, ladder: Sequence,
     try:
         return rule.rows(ladder, rng)
     except ValueError:
-        return Constant().rows(ladder, rng)
+        fallback = Constant()
+        fallback.across = rule.across
+        return fallback.rows(ladder, rng)

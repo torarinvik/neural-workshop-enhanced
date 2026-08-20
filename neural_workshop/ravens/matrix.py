@@ -40,7 +40,7 @@ from .layouts import (CENTRE, GRID_FOUR, GRID_NINE, INSIDE_OUTSIDE,
                       PAIRED_LAYOUTS, SIMPLE_LAYOUTS, TRIPTYCH,
                       Component, Layout)
 from .palette import GREYS, Palette
-from .rules import (ACROSS, Constant, Logic, Rule, apply_rule, choose_rule)
+from .rules import Constant, Logic, Rule, apply_rule, choose_rule
 
 #: Tries before a puzzle is given up on and built again from scratch.
 PATIENCE = 400
@@ -68,6 +68,12 @@ class Grade:
     """
 
     name: str
+    #: How many panels the grid is on a side. Two shows a rule in the
+    #: least room it can be shown in, which is what the easiest items
+    #: of the real test do; four gives the rules room to grow — four
+    #: values distributed as a Latin square, three panels summed or
+    #: folded into a fourth.
+    across: int
     #: How many answers are offered: four for the easy grades, as the
     #: children's form of the real test does, eight otherwise.
     choices: int
@@ -100,29 +106,38 @@ FIRST_ORDER: Tuple[str, ...] = ('progression', 'distribute three',
 #: finer sizes, until grade 12 runs nine live rules at once on three
 #: components — more than a person tracks, on purpose.
 GRADES: Tuple[Grade, ...] = (
-    Grade('matching', 4, 0, (CENTRE, GRID_FOUR), (), COARSE_SIZES,
+    Grade('matching', 2, 4, 0, (CENTRE, GRID_FOUR), (), COARSE_SIZES,
           0.0, False),
-    Grade('one step', 4, 1, (CENTRE,), ('progression',), COARSE_SIZES,
+    Grade('one step', 2, 4, 1, (CENTRE,), ('progression',), COARSE_SIZES,
           0.0, False),
-    Grade('one rule', 4, 1, SIMPLE_LAYOUTS,
+    Grade('one rule', 3, 4, 1, SIMPLE_LAYOUTS,
           ('progression', 'distribute three'), COARSE_SIZES, 0.0, False),
-    Grade('two rules', 8, 2, SIMPLE_LAYOUTS, FIRST_ORDER, SIZES,
+    Grade('two rules', 3, 8, 2, SIMPLE_LAYOUTS, FIRST_ORDER, SIZES,
           0.0, False),
-    Grade('three rules', 8, 3, SIMPLE_LAYOUTS, FIRST_ORDER, SIZES,
+    Grade('three rules', 3, 8, 3, SIMPLE_LAYOUTS, FIRST_ORDER, SIZES,
           0.2, False),
-    Grade('two parts', 8, 3, PAIRED_LAYOUTS, FIRST_ORDER, SIZES,
+    Grade('two parts', 3, 8, 3, PAIRED_LAYOUTS, FIRST_ORDER, SIZES,
           0.2, False),
-    Grade('four rules', 8, 4, PAIRED_LAYOUTS, FIRST_ORDER, SIZES,
+    Grade('four rules', 3, 8, 4, PAIRED_LAYOUTS, FIRST_ORDER, SIZES,
           0.25, False),
-    Grade('five rules', 8, 5, PAIRED_LAYOUTS + (GRID_NINE,), FIRST_ORDER,
+    Grade('five rules', 3, 8, 5, PAIRED_LAYOUTS + (GRID_NINE,), FIRST_ORDER,
           SIZES, 0.25, True),
-    Grade('six rules', 8, 6, (INSIDE_OUTSIDE, TRIPTYCH, GRID_NINE), None,
+    Grade('six rules', 3, 8, 6, (INSIDE_OUTSIDE, TRIPTYCH, GRID_NINE), None,
           FINE_SIZES, 0.3, True),
-    Grade('seven rules', 8, 7, (TRIPTYCH, INSIDE_OUTSIDE, GRID_NINE), None,
-          FINE_SIZES, 0.4, True),
-    Grade('eight rules', 8, 8, (TRIPTYCH,), None, FINE_SIZES, 0.5, True),
-    Grade('everything moves', 8, 9, (TRIPTYCH,), None, FINE_SIZES,
-          0.6, True),
+    Grade('seven rules', 3, 8, 7, (TRIPTYCH, INSIDE_OUTSIDE, GRID_NINE),
+          None, FINE_SIZES, 0.4, True),
+    # The four-by-four grades keep to the layouts whose ladders can
+    # actually carry four-wide rules. A lattice's three-rung sizes and
+    # counts cap it at three live rules there, which made a level-12
+    # lattice puzzle lighter than a level-8 one — and with no lattice
+    # in the pool the logic rule has nowhere to live, so it is not
+    # claimed either. Logic is the grades eight to ten thing; four
+    # values distributed, summed and accelerated is the four-by-four
+    # thing.
+    Grade('four by four', 4, 8, 8, (TRIPTYCH, INSIDE_OUTSIDE), None,
+          FINE_SIZES, 0.5, False),
+    Grade('everything moves', 4, 8, 9, (TRIPTYCH,), None, FINE_SIZES,
+          0.6, False),
 )
 
 
@@ -165,6 +180,8 @@ class Puzzle:
 
     layout: Layout
     palette: Palette
+    #: How many panels the grid is on a side.
+    across: int
     #: ``panels[row][column]``. The last one is the answer and is not
     #: shown to the player.
     panels: List[List[Panel]]
@@ -174,7 +191,7 @@ class Puzzle:
 
     @property
     def question(self) -> Panel:
-        return self.panels[ACROSS - 1][ACROSS - 1]
+        return self.panels[self.across - 1][self.across - 1]
 
 
 class _Stalled(Exception):
@@ -205,13 +222,13 @@ def _spots(component: Component, held) -> Tuple:
     return component.places(held)
 
 
-def _build_panels(layout: Layout,
-                  dealt: List[List[Attribute]]) -> List[List[Panel]]:
-    """Run every component's attributes out into nine panels."""
+def _build_panels(layout: Layout, dealt: List[List[Attribute]],
+                  across: int) -> List[List[Panel]]:
+    """Run every component's attributes out into the grid's panels."""
     panels: List[List[Panel]] = []
-    for row in range(ACROSS):
+    for row in range(across):
         line: List[Panel] = []
-        for column in range(ACROSS):
+        for column in range(across):
             figures: List[Figure] = []
             for part, (component, attributes) in enumerate(
                     zip(layout.components, dealt)):
@@ -252,6 +269,7 @@ def _deal_rules(layout: Layout, palette: Palette, grade: Grade,
     for index, (component, attribute) in enumerate(slots):
         if index >= grade.active:
             attribute.rule = Constant()
+            attribute.rule.across = grade.across
         elif (attribute.name == 'number' and grade.logic
                 and len(component.slots) >= 4 and rng.random() < 0.5):
             # The count becomes a set of places, and the rule becomes
@@ -261,11 +279,12 @@ def _deal_rules(layout: Layout, palette: Palette, grade: Grade,
             attribute.noun = 'where the figures sit'
             attribute.ladder = tuple(range(len(component.slots)))
             attribute.rule = Logic(rng.choice(('or', 'and', 'xor')))
+            attribute.rule.across = grade.across
         else:
             attribute.rule = choose_rule(
                 attribute.ladder, rng,
                 allow_arithmetic=(attribute.name == 'number'),
-                allowed=grade.rules)
+                allowed=grade.rules, across=grade.across)
 
     for attributes in dealt:
         by_name = dict((one.name, one) for one in attributes)
@@ -283,9 +302,13 @@ def _deal_rules(layout: Layout, palette: Palette, grade: Grade,
                 and rng.random() < grade.turn_chance:
             ladder = turn_ladder(shape.at(0, 0))
             turning = Attribute('angle', 'the way it faces', ladder)
-            turning.rule = choose_rule(ladder, rng)
-            turning.values = apply_rule(turning.rule, ladder, rng)
-            attributes.append(turning)
+            turning.rule = choose_rule(ladder, rng, across=grade.across)
+            if not isinstance(turning.rule, Constant):
+                # On a grid no turn rule fits — four-by-four asks more
+                # of the three-rung turn ladder than it has — a held
+                # tilt would be noise, not a question. Leave it out.
+                turning.values = apply_rule(turning.rule, ladder, rng)
+                attributes.append(turning)
         # No angle attribute at all otherwise, rather than one held at
         # zero. A held attribute is still something a wrong answer may
         # change, and a tilted figure among eight upright ones is a
@@ -318,7 +341,8 @@ def _targets(layout: Layout,
 
 
 def _panel_with(layout: Layout, dealt: List[List[Attribute]],
-                swaps: Dict[Tuple[int, str], object]) -> Panel:
+                swaps: Dict[Tuple[int, str], object],
+                across: int) -> Panel:
     """The right answer with the values in ``swaps`` swapped in.
 
     Rebuilt through the same machinery rather than edited in place, so
@@ -333,7 +357,7 @@ def _panel_with(layout: Layout, dealt: List[List[Attribute]],
         def value(name, default=None):
             if (index, name) in swaps:
                 return swaps[(index, name)]
-            return (by_name[name].at(ACROSS - 1, ACROSS - 1)
+            return (by_name[name].at(across - 1, across - 1)
                     if name in by_name else default)
 
         held = value('number', component.counts[0])
@@ -386,7 +410,7 @@ def _build_choices(puzzle_panels: List[List[Panel]], layout: Layout,
                    dealt: List[List[Attribute]], grade: Grade,
                    rng: random.Random) -> Tuple[List[Panel], int]:
     """The answers offered, and where the right one was put."""
-    answer = puzzle_panels[ACROSS - 1][ACROSS - 1]
+    answer = puzzle_panels[grade.across - 1][grade.across - 1]
     if not answer:
         raise _Stalled()
 
@@ -410,8 +434,8 @@ def _build_choices(puzzle_panels: List[List[Panel]], layout: Layout,
                 that == which and name in ('shape', 'angle')
                 for that, name in names):
             continue
-        options = attribute.alternatives(attribute.at(ACROSS - 1,
-                                                      ACROSS - 1))
+        options = attribute.alternatives(
+            attribute.at(grade.across - 1, grade.across - 1))
         if not options:
             continue
         picked.append(((which, attribute.name), rng.choice(options)))
@@ -422,7 +446,7 @@ def _build_choices(puzzle_panels: List[List[Panel]], layout: Layout,
     wrong: List[Panel] = []
     for altered in rows:
         swaps = dict(picked[index] for index in altered)
-        wrong.append(_panel_with(layout, dealt, swaps))
+        wrong.append(_panel_with(layout, dealt, swaps, grade.across))
 
     # The design guarantees distinct combinations, not distinct
     # pictures: two different swaps can still collide — a size swap on
@@ -451,13 +475,13 @@ def generate(level: int = 1, seed: Optional[int] = None,
     for _ in range(attempts):
         layout = rng.choice(list(grade.layouts))
         dealt = _deal_rules(layout, palette, grade, rng)
-        panels = _build_panels(layout, dealt)
+        panels = _build_panels(layout, dealt, grade.across)
         try:
             choices, where = _build_choices(panels, layout, dealt, grade,
                                             rng)
         except _Stalled:
             continue
-        return Puzzle(layout=layout, palette=palette, panels=panels,
-                      choices=choices, answer=where,
+        return Puzzle(layout=layout, palette=palette, across=grade.across,
+                      panels=panels, choices=choices, answer=where,
                       explanation=_explain(layout, dealt))
     raise RuntimeError('could not build a puzzle at level %d' % level)
