@@ -276,7 +276,7 @@ class MaximaTests(unittest.TestCase):
             task.total_trials = 1
             task.start_run()
             self.assertEqual(task.rung, 16)
-            self.assertEqual(len(task.level.boxes), 15)
+            self.assertEqual(len(task.level.boxes), 13)
             certified = (task.level.minimum
                          if task.level.minimum is not None
                          else task.level.at_least)

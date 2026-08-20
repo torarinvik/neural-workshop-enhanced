@@ -81,7 +81,10 @@ class Grade(NamedTuple):
 #: matters most — open space is what makes Sokoban easy, and the
 #: share drops as the ladder climbs. The last rungs outgrow exact
 #: solving on purpose; their floors stand on the assignment bound,
-#: which scales to any board.
+#: which scales to any board. Superhuman carries thirteen boxes, not
+#: the fifteen its room could hold, because fifteen choke their own
+#: warren: measured, two fewer boxes let the walks drag every one
+#: deeper and the certified floors nearly double.
 GRADES: Tuple[Grade, ...] = (
     Grade('first steps', 5, 5, 1, 0.9, 6, 2, 0.0),
     Grade('one box', 6, 6, 1, 0.65, 20, 4, 0.0),
@@ -95,10 +98,10 @@ GRADES: Tuple[Grade, ...] = (
     Grade('six boxes', 10, 10, 6, 0.52, 130, 23, 0.4),
     Grade('seven boxes', 11, 11, 7, 0.5, 160, 26, 0.4),
     Grade('packed tight', 11, 11, 8, 0.48, 190, 28, 0.45),
-    Grade('the labyrinth', 13, 13, 9, 0.46, 240, 34, 0.45),
-    Grade('nightmare', 14, 14, 11, 0.45, 300, 40, 0.5),
-    Grade('inhuman', 15, 15, 13, 0.43, 380, 44, 0.5),
-    Grade('superhuman', 16, 16, 15, 0.46, 500, 35, 0.55),
+    Grade('the labyrinth', 13, 13, 9, 0.46, 240, 45, 0.45),
+    Grade('nightmare', 14, 14, 11, 0.45, 300, 52, 0.5),
+    Grade('inhuman', 15, 15, 13, 0.43, 380, 52, 0.5),
+    Grade('superhuman', 16, 16, 13, 0.46, 500, 60, 0.55),
 )
 
 DIRECTIONS = ((0, -1), (0, 1), (-1, 0), (1, 0))
@@ -469,38 +472,230 @@ def _push_distances(width: int, height: int, walls: FrozenSet[int],
     return far
 
 
+def _goal_tables(width: int, height: int, walls: FrozenSet[int],
+                 goals: FrozenSet[int]) -> List[List[int]]:
+    """One relaxed-distance map per goal, reusable across a walk.
+
+    The walls never change while boxes are pulled around a room, so
+    the generator computes these once and prices thousands of box
+    arrangements against them.
+    """
+    return [_push_distances(width, height, walls, goal)
+            for goal in sorted(goals)]
+
+
+BIG = 10 ** 6
+
+
+def _assignment(tables: Sequence[Sequence[int]],
+                boxes: Sequence[int]) -> int:
+    """The cheapest perfect assignment of *boxes* to the goals.
+
+    Dispatches to the C kernel when built; the pure DP below defines
+    the contract. An unreachable pairing prices at :data:`BIG`, so
+    an impossible assignment comes back enormous rather than lying
+    small.
+    """
+    n = len(tables)
+    cost = [min(BIG, tables[g][box]) for box in boxes
+            for g in range(n)]
+    if _native is not None and hasattr(_native, 'assignment_min_cost')             and n <= 20:
+        import struct
+        total = _native.assignment_min_cost(
+            n, struct.pack('<%di' % (n * n), *cost))
+        return 0 if total < 0 else int(total)
+    best = [BIG * n] * (1 << n)
+    best[0] = 0
+    for mask in range(1 << n):
+        if best[mask] >= BIG * n:
+            continue
+        box = bin(mask).count('1')
+        if box >= n:
+            continue
+        for g in range(n):
+            if not mask >> g & 1:
+                after = mask | 1 << g
+                score = best[mask] + cost[box * n + g]
+                if score < best[after]:
+                    best[after] = score
+    return min(best[(1 << n) - 1], BIG * n)
+
+
 def matching_bound(level: Level) -> int:
     """A proven lower bound that scales to any board: assignment.
 
     Each box must end on its own goal, and a box's pushes cannot
     beat its relaxed push-distance to whichever goal it gets. The
     cheapest perfect assignment of boxes to goals therefore bounds
-    the whole solution from below — exactly, via the classic bitmask
-    DP, which at sixteen boxes is about a million adds. This is the
-    certificate the superhuman rungs stand on where breadth-first
-    search cannot reach any more.
+    the whole solution from below. This is the certificate the
+    superhuman rungs stand on where breadth-first search cannot
+    reach any more.
     """
-    goals = sorted(level.goals)
-    boxes = sorted(level.boxes)
-    table = [_push_distances(level.width, level.height, level.walls,
-                             goal) for goal in goals]
-    cost = [[table[g][box] for g in range(len(goals))] for box in boxes]
-    best = [10 ** 9] * (1 << len(goals))
-    best[0] = 0
-    for mask in range(1 << len(goals)):
-        if best[mask] >= 10 ** 9:
-            continue
-        box = bin(mask).count('1')
-        if box >= len(boxes):
-            continue
-        for g in range(len(goals)):
-            if not mask >> g & 1:
-                after = mask | 1 << g
-                score = best[mask] + cost[box][g]
-                if score < best[after]:
-                    best[after] = score
-    total = best[(1 << len(goals)) - 1]
-    return 0 if total >= 10 ** 9 else total
+    tables = _goal_tables(level.width, level.height, level.walls,
+                          level.goals)
+    total = _assignment(tables, sorted(level.boxes))
+    return 0 if total >= BIG else total
+
+
+def _climbing_walk(grade: Grade, walls: FrozenSet[int],
+                   goals: FrozenSet[int], rng: random.Random
+                   ) -> Optional[Tuple[FrozenSet[int], int, int]]:
+    """A backwards walk that climbs the certificate instead of
+    hoping for it.
+
+    The plain walk is a lottery: it wanders, stalls, and whatever
+    the assignment bound says at the end is the ticket you got. This
+    one walks in short legs, prices the position after each leg
+    against the precomputed goal tables, and remembers the best
+    start it has stood on; when a stretch of legs fails to improve
+    it, the walk teleports back to that best start and spends the
+    rest of its budget exploring differently from there. Same pull
+    mechanics, same guarantees — only the selection changed, from
+    "keep the last state" to "keep the best state ever seen".
+    """
+    width = grade.width
+    floor_ok = _floor_flags(width, grade.height, walls)
+    steps = _steps(width)
+    far = _goal_distance(width, grade.height, walls, goals)
+    tables = _goal_tables(width, grade.height, walls, goals)
+    boxes = set(goals)
+    player = next((cell for cell in range(width * grade.height)
+                   if floor_ok[cell] and cell not in boxes), None)
+    if player is None:
+        return None
+    best: Optional[Tuple[FrozenSet[int], int, int]] = None
+    best_score = -1
+    pulls = 0
+    dry_legs = 0
+    last = None
+    leg = max(6, grade.boxes)
+    for _leg in range(max(1, grade.pulls // leg)):
+        for _pull in range(leg):
+            region = _reachable(width, floor_ok, frozenset(boxes), player)
+            options = []
+            for box in boxes:
+                for step in steps:
+                    near, away = box + step, box + step + step
+                    if (near in region and floor_ok[near]
+                            and floor_ok[away] and away not in boxes
+                            and near not in boxes
+                            and (near, box) != last):
+                        options.append((box, near, away))
+            if not options:
+                break
+            stuck = [option for option in options if option[0] in goals]
+            pool = stuck if stuck else options
+            outward = [option for option in pool
+                       if far[option[1]] > far[option[0]]]
+            if outward and rng.random() < 0.8:
+                pool = outward
+            box, near, away = rng.choice(pool)
+            boxes.discard(box)
+            boxes.add(near)
+            player = away
+            last = (box, near)
+            pulls += 1
+        off_goal = sum(1 for box in boxes if box not in goals)
+        if pulls and off_goal >= max(1, len(goals) // 2):
+            score = _assignment(tables, sorted(boxes))
+            if score < BIG and score > best_score:
+                best_score = score
+                best = (frozenset(boxes), player, pulls)
+                dry_legs = 0
+            else:
+                dry_legs += 1
+        if best is not None and dry_legs >= 4:
+            # Enough wandering: go back to the best start found and
+            # explore a different line out of it.
+            boxes = set(best[0])
+            player = best[1]
+            pulls = best[2]
+            last = None
+            dry_legs = 0
+    return best
+
+
+def _room_potential(width: int, height: int, walls: FrozenSet[int],
+                    goals: FrozenSet[int], boxes: int) -> int:
+    """The most the room could possibly certify, cheaply estimated.
+
+    A box's contribution to the assignment bound can never beat its
+    pull-distance from the goal clump, so the sum of the *boxes*
+    deepest pull-distances the room offers is a ceiling on any walk.
+    Most carved rooms are shallow — measured on the superhuman rung,
+    walks failed on three rooms out of four — and this one flood
+    fill lets the generator skip them without walking at all.
+    """
+    far = _goal_distance(width, height, walls, goals)
+    depths = sorted((d for d in far if d < BIG), reverse=True)
+    return sum(depths[:boxes])
+
+
+def _convoy_walk(grade: Grade, walls: FrozenSet[int],
+                 goals: FrozenSet[int], rng: random.Random
+                 ) -> Optional[Tuple[FrozenSet[int], int, int]]:
+    """Drag each box outward in turn, as far as it will go.
+
+    The climbing walk spreads random pulls across the flock; this
+    one is a convoy — box by box, each pulled along rising pull-
+    distance until it stalls, over several rounds so early boxes can
+    make way for late ones. In the tightest warrens it reaches
+    arrangements the random walk never finds, and the two are run
+    side by side with the better certificate kept.
+    """
+    width = grade.width
+    floor_ok = _floor_flags(width, grade.height, walls)
+    steps = _steps(width)
+    far = _goal_distance(width, grade.height, walls, goals)
+    tables = _goal_tables(width, grade.height, walls, goals)
+    boxes = set(goals)
+    player = next((cell for cell in range(width * grade.height)
+                   if floor_ok[cell] and cell not in boxes), None)
+    if player is None:
+        return None
+    pulls = 0
+    best: Optional[Tuple[FrozenSet[int], int, int]] = None
+    best_score = -1
+    for _round in range(6):
+        order = sorted(boxes)
+        rng.shuffle(order)
+        for target in order:
+            box = target
+            if box not in boxes:
+                continue
+            slides = 0
+            while pulls < grade.pulls and slides < 3:
+                region = _reachable(width, floor_ok, frozenset(boxes),
+                                    player)
+                options = []
+                for step in steps:
+                    near, away = box + step, box + step + step
+                    if (near in region and floor_ok[near]
+                            and floor_ok[away] and away not in boxes
+                            and near not in boxes):
+                        options.append((near, away))
+                rising = [o for o in options if far[o[0]] > far[box]]
+                level_ = [o for o in options if far[o[0]] == far[box]]
+                if rising:
+                    near, away = rng.choice(rising)
+                    slides = 0
+                elif level_ and rng.random() < 0.6:
+                    near, away = rng.choice(level_)
+                    slides += 1        # sidling around a corner, maybe
+                else:
+                    break
+                boxes.discard(box)
+                boxes.add(near)
+                player = away
+                box = near
+                pulls += 1
+        off = sum(1 for b in boxes if b not in goals)
+        if pulls and off >= max(1, len(goals) // 2):
+            score = _assignment(tables, sorted(boxes))
+            if score < BIG and score > best_score:
+                best_score = score
+                best = (frozenset(boxes), player, pulls)
+    return best
 
 
 def generate(level_number: int, seed: Optional[int] = None,
@@ -516,6 +711,8 @@ def generate(level_number: int, seed: Optional[int] = None,
     happen.
     """
     grade = GRADES[max(0, min(len(GRADES) - 1, level_number - 1))]
+    if grade.boxes >= 9:
+        attempts = attempts * 6           # room deals, mostly unwalked
     rng = random.Random(seed)
     fallback: Optional[Level] = None
     desperate: Optional[Level] = None     # solvable but short on traps
@@ -531,20 +728,29 @@ def generate(level_number: int, seed: Optional[int] = None,
                             grade.boxes, rng)
         if goals is None:
             continue
-        pulled = None
-        deepest = -1
-        for _retry in range(3 if grade.boxes >= 9 else 1):
-            # One room, several walks: at a dozen boxes the walk is
-            # the lottery, and the assignment bound is cheap enough
-            # to let three tickets in and keep the deepest.
-            attempt = _pull_walk(grade, walls, goals, rng)
-            if attempt is None:
-                continue
-            depth = matching_bound(Level(
-                grade.width, grade.height, walls, goals, attempt[0],
-                attempt[1], None, 0, attempt[2]))
-            if depth > deepest:
-                pulled, deepest = attempt, depth
+        if grade.boxes >= 9:
+            # Rooms are a thousand times cheaper than walks, so deal
+            # many and walk few: any room whose potential cannot
+            # cover the floor with margin is skipped before a single
+            # pull, and the walk budget is spent on deep rooms only.
+            potential = _room_potential(grade.width, grade.height,
+                                        walls, goals, grade.boxes)
+            if potential < grade.floor * 5 // 4 and _attempt < attempts - 40:
+                continue                  # a shallow room; skip unwalked
+            pulled = _convoy_walk(grade, walls, goals, rng)
+            deepest = _climbing_walk(grade, walls, goals, rng)
+            if pulled is None or (deepest is not None
+                                  and matching_bound(Level(
+                                      grade.width, grade.height, walls,
+                                      goals, deepest[0], deepest[1],
+                                      None, 0, deepest[2]))
+                                  > matching_bound(Level(
+                                      grade.width, grade.height, walls,
+                                      goals, pulled[0], pulled[1],
+                                      None, 0, pulled[2]))):
+                pulled = deepest
+        else:
+            pulled = _pull_walk(grade, walls, goals, rng)
         if pulled is None:
             continue
         boxes, player, bound = pulled

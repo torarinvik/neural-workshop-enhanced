@@ -1555,6 +1555,63 @@ static PyObject *py_sokoban_min_pushes(PyObject *self, PyObject *args)
     }
 }
 
+
+/* assignment_min_cost(n, costs) -> cheapest perfect assignment.
+ * costs is a bytes object of n*n little-endian int32 entries,
+ * row = box, column = goal. Classic bitmask DP, O(n * 2^n); n <= 20.
+ * The Sokoban generator consults this bound after every few pulls,
+ * which is only affordable because it runs here. */
+static PyObject *py_assignment_min_cost(PyObject *self, PyObject *args)
+{
+    int n;
+    Py_buffer costs_b;
+    if (!PyArg_ParseTuple(args, "iy*", &n, &costs_b))
+        return NULL;
+    {
+        const int32_t *costs = (const int32_t *)costs_b.buf;
+        int64_t *best;
+        uint32_t full, mask;
+        int64_t answer;
+        if (n < 1 || n > 20
+                || costs_b.len < (Py_ssize_t)n * n * (Py_ssize_t)sizeof(int32_t)) {
+            PyBuffer_Release(&costs_b);
+            PyErr_SetString(PyExc_ValueError, "bad size or short buffer");
+            return NULL;
+        }
+        full = ((uint32_t)1 << n) - 1;
+        best = (int64_t *)malloc(((size_t)full + 1) * sizeof(int64_t));
+        if (!best) {
+            PyBuffer_Release(&costs_b);
+            return PyErr_NoMemory();
+        }
+        for (mask = 1; mask <= full; mask++) best[mask] = INT64_MAX;
+        best[0] = 0;
+        for (mask = 0; mask < full; mask++) {
+            int box, g;
+            if (best[mask] == INT64_MAX) continue;
+            box = 0;
+            {
+                uint32_t m = mask;
+                while (m) { box += (int)(m & 1u); m >>= 1; }
+            }
+            if (box >= n) continue;
+            for (g = 0; g < n; g++) {
+                if (!(mask >> g & 1u)) {
+                    uint32_t after = mask | ((uint32_t)1 << g);
+                    int64_t score = best[mask] + costs[box * n + g];
+                    if (score < best[after]) best[after] = score;
+                }
+            }
+        }
+        answer = best[full];
+        free(best);
+        PyBuffer_Release(&costs_b);
+        if (answer >= INT64_MAX)
+            return PyLong_FromLong(-1);
+        return PyLong_FromLongLong(answer);
+    }
+}
+
 static PyMethodDef BwcoreMethods[] = {
     {"compute_bt_sequence", py_compute_bt_sequence, METH_VARARGS,
      "compute_bt_sequence(num_trials, nback, pos=6, audio=6, both=2) -> [pos, audio]"},
@@ -1584,6 +1641,8 @@ static PyMethodDef BwcoreMethods[] = {
     {"sokoban_min_pushes", py_sokoban_min_pushes, METH_VARARGS,
      "sokoban_min_pushes(w, h, floor, goals, alive, boxes, player, budget)"
      " -> exact minimum pushes, or -1 past budget"},
+    {"assignment_min_cost", py_assignment_min_cost, METH_VARARGS,
+     "assignment_min_cost(n, costs_int32) -> cheapest perfect assignment"},
     {NULL, NULL, 0, NULL}
 };
 
