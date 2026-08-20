@@ -123,7 +123,6 @@ def _rebuild_everything() -> None:
     bootstrap._build_widgets()
     update_all_labels()
     bootstrap._load_title_artwork()
-    bootstrap.scale_brain(1.0)
     state.circles.update()
     cursor.reset()
 

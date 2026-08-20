@@ -232,11 +232,6 @@ class SplashLogoTests(unittest.TestCase):
             self.assertAlmostEqual(logo.width / logo.height, width / height,
                                    places=1, msg=note)
 
-    def test_shrinking_the_logo_puts_it_back_when_it_is_done(self):
-        full = state.brain_graphic.width
-        bootstrap.scale_brain(0.05)
-        self.assertEqual(state.brain_graphic.width, full)
-
     def test_the_dark_logo_is_ink_and_not_a_white_card(self):
         """On a black screen an opaque logo would be a bright slab."""
         from neural_workshop import resources

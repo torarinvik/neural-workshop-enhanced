@@ -253,7 +253,6 @@ class Mode:
         self.draw_graph: bool = False
         self.saccadic: bool = False
         self.title_screen: bool = not cfg.SKIP_TITLE_SCREEN
-        self.shrink_brain: bool = False
         #: Last task-hub category the player opened.
         self.task_category: str = 'working_memory'
 

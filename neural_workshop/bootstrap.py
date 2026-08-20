@@ -146,28 +146,17 @@ def _load_title_artwork() -> None:
     _place_splash()
 
 
-def _place_splash(fraction: float = 1.0) -> None:
-    """Size the title logo to *fraction* of the room it is allowed."""
+def _place_splash() -> None:
+    """Size the title logo to the room the title screen has for it."""
     graphic = state.brain_graphic
     room_width = scale_to_width(SPLASH_WIDTH)
     room_height = scale_to_height(SPLASH_HEIGHT)
-    graphic.scale = fraction * min(room_width / graphic.image.width,
-                                   room_height / graphic.image.height)
+    graphic.scale = min(room_width / graphic.image.width,
+                        room_height / graphic.image.height)
     graphic.position = (
         state.field.center_x - graphic.width // 2,
         from_bottom_edge(SPLASH_BOTTOM) + (room_height - graphic.height) // 2,
         0)
-
-
-def scale_brain(fraction: float) -> None:
-    """Shrink the splash logo into the hub icon. Scheduled per frame."""
-    _place_splash(fraction)
-    state.window.clear()
-    state.brain_graphic.draw()
-    if state.brain_graphic.width < 56:
-        state.mode.shrink_brain = False
-        pyglet.clock.unschedule(scale_brain)
-        _place_splash()
 
 
 def _restore_last_mode() -> None:
@@ -226,7 +215,6 @@ def build_application() -> None:
     _restore_last_mode()
     update_all_labels()
     _load_title_artwork()
-    scale_brain(1.0)
 
     # Anything raised while loading had nowhere to go; show it now.
     state.message_queue.reverse()
