@@ -61,33 +61,35 @@ class Grade(NamedTuple):
     width: int
     height: int
     boxes: int
-    extra_walls: int
+    floor_share: float  # how much of the interior the digger opens
     pulls: int          # length of the backwards walk
     floor: int          # reject levels needing fewer pushes than this
 
 
-#: Kindergarten to ruthless. Every number here is measured, not
-#: guessed: the floors sit at roughly the top fifth of what each
-#: room's pull-walks actually deliver, so generation succeeds within
-#: a handful of attempts and "level 9" genuinely takes level-9 work.
-#: The rooms stop at 11x11 because the C solver's boards are two
-#: 64-bit words; the ruthless rung earns its name with boxes, not
-#: acreage. Four boxes live on a 9x9 room and not an 8x8 one for a
-#: measured reason too: on 8x8 the extra box crowds the walk and the
-#: puzzles come out *easier* than the three-box rung.
+#: Kindergarten to superhuman. Every number here is measured, not
+#: guessed: floors sit at roughly the top fifth of what each rung's
+#: warrens actually deliver. floor_share is the difficulty that
+#: matters most — open space is what makes Sokoban easy, and the
+#: share drops as the ladder climbs. The last rungs outgrow exact
+#: solving on purpose; their floors stand on the assignment bound,
+#: which scales to any board.
 GRADES: Tuple[Grade, ...] = (
-    Grade('first steps', 5, 5, 1, 0, 6, 2),
-    Grade('one box', 6, 6, 1, 4, 20, 4),
-    Grade('two boxes', 6, 6, 2, 4, 24, 5),
-    Grade('a little room', 7, 7, 2, 6, 30, 6),
-    Grade('three boxes', 7, 7, 3, 6, 40, 8),
-    Grade('tight corners', 8, 8, 3, 9, 50, 9),
-    Grade('four boxes', 9, 9, 4, 12, 70, 10),
-    Grade('five boxes', 9, 9, 5, 12, 90, 12),
-    Grade('the warehouse', 10, 10, 5, 16, 110, 14),
-    Grade('six boxes', 10, 10, 6, 16, 130, 15),
-    Grade('seven boxes', 11, 11, 7, 20, 160, 16),
-    Grade('ruthless', 11, 11, 8, 20, 190, 17),
+    Grade('first steps', 5, 5, 1, 0.9, 6, 2),
+    Grade('one box', 6, 6, 1, 0.65, 20, 4),
+    Grade('two boxes', 6, 6, 2, 0.65, 24, 5),
+    Grade('a little room', 7, 7, 2, 0.6, 30, 7),
+    Grade('three boxes', 7, 7, 3, 0.6, 40, 8),
+    Grade('tight corners', 8, 8, 3, 0.55, 50, 12),
+    Grade('four boxes', 9, 9, 4, 0.55, 70, 14),
+    Grade('five boxes', 9, 9, 5, 0.55, 90, 17),
+    Grade('the warehouse', 10, 10, 5, 0.52, 110, 20),
+    Grade('six boxes', 10, 10, 6, 0.52, 130, 23),
+    Grade('seven boxes', 11, 11, 7, 0.5, 160, 26),
+    Grade('packed tight', 11, 11, 8, 0.48, 190, 30),
+    Grade('the labyrinth', 13, 13, 9, 0.46, 240, 36),
+    Grade('nightmare', 14, 14, 11, 0.45, 300, 44),
+    Grade('inhuman', 15, 15, 13, 0.43, 380, 54),
+    Grade('superhuman', 16, 16, 15, 0.42, 500, 66),
 )
 
 DIRECTIONS = ((0, -1), (0, 1), (-1, 0), (1, 0))
@@ -182,7 +184,7 @@ def solve_bounded(level: Level,
     top rungs lean on this — a level too hard to certify exactly can
     still *prove* it clears its difficulty floor.
     """
-    if _native is not None and level.width * level.height <= 128:
+    if _native is not None and level.width * level.height <= 256:
         return _solve_native(level, budget)
     return _solve_py(level, budget)
 
@@ -275,30 +277,38 @@ def _blob_goals(width: int, height: int, walls: FrozenSet[int],
 
 
 def _carve_room(grade: Grade, rng: random.Random) -> FrozenSet[int]:
-    """Border walls plus a few interior ones, floor kept connected."""
+    """A warren carved out of solid rock by a wandering digger.
+
+    The first version of this function did the opposite — an open
+    hall with a few pillars dropped in — and a player with a decent
+    eye walked through the "ruthless" rung without breaking stride.
+    Open space is what makes Sokoban easy: room to swing any box
+    around any other. So now the board starts as solid wall and a
+    drunkard's walk digs it out, with a strong straight-line bias so
+    the diggings come out as corridors and small chambers rather
+    than a cavern. Connectivity is free — a walk can only carve
+    where it has walked — and the floor share is the grade's dial:
+    the tighter the warren, the fewer the swings.
+    """
     width, height = grade.width, grade.height
-    walls = set()
-    for cell in range(width * height):
-        x, y = cell % width, cell // width
-        if x in (0, width - 1) or y in (0, height - 1):
-            walls.add(cell)
-    interior = [cell for cell in range(width * height)
-                if cell not in walls]
-    rng.shuffle(interior)
-    added = 0
-    for cell in interior:
-        if added >= grade.extra_walls:
-            break
-        trial = walls | {cell}
-        floor = [c for c in interior if c not in trial]
-        if len(floor) < grade.boxes * 2 + 2:
-            break
-        flags = _floor_flags(width, height, frozenset(trial))
-        region = _reachable(width, flags, frozenset(), floor[0])
-        if len(region) == len(floor):     # still one connected room
-            walls.add(cell)
-            added += 1
-    return frozenset(walls)
+    interior = [(x, y) for x in range(1, width - 1)
+                for y in range(1, height - 1)]
+    target = max(grade.boxes * 3 + 4,
+                 int(len(interior) * grade.floor_share))
+    x, y = width // 2, height // 2
+    carved = {(x, y)}
+    dx, dy = rng.choice(DIRECTIONS)
+    while len(carved) < target:
+        if rng.random() < 0.35:           # mostly keep digging straight
+            dx, dy = rng.choice(DIRECTIONS)
+        nx, ny = x + dx, y + dy
+        if 1 <= nx < width - 1 and 1 <= ny < height - 1:
+            x, y = nx, ny
+            carved.add((x, y))
+        else:
+            dx, dy = rng.choice(DIRECTIONS)
+    return frozenset(cell for cell in range(width * height)
+                     if (cell % width, cell // width) not in carved)
 
 
 def _goal_distance(width: int, height: int, walls: FrozenSet[int],
@@ -383,6 +393,64 @@ def _pull_walk(grade: Grade, walls: FrozenSet[int], goals: FrozenSet[int],
     return frozenset(boxes), player, pulls
 
 
+def _push_distances(width: int, height: int, walls: FrozenSet[int],
+                    goal: int) -> List[int]:
+    """Relaxed push-distance from every cell to *goal*, one lone box.
+
+    The relaxation ignores where the player is and whether other
+    boxes are in the way, so it can only undercount — which is what
+    makes the matching bound below admissible.
+    """
+    floor_ok = _floor_flags(width, height, walls)
+    steps = _steps(width)
+    far = [10 ** 6] * (width * height)
+    far[goal] = 0
+    queue = deque((goal,))
+    while queue:
+        cell = queue.popleft()
+        for step in steps:
+            back, beyond = cell - step, cell - step - step
+            if (0 <= beyond < width * height and floor_ok[back]
+                    and floor_ok[beyond] and far[back] > far[cell] + 1):
+                far[back] = far[cell] + 1
+                queue.append(back)
+    return far
+
+
+def matching_bound(level: Level) -> int:
+    """A proven lower bound that scales to any board: assignment.
+
+    Each box must end on its own goal, and a box's pushes cannot
+    beat its relaxed push-distance to whichever goal it gets. The
+    cheapest perfect assignment of boxes to goals therefore bounds
+    the whole solution from below — exactly, via the classic bitmask
+    DP, which at sixteen boxes is about a million adds. This is the
+    certificate the superhuman rungs stand on where breadth-first
+    search cannot reach any more.
+    """
+    goals = sorted(level.goals)
+    boxes = sorted(level.boxes)
+    table = [_push_distances(level.width, level.height, level.walls,
+                             goal) for goal in goals]
+    cost = [[table[g][box] for g in range(len(goals))] for box in boxes]
+    best = [10 ** 9] * (1 << len(goals))
+    best[0] = 0
+    for mask in range(1 << len(goals)):
+        if best[mask] >= 10 ** 9:
+            continue
+        box = bin(mask).count('1')
+        if box >= len(boxes):
+            continue
+        for g in range(len(goals)):
+            if not mask >> g & 1:
+                after = mask | 1 << g
+                score = best[mask] + cost[box][g]
+                if score < best[after]:
+                    best[after] = score
+    total = best[(1 << len(goals)) - 1]
+    return 0 if total >= 10 ** 9 else total
+
+
 def generate(level_number: int, seed: Optional[int] = None,
              attempts: int = 200) -> Level:
     """A solvable level of the given rung, at or above its floor.
@@ -416,7 +484,20 @@ def generate(level_number: int, seed: Optional[int] = None,
         boxes, player, bound = pulled
         level = Level(grade.width, grade.height, walls, goals, boxes,
                       player, None, 0, bound)
-        minimum, proven = solve_bounded(level, GENERATION_BUDGET)
+        if grade.width * grade.height > 121:
+            # Beyond exact solving by design: the assignment bound is
+            # the certificate, and it is cheap at any size.
+            minimum, proven = None, matching_bound(level)
+        else:
+            # The last exactly-solvable rungs (121 cells) get a short
+            # exact probe — deals it certifies keep a true minimum —
+            # and the assignment bound catches the rest, so the room
+            # never waits long on a search that was going to drown.
+            budget = (GENERATION_BUDGET if grade.width * grade.height <= 100
+                      else GENERATION_BUDGET // 4)
+            minimum, proven = solve_bounded(level, budget)
+            if minimum is None:
+                proven = max(proven, matching_bound(level))
         if minimum is None and proven >= grade.floor:
             return level._replace(at_least=proven)
         if minimum is not None and minimum >= grade.floor:

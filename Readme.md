@@ -520,25 +520,36 @@ certified difficulty of the level.
 Every level is generated backwards from its own solved position —
 the generator *pulls* boxes off their goals through a biased random
 walk, and pulling cannot create a deadlock, so every level is
-solvable by construction rather than by testing. Difficulty is then
-measured, not asserted: an exact solver (breadth-first over box
-positions and the player's reachable region, run in C via the
-`bwcore` extension, with a pure-Python twin defining the contract)
-certifies each level's minimum push count, and each of the twelve
-rungs — "first steps", a single box in a bare room, up to
-"ruthless", eight boxes in an 11x11 warren — rejects levels below
-its measured difficulty floor. On the top rungs the exact minimum
-sometimes exceeds the solver's budget; the level is kept only if
-the search *proved* a lower bound past the floor before the budget
-died (breadth-first search visits states in push order, so an
-exhausted budget at depth k is a certificate that no solution under
-k pushes exists), and the par line then says "between X and Y
-pushes", never pretending a bound is a minimum. Goals are grown as
-one connected clump because that is what makes Sokoban Sokoban:
-boxes must arrive in an order that does not wall the rest out —
-measured on the seven-box rung, clumped goals double the share of
-rooms clearing the floor and push the hardest tails half again
-higher than scattered goals manage.
+solvable by construction rather than by testing. The rooms
+themselves are carved by a drunkard's walk out of solid rock, with
+a straight-line bias that produces corridors and cramped chambers
+rather than open halls: open space is what makes Sokoban easy —
+room to swing any box around any other — and the first version of
+this generator, an airy room with scattered pillars, was walked
+through at its "ruthless" setting without breaking stride. The
+floor share tightens as the ladder climbs.
+
+Difficulty is certified, not asserted, by two instruments. An exact
+solver (breadth-first over box positions and the player's reachable
+region, run in C via the `bwcore` extension, with a pure-Python
+twin defining the contract) certifies the minimum push count on the
+lower rungs. Past its reach, two proofs still stand: breadth-first
+search visits states in push order, so a budget exhausted at depth
+k certifies no solution under k pushes; and each box must travel at
+least its relaxed push-distance to whichever goal it is assigned,
+so the cheapest perfect assignment of boxes to goals — exact, via
+the classic bitmask DP — bounds the whole solution from below at
+any board size. The sixteen rungs run from "first steps" (one box,
+a bare room) through "packed tight" (eight boxes, 11x11) up to
+"superhuman" (fifteen boxes in a 16x16 warren, typically certified
+to need at least 60–90 pushes before a single mistake), and every
+rung rejects rooms below its measured floor. Where the minimum is
+unknown the par line says "between X and Y pushes" and a solve is
+judged against the proven lower bound — never against the walk's
+own length, and never pretending a bound is a minimum. Goals are
+grown as one connected clump because that is what makes Sokoban
+Sokoban: boxes must arrive in an order that does not wall the rest
+out.
 
 ### Window size, full screen, and the two coordinate spaces
 

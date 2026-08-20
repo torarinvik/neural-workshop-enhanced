@@ -269,18 +269,18 @@ class MaximaTests(unittest.TestCase):
         finally:
             task.close()
 
-    def test_sokoban_at_the_ruthless_rung(self):
+    def test_sokoban_at_the_superhuman_rung(self):
         self._push('sokoban')
         task = SokobanTask()
         try:
             task.total_trials = 1
             task.start_run()
-            self.assertEqual(task.rung, 12)
-            self.assertEqual(len(task.level.boxes), 8)
+            self.assertEqual(task.rung, 16)
+            self.assertEqual(len(task.level.boxes), 15)
             certified = (task.level.minimum
                          if task.level.minimum is not None
                          else task.level.at_least)
-            self.assertGreaterEqual(certified, 17)
+            self.assertGreaterEqual(certified, 66)
             task.on_draw()
         finally:
             task.close()

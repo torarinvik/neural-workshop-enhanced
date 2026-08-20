@@ -1309,31 +1309,47 @@ static PyObject *py_backend(PyObject *self, PyObject *args)
 /* Sokoban: exact minimum pushes by BFS over (boxes, player region)           */
 /* -------------------------------------------------------------------------- */
 
-/* Boards are at most 128 cells (the ladder tops out at 11x11 = 121);
- * a box set is two uint64 words. The Python fallback in
- * neural_workshop/sokoban.py defines the contract and the tests hold
- * the two implementations to identical answers. */
+/* Boards are at most 256 cells (16x16); a box set is four uint64
+ * words. The Python fallback in neural_workshop/sokoban.py defines
+ * the contract and the tests hold the two implementations to
+ * identical answers. */
+
+#define SK_WORDS 4
+#define SK_MAX_CELLS (SK_WORDS * 64)
 
 typedef struct {
-    uint64_t lo, hi;
+    uint64_t w[SK_WORDS];
 } sk_bits;
 
 static int sk_get(sk_bits b, int cell)
 {
-    return cell < 64 ? (int)((b.lo >> cell) & 1u)
-                     : (int)((b.hi >> (cell - 64)) & 1u);
+    return (int)((b.w[cell >> 6] >> (cell & 63)) & 1u);
 }
 
 static void sk_set(sk_bits *b, int cell)
 {
-    if (cell < 64) b->lo |= (uint64_t)1 << cell;
-    else b->hi |= (uint64_t)1 << (cell - 64);
+    b->w[cell >> 6] |= (uint64_t)1 << (cell & 63);
 }
 
 static void sk_clear(sk_bits *b, int cell)
 {
-    if (cell < 64) b->lo &= ~((uint64_t)1 << cell);
-    else b->hi &= ~((uint64_t)1 << (cell - 64));
+    b->w[cell >> 6] &= ~((uint64_t)1 << (cell & 63));
+}
+
+static int sk_equal(sk_bits a, sk_bits b)
+{
+    int i;
+    for (i = 0; i < SK_WORDS; i++)
+        if (a.w[i] != b.w[i]) return 0;
+    return 1;
+}
+
+static int sk_subset(sk_bits a, sk_bits b)   /* a subset of b */
+{
+    int i;
+    for (i = 0; i < SK_WORDS; i++)
+        if (a.w[i] & ~b.w[i]) return 0;
+    return 1;
 }
 
 typedef struct {
@@ -1351,8 +1367,10 @@ typedef struct {
 
 static uint64_t sk_hash(sk_bits b, uint16_t norm)
 {
-    uint64_t h = b.lo * 0x9E3779B97F4A7C15ULL;
-    h ^= b.hi + 0x9E3779B97F4A7C15ULL + (h << 6) + (h >> 2);
+    uint64_t h = 0x9E3779B97F4A7C15ULL;
+    int i;
+    for (i = 0; i < SK_WORDS; i++)
+        h ^= b.w[i] + 0x9E3779B97F4A7C15ULL + (h << 6) + (h >> 2);
     h ^= (uint64_t)norm * 0xBF58476D1CE4E5B9ULL;
     return h;
 }
@@ -1369,8 +1387,7 @@ static int sk_seen_add(sk_entry *table, uint64_t mask,
             e->used = 1;
             return 1;                       /* newly added */
         }
-        if (e->boxes.lo == boxes.lo && e->boxes.hi == boxes.hi
-                && e->norm == norm)
+        if (sk_equal(e->boxes, boxes) && e->norm == norm)
             return 0;                       /* already known */
         at = (at + 1) & mask;
     }
@@ -1426,16 +1443,18 @@ static PyObject *py_sokoban_min_pushes(PyObject *self, PyObject *args)
         const uint8_t *goals = (const uint8_t *)goals_b.buf;
         const uint8_t *alive = (const uint8_t *)alive_b.buf;
         const uint8_t *boxes0 = (const uint8_t *)boxes_b.buf;
-        sk_bits goal_bits = {0, 0}, start_boxes = {0, 0};
+        sk_bits goal_bits, start_boxes;
         sk_state *queue = NULL;
         sk_entry *seen = NULL;
         uint64_t mask, capacity = 1;
         long head = 0, tail = 0, queue_cap, seen_count = 0;
-        uint8_t region[128];
-        int stack[128];
+        uint8_t region[SK_MAX_CELLS];
+        int stack[SK_MAX_CELLS];
         int cell, answer = -1;
 
-        if (n > 128 || (Py_ssize_t)n > floor_b.len
+        memset(&goal_bits, 0, sizeof(goal_bits));
+        memset(&start_boxes, 0, sizeof(start_boxes));
+        if (n > SK_MAX_CELLS || (Py_ssize_t)n > floor_b.len
                 || (Py_ssize_t)n > goals_b.len
                 || (Py_ssize_t)n > alive_b.len
                 || (Py_ssize_t)n > boxes_b.len) {
@@ -1450,8 +1469,7 @@ static PyObject *py_sokoban_min_pushes(PyObject *self, PyObject *args)
             if (boxes0[cell]) sk_set(&start_boxes, cell);
         }
         /* Solved already? (boxes subset of goals) */
-        if ((start_boxes.lo & ~goal_bits.lo) == 0
-                && (start_boxes.hi & ~goal_bits.hi) == 0) {
+        if (sk_subset(start_boxes, goal_bits)) {
             PyBuffer_Release(&floor_b); PyBuffer_Release(&goals_b);
             PyBuffer_Release(&alive_b); PyBuffer_Release(&boxes_b);
             return PyLong_FromLong(0);
@@ -1500,14 +1518,13 @@ static PyObject *py_sokoban_min_pushes(PyObject *self, PyObject *args)
                     moved = s.boxes;
                     sk_clear(&moved, cell);
                     sk_set(&moved, ahead);
-                    if ((moved.lo & ~goal_bits.lo) == 0
-                            && (moved.hi & ~goal_bits.hi) == 0) {
+                    if (sk_subset(moved, goal_bits)) {
                         answer = s.pushes + 1;
                         break;
                     }
                     {
-                        uint8_t region2[128];
-                        int stack2[128];
+                        uint8_t region2[SK_MAX_CELLS];
+                        int stack2[SK_MAX_CELLS];
                         norm2 = sk_flood(floor_ok, moved, cell, n, width,
                                          region2, stack2);
                     }

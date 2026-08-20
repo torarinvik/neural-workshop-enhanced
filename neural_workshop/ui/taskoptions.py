@@ -606,10 +606,9 @@ def sokoban_note(chosen: Dict[str, Any]) -> str:
                grade.boxes, _('box') if grade.boxes == 1 else _('boxes'),
                grade.floor)]
     if rung >= 11:
-        said.append(_('Up here the exact minimum sometimes exceeds '
-                      'the solver, and the par honestly says '
-                      '"between", never pretending a bound is a '
-                      'minimum.'))
+        said.append(_('Up here the exact minimum outgrows the '
+                      'solver; the par is a proven lower bound, '
+                      'never pretending to be a minimum.'))
     if chosen['SOKOBAN_ADAPTIVE']:
         said.append(_('Solve near the minimum and the next puzzle '
                       'climbs a level; flounder and it steps down.'))
@@ -620,7 +619,7 @@ SOKOBAN = TaskSpec(
     title=_('Sokoban options'),
     options=(
         Option('SOKOBAN_LEVEL', _('Start at level'), 2,
-               values=tuple(range(1, 13))),
+               values=tuple(range(1, 17))),
         Option('SOKOBAN_TRIALS', _('Puzzles per run'), 5,
                values=(1, 2, 3, 5, 8, 10, 15, 20)),
         Option('SOKOBAN_ADAPTIVE',

@@ -185,9 +185,13 @@ class SokobanTask:
         self._redraw()
 
     def par(self) -> int:
+        """What a solve is judged against: the exact minimum, or the
+        proven lower bound. Never the walk's upper bound — on the
+        big warrens it runs far past any decent solution, and a par
+        nobody should match is not a par."""
         if self.level.minimum is not None:
             return self.level.minimum
-        return self.level.bound
+        return self.level.at_least
 
     # --- moving ----------------------------------------------------------
 
@@ -244,8 +248,8 @@ class SokobanTask:
             self.message = _('Solved in %d pushes — minimum was %d') % (
                 self.pushes, par)
         else:
-            self.message = _('Solved in %d pushes — par was at most %d') % (
-                self.pushes, par)
+            self.message = _('Solved in %d pushes — provably at '
+                             'least %d') % (self.pushes, par)
         if self.adaptive:
             if self.pushes <= par * CLIMB_AT:
                 self.rung = self.clamped(self.rung + 1)

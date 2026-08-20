@@ -78,7 +78,7 @@ class SolverTests(unittest.TestCase):
 class GeneratorTests(unittest.TestCase):
 
     def test_every_rung_generates_and_clears_its_floor(self):
-        for rung, grade in enumerate(GRADES[:10], start=1):
+        for rung, grade in enumerate(GRADES, start=1):
             level = generate(rung, seed=11)
             certified = (level.minimum if level.minimum is not None
                          else level.at_least)
@@ -100,11 +100,19 @@ class GeneratorTests(unittest.TestCase):
     def test_the_same_seed_deals_the_same_level(self):
         self.assertEqual(generate(4, seed=42), generate(4, seed=42))
 
-    def test_the_ruthless_rung_carries_a_certificate(self):
-        level = generate(12, seed=1)
+    def test_the_superhuman_rung_carries_a_certificate(self):
+        level = generate(16, seed=1)
         certified = (level.minimum if level.minimum is not None
                      else level.at_least)
-        self.assertGreaterEqual(certified, GRADES[11].floor)
+        self.assertGreaterEqual(certified, GRADES[15].floor)
+
+    def test_the_matching_bound_never_exceeds_the_minimum(self):
+        from neural_workshop.sokoban import matching_bound
+        for rung in (3, 6, 9):
+            level = generate(rung, seed=13)
+            if level.minimum is not None:
+                self.assertLessEqual(matching_bound(level),
+                                     level.minimum)
 
 
 @needs_ui
@@ -246,5 +254,5 @@ class SokobanScreenTests(unittest.TestCase):
     def test_it_has_an_options_screen(self):
         self.assertTrue(taskoptions.has_options('sokoban'))
         note = taskoptions.SOKOBAN.note(
-            {'SOKOBAN_LEVEL': 12, 'SOKOBAN_ADAPTIVE': True})
-        self.assertIn('between', note)
+            {'SOKOBAN_LEVEL': 16, 'SOKOBAN_ADAPTIVE': True})
+        self.assertIn('lower bound', note)
