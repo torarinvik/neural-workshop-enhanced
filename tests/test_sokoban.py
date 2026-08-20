@@ -198,7 +198,6 @@ class GeneratorTests(unittest.TestCase):
                                      level.minimum)
 
 
-@needs_ui
 class DeadlockTests(unittest.TestCase):
     """The cheap "already lost" verdict, and the axis built on it.
 
@@ -299,6 +298,7 @@ class DeceptionTests(unittest.TestCase):
                                     % rung)
 
 
+@needs_ui
 class SokobanScreenTests(unittest.TestCase):
 
     def setUp(self):
