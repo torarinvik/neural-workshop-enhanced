@@ -595,6 +595,40 @@ PURSUIT = TaskSpec(
     note=pursuit_note)
 
 
+def sokoban_note(chosen: Dict[str, Any]) -> str:
+    """What the chosen rung is made of, and what the par will mean."""
+    from ..sokoban import GRADES
+    rung = int(chosen['SOKOBAN_LEVEL'])
+    grade = GRADES[max(0, min(len(GRADES) - 1, rung - 1))]
+    said = [_('Level %d, "%s": a %dx%d room, %d %s, certified to '
+              'need at least %d pushes.')
+            % (rung, _(grade.name), grade.width, grade.height,
+               grade.boxes, _('box') if grade.boxes == 1 else _('boxes'),
+               grade.floor)]
+    if rung >= 11:
+        said.append(_('Up here the exact minimum sometimes exceeds '
+                      'the solver, and the par honestly says '
+                      '"between", never pretending a bound is a '
+                      'minimum.'))
+    if chosen['SOKOBAN_ADAPTIVE']:
+        said.append(_('Solve near the minimum and the next puzzle '
+                      'climbs a level; flounder and it steps down.'))
+    return '  '.join(said)
+
+
+SOKOBAN = TaskSpec(
+    title=_('Sokoban options'),
+    options=(
+        Option('SOKOBAN_LEVEL', _('Start at level'), 2,
+               values=tuple(range(1, 13))),
+        Option('SOKOBAN_TRIALS', _('Puzzles per run'), 5,
+               values=(1, 2, 3, 5, 8, 10, 15, 20)),
+        Option('SOKOBAN_ADAPTIVE',
+               _('Climb a level when you solve near the minimum'), True),
+    ),
+    note=sokoban_note)
+
+
 def salesman_note(chosen: Dict[str, Any]) -> str:
     """What the score means at this size, and that it is exact.
 
@@ -647,6 +681,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'jigsaw': JIGSAW,
     'tower_of_hanoi': HANOI,
     'salesman': SALESMAN,
+    'sokoban': SOKOBAN,
 }
 
 

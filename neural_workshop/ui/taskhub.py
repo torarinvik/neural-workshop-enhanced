@@ -58,6 +58,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
     'planning': [
         ('tower_of_hanoi', _('Tower of Hanoi')),
         ('salesman', _('Traveling Salesman')),
+        ('sokoban', _('Sokoban')),
     ],
 }
 
@@ -401,6 +402,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'salesman':
         from .salesman import TravelingSalesman
         TravelingSalesman()
+        return
+    if task_id == 'sokoban':
+        from .sokoban import SokobanTask
+        SokobanTask()
         return
     # Unknown task: restore the hub rather than dropping the player.
     TaskHub(return_to_title=return_to_title, category=category)

@@ -21,7 +21,7 @@ import unittest
 
 from uisupport import (Concentration, Counting, GraphMapping, JigsawPuzzle,
                        Lookout, MatrixReasoning, MonkeyLadder, MovingTargets,
-                       Pursuit,
+                       Pursuit, SokobanTask,
                        NCupMonte, Recognition, Reflex, TowerOfHanoi,
                        TravelingSalesman, close_overlays, needs_ui,
                        reset_window, state, taskoptions)
@@ -265,6 +265,22 @@ class MaximaTests(unittest.TestCase):
             low_x, high_x, low_y, high_y = task._bounds()
             self.assertTrue(low_x <= quarry.x <= high_x)
             self.assertTrue(low_y <= quarry.y <= high_y)
+            task.on_draw()
+        finally:
+            task.close()
+
+    def test_sokoban_at_the_ruthless_rung(self):
+        self._push('sokoban')
+        task = SokobanTask()
+        try:
+            task.total_trials = 1
+            task.start_run()
+            self.assertEqual(task.rung, 12)
+            self.assertEqual(len(task.level.boxes), 8)
+            certified = (task.level.minimum
+                         if task.level.minimum is not None
+                         else task.level.at_least)
+            self.assertGreaterEqual(certified, 17)
             task.on_draw()
         finally:
             task.close()

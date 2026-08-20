@@ -1304,6 +1304,240 @@ static PyObject *py_backend(PyObject *self, PyObject *args)
 /* Module definition                                                          */
 /* -------------------------------------------------------------------------- */
 
+
+/* -------------------------------------------------------------------------- */
+/* Sokoban: exact minimum pushes by BFS over (boxes, player region)           */
+/* -------------------------------------------------------------------------- */
+
+/* Boards are at most 128 cells (the ladder tops out at 11x11 = 121);
+ * a box set is two uint64 words. The Python fallback in
+ * neural_workshop/sokoban.py defines the contract and the tests hold
+ * the two implementations to identical answers. */
+
+typedef struct {
+    uint64_t lo, hi;
+} sk_bits;
+
+static int sk_get(sk_bits b, int cell)
+{
+    return cell < 64 ? (int)((b.lo >> cell) & 1u)
+                     : (int)((b.hi >> (cell - 64)) & 1u);
+}
+
+static void sk_set(sk_bits *b, int cell)
+{
+    if (cell < 64) b->lo |= (uint64_t)1 << cell;
+    else b->hi |= (uint64_t)1 << (cell - 64);
+}
+
+static void sk_clear(sk_bits *b, int cell)
+{
+    if (cell < 64) b->lo &= ~((uint64_t)1 << cell);
+    else b->hi &= ~((uint64_t)1 << (cell - 64));
+}
+
+typedef struct {
+    sk_bits boxes;
+    uint16_t norm;      /* smallest reachable player cell */
+    uint16_t pushes;
+} sk_state;
+
+/* Open-addressed visited set keyed by (boxes, norm). */
+typedef struct {
+    sk_bits boxes;
+    uint16_t norm;
+    uint8_t used;
+} sk_entry;
+
+static uint64_t sk_hash(sk_bits b, uint16_t norm)
+{
+    uint64_t h = b.lo * 0x9E3779B97F4A7C15ULL;
+    h ^= b.hi + 0x9E3779B97F4A7C15ULL + (h << 6) + (h >> 2);
+    h ^= (uint64_t)norm * 0xBF58476D1CE4E5B9ULL;
+    return h;
+}
+
+static int sk_seen_add(sk_entry *table, uint64_t mask,
+                       sk_bits boxes, uint16_t norm)
+{
+    uint64_t at = sk_hash(boxes, norm) & mask;
+    for (;;) {
+        sk_entry *e = &table[at];
+        if (!e->used) {
+            e->boxes = boxes;
+            e->norm = norm;
+            e->used = 1;
+            return 1;                       /* newly added */
+        }
+        if (e->boxes.lo == boxes.lo && e->boxes.hi == boxes.hi
+                && e->norm == norm)
+            return 0;                       /* already known */
+        at = (at + 1) & mask;
+    }
+}
+
+/* Flood the player's region; returns the smallest reachable cell and
+ * fills region[]. */
+static int sk_flood(const uint8_t *floor_ok, sk_bits boxes, int start,
+                    int n, int width, uint8_t *region, int *stack)
+{
+    int top = 0, norm = start;
+    memset(region, 0, (size_t)n);
+    region[start] = 1;
+    stack[top++] = start;
+    while (top) {
+        int cell = stack[--top];
+        int near[4];
+        int i;
+        if (cell < norm) norm = cell;
+        near[0] = cell - width;
+        near[1] = cell + width;
+        near[2] = cell - 1;
+        near[3] = cell + 1;
+        for (i = 0; i < 4; i++) {
+            int c = near[i];
+            if (c >= 0 && c < n && floor_ok[c] && !region[c]
+                    && !sk_get(boxes, c)) {
+                region[c] = 1;
+                stack[top++] = c;
+            }
+        }
+    }
+    return norm;
+}
+
+/* sokoban_min_pushes(width, height, floor, goals, alive, boxes,
+ *                    player, budget) -> pushes, or -1 past budget.
+ * floor/goals/alive/boxes are bytes of length width*height with one
+ * truthy byte per cell in that role. A negative return -(k+1) means
+ * the budget ran out with a proven lower bound of k pushes. */
+static PyObject *py_sokoban_min_pushes(PyObject *self, PyObject *args)
+{
+    int width, height, player;
+    long budget;
+    Py_buffer floor_b, goals_b, alive_b, boxes_b;
+    if (!PyArg_ParseTuple(args, "iiy*y*y*y*il", &width, &height,
+                          &floor_b, &goals_b, &alive_b, &boxes_b,
+                          &player, &budget))
+        return NULL;
+    {
+        int n = width * height;
+        const uint8_t *floor_ok = (const uint8_t *)floor_b.buf;
+        const uint8_t *goals = (const uint8_t *)goals_b.buf;
+        const uint8_t *alive = (const uint8_t *)alive_b.buf;
+        const uint8_t *boxes0 = (const uint8_t *)boxes_b.buf;
+        sk_bits goal_bits = {0, 0}, start_boxes = {0, 0};
+        sk_state *queue = NULL;
+        sk_entry *seen = NULL;
+        uint64_t mask, capacity = 1;
+        long head = 0, tail = 0, queue_cap, seen_count = 0;
+        uint8_t region[128];
+        int stack[128];
+        int cell, answer = -1;
+
+        if (n > 128 || (Py_ssize_t)n > floor_b.len
+                || (Py_ssize_t)n > goals_b.len
+                || (Py_ssize_t)n > alive_b.len
+                || (Py_ssize_t)n > boxes_b.len) {
+            PyBuffer_Release(&floor_b); PyBuffer_Release(&goals_b);
+            PyBuffer_Release(&alive_b); PyBuffer_Release(&boxes_b);
+            PyErr_SetString(PyExc_ValueError,
+                            "board too large or buffers too short");
+            return NULL;
+        }
+        for (cell = 0; cell < n; cell++) {
+            if (goals[cell]) sk_set(&goal_bits, cell);
+            if (boxes0[cell]) sk_set(&start_boxes, cell);
+        }
+        /* Solved already? (boxes subset of goals) */
+        if ((start_boxes.lo & ~goal_bits.lo) == 0
+                && (start_boxes.hi & ~goal_bits.hi) == 0) {
+            PyBuffer_Release(&floor_b); PyBuffer_Release(&goals_b);
+            PyBuffer_Release(&alive_b); PyBuffer_Release(&boxes_b);
+            return PyLong_FromLong(0);
+        }
+        while ((long)capacity < budget * 2 + 16) capacity <<= 1;
+        mask = capacity - 1;
+        seen = (sk_entry *)calloc(capacity, sizeof(sk_entry));
+        queue_cap = budget + 16;
+        queue = (sk_state *)malloc((size_t)queue_cap * sizeof(sk_state));
+        if (!seen || !queue) {
+            free(seen); free(queue);
+            PyBuffer_Release(&floor_b); PyBuffer_Release(&goals_b);
+            PyBuffer_Release(&alive_b); PyBuffer_Release(&boxes_b);
+            return PyErr_NoMemory();
+        }
+        {
+            int norm = sk_flood(floor_ok, start_boxes, player, n, width,
+                                region, stack);
+            queue[tail].boxes = start_boxes;
+            queue[tail].norm = (uint16_t)norm;
+            queue[tail].pushes = 0;
+            tail++;
+            sk_seen_add(seen, mask, start_boxes, (uint16_t)norm);
+            seen_count = 1;
+        }
+        while (head < tail && answer < 0) {
+            sk_state s = queue[head++];
+            int steps[4];
+            steps[0] = -width; steps[1] = width;
+            steps[2] = -1; steps[3] = 1;
+            sk_flood(floor_ok, s.boxes, s.norm, n, width, region, stack);
+            for (cell = 0; cell < n && answer < 0; cell++) {
+                int d;
+                if (!sk_get(s.boxes, cell)) continue;
+                for (d = 0; d < 4; d++) {
+                    int behind = cell - steps[d];
+                    int ahead = cell + steps[d];
+                    sk_bits moved;
+                    int norm2;
+                    if (behind < 0 || behind >= n || ahead < 0
+                            || ahead >= n)
+                        continue;
+                    if (!region[behind] || !floor_ok[ahead]
+                            || sk_get(s.boxes, ahead) || !alive[ahead])
+                        continue;
+                    moved = s.boxes;
+                    sk_clear(&moved, cell);
+                    sk_set(&moved, ahead);
+                    if ((moved.lo & ~goal_bits.lo) == 0
+                            && (moved.hi & ~goal_bits.hi) == 0) {
+                        answer = s.pushes + 1;
+                        break;
+                    }
+                    {
+                        uint8_t region2[128];
+                        int stack2[128];
+                        norm2 = sk_flood(floor_ok, moved, cell, n, width,
+                                         region2, stack2);
+                    }
+                    if (sk_seen_add(seen, mask, moved, (uint16_t)norm2)) {
+                        seen_count++;
+                        if (seen_count > budget || tail >= queue_cap) {
+                            /* Over budget. BFS is level-order, so
+                             * every unexplored state needs more than
+                             * s.pushes pushes: report that as a
+                             * proven lower bound, encoded negative. */
+                            answer = -(int)(s.pushes + 1) - 1;
+                            head = tail;
+                            break;
+                        }
+                        queue[tail].boxes = moved;
+                        queue[tail].norm = (uint16_t)norm2;
+                        queue[tail].pushes = (uint16_t)(s.pushes + 1);
+                        tail++;
+                    }
+                }
+            }
+        }
+        free(seen);
+        free(queue);
+        PyBuffer_Release(&floor_b); PyBuffer_Release(&goals_b);
+        PyBuffer_Release(&alive_b); PyBuffer_Release(&boxes_b);
+        return PyLong_FromLong(answer);
+    }
+}
+
 static PyMethodDef BwcoreMethods[] = {
     {"compute_bt_sequence", py_compute_bt_sequence, METH_VARARGS,
      "compute_bt_sequence(num_trials, nback, pos=6, audio=6, both=2) -> [pos, audio]"},
@@ -1330,6 +1564,9 @@ static PyMethodDef BwcoreMethods[] = {
     {"count_feedback_label_runs", py_count_feedback_label_runs, METH_VARARGS,
      "count_feedback_label_runs(rgba, w, h, y0, y1) -> (pos_runs, neg_runs, oops_runs)"},
     {"backend", py_backend, METH_NOARGS, "Return 'C'"},
+    {"sokoban_min_pushes", py_sokoban_min_pushes, METH_VARARGS,
+     "sokoban_min_pushes(w, h, floor, goals, alive, boxes, player, budget)"
+     " -> exact minimum pushes, or -1 past budget"},
     {NULL, NULL, 0, NULL}
 };
 

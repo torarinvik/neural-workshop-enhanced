@@ -674,6 +674,18 @@ TSP_ROUNDS = 5
 TSP_ADAPTIVE = True
 TSP_SHOW_BEST = True
 
+# Sokoban: push every box onto a goal, one push at a time, never two
+# boxes at once and never a pull. Levels are generated backwards from
+# the solved position so they are solvable by construction, and each
+# difficulty level carries a certificate - the exact minimum push
+# count where the solver can afford it, a proven lower bound where it
+# cannot. U undoes, R restarts; the score is pushes against the
+# minimum. With SOKOBAN_ADAPTIVE a solve near the minimum climbs a
+# level and a wasteful one steps down.
+SOKOBAN_LEVEL = 2
+SOKOBAN_TRIALS = 5
+SOKOBAN_ADAPTIVE = True
+
 ######################################################################
 # This is the end of the configuration file.
 ######################################################################

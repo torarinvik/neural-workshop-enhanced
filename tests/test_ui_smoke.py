@@ -26,6 +26,7 @@ from test_ui_longterm import *    # noqa: F401,F403,E402
 from test_ui_matrices import *    # noqa: F401,F403,E402
 from test_ui_menus import *       # noqa: F401,F403,E402
 from test_ui_perception import *  # noqa: F401,F403,E402
+from test_sokoban import *        # noqa: F401,F403,E402
 from test_ui_planning import *    # noqa: F401,F403,E402
 from test_ui_reasoning import *   # noqa: F401,F403,E402
 from test_ui_screens import *     # noqa: F401,F403,E402

@@ -510,6 +510,36 @@ score says precisely how much longer your route was, and the shortest
 route is drawn after each answer. People land within a few per cent
 of optimal on sight, which is what makes the gap worth reporting.
 
+**Sokoban.** Push every box onto a goal square — one box at a time,
+never a pull, and a box against the wrong wall is stuck there
+forever, which is the whole game: seeing the irreversible move
+before making it. **U** undoes and **R** restarts, freely; the score
+is the push count of the line you finally commit, against the
+certified difficulty of the level.
+
+Every level is generated backwards from its own solved position —
+the generator *pulls* boxes off their goals through a biased random
+walk, and pulling cannot create a deadlock, so every level is
+solvable by construction rather than by testing. Difficulty is then
+measured, not asserted: an exact solver (breadth-first over box
+positions and the player's reachable region, run in C via the
+`bwcore` extension, with a pure-Python twin defining the contract)
+certifies each level's minimum push count, and each of the twelve
+rungs — "first steps", a single box in a bare room, up to
+"ruthless", eight boxes in an 11x11 warren — rejects levels below
+its measured difficulty floor. On the top rungs the exact minimum
+sometimes exceeds the solver's budget; the level is kept only if
+the search *proved* a lower bound past the floor before the budget
+died (breadth-first search visits states in push order, so an
+exhausted budget at depth k is a certificate that no solution under
+k pushes exists), and the par line then says "between X and Y
+pushes", never pretending a bound is a minimum. Goals are grown as
+one connected clump because that is what makes Sokoban Sokoban:
+boxes must arrive in an order that does not wall the rest out —
+measured on the seven-box rung, clumped goals double the share of
+rooms clearing the floor and push the hardest tails half again
+higher than scattered goals manage.
+
 ### Window size, full screen, and the two coordinate spaces
 
 The window is resizable, and **F11** switches to and from full screen

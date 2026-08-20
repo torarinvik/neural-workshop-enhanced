@@ -51,6 +51,7 @@ try:
     from neural_workshop.ui.tracking import MovingTargets
     from neural_workshop.ui.lookout import Lookout
     from neural_workshop.ui.pursuit import Pursuit
+    from neural_workshop.ui.sokoban import SokobanTask
     from neural_workshop.ui.menu import AllCycler, Cycler, Menu, PercentCycler
     from neural_workshop.ui.message import Message
     from neural_workshop.ui.jigsaw import JigsawPuzzle
