@@ -36,6 +36,13 @@ class MonkeyLadder:
         # seed then means the same thing every time.
         self.rng = random.Random()
         self.clock = time.time
+        # Keyboard-style selection, off unless something asks for it, so
+        # a mouse player sees exactly what they saw before. The ring is
+        # drawn in the gap *between* tiles rather than over one, because
+        # a driver scores a round by counting tile pixels and a marker
+        # that covered a fill would move those counts.
+        self.cursor_enabled = False
+        self.cursor_cell: GridCell = (0, 0)
         self._read_options()
         self.phase = 'ready'
         self.sequence: List[GridCell] = []
@@ -133,6 +140,7 @@ class MonkeyLadder:
         return None
 
     def start_round(self) -> None:
+        self.cursor_cell = (0, 0)
         cells = [(r, c) for r in range(self.grid) for c in range(self.grid)]
         count = min(self.level, len(cells))
         self.sequence = self.rng.sample(cells, count)
@@ -150,6 +158,19 @@ class MonkeyLadder:
             self.phase = 'input'
             self.message = _('Click 1 through %d') % len(self.sequence)
             self._redraw()
+
+    def move_cursor(self, d_row: int, d_col: int) -> None:
+        """Slide the selection by one cell, stopping at the edges."""
+        row, col = self.cursor_cell
+        row = min(max(0, row + int(d_row)), self.grid - 1)
+        col = min(max(0, col + int(d_col)), self.grid - 1)
+        if (row, col) != self.cursor_cell:
+            self.cursor_cell = (row, col)
+            self._redraw()
+
+    def commit_cursor(self) -> None:
+        """Click whatever the selection is on."""
+        self.click_cell(self.cursor_cell)
 
     def click_cell(self, cell: GridCell) -> None:
         """Handle a click on *cell*. Used by the mouse handler and tests."""
@@ -209,6 +230,15 @@ class MonkeyLadder:
                     x, y, side, side, color=self._cell_color(cell),
                     batch=self.batch)
                 self.shapes.append(rect)
+                if self.cursor_enabled and cell == self.cursor_cell:
+                    # Sits in the gap, outside the tile, so it covers no
+                    # fill pixels at any grid size.
+                    ring = max(2, int(gap * 0.6))
+                    self.shapes.append(pyglet.shapes.Box(
+                        x - gap + ring / 2., y - gap + ring / 2.,
+                        side + gap * 2 - ring, side + gap * 2 - ring,
+                        thickness=ring, color=(255, 200, 40, 255),
+                        batch=self.batch))
                 if show_numbers and cell in numbers:
                     label = pyglet.text.Label(
                         str(numbers[cell]),

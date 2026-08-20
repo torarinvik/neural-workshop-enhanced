@@ -234,5 +234,148 @@ class LadderRunTests(unittest.TestCase):
         self.assertEqual(len(scalars), 2)
 
 
+@requires_env
+class LadderCursorTests(unittest.TestCase):
+    """The five-port interface: four moves and a commit."""
+
+    def _env(self, **kwargs):
+        kwargs.setdefault('grid', 4)
+        kwargs.setdefault('level', 3)
+        kwargs.setdefault('rounds', 3)
+        kwargs.setdefault('cursor', True)
+        return MonkeyLadderEnv(seed=11, **kwargs)
+
+    def _port_towards(self, task):
+        """The move that closes the gap, or the commit when there is none."""
+        want = task.sequence[task.next_index]
+        here = task.cursor_cell
+        if here[0] < want[0]:
+            return 0
+        if here[0] > want[0]:
+            return 1
+        if here[1] > want[1]:
+            return 2
+        if here[1] < want[1]:
+            return 3
+        return 4
+
+    def test_the_cursor_offers_five_ports(self):
+        env = self._env()
+        try:
+            self.assertEqual(env.n_actions, 5)
+        finally:
+            env.close()
+
+    def test_absolute_ports_are_still_the_default(self):
+        env = self._env(cursor=False, grid=5)
+        try:
+            self.assertEqual(env.n_actions, 25)
+        finally:
+            env.close()
+
+    def test_driving_the_cursor_scores_every_round(self):
+        env = self._env()
+        try:
+            scalars = []
+            for _ in range(STEP_LIMIT * 4):
+                task = env.task
+                port = None
+                if task.phase == 'input' and env._response_open:
+                    port = self._port_towards(task)
+                _obs, events, done = env.step(port)
+                scalars.extend(e['scalar'] for e in events
+                               if e['type'] == 'outcome')
+                if done:
+                    break
+        finally:
+            env.close()
+        self.assertEqual(scalars, [1.0] * 3)
+
+    def test_the_marker_cannot_move_the_tile_counts(self):
+        """The whole outcome rule rests on this.
+
+        The marker is drawn in the gap between tiles, so parking it on
+        any cell must leave every scored colour's pixel count alone --
+        otherwise a round could be scored differently depending on where
+        the agent happened to be looking.
+        """
+        from nwenv.ladder import _count_fill
+
+        env = self._env()
+        try:
+            task = env.task
+            counts = {colour: set() for colour in (PREVIEW, CORRECT, WRONG)}
+            for row in range(task.grid):
+                for col in range(task.grid):
+                    task.cursor_cell = (row, col)
+                    task._redraw()
+                    env._publish()
+                    for colour in counts:
+                        counts[colour].add(_count_fill(env._rgba, colour))
+            for colour, values in counts.items():
+                self.assertEqual(len(values), 1, colour)
+        finally:
+            env.close()
+
+    def test_the_marker_is_off_for_a_mouse_player(self):
+        """Opt-in: the task a person opens is unchanged."""
+        from neural_workshop.ui.monkeyladder import MonkeyLadder
+
+        task = MonkeyLadder()
+        try:
+            self.assertFalse(task.cursor_enabled)
+        finally:
+            task.close()
+
+    def test_neutral_mode_pays_exactly_one_outcome_per_action(self):
+        """What a one-outcome-per-action runtime needs from this task."""
+        env = self._env(neutral_outcomes=True)
+        try:
+            scalars, actions = [], 0
+            for _ in range(STEP_LIMIT * 4):
+                task = env.task
+                port = None
+                if task.phase == 'input' and env._response_open:
+                    port = self._port_towards(task)
+                    actions += 1
+                _obs, events, done = env.step(port)
+                scalars.extend(e['scalar'] for e in events
+                               if e['type'] == 'outcome')
+                if done:
+                    break
+        finally:
+            env.close()
+        self.assertEqual(len(scalars), actions)
+        self.assertEqual(scalars.count(1.0), 3)
+        self.assertEqual(scalars.count(-1.0), 0)
+
+    def test_neutral_mode_still_cannot_be_talked_into_a_positive(self):
+        """The extra outcomes are worth nothing, and change no verdict."""
+        preview = a_frame_of(PREVIEW, 900)
+        half = a_frame_of(CORRECT, 400)
+        out = derive_ladder_outcome(half, 30, 30, ['d'], 1,
+                                    preview_rgba=preview, neutral=True)
+        self.assertEqual(out['scalar'], 0.0)
+        full = a_frame_of(CORRECT, 900)
+        out = derive_ladder_outcome(full, 30, 30, ['d'], 1,
+                                    preview_rgba=preview, neutral=True)
+        self.assertEqual(out['scalar'], 1.0)
+
+    def test_the_cursor_stops_at_the_edges(self):
+        env = self._env()
+        try:
+            task = env.task
+            task.cursor_cell = (0, 0)
+            for _ in range(10):
+                task.move_cursor(-1, -1)
+            self.assertEqual(task.cursor_cell, (0, 0))
+            for _ in range(10):
+                task.move_cursor(1, 1)
+            self.assertEqual(task.cursor_cell,
+                             (task.grid - 1, task.grid - 1))
+        finally:
+            env.close()
+
+
 if __name__ == '__main__':
     unittest.main()

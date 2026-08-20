@@ -97,7 +97,8 @@ def derive_ladder_outcome(rgba: bytes, width: int, height: int,
                           evidence_digests: Any, receipt_id: Optional[int],
                           preview_rgba: Optional[bytes] = None,
                           frame_seq: Optional[int] = None,
-                          timestamp_ns: Optional[int] = None
+                          timestamp_ns: Optional[int] = None,
+                          neutral: bool = False
                           ) -> Optional[Dict[str, Any]]:
     """The scalar for one round, read off two frames of that round.
 
@@ -106,6 +107,12 @@ def derive_ladder_outcome(rgba: bytes, width: int, height: int,
     matches the preview frame's. Anything else -- a frame mid-round, a
     result frame that does not cover the set -- yields ``None``, which
     is not the same as zero: it means there is nothing owed yet.
+
+    ``neutral`` scores those mid-round frames ``0.0`` instead of
+    ``None``. A runtime that pairs one outcome to one action needs a
+    verdict for every action, and a tile placed part-way through a round
+    is owed exactly nothing; the rule for a positive is untouched, so a
+    round still cannot be scored well without covering the whole set.
 
     The payload carries no pixel counts. Those would say how large the
     set was and how big the window is; the scalar says only what the
@@ -119,15 +126,19 @@ def derive_ladder_outcome(rgba: bytes, width: int, height: int,
     if n_wrong >= FEWEST_VERDICT_PIXELS:
         scalar = -1.0
     else:
-        if not preview_rgba:
-            return None
         n_correct = _count_fill(rgba, correct)
-        n_preview = _count_fill(preview_rgba, preview)
-        if n_preview < FEWEST_VERDICT_PIXELS:
-            return None
-        if abs(n_correct - n_preview) > SET_MATCH_SLACK:
-            return None                # the set is not all there yet
-        scalar = 1.0
+        n_preview = (_count_fill(preview_rgba, preview)
+                     if preview_rgba else 0)
+        resolved = (
+            n_preview >= FEWEST_VERDICT_PIXELS
+            and abs(n_correct - n_preview) <= SET_MATCH_SLACK
+        )
+        if not resolved:
+            if not neutral:
+                return None            # the set is not all there yet
+            scalar = 0.0
+        else:
+            scalar = 1.0
     outcome: Dict[str, Any] = {
         'scalar': scalar,
         'evidence_digests': list(evidence_digests),
@@ -191,6 +202,8 @@ class MonkeyLadderEnv:
                  per_tile_ms: Optional[int] = None,
                  rounds: int = 20,
                  adaptive: bool = False,
+                 cursor: bool = False,
+                 neutral_outcomes: bool = False,
                  frame_hz: float = DEFAULT_FRAME_HZ,
                  visible: bool = False) -> None:
         self._asked = {
@@ -203,6 +216,19 @@ class MonkeyLadderEnv:
         # the runtime's business, not the task's. A capacity sweep in
         # particular needs the set size pinned.
         self._adaptive = bool(adaptive)
+        # Two interfaces onto the same task. By default a port names a
+        # tile outright, which is the cleanest thing to measure capacity
+        # through: one action per item, no motor cost in between. With
+        # ``cursor`` the ports are four moves and a commit, five in all,
+        # which is what a runtime built around a five-action decoder can
+        # drive without being rebuilt. The recall is the same either way;
+        # what differs is how many actions it costs to express.
+        self._cursor = bool(cursor)
+        # One outcome per action rather than one per round, the extra
+        # ones worth nothing. A runtime that expects a verdict for every
+        # action it takes needs this; a caller reading the task's own
+        # contract does not, and gets one outcome per round.
+        self._neutral_outcomes = bool(neutral_outcomes)
         self._rounds = int(rounds)
         if self._rounds < 1:
             raise ValueError('a run needs at least one round')
@@ -237,6 +263,7 @@ class MonkeyLadderEnv:
         self._response_open = False
         self._receipt_seq = 0
         self._action_finalized = False
+        self._outcome_owed = False
         self._receipt_ledger: Dict[int, Dict[str, Any]] = {}
         self._archive: Dict[str, bytes] = {}
         self._events: List[Dict[str, Any]] = []
@@ -248,9 +275,14 @@ class MonkeyLadderEnv:
 
     # --- public API -------------------------------------------------------
 
+    #: Four moves and a commit. Which port is which is not said here.
+    CURSOR_ACTION_COUNT = 5
+
     @property
     def n_actions(self) -> int:
         """How many opaque action ports this task offers."""
+        if self._cursor:
+            return self.CURSOR_ACTION_COUNT
         return int(self.task.grid) ** 2
 
     def reset(self, seed: int = 0) -> Dict[str, Any]:
@@ -328,9 +360,13 @@ class MonkeyLadderEnv:
         if not 0 <= index < self.n_actions:
             return rejected
 
-        grid = int(self.task.grid)
-        self.task.click_cell((index // grid, index % grid))
+        if self._cursor:
+            self._drive_cursor(index)
+        else:
+            grid = int(self.task.grid)
+            self.task.click_cell((index // grid, index % grid))
         self._action_finalized = True
+        self._outcome_owed = True
 
         held = self._receipt
         self._receipt = {
@@ -408,6 +444,7 @@ class MonkeyLadderEnv:
         task.show_ms = self._dial('MONKEY_LADDER_SHOW_MS')
         task.per_tile_ms = self._dial('MONKEY_LADDER_PER_TILE_MS')
         task.adaptive = self._adaptive
+        task.cursor_enabled = self._cursor
         # The result frame has to paint the same geometry the preview
         # did, numbers and all, or the two counts cannot be compared.
         task.reveal_answer = True
@@ -430,6 +467,7 @@ class MonkeyLadderEnv:
         self._consumed = True
         self._archive = {}
         self._action_finalized = False
+        self._outcome_owed = False
         self._delivered = set()
         self._cached_outcome = None
         self._receipt_ledger = {}
@@ -456,6 +494,16 @@ class MonkeyLadderEnv:
         }
         self.accounting.logical_trials += 1
 
+    #: Port index to cursor step. The fifth port commits.
+    _CURSOR_STEPS = ((1, 0), (-1, 0), (0, -1), (0, 1))
+
+    def _drive_cursor(self, index: int) -> None:
+        """One move, or the commit."""
+        if index < len(self._CURSOR_STEPS):
+            self.task.move_cursor(*self._CURSOR_STEPS[index])
+            return
+        self.task.commit_cursor()
+
     def _decode_ports(self, ports: Ports) -> List[int]:
         if ports is None:
             return []
@@ -473,7 +521,7 @@ class MonkeyLadderEnv:
         self._events.append(event)
         return True
 
-    def _publish_outcome(self) -> None:
+    def _publish_outcome(self, neutral: bool = False) -> None:
         """Derive and emit the public outcome for a finished round."""
         receipt_id = (self._receipt or {}).get('receipt_id')
         key = ('outcome', self._round, receipt_id)
@@ -482,7 +530,7 @@ class MonkeyLadderEnv:
         outcome = derive_ladder_outcome(
             self._rgba, self._width, self._height, self._round_digests,
             receipt_id, preview_rgba=self._preview_rgba, frame_seq=self._seq,
-            timestamp_ns=self._timestamp_ns)
+            timestamp_ns=self._timestamp_ns, neutral=neutral)
         if outcome is None:
             return                     # the round has not resolved yet
         public = {k: outcome[k] for k in PUBLIC_OUTCOME_KEYS if k in outcome}
@@ -544,6 +592,9 @@ class MonkeyLadderEnv:
 
         phase = self.task.phase
         self._round_digests.append(self._digest)
+        if self._neutral_outcomes and self._outcome_owed:
+            self._outcome_owed = False
+            self._publish_outcome(neutral=phase != 'result')
         if phase == 'show':
             # Every preview frame paints the whole set, so the last one
             # is as good as the first and is what the result is scored
@@ -557,7 +608,8 @@ class MonkeyLadderEnv:
                 self._open_window()
         elif phase == 'result':
             self._response_open = False
-            self._publish_outcome()
+            if not self._neutral_outcomes:
+                self._publish_outcome()
             self._finish_round()
 
     def _finish_round(self) -> None:
