@@ -1,408 +1,325 @@
 # -*- coding: utf-8 -*-
-"""Building a puzzle: layers, the grid, and the wrong answers.
+"""Building a matrix, and the eight answers offered for it.
 
-A **layer** is one base rule plus its supplemental rules, worked out
-over the whole grid. A **matrix** is one or two layers drawn on top of
-one another — two layers is how a cell comes to hold a circle inside a
-square, each obeying a rule of its own.
+A puzzle is one layout, held for all nine panels, with one or two
+components in it. Each component has a handful of attributes — which
+figure, how big, what colour, how many — and each attribute is given a
+rule that says what it does across a row. Run the rules, and the nine
+panels fall out.
 
-The bottom-right cell is the answer. The wrong answers are the hard
-part and the reason this file is worth reading: a puzzle is only as
-good as the choices it offers. Distractors that are obviously wrong
-make the puzzle trivial, and a distractor that is secretly *right*
-makes it unfair, so every candidate is checked against the answer and
-against the choices already taken before it is accepted.
+Every figure of a component shares that component's attributes within
+a panel. Three figures on a lattice are three of the *same* figure at
+the same size and colour, not three unrelated ones. That is what makes
+a panel readable at a glance, and it is the difference between a rule
+about *how many* and a jumble that happens to have three things in it.
 
 SPDX-License-Identifier: GPL-2.0-or-later
 """
 from __future__ import annotations
 
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Optional, Sequence, Tuple
 
-from .rules import (LogicRule, Numerosity, Rule, ShapeRepetition,
-                    choose_supplementals, generate_base_rule,
-                    generate_supplemental)
-from .surfaces import GREYS, Palette, Surface, same_picture
-from .transforms import Location
+from .figures import (Figure, Panel, SHAPES, SIZES, same_panel,
+                      turn_ladder)
+from .layouts import (LAYOUTS, SIMPLE_LAYOUTS, Component, Layout)
+from .palette import GREYS, Palette
+from .rules import ACROSS, Constant, Rule, apply_rule, choose_rule
 
-#: How many candidate wrong answers may be rejected in a row before
-#: the generator accepts that this puzzle has run dry. Reached only
-#: when the rules produce so few distinct cells that there is nothing
-#: left to offer; the puzzle is then thrown away rather than padded.
-MAX_REJECTIONS = 500
+#: How many answers are offered.
+CHOICES = 8
 
-#: Ways a wrong answer can be built, for the explanation screen.
-FROM_MATRIX = 'a cell copied from elsewhere in the grid'
-MODIFIED = 'a cell from the grid with one property altered'
-RECOMBINED = 'shapes from the grid combined differently'
-PARTIAL = 'the answer with a layer missing'
-NEAR_MISS = 'the answer with one property changed'
+#: How many of the wrong answers are the right one with a single
+#: attribute changed. The rest are panels from elsewhere in the matrix.
+#: Near misses are most of them on purpose: a wrong answer that differs
+#: in some way the rules never mention can be dismissed without
+#: understanding anything, and a test made of those measures only
+#: whether the player noticed the odd one out.
+NEAR_MISS_SHARE = 0.7
 
-#: How often a wrong answer is built by changing the right one.
-#:
-#: The original declared this strategy — ``MODIFIED_CORRECT_ANSWER`` is
-#: in its list of ways to build a wrong answer — and never wrote it,
-#: so every wrong answer came from somewhere else in the grid. That
-#: leaves them structurally unlike the right one, and a player who has
-#: found no rule can pick the answer out anyway by whichever property
-#: it happens to be alone in. Measured over four hundred of the hardest
-#: puzzles, the answer was the only choice holding its own set of shape
-#: kinds 50% of the time, its own shape count 41%, its own set of
-#: shadings 28% — against the eighth that guessing gives.
-#:
-#: A near miss holds exactly the answer's shapes and changes one
-#: property of one of them, so it matches the answer on every count
-#: anyone could take. With these in the mix all three of those figures
-#: fall to nothing.
-NEAR_MISS_SHARE = 0.45
+#: Tries before a puzzle is given up on and built again from scratch.
+PATIENCE = 400
 
 
-class Layer:
-    """One base rule and its supplementals, applied over the grid."""
+@dataclass
+class Attribute:
+    """One thing about a component that a rule can govern."""
 
-    def __init__(self, rows: int, columns: int,
-                 rules: Sequence[Rule]) -> None:
-        if not rules:
-            raise ValueError('a layer needs at least one rule')
-        self.rows = rows
-        self.columns = columns
-        self.rules = list(rules)
-        self.cells: List[List[List[Surface]]] = [
-            [None for _ in range(columns)] for _ in range(rows)]
-        self._build()
+    name: str
+    #: What it is called when the puzzle is explained.
+    noun: str
+    ladder: Tuple
+    rule: Rule = field(default_factory=Constant)
+    #: ``values[row][column]`` once the rule has been run.
+    values: List[List] = field(default_factory=list)
 
-    def at(self, location: Location) -> List[Surface]:
-        return self.cells[location.row][location.column]
-
-    def _put(self, location: Location, shapes: List[Surface]) -> None:
-        self.cells[location.row][location.column] = shapes
-
-    def _build(self) -> None:
-        for rule in self.rules:
-            if isinstance(rule, LogicRule):
-                self._build_logic(rule)
-            else:
-                self._build_walk(rule)
-        for row in range(self.rows):
-            for column in range(self.columns):
-                if self.cells[row][column] is None:
-                    self.cells[row][column] = []
-
-    def _build_logic(self, rule: LogicRule) -> None:
-        """Seed the corner block, then combine downward and rightward."""
-        for index, base in enumerate(rule.route.bases):
-            self._put(base, rule.seed(index, None))
-        for row in range(self.rows):
-            for column in range(self.columns):
-                if self.cells[row][column] is not None:
-                    continue
-                if row > 1:
-                    one = self.cells[row - 2][column]
-                    two = self.cells[row - 1][column]
-                else:
-                    one = self.cells[row][column - 2]
-                    two = self.cells[row][column - 1]
-                self.cells[row][column] = rule.combine(one, two)
-
-    def _build_walk(self, rule: Rule) -> None:
-        """Seed the route's starting cells, then walk each of them."""
-        for index, base in enumerate(rule.route.bases):
-            self._put(base, rule.seed(index, self.at(base)))
-            for location in rule.route.walk(base):
-                source = self.at(rule.route.source(location))
-                if not source:
-                    continue
-                self._put(location, rule.derive(source, self.at(location)))
-
-    def uses_numerosity(self) -> bool:
-        return any(isinstance(rule, Numerosity) for rule in self.rules)
-
-    def describe(self) -> List[str]:
-        """One line per rule, for the explanation screen."""
-        lines = []
-        for rule in self.rules:
-            if isinstance(rule, LogicRule):
-                lines.append(rule.description)
-            else:
-                lines.append('%s, %s' % (rule.description, rule.route.name))
-        return lines
+    def at(self, row: int, column: int):
+        return self.values[row][column]
 
 
 @dataclass
 class Puzzle:
-    """A finished puzzle: the grid, the choices, and the answer."""
+    """A finished matrix: the panels, the answers, and which is right."""
 
-    rows: int
-    columns: int
-    cell_size: int
-    #: ``cells[row][column]`` — the shapes drawn in that cell. The
-    #: bottom-right one is the answer and is not shown to the player.
-    cells: List[List[List[Surface]]]
-    #: The answer choices, in the order they are shown.
-    choices: List[List[Surface]]
-    #: Index into :attr:`choices` of the right one.
+    layout: Layout
+    palette: Palette
+    #: ``panels[row][column]``. The last one is the answer and is not
+    #: shown to the player.
+    panels: List[List[Panel]]
+    choices: List[Panel]
     answer: int
-    #: One line per rule, per layer.
     explanation: List[str]
-    #: How each wrong answer was built, for the explanation screen.
-    origins: List[str]
-    #: The fills this puzzle was drawn with. One per puzzle: a wrong
-    #: answer in the wrong palette would stand out as wrong without
-    #: any of the rules being read.
-    palette: Palette = GREYS
 
     @property
-    def question(self) -> List[Surface]:
-        """The shapes the answer cell should hold."""
-        return self.cells[self.rows - 1][self.columns - 1]
+    def question(self) -> Panel:
+        return self.panels[ACROSS - 1][ACROSS - 1]
 
 
 class _Stalled(Exception):
-    """Raised when a puzzle cannot fill its answer choices."""
+    """This attempt cannot be finished; build another."""
 
 
-def _composite(layers: Sequence[Layer], location: Location) -> List[Surface]:
-    """Every layer's shapes at one cell, stacked."""
-    shapes: List[Surface] = []
-    for layer in layers:
-        shapes.extend(layer.at(location))
-    return shapes
+def _attributes(component: Component, palette: Palette,
+                rng: random.Random) -> List[Attribute]:
+    """The attributes of one component, in the order rules are dealt."""
+    found = [Attribute('shape', 'which figure', SHAPES),
+             Attribute('size', 'the size', component.sizes or SIZES),
+             Attribute('colour', 'the %s' % palette.noun, palette.fills)]
+    if component.varies_in_number:
+        found.append(Attribute('number', 'how many', component.counts))
+    return found
 
 
-def _build_choices(layers: Sequence[Layer], rows: int, columns: int,
-                   cells: List[List[List[Surface]]], count: int,
-                   cell_size: int, rng: random.Random,
-                   palette: Palette
-                   ) -> Tuple[List[List[Surface]], List[str]]:
-    """The wrong answers, built four different ways.
+def _slots_for(component: Component, count: int) -> Tuple:
+    """Which slots a panel fills when it holds ``count`` figures.
 
-    Mixing the strategies matters. Cells copied from the grid catch a
-    player who has found no rule and is picking something that merely
-    looks like it belongs; altered cells catch one who has found the
-    rule but applied it loosely; recombinations catch one who has
-    found only one of two layers.
+    Fixed per count rather than drawn, so that a matrix whose rule is
+    about how many reads as figures being added rather than as figures
+    moving about. Where they sit is not the question.
     """
-    answer = cells[rows - 1][columns - 1]
-    chosen: List[List[Surface]] = []
-    origins: List[str] = []
-    rejections = 0
-
-    strategies = [FROM_MATRIX, MODIFIED, RECOMBINED]
-    if len(layers) > 1:
-        strategies.append(PARTIAL)
-
-    while len(chosen) < count - 1:
-        if rejections >= MAX_REJECTIONS:
-            raise _Stalled()
-        origin = (NEAR_MISS if rng.random() < NEAR_MISS_SHARE
-                  else rng.choice(strategies))
-        candidate = _candidate(origin, layers, rows, columns, cells,
-                               cell_size, rng, palette)
-        if (not candidate
-                or same_picture(candidate, answer)
-                or any(same_picture(candidate, taken) for taken in chosen)):
-            rejections += 1
-            continue
-
-        chosen.append(candidate)
-        origins.append(origin)
-        rejections = 0
-    return chosen, origins
+    return component.places(count)
 
 
-def _candidate(origin: str, layers: Sequence[Layer], rows: int, columns: int,
-               cells: List[List[List[Surface]]], cell_size: int,
-               rng: random.Random, palette: Palette) -> List[Surface]:
-    """One candidate wrong answer, built the way ``origin`` says."""
-    if origin == NEAR_MISS:
-        return _near_miss(cells[rows - 1][columns - 1], palette,
-                          cell_size, rng)
+def _build_panels(layout: Layout,
+                  dealt: List[List[Attribute]]) -> List[List[Panel]]:
+    """Run every component's attributes out into nine panels."""
+    panels: List[List[Panel]] = []
+    for row in range(ACROSS):
+        line: List[Panel] = []
+        for column in range(ACROSS):
+            figures: List[Figure] = []
+            for part, (component, attributes) in enumerate(
+                    zip(layout.components, dealt)):
+                by_name = dict((one.name, one) for one in attributes)
+                count = (by_name['number'].at(row, column)
+                         if 'number' in by_name else component.counts[0])
+                shape = by_name['shape'].at(row, column)
+                size = by_name['size'].at(row, column)
+                fill = by_name['colour'].at(row, column)
+                angle = (by_name['angle'].at(row, column)
+                         if 'angle' in by_name else 0)
+                for slot in _slots_for(component, count):
+                    figures.append(Figure(shape=shape, centre=slot.centre,
+                                          radius=slot.radius * size,
+                                          fill=fill, angle=angle,
+                                          component=part))
+            line.append(tuple(figures))
+        panels.append(line)
+    return panels
 
-    if origin == PARTIAL:
-        keep = rng.sample(range(len(layers)),
-                          rng.randrange(1, len(layers)))
-        answer_cell = Location(rows - 1, columns - 1)
-        return _composite([layers[index] for index in sorted(keep)],
-                          answer_cell)
 
-    if origin == FROM_MATRIX:
-        return list(_composite(layers, _other_cell(rows, columns, rng)))
+def _deal_rules(layout: Layout, palette: Palette, active: int,
+                rng: random.Random) -> List[List[Attribute]]:
+    """Give every attribute a rule, ``active`` of them not constant.
 
-    if origin == MODIFIED:
-        return _modified(layers, rows, columns, cell_size, rng, palette)
-
-    return _recombined(layers, rows, columns, rng)
-
-
-def _near_miss(answer: Sequence[Surface], palette: Palette,
-               cell_size: int, rng: random.Random) -> List[Surface]:
-    """The right answer with exactly one shape changed in one way.
-
-    Which property to change is drawn per candidate, so a run of near
-    misses varies rather than all differing in shading. The change is
-    always to one shape, never to the cell as a whole: a candidate that
-    differs everywhere is answered by noticing that it differs
-    everywhere, which is not the rule.
+    Which attributes get the interesting rules is drawn rather than
+    fixed, so two puzzles at the same level are not the same puzzle
+    with different figures in it.
     """
-    if not answer:
-        return []
-    index = rng.randrange(len(answer))
-    shape = answer[index]
+    dealt = [_attributes(component, palette, rng)
+             for component in layout.components]
 
-    ways = ['fill', 'size', 'turn']
-    rng.shuffle(ways)
-    for way in ways:
-        if way == 'fill':
-            spare = [fill for fill in palette.ramp
-                     if fill.name != shape.fill.name]
-            changed = shape.filled(rng.choice(spare))
-        elif way == 'size':
-            # Growing is capped by what the cell can hold. A shape
-            # drawn past its own box does not read as a wrong answer,
-            # it reads as a broken one, and a player learns to skip it.
-            drawn = max(shape.width, shape.height) * shape.scale
-            room = (cell_size * 0.9) / drawn if drawn else 1.0
-            factors = [0.6] + ([1.4] if room >= 1.4 else
-                               [round(room, 2)] if room >= 1.15 else [])
-            changed = shape.scaled(shape.scale * rng.choice(factors))
+    slots = [(component, attribute)
+             for component, attributes in zip(layout.components, dealt)
+             for attribute in attributes]
+    rng.shuffle(slots)
+    for index, (_component, attribute) in enumerate(slots):
+        if index < active:
+            attribute.rule = choose_rule(
+                attribute.ladder, rng,
+                allow_arithmetic=(attribute.name == 'number'))
         else:
-            changed = shape.rotated(shape.rotation
-                                    + rng.choice((45, 90, 135)))
-        if not changed.looks_like(shape):
-            return [changed if position == index else other
-                    for position, other in enumerate(answer)]
-    return []
+            attribute.rule = Constant()
+
+    for attributes in dealt:
+        by_name = dict((one.name, one) for one in attributes)
+        for attribute in attributes:
+            attribute.values = apply_rule(attribute.rule, attribute.ladder,
+                                          rng)
+        # A rotation rule is only offered where a turn can be seen: the
+        # figure has to be the same one all the way across, and it has
+        # to be a figure that looks different turned.
+        # A turn is only offered when the figure is the same all the
+        # way across, because how far a figure must turn before it
+        # looks turned depends on how symmetrical it is, and there is
+        # one ladder per matrix. A circle's ladder has one rung — it
+        # looks the same every way up — so a circle is never turned
+        # without that having to be said anywhere.
+        shape = by_name['shape']
+        if isinstance(shape.rule, Constant) and rng.random() < 0.25:
+            ladder = turn_ladder(shape.at(0, 0))
+            turning = Attribute('angle', 'the way it faces', ladder)
+            turning.rule = choose_rule(ladder, rng)
+            turning.values = apply_rule(turning.rule, ladder, rng)
+            attributes.append(turning)
+        # No angle attribute at all otherwise, rather than one held at
+        # zero. A held attribute is still something a near miss may
+        # change, and a tilted figure among eight upright ones is a
+        # wrong answer anybody can dismiss without reading the matrix.
+        # Panels default to upright when no angle attribute is present.
+    return dealt
 
 
-def _other_cell(rows: int, columns: int, rng: random.Random) -> Location:
-    """A cell of the grid that is not the answer."""
-    while True:
-        location = Location(rng.randrange(rows), rng.randrange(columns))
-        if location != Location(rows - 1, columns - 1):
-            return location
+def _explain(layout: Layout, dealt: List[List[Attribute]]) -> List[str]:
+    """One line per rule that actually does something."""
+    lines: List[str] = []
+    for describes, attributes in zip(layout.describes, dealt):
+        for attribute in attributes:
+            if isinstance(attribute.rule, Constant):
+                continue
+            said = attribute.rule.describe(attribute.noun)
+            if len(layout.components) > 1:
+                said = '%s — %s' % (describes, said)
+            lines.append(said)
+    return lines or ['every figure is the same across each row']
 
 
-def _modified(layers: Sequence[Layer], rows: int, columns: int,
-              cell_size: int, rng: random.Random,
-              palette: Palette) -> List[Surface]:
-    """A cell from one layer with its shading or its size altered.
+def _targets(layout: Layout,
+             dealt: List[List[Attribute]]) -> List[Tuple[int, Attribute]]:
+    """Every attribute a near miss could change, as (component, attribute).
 
-    When the layer counts shapes, every copy is changed the same way.
-    Changing one of four identical shapes would leave a cell that no
-    rule could ever produce, and a choice that is visibly malformed is
-    not a distractor — it is a hint about which choices to ignore.
+    Kept as a list so that the near misses can be spread across it
+    rather than drawn independently. Drawn independently, a matrix with
+    four attributes routinely produced five wrong answers that all
+    differed in size — which narrows the question to "which size?" and
+    throws away everything the other rules were asking.
     """
-    layer = layers[rng.randrange(len(layers))]
-    shapes = layer.at(_other_cell(rows, columns, rng))
-    if not shapes:
-        return []
-
-    if rng.random() < 0.5:
-        fill = rng.choice(list(palette.basic))
-        change = lambda shape: shape.filled(fill)
-    else:
-        change = lambda shape: shape.scaled(shape.scale * 0.66)
-
-    if layer.uses_numerosity():
-        return [change(shape) for shape in shapes]
-    index = rng.randrange(len(shapes))
-    return [change(shape) if position == index else shape
-            for position, shape in enumerate(shapes)]
+    return [(index, attribute)
+            for index, attributes in enumerate(dealt)
+            for attribute in attributes
+            if len(attribute.ladder) > 1]
 
 
-def _recombined(layers: Sequence[Layer], rows: int, columns: int,
-                rng: random.Random) -> List[Surface]:
-    """Shapes taken from scattered cells and put in one cell together.
+def _changed(layout: Layout, dealt: List[List[Attribute]],
+             which: int, target: Attribute, rng: random.Random) -> Panel:
+    """The right answer with ``target`` altered on one component.
 
-    Each layer contributes from a cell of its own, and only some of
-    what it finds, so the result is made of parts the player has seen
-    without being any cell they have seen.
+    Rebuilt through the same machinery rather than edited in place, so
+    a near miss is always a panel the layout could have produced —
+    figures in their proper slots, at a size off the ladder. A panel
+    that could not exist is answerable by noticing that it could not.
     """
-    shapes: List[Surface] = []
-    for layer in rng.sample(list(layers), rng.randrange(1, len(layers) + 1)):
-        found = layer.at(Location(rng.randrange(rows), rng.randrange(columns)))
-        for shape in found:
-            if rng.random() < 0.5 and not any(shape.looks_like(taken)
-                                              for taken in shapes):
-                shapes.append(shape)
-    return shapes
+    was = target.at(ACROSS - 1, ACROSS - 1)
+    options = [value for value in target.ladder if value != was]
+    if not options:
+        return ()
+
+    swapped = rng.choice(options)
+    figures: List[Figure] = []
+    for index, (component, group) in enumerate(zip(layout.components, dealt)):
+        by_name = dict((one.name, one) for one in group)
+
+        def value(name, default=None):
+            if index == which and name == target.name:
+                return swapped
+            return (by_name[name].at(ACROSS - 1, ACROSS - 1)
+                    if name in by_name else default)
+
+        count = value('number', component.counts[0])
+        for slot in _slots_for(component, count):
+            figures.append(Figure(shape=value('shape'), centre=slot.centre,
+                                  radius=slot.radius * value('size'),
+                                  fill=value('colour'),
+                                  angle=value('angle', 0), component=index))
+    return tuple(figures)
 
 
-def generate(rows: int = 3, columns: int = 3, layers: int = 1,
-             rules_per_layer: int = 1, choices: int = 8,
-             cell_size: int = 100, seed: Optional[int] = None,
-             attempts: int = 60,
-             palettes: Sequence[Palette] = (GREYS,)) -> Puzzle:
+def _build_choices(puzzle_panels: List[List[Panel]], layout: Layout,
+                   dealt: List[List[Attribute]], palette: Palette,
+                   rng: random.Random) -> Tuple[List[Panel], int]:
+    """The eight answers, and where the right one was put."""
+    answer = puzzle_panels[ACROSS - 1][ACROSS - 1]
+    if not answer:
+        raise _Stalled()
+
+    elsewhere = [panel for row in range(ACROSS) for column in range(ACROSS)
+                 for panel in (puzzle_panels[row][column],)
+                 if (row, column) != (ACROSS - 1, ACROSS - 1)]
+
+    # Deal the near misses round the attributes rather than drawing one
+    # each time, so that every rule the matrix asks about is challenged
+    # by at least one wrong answer before any is challenged twice.
+    targets = _targets(layout, dealt)
+    rng.shuffle(targets)
+    turn = 0
+
+    wrong: List[Panel] = []
+    tries = 0
+    while len(wrong) < CHOICES - 1:
+        tries += 1
+        if tries > PATIENCE:
+            raise _Stalled()
+        if targets and (rng.random() < NEAR_MISS_SHARE or not elsewhere):
+            which, target = targets[turn % len(targets)]
+            turn += 1
+            candidate = _changed(layout, dealt, which, target, rng)
+        else:
+            candidate = rng.choice(elsewhere)
+        if not candidate or same_panel(candidate, answer):
+            continue
+        if any(same_panel(candidate, taken) for taken in wrong):
+            continue
+        wrong.append(candidate)
+
+    where = rng.randrange(CHOICES)
+    choices = list(wrong)
+    choices.insert(where, answer)
+    return choices, where
+
+
+def generate(level: int = 1, seed: Optional[int] = None,
+             palettes: Sequence[Palette] = (GREYS,),
+             attempts: int = 80) -> Puzzle:
     """Build one puzzle.
 
-    ``rules_per_layer`` is how many rules a layer carries, exactly,
-    not at most. An adaptive run moves the player up and down this
-    number, so it has to mean something: drawing a random count up to
-    it — what the original did — let the hardest setting hand out
-    one-rule puzzles, and a level that sometimes means level one
-    cannot be climbed.
-
-    A logic layer is the exception. Combining two cells is already the
-    whole of what a layer can say, and the original allowed it no
-    further rules; such a layer carries one rule at any setting.
-
-    ``palettes`` are the fill sets a puzzle may be drawn with; one is
-    picked per puzzle, so a run offered both alternates between grey
-    puzzles and coloured ones rather than mixing them within a grid.
-
-    A puzzle whose rules leave too few distinct cells to fill the
-    answer choices is discarded and rebuilt rather than padded out with
-    blanks. Blank choices were what the original did, and they leak the
-    answer: a player who sees three empty boxes knows to ignore them.
+    ``level`` runs from 1 upward and decides two things: how many of
+    the attributes carry a rule that is not simply "hold constant", and
+    whether the layout may have two components to carry them.
     """
     rng = random.Random(seed)
     palette = rng.choice(list(palettes))
+    components, active = LADDER[max(0, min(len(LADDER) - 1, level - 1))]
+
     for _ in range(attempts):
+        pool = [one for one in LAYOUTS if len(one.components) == components] \
+            if components > 1 else list(SIMPLE_LAYOUTS)
+        layout = rng.choice(pool)
+        dealt = _deal_rules(layout, palette, active, rng)
+        panels = _build_panels(layout, dealt)
         try:
-            return _attempt(rows, columns, layers, rules_per_layer,
-                            choices, cell_size, rng, palette)
+            choices, where = _build_choices(panels, layout, dealt, palette,
+                                            rng)
         except _Stalled:
             continue
-    raise RuntimeError('could not build a puzzle with %d layers and %d rules'
-                       % (layers, rules_per_layer))
+        return Puzzle(layout=layout, palette=palette, panels=panels,
+                      choices=choices, answer=where,
+                      explanation=_explain(layout, dealt))
+    raise RuntimeError('could not build a puzzle at level %d' % level)
 
 
-def _attempt(rows: int, columns: int, layer_count: int, rules_per_layer: int,
-             choices: int, cell_size: int, rng: random.Random,
-             palette: Palette) -> Puzzle:
-    """One try at a puzzle, which may run dry and be thrown away."""
-    built: List[Layer] = []
-    for _ in range(layer_count):
-        base = generate_base_rule(rows, columns, cell_size, rng, palette)
-        rules: List[Rule] = [base]
-        if isinstance(base, ShapeRepetition):
-            for kind in choose_supplementals(rules_per_layer - 1, rng):
-                rules.append(generate_supplemental(rows, columns, cell_size,
-                                                   rng, palette, kind))
-        built.append(Layer(rows, columns, rules))
-
-    cells = [[_composite(built, Location(row, column))
-              for column in range(columns)] for row in range(rows)]
-    if not cells[rows - 1][columns - 1]:
-        raise _Stalled()        # an empty answer cell is not a question
-
-    wrong, origins = _build_choices(built, rows, columns, cells,
-                                    choices, cell_size, rng, palette)
-
-    answer_at = rng.randrange(choices)
-    ordered = list(wrong)
-    ordered.insert(answer_at, cells[rows - 1][columns - 1])
-    placed_origins = list(origins)
-    placed_origins.insert(answer_at, 'the answer')
-
-    explanation: List[str] = []
-    for index, layer in enumerate(built):
-        prefix = '' if layer_count == 1 else 'layer %d: ' % (index + 1)
-        explanation.extend(prefix + line for line in layer.describe())
-
-    return Puzzle(rows=rows, columns=columns, cell_size=cell_size,
-                  cells=cells, choices=ordered, answer=answer_at,
-                  explanation=explanation, origins=placed_origins,
-                  palette=palette)
+#: Level → how many components the layout may have, and how many
+#: attributes carry a rule other than holding constant.
+LADDER: Tuple[Tuple[int, int], ...] = (
+    (1, 1), (1, 2), (1, 3), (2, 3), (2, 4), (2, 5),
+)

@@ -49,10 +49,10 @@ from ..constants import FONTLIST
 from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
                         width_center)
 from ..i18n import _
-from ..ravens import generate
-from ..ravens.surfaces import GREYS, PALETTES
+from ..ravens import LADDER, generate
+from ..ravens.palette import GREYS, PALETTES
+from ..ravens.figures import Figure
 from ..ravens.geometry import triangulate
-from ..ravens.surfaces import Surface
 from . import cursor, taskoptions
 
 #: How much bigger than its final size a card is drawn before being
@@ -61,35 +61,35 @@ from . import cursor, taskoptions
 #: eye can find.
 SUPERSAMPLE = 3
 
-#: Cell size the engine lays shapes out in. Purely internal — the card
-#: is drawn at whatever the window allows and the shapes are scaled to
-#: match — but it fixes the quarter-cell steps shape sizes come in.
+#: Panel size the card is laid out in. Purely internal: the engine
+#: places figures in a unit square and the card is drawn at whatever
+#: the window allows, so this only fixes the arithmetic below.
 CELL_UNITS = 100
 
-#: Gap between cells, in the same units.
-GAP_UNITS = 6
+#: Gap between panels, in the same units. Wide enough that the figures
+#: in neighbouring panels are plainly separate things.
+GAP_UNITS = 7
 
 #: The paper the puzzle is drawn on, and the ink used for outlines.
 PAPER = (255, 255, 255, 255)
 INK = (0, 0, 0, 255)
 
-#: Cell borders on the paper: present enough to group the drawings,
-#: faint enough not to compete with them.
-RULE_LINE = (150, 150, 150, 255)
+#: Panel borders on the paper: enough to group the figures, faint
+#: enough not to be read as figures themselves. A printed Raven's sheet
+#: rules its matrix in hairlines for the same reason.
+RULE_LINE = (176, 176, 176, 255)
 
-#: The border on the empty cell, which is a question rather than a
-#: cell that happens to be blank.
-EMPTY_LINE = (90, 90, 90, 255)
+#: The border on the empty panel, which is a question rather than a
+#: panel that happens to be blank.
+EMPTY_LINE = (110, 110, 110, 255)
 
-#: Outline thickness, in engine units, before the card is scaled.
-STROKE_UNITS = 2.0
+#: How thick a figure's outline is drawn, as a share of a panel. Thin
+#: and even: a heavy line turns a small figure into a blot, and the
+#: sizes have to stay tellable apart at the bottom of the ladder.
+STROKE_SHARE = 0.016
 
-#: Difficulty steps: how many layers, and the most rules a layer may
-#: carry. One layer with one rule is a pattern; two layers with three
-#: rules each is a puzzle that has to be taken apart.
-LADDER: Sequence[Tuple[int, int]] = (
-    (1, 1), (1, 2), (1, 3), (2, 2), (2, 3),
-)
+#: The hairline the panels are ruled with, in the same share.
+RULE_SHARE = 0.006
 
 #: The answer choices, laid out beside the grid.
 CHOICE_COLUMNS = 2
@@ -232,29 +232,30 @@ def draw_outline(ribbon: Ribbon, points: Sequence[Tuple[float, float]],
                     thickness, color)
 
 
-def draw_cell(ribbon: Ribbon, shapes: Sequence[Surface],
-              left: float, top: float, size: float) -> None:
-    """Draw one cell's shapes, in card units.
+def draw_panel(ribbon: Ribbon, figures: Sequence[Figure],
+               left: float, top: float, size: float) -> None:
+    """Draw one panel's figures, in card units.
 
-    Every fill goes down before any outline, so that a shape stacked on
-    another cannot paint over the line around it. The fills stay
-    translucent, which is how a two-layer cell reads as two things
-    rather than one opaque blob.
+    The engine places figures in a unit square, so the only work here
+    is moving that square to where the panel is.
+
+    Every fill goes down before any outline, so that a figure drawn
+    over another cannot paint out the line around it — which is what
+    an inside-and-outside layout depends on.
     """
-    scale = size / float(CELL_UNITS)
-    stroke = max(0.6, STROKE_UNITS * scale)
+    stroke = max(0.5, STROKE_SHARE * size)
     placed = []
-    for shape in shapes:
-        outline = [(left + point.x * scale, top + point.y * scale)
-                   for point in shape.outline()]
-        placed.append((shape, outline))
-        if shape.fill.color[3]:
-            for one, two, three in triangulate(list(shape.outline())):
-                ribbon.add(((left + one.x * scale, top + one.y * scale),
-                            (left + two.x * scale, top + two.y * scale),
-                            (left + three.x * scale, top + three.y * scale)),
-                           shape.fill.color)
-    for _shape, outline in placed:
+    for figure in figures:
+        outline = [(left + point.x * size, top + point.y * size)
+                   for point in figure.outline()]
+        placed.append(outline)
+        if figure.fill.color[3]:
+            for one, two, three in triangulate(list(figure.outline())):
+                ribbon.add(((left + one.x * size, top + one.y * size),
+                            (left + two.x * size, top + two.y * size),
+                            (left + three.x * size, top + three.y * size)),
+                           figure.fill.color)
+    for outline in placed:
         draw_outline(ribbon, outline, stroke, INK)
 
 
@@ -360,11 +361,14 @@ class MatrixReasoning:
             font_size=calc_fontsize(12), color=self.textcolor,
             batch=self.batch, x=width_center(), y=from_bottom_edge(26),
             anchor_x='center', anchor_y='center', font_name=FONTLIST)
+        # Anchored at its bottom, above the key line, so that a puzzle
+        # carrying five rules grows upward into the empty page rather
+        # than downward through the keys.
         self.notes = pyglet.text.Label(
-            '', font_size=calc_fontsize(12), color=self.textcolor,
-            batch=self.batch, x=width_center(), y=from_bottom_edge(52),
-            anchor_x='center', anchor_y='center', font_name=FONTLIST,
-            multiline=True, width=state.window.width * 0.9, align='center')
+            '', font_size=calc_fontsize(10), color=self.textcolor,
+            batch=self.batch, x=width_center(), y=from_bottom_edge(42),
+            anchor_x='center', anchor_y='bottom', font_name=FONTLIST,
+            multiline=True, width=state.window.width * 0.94, align='center')
         self._build_cards()
         self._redraw()
 
@@ -372,7 +376,9 @@ class MatrixReasoning:
         """Where the puzzle lives: left, bottom, width, height in pixels."""
         window = state.window
         top = from_top_edge(96)
-        bottom = from_bottom_edge(76)
+        # A puzzle with five rules needs several lines to say so. The
+        # room is taken out of the puzzle rather than written over it.
+        bottom = from_bottom_edge(112 if self.explain else 76)
         return (window.width * 0.04, bottom,
                 window.width * 0.92, max(40.0, top - bottom))
 
@@ -454,18 +460,18 @@ class MatrixReasoning:
 
         def paint_matrix(batch: pyglet.graphics.Batch) -> List:
             ribbon = Ribbon()
-            for row in range(puzzle.rows):
-                for column in range(puzzle.columns):
+            across = len(puzzle.panels)
+            for row in range(across):
+                for column in range(across):
                     left = GAP_UNITS + column * (CELL_UNITS + GAP_UNITS)
                     top = GAP_UNITS + row * (CELL_UNITS + GAP_UNITS)
-                    last = (row == puzzle.rows - 1
-                            and column == puzzle.columns - 1)
+                    last = row == across - 1 and column == across - 1
                     _border(ribbon, left, top, CELL_UNITS, CELL_UNITS,
                             EMPTY_LINE if last else RULE_LINE,
-                            2.0 if last else 1.0)
+                            RULE_SHARE * CELL_UNITS * (2.0 if last else 1.0))
                     if not last:
-                        draw_cell(ribbon, puzzle.cells[row][column],
-                                  left, top, CELL_UNITS)
+                        draw_panel(ribbon, puzzle.panels[row][column],
+                                   left, top, CELL_UNITS)
             return [ribbon.upload(batch)]
 
         self.matrix_card.render(paint_matrix)
@@ -478,8 +484,8 @@ class MatrixReasoning:
                              shapes=shapes) -> List:
                 ribbon = Ribbon()
                 _border(ribbon, GAP_UNITS, GAP_UNITS, CELL_UNITS, CELL_UNITS,
-                        RULE_LINE, 1.0)
-                draw_cell(ribbon, shapes, GAP_UNITS, GAP_UNITS, CELL_UNITS)
+                        RULE_LINE, RULE_SHARE * CELL_UNITS)
+                draw_panel(ribbon, shapes, GAP_UNITS, GAP_UNITS, CELL_UNITS)
                 return [ribbon.upload(batch)]
 
             card.render(paint_choice)
@@ -506,9 +512,7 @@ class MatrixReasoning:
             return
         self.trial += 1
         self.trial_level = self.level
-        layers, rules = LADDER[self.level]
-        self.puzzle = generate(layers=layers, rules_per_layer=rules,
-                               choices=CHOICE_COUNT, cell_size=CELL_UNITS,
+        self.puzzle = generate(level=self.level + 1,
                                seed=self.rng.randrange(1 << 30),
                                palettes=self.palettes)
         self.picked = None
@@ -659,7 +663,7 @@ class MatrixReasoning:
         self.status.text = '     '.join(parts)
         if self.explain and self.puzzle is not None \
                 and self.phase == 'feedback':
-            self.notes.text = '     '.join(self.puzzle.explanation)
+            self.notes.text = '   ·   '.join(self.puzzle.explanation)
         else:
             self.notes.text = ''
 

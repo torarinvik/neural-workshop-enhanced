@@ -221,33 +221,67 @@ networks are generated.
 
 #### Matrix Reasoning
 
-A three-by-three grid of drawings that follow rules you have to work
-out, with the bottom-right cell missing and eight candidates for it
+A three-by-three grid of figures that follow rules you have to work
+out, with the bottom-right panel missing and eight candidates for it
 beside the grid. Answer with **1**–**8** or by clicking a box. This is
 the shape of a Raven's Progressive Matrices item, the standard test of
 reasoning that owes nothing to language or to what you already know.
 
-The puzzles are generated rather than drawn. A rule is a change that
-happens along a route through the grid — down the columns, along the
-rows, along either diagonal, or outward from the top-left corner — and
-the changes on offer are: the same shape repeats, the shape turns an
-eighth of a turn, it shrinks, its shading moves along a scale of five,
-its shading stays constant along each route, or it gains a copy at
-every step. A layer is one such rule with up to two more stacked on
-top of it, and a puzzle is one or two layers drawn over one another,
-which is how a cell comes to hold a circle inside a square with each
-obeying a rule of its own. There is also a second kind of rule
-entirely: the top-left two-by-two block is given and every other cell
-is two earlier cells combined, by keeping the shapes in both, in
-either, or in exactly one.
+The puzzles are generated rather than drawn, and the generator is
+built around the three things that make a matrix read as a designed
+object rather than a heap:
 
-*Start at level* picks a rung of a five-step ladder — one rule on one
-layer at the bottom, three rules on each of two layers at the top —
-and with *Go up a level when right* the run follows how you do. The
-level is exact rather than an upper bound: a level an adaptive run
-moves you along has to mean something, and drawing a random number of
-rules up to the setting, which is what the original did, let the
-hardest rung hand out one-rule puzzles.
+**A layout.** Every panel of a puzzle uses the same arrangement — one
+figure in the middle, two side by side, one above another, one inside
+another, or a lattice of two-by-two or three-by-three. The layout is
+part of the puzzle's shape, not one of its variables, so it is never
+something you have to work out. A layout carries one or two
+*components* — the outer ring and the inner mark are two of them — and
+each follows rules of its own, which is how a matrix asks two
+questions at once without drawing the answers on top of each other.
+
+**Regular figures.** Triangle, square, pentagon, hexagon, circle, each
+inscribed in a circle and sitting the way the eye expects: the
+triangle on its base, the square square rather than diamond. Sizes
+come off a five-step ladder that is *geometric* rather than evenly
+spaced, because what the eye judges is the ratio between two sizes and
+not the difference — an evenly spaced ladder is obvious at the small
+end and guesswork at the large end.
+
+**Rules along the rows.** Four of them, and the same rule governs all
+three rows, which is what makes the third row answerable from the
+first two:
+
+* *Constant* — the value holds, everywhere. Not merely along each row:
+  an attribute that changes between rows is doing something, and a
+  player is right to go looking for the rule behind it, so there had
+  better be one. Anything that varies here varies because a rule says
+  so.
+* *Progression* — the value steps along its ladder by the same amount
+  each time, up or down, by one or by two.
+* *Distribute three* — three values, and every row holds all three in
+  a different order. Laid out as a Latin square, so every column holds
+  all three as well and the missing value can be read off either. This
+  is the rule people picture when they picture a Raven's item.
+* *Arithmetic* — the third value is the first plus or minus the
+  second. Only ever applied to how many figures there are, where it is
+  something a person can actually do in their head.
+
+The attributes a rule can govern are which figure, its size, its
+colour, how many there are, and — where it can be seen — which way it
+faces. That last one takes its turns from the figure's own symmetry: a
+fixed ladder of sixths of a turn would offer a triangle 0°, 120° and
+240°, which are three names for the same triangle.
+
+*Start at level* picks a rung of a six-step ladder, from one rule on a
+single-component layout to five rules across two components, and with
+*Go up a level when right* the run follows how you do. *Name the rules
+after each answer* prints the rules behind the puzzle once it has been
+answered, which turns a run into practice rather than a test. Nothing
+is downloaded — a puzzle costs under a tenth of a millisecond to
+build, so they are made as you play.
+
+##### Colour
 
 *Mix in coloured puzzles* alternates coloured grids with grey ones. A
 puzzle is one or the other and never both: a candidate in the wrong
@@ -260,83 +294,50 @@ the palette was chosen by measurement: every pair was simulated for
 each kind of dichromacy and compared in CIELAB, and these four leave
 the largest worst case of any four in the Okabe-Ito set. That worst
 case is a little over twice the grey ramp's own, so a rule about
-colour is if anything easier to follow than a rule about shading.
+colour is if anything easier to follow than a rule about shade.
 
 They are also ordered by lightness, strictly — 100, 91, 76, 63, 57 —
 so the sequence is a lightness ramp as well as a colour one. A player
 who cannot separate the hues at all still sees each step get darker,
 which is the same rule the grey puzzles ask for.
 
-*Name the rules after each answer* prints the rules behind the puzzle
-once it has been answered, which turns a run into practice rather than
-a test. Nothing is downloaded — a puzzle costs about a third of a
-millisecond to build, so they are made as you play.
+##### The wrong answers
 
-The puzzle is drawn on white paper in both themes. The five shadings
-are translucent inks washed over the paper, which is what makes them
-read as an ordered series from unfilled to solid; composited over a
-black background instead, the lightest and the darkest both come out
-black and the series collapses, so two rules differing only in shading
-would become the same rule. Everything around the puzzle follows the
-theme as usual. The drawings themselves are rendered offscreen at
-three times their final size and scaled down, because the outlines
-carry the rules: an eighth of a turn has to be visible as a turn, and
-a staircase of hard pixel edges hides small angles.
+A puzzle is only as good as the choices it offers. Most of them here
+are *near misses*: the right answer with one property of one component
+changed, rebuilt through the same machinery so that it is always a
+panel the layout could have produced. A wrong answer that could not
+exist is answerable by noticing that it could not, and a wrong answer
+that breaks a rule the matrix never mentions can be dismissed without
+understanding anything.
 
-##### Where this departs from the Sandia tool
+They are dealt round the attributes rather than drawn independently,
+so every rule the matrix asks about is challenged by a wrong answer
+before any is challenged twice. Drawn independently they pile up: a
+matrix with four attributes routinely produced five wrong answers that
+all differed in size, which narrows the question to "which size?" and
+throws away what the other rules were asking.
 
-The rules and the ways of building wrong answers come from the Sandia
-Generated Matrix Tool, a Java research tool by Zachary Benz and Kevin
-Dixon, released by Sandia Corporation in 2010 under a three-clause BSD
-licence. `neural_workshop/ravens/` is a rewrite, not
-a translation, and it differs in four ways that matter:
+The tests measure this rather than trusting it. No single shallow cue
+— how many figures, which figures, which colours, which sizes — may
+pick the answer out more often than guessing would.
 
-* **No blank answer choices.** When the original ran out of distinct
-  wrong answers it padded the remaining boxes with empty ones, which
-  leaks the answer — three empty boxes are three you know to ignore.
-  Here a puzzle that cannot fill its choices is thrown away and
-  another generated.
-* **The wrong answers no longer give the right one away.** Every wrong
-  answer in the original came from somewhere else in the grid, which
-  leaves them structurally unlike the answer — so a player who found
-  no rule at all could still pick it out by whichever property it
-  happened to be alone in. Over four hundred of the hardest puzzles
-  the answer was the only choice holding its own set of shape kinds
-  half the time, its own shape count 41% of the time, its own set of
-  shadings 28% — against the eighth that guessing gives.
+##### Where this came from
 
-  The fix is a strategy the original declared and never wrote:
-  `MODIFIED_CORRECT_ANSWER` sits unused in its list of ways to build a
-  wrong answer. A *near miss* is the right answer with one property of
-  one shape changed, so it matches on every count anyone could take.
-  With near misses in the mix all three of those figures fall to
-  nothing, and there is no way through but the rules.
+The first version of this task was a port of the Sandia Generated
+Matrix Tool, a Java research tool by Zachary Benz and Kevin Dixon
+released by Sandia Corporation in 2010 under a three-clause BSD
+licence. It generated sound puzzles that did not look like Raven's
+items: it stacked layers of stretched ellipses and trapezoids at the
+same centre and let them overlap, and it walked its rules along
+diagonals and spirals rather than rows. Both are patterns a person can
+eventually find, and neither is what the test is.
 
-* **Nothing shrinks out of sight.** The shrinking rule took a third
-  off at every step, which is fine down a column of three — two steps,
-  ending at 44% — and ruinous on the route that sweeps outward from
-  the top-left corner, which is eight steps long and ended at 3.6%.
-  The shapes became dots, and a puzzle offering eight indistinguishable
-  dots cannot be answered at all. The step is now worked back from
-  where the route ends rather than fixed, so a long route shrinks
-  gently and a short one shrinks as it always did.
-
-* **No two rules in a layer fight over the same property.** A layer
-  could draw both fill rules, or counting alongside scaling; the
-  second simply overwrote the first, leaving a rule the puzzle claimed
-  to follow and showed no sign of. That is worse than one rule fewer,
-  because a player who takes the puzzle seriously looks for it.
-* **Two shadings that were secretly one.** Shadings are compared by
-  name, and the original gave two different greys the same name —
-  `"Red"`, in both, and neither is red. A candidate differing from
-  another only in being 46% grey rather than 70% grey therefore
-  counted as a duplicate of it and was discarded, though the two look
-  nothing alike.
-* **A level means a number of rules.** See above.
-
-The original also shipped without the serialised difficulty model its
-batch generator needs, so that half of it could not be run at all. The
-ladder here replaces it.
+The engine here was rebuilt from the ground up around layouts,
+regular figures and row-wise rules. What survives from the port is the
+colour work above and the near-miss idea — which was itself a strategy
+the Sandia tool declared, as `MODIFIED_CORRECT_ANSWER`, and never
+wrote.
 
 ### Window size, full screen, and the two coordinate spaces
 
