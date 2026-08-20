@@ -49,7 +49,7 @@ from ..constants import FONTLIST
 from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
                         width_center)
 from ..i18n import _
-from ..ravens import LADDER, generate
+from ..ravens import GRADES, generate
 from ..ravens.palette import GREYS, PALETTES
 from ..ravens.figures import Figure
 from ..ravens.geometry import triangulate
@@ -91,10 +91,10 @@ STROKE_SHARE = 0.016
 #: The hairline the panels are ruled with, in the same share.
 RULE_SHARE = 0.006
 
-#: The answer choices, laid out beside the grid.
+#: The answer choices are laid out beside the grid in two columns;
+#: how many rows depends on the puzzle, because the easy grades offer
+#: four answers where the rest offer eight.
 CHOICE_COLUMNS = 2
-CHOICE_ROWS = 4
-CHOICE_COUNT = CHOICE_COLUMNS * CHOICE_ROWS
 
 
 class Card:
@@ -268,7 +268,7 @@ def _border(ribbon: Ribbon, left: float, top: float, width: float,
 
 
 class MatrixReasoning:
-    """Show a matrix and eight candidates, take one, say if it was right."""
+    """Show a matrix and its candidates, take one, say if it was right."""
 
     instance: Optional['MatrixReasoning'] = None
 
@@ -321,7 +321,7 @@ class MatrixReasoning:
         self.level = self.clamped(self.start_level - 1)
 
     def clamped(self, level: int) -> int:
-        return max(0, min(len(LADDER) - 1, level))
+        return max(0, min(len(GRADES) - 1, level))
 
     def open_options(self) -> None:
         taskoptions.open_task_options('matrix_reasoning',
@@ -372,6 +372,20 @@ class MatrixReasoning:
         self._build_cards()
         self._redraw()
 
+    def _choice_count(self) -> int:
+        """How many answers the puzzle on screen offers.
+
+        Between puzzles it is the count the current level would offer,
+        so the chrome is laid out for the puzzle about to appear.
+        """
+        if self.puzzle is not None:
+            return len(self.puzzle.choices)
+        return GRADES[self.level].choices
+
+    def _choice_rows(self) -> int:
+        count = self._choice_count()
+        return (count + CHOICE_COLUMNS - 1) // CHOICE_COLUMNS
+
     def _canvas(self) -> Tuple[float, float, float, float]:
         """Where the puzzle lives: left, bottom, width, height in pixels."""
         window = state.window
@@ -396,7 +410,7 @@ class MatrixReasoning:
         # matrix is 3 cells wide; choices are 2 cells wide. Both share
         # one cell size, so 5 cells plus the gap fill the width.
         by_width = (width - gap) / 5.0
-        by_height = min(height / 3.0, height / CHOICE_ROWS)
+        by_height = min(height / 3.0, height / self._choice_rows())
         cell = min(by_width, by_height)
         matrix_side = cell * 3
         choices_wide = cell * CHOICE_COLUMNS
@@ -406,18 +420,25 @@ class MatrixReasoning:
         return cell, origin, top, matrix_side, choices_wide
 
     def _matrix_rect(self) -> Tuple[float, float, float, float]:
-        """The grid, centred against the taller block of candidates."""
+        """The grid, centred against the block of candidates.
+
+        Whichever of the two is shorter is centred against the taller;
+        with four candidates the block is shorter than the grid, and
+        centring the grid against it the other way pushed the grid up
+        out of the canvas and through the title."""
         cell, origin, top, side, _wide = self._geometry()
-        block = cell * CHOICE_ROWS
-        return origin, top - (side + block) / 2, side, side
+        block = cell * self._choice_rows()
+        tall = max(side, block)
+        return origin, top - (tall + side) / 2, side, side
 
     def _choice_rects(self) -> List[Tuple[float, float, float, float]]:
         """Each candidate's box: left, bottom, width, height in pixels."""
         cell, origin, top, side, wide = self._geometry()
         left = origin + side + self._canvas()[2] * 0.04
         rects = []
-        first_top = top
-        for index in range(CHOICE_COUNT):
+        block = cell * self._choice_rows()
+        first_top = top - max(0.0, (side - block) / 2)
+        for index in range(self._choice_count()):
             row = index // CHOICE_COLUMNS
             column = index % CHOICE_COLUMNS
             rects.append((left + column * cell, first_top - (row + 1) * cell,
@@ -433,7 +454,7 @@ class MatrixReasoning:
         choice = self._choice_rects()[0]
         cell_units = CELL_UNITS + GAP_UNITS * 2
         self.choice_cards = [Card(cell_units, cell_units, int(choice[2]))
-                             for _ in range(CHOICE_COUNT)]
+                             for _ in range(self._choice_count())]
 
     def _delete_cards(self) -> None:
         if self.matrix_card is not None:
@@ -515,6 +536,14 @@ class MatrixReasoning:
         self.puzzle = generate(level=self.level + 1,
                                seed=self.rng.randrange(1 << 30),
                                palettes=self.palettes)
+        if len(self.choice_cards) != len(self.puzzle.choices):
+            # An adaptive run has crossed between the four-answer
+            # grades and the eight-answer ones, and the cards' size
+            # depends on how many rows they share. Everything is made
+            # afresh, batch included: deleting a texture quietly
+            # changes its sprite group's hash, and a batch holding a
+            # group whose hash has shifted under it cannot draw.
+            self._build_chrome()
         self.picked = None
         self.asked_at = time.time()
         self.phase = 'asking'

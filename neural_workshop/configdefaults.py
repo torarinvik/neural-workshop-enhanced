@@ -572,10 +572,14 @@ GRAPH_MAP_ADAPTIVE = True
 GRAPH_MAP_FEEDBACK = True
 
 # Matrix Reasoning: a three-by-three grid of drawings following rules
-# the player has to find, with the last cell missing and eight
+# the player has to find, with the last cell missing and a set of
 # candidates for it. RAVENS_LEVEL is where a run starts on a ladder of
-# five: level 1 is one rule on one layer, level 5 is up to three rules
-# on each of two layers. With RAVENS_EXPLAIN the rules behind a puzzle
+# twelve: level 1 is pure pattern matching with four candidates —
+# every panel the same picture, find the matching piece — and each
+# level up turns one dial, adding rules, then more figures to carry
+# them, then the panel-combining logic rules and finer size steps,
+# until level 12 runs nine rules at once, which is more than a person
+# tracks. Levels 4 and up offer eight candidates. With RAVENS_EXPLAIN the rules behind a puzzle
 # are named after each answer, which turns a run into practice rather
 # than a test. RAVENS_COLOR mixes coloured puzzles in among the grey
 # ones; the four colours were picked to stay apart under every kind of

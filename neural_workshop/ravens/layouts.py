@@ -147,13 +147,27 @@ INSIDE_OUTSIDE = Layout(
      Component('the inner figure', (Slot(Point(0.5, 0.5), 0.11),), (1,))),
     ('the outer figure', 'the figure inside it'))
 
+#: Three figures abreast, each a component of its own. This is the
+#: top of the layout ladder: nine attributes, every one of which can
+#: carry a rule, which is more than any person tracks at once — and
+#: that is what the hardest grades are for.
+TRIPTYCH = Layout(
+    'three in a row',
+    (Component('the left figure', (Slot(Point(0.19, 0.5), 0.15),), (1,)),
+     Component('the middle figure', (Slot(Point(0.5, 0.5), 0.15),), (1,)),
+     Component('the right figure', (Slot(Point(0.81, 0.5), 0.15),), (1,))),
+    ('the left figure', 'the middle figure', 'the right figure'))
+
 #: Every layout, simplest first.
 LAYOUTS: Tuple[Layout, ...] = (CENTRE, LEFT_RIGHT, UP_DOWN, INSIDE_OUTSIDE,
-                               GRID_FOUR, GRID_NINE)
+                               GRID_FOUR, GRID_NINE, TRIPTYCH)
 
 #: The layouts with a single component, which is all a one-rule puzzle
 #: needs and all an easy one should carry.
 SIMPLE_LAYOUTS: Tuple[Layout, ...] = (CENTRE, GRID_FOUR, GRID_NINE)
+
+#: The layouts with two components — two questions asked at once.
+PAIRED_LAYOUTS: Tuple[Layout, ...] = (LEFT_RIGHT, UP_DOWN, INSIDE_OUTSIDE)
 
 
 

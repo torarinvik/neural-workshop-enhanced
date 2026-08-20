@@ -3,7 +3,8 @@
 
 Nine panels in a three-by-three grid. The figures in them follow rules
 that run along the rows; the last panel is missing and the player picks
-it from eight candidates.
+it from the candidates beside it — four on the easy grades, eight
+otherwise.
 
 The pieces:
 
@@ -39,6 +40,6 @@ SPDX-License-Identifier: GPL-2.0-or-later
 """
 from __future__ import annotations
 
-from .matrix import LADDER, Puzzle, generate
+from .matrix import GRADES, Puzzle, generate
 
-__all__ = ['LADDER', 'Puzzle', 'generate']
+__all__ = ['GRADES', 'Puzzle', 'generate']

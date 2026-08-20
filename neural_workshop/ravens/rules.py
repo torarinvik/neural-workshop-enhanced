@@ -35,7 +35,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 from __future__ import annotations
 
 import random
-from typing import List, Sequence
+from typing import List, Optional, Sequence
 
 #: How many panels a row holds. Not a setting — every rule here is
 #: written for three, and Latin squares of three are what the
@@ -172,12 +172,83 @@ class Arithmetic(Rule):
                                         for value in ladder)
 
 
+class Logic(Rule):
+    """The third panel's filled places follow from the first two's.
+
+    The one rule here that is not about a ladder. It governs *which*
+    of a lattice's places hold a figure: panel three holds the places
+    in either of the first two, in both, or in exactly one, and the
+    same operation runs down all three rows. These are the items at
+    the hard end of the real test, and they are hard for a reason —
+    nothing steps or repeats, so the rule cannot be spotted by
+    watching one figure. It has to be inferred from what two whole
+    panels have to do with a third.
+
+    The ladder handed to :meth:`rows` is the universe of places, and
+    the values produced are frozensets of them.
+    """
+
+    #: op → how the third panel is made from the first two.
+    SAYINGS = {
+        'or': 'the third panel gathers everything in the first two',
+        'and': 'the third panel keeps only what the first two share',
+        'xor': 'the third panel keeps what is in exactly one of the '
+               'first two',
+    }
+
+    name = 'logic'
+
+    def __init__(self, op: str) -> None:
+        self.op = op
+
+    def _combine(self, one: frozenset, two: frozenset) -> frozenset:
+        if self.op == 'or':
+            return one | two
+        if self.op == 'and':
+            return one & two
+        return one ^ two
+
+    def rows(self, ladder, rng):
+        universe = list(ladder)
+        rows = []
+        for _row in range(ACROSS):
+            for _try in range(400):
+                first = frozenset(rng.sample(
+                    universe, rng.randint(1, len(universe) - 1)))
+                second = frozenset(rng.sample(
+                    universe, rng.randint(1, len(universe) - 1)))
+                third = self._combine(first, second)
+                # The row has to *show* the operation: identical
+                # operands show nothing, and a result equal to one of
+                # them is explained by "copy that one" just as well.
+                if (third and first != second
+                        and third not in (first, second)):
+                    rows.append([first, second, third])
+                    break
+            else:
+                raise ValueError('no logic row fits this lattice')
+        return rows
+
+    def describe(self, noun):
+        return '%s: %s' % (noun, self.SAYINGS[self.op])
+
+    @staticmethod
+    def fits(ladder):
+        return len(ladder) >= 4
+
+
 #: The rules a rule-carrying attribute may take, and how often each is
 #: drawn. Distribute-three is weighted up because it is the rule that
 #: makes a matrix feel like a Raven's item rather than a sequence.
-def rule_choices(ladder: Sequence, allow_arithmetic: bool = False
-                 ) -> List[Rule]:
-    """Every rule that can actually be applied to this ladder."""
+def rule_choices(ladder: Sequence, allow_arithmetic: bool = False,
+                 allowed: Optional[Sequence[str]] = None) -> List[Rule]:
+    """Every rule that can actually be applied to this ladder.
+
+    ``allowed`` narrows the pool by rule name; ``None`` allows all.
+    The easy end of the difficulty ladder is made partly of this — a
+    first puzzle offers a progression and nothing else, so the player
+    meets one idea at a time.
+    """
     choices: List[Rule] = []
     if DistributeThree.fits(ladder):
         choices.extend([DistributeThree()] * 3)
@@ -187,13 +258,16 @@ def rule_choices(ladder: Sequence, allow_arithmetic: bool = False
             choices.append(candidate)
     if allow_arithmetic and Arithmetic.fits(ladder):
         choices.extend([Arithmetic(1), Arithmetic(-1)])
+    if allowed is not None:
+        choices = [rule for rule in choices if rule.name in allowed]
     return choices
 
 
 def choose_rule(ladder: Sequence, rng: random.Random,
-                allow_arithmetic: bool = False) -> Rule:
+                allow_arithmetic: bool = False,
+                allowed: Optional[Sequence[str]] = None) -> Rule:
     """One rule that suits this ladder, or ``Constant`` if none does."""
-    choices = rule_choices(ladder, allow_arithmetic)
+    choices = rule_choices(ladder, allow_arithmetic, allowed)
     return rng.choice(choices) if choices else Constant()
 
 

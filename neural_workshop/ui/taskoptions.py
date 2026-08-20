@@ -318,7 +318,7 @@ MATRIX_REASONING = TaskSpec(
     title=_('Matrix Reasoning options'),
     options=(
         Option('RAVENS_LEVEL', _('Start at level'), 1,
-               values=(1, 2, 3, 4, 5)),
+               values=tuple(range(1, 13))),
         Option('RAVENS_TRIALS', _('Puzzles per run'), 15,
                values=(5, 10, 15, 20, 30, 50)),
         Option('RAVENS_EXPOSURE_MS', _('Hide the puzzle after'), 0,

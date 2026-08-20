@@ -35,7 +35,7 @@ from neural_workshop.ravens.geometry import (is_convex, signed_area,
 SAMPLE = 300
 
 #: Every level the task offers.
-LEVELS = tuple(range(1, len(engine.LADDER) + 1))
+LEVELS = tuple(range(1, len(engine.GRADES) + 1))
 
 #: The smallest colour difference an ordinary eye can see, in CIELAB.
 JUST_NOTICEABLE = 2.3
@@ -313,6 +313,37 @@ class RuleTests(unittest.TestCase):
         rows = ruleset.apply_rule(ruleset.Progression(2), short, self.rng)
         self.assertEqual(len(set(value for row in rows for value in row)), 1)
 
+    def test_logic_combines_the_first_two_panels_into_the_third(self):
+        ops = {'or': lambda a, b: a | b,
+               'and': lambda a, b: a & b,
+               'xor': lambda a, b: a ^ b}
+        for name, combine in ops.items():
+            for _try in range(100):
+                rows = ruleset.Logic(name).rows(tuple(range(9)), self.rng)
+                for first, second, third in rows:
+                    self.assertEqual(third, combine(first, second))
+
+    def test_a_logic_row_always_shows_its_operation(self):
+        """Identical operands show nothing, and a result equal to one
+        of them is explained by "copy that one" just as well."""
+        for name in ('or', 'and', 'xor'):
+            for _try in range(100):
+                for first, second, third in ruleset.Logic(name).rows(
+                        tuple(range(4)), self.rng):
+                    self.assertNotEqual(first, second)
+                    self.assertNotIn(third, (first, second))
+                    self.assertTrue(third)
+
+    def test_logic_needs_a_lattice_to_live_on(self):
+        self.assertFalse(ruleset.Logic.fits(tuple(range(3))))
+        self.assertTrue(ruleset.Logic.fits(tuple(range(4))))
+
+    def test_a_narrowed_pool_offers_only_what_it_names(self):
+        for rule in ruleset.rule_choices(self.ladder,
+                                         allowed=('progression',)):
+            self.assertEqual(rule.name, 'progression')
+        self.assertEqual(ruleset.rule_choices(self.ladder, allowed=()), [])
+
     def test_only_rules_that_fit_are_ever_offered(self):
         for size in range(1, 6):
             ladder = tuple('abcde'[:size])
@@ -333,9 +364,10 @@ class PuzzleTests(unittest.TestCase):
 
     def test_every_level_builds(self):
         for level in LEVELS:
+            offered = engine.GRADES[level - 1].choices
             for puzzle in every_puzzle(40, level=level):
-                self.assertEqual(len(puzzle.choices), engine.CHOICES)
-                self.assertTrue(0 <= puzzle.answer < engine.CHOICES)
+                self.assertEqual(len(puzzle.choices), offered)
+                self.assertTrue(0 <= puzzle.answer < offered)
 
     def test_the_answer_is_the_panel_that_was_taken_out(self):
         for level in LEVELS:
@@ -346,8 +378,8 @@ class PuzzleTests(unittest.TestCase):
     def test_no_two_answers_draw_the_same_picture(self):
         for level in LEVELS:
             for puzzle in every_puzzle(40, level=level):
-                for first in range(engine.CHOICES):
-                    for second in range(first + 1, engine.CHOICES):
+                for first in range(len(puzzle.choices)):
+                    for second in range(first + 1, len(puzzle.choices)):
                         self.assertFalse(
                             figures.same_panel(puzzle.choices[first],
                                                puzzle.choices[second]),
@@ -368,8 +400,11 @@ class PuzzleTests(unittest.TestCase):
                     self.assertTrue(choice, 'choice %d is empty' % index)
 
     def test_the_right_answer_lands_everywhere_over_a_run(self):
-        seen = set(puzzle.answer for puzzle in every_puzzle(120))
-        self.assertEqual(seen, set(range(engine.CHOICES)))
+        for level in (3, 6):
+            seen = set(puzzle.answer
+                       for puzzle in every_puzzle(150, level=level))
+            self.assertEqual(seen,
+                             set(range(engine.GRADES[level - 1].choices)))
 
     def test_every_panel_holds_the_same_layout(self):
         """The layout is the puzzle's shape, not one of its variables."""
@@ -453,13 +488,78 @@ class PuzzleTests(unittest.TestCase):
         self.assertGreater(seen, 0, 'no rotation rule was ever generated')
 
     def test_a_harder_level_carries_more_rules(self):
+        """Realized rules, not nominal ones: a grade asking for more
+        rules than its layouts have attributes would claim difficulty
+        it does not deliver, and only counting what the explanations
+        actually name can catch that."""
         def rules_at(level):
-            return sum(len(puzzle.explanation)
+            return sum(sum(1 for line in puzzle.explanation
+                           if 'same picture' not in line)
                        for puzzle in every_puzzle(60, level=level)) / 60.0
 
         counts = [rules_at(level) for level in LEVELS]
-        self.assertEqual(counts, sorted(counts), counts)
-        self.assertGreater(counts[-1], counts[0] + 1.5, counts)
+        self.assertEqual(counts[0], 0.0, 'grade one is pure matching')
+        for level, (fewer, more) in enumerate(zip(counts, counts[1:]), 2):
+            self.assertGreater(more, fewer - 0.35,
+                               'level %d carries fewer rules than the one '
+                               'below it: %s' % (level, counts))
+        self.assertGreater(counts[-1], counts[0] + 6, counts)
+
+    def test_the_hardest_grade_is_genuinely_loaded(self):
+        """Grade twelve claims nine rules; most of a sample had better
+        actually run at least eight."""
+        totals = [sum(1 for line in puzzle.explanation
+                      if 'same picture' not in line)
+                  for puzzle in every_puzzle(60, level=LEVELS[-1])]
+        self.assertGreater(sum(totals) / 60.0, 7.5, totals)
+
+    def test_easy_grades_ask_less_of_the_easiest_thing(self):
+        """Grade one is matching: every panel of the matrix draws the
+        same picture, which is what makes it answerable at five."""
+        for puzzle in every_puzzle(40, level=1):
+            first = puzzle.panels[0][0]
+            for row in puzzle.panels:
+                for panel in row:
+                    self.assertTrue(figures.same_panel(panel, first))
+
+    def test_the_logic_rule_appears_at_the_top_and_never_below(self):
+        def logical(level, count=120):
+            return sum(any('third panel' in line
+                           for line in puzzle.explanation)
+                       for puzzle in every_puzzle(count, level=level))
+
+        for level in (1, 3, 5, 7):
+            self.assertEqual(logical(level, 60), 0, level)
+        self.assertGreater(sum(logical(level) for level in (8, 9, 10)), 20)
+
+    def test_a_logic_puzzle_combines_its_panels_as_it_says(self):
+        """Panel three's filled places really are panels one and two
+        combined, on every row, under the operation the explanation
+        names."""
+        ops = {'gathers everything': lambda a, b: a | b,
+               'keeps only what': lambda a, b: a & b,
+               'exactly one': lambda a, b: a ^ b}
+        seen = 0
+        for puzzle in every_puzzle(200, level=9):
+            said = [line for line in puzzle.explanation
+                    if 'third panel' in line]
+            if not said or len(puzzle.layout.components) != 1:
+                continue
+            combine = next(op for phrase, op in ops.items()
+                           if phrase in said[0])
+            seen += 1
+            slots = puzzle.layout.components[0].slots
+            spot = dict(((round(slot.centre.x, 4), round(slot.centre.y, 4)),
+                         index) for index, slot in enumerate(slots))
+            for row in range(2):     # the third row's last panel is hidden
+                places = [frozenset(spot[(round(f.centre.x, 4),
+                                          round(f.centre.y, 4))]
+                                    for f in panel)
+                          for panel in puzzle.panels[row]]
+                self.assertEqual(places[2], combine(places[0], places[1]),
+                                 said)
+        self.assertGreater(seen, 5, 'no single-component logic puzzle '
+                                    'was ever generated')
 
 
 class DistractorTests(unittest.TestCase):
@@ -475,8 +575,7 @@ class DistractorTests(unittest.TestCase):
 
     def test_no_single_cue_finds_the_answer_better_than_guessing(self):
         """A player who has found no rule can still look for the odd one
-        out. That has to be worth no more than a guess, which with eight
-        choices is about one time in eight."""
+        out. That has to be worth no more than a guess."""
         for level in (2, 4, 6):
             alone = dict((cue, 0) for cue in self.CUES)
             for puzzle in every_puzzle(SAMPLE, level=level):
@@ -499,10 +598,9 @@ class DistractorTests(unittest.TestCase):
             for puzzle in every_puzzle(30, level=level):
                 allowed = set()
                 for component in puzzle.layout.components:
-                    for count in component.counts:
-                        for slot in component.places(count):
-                            allowed.add((round(slot.centre.x, 4),
-                                         round(slot.centre.y, 4)))
+                    for slot in component.slots:
+                        allowed.add((round(slot.centre.x, 4),
+                                     round(slot.centre.y, 4)))
                 for choice in puzzle.choices:
                     for figure in choice:
                         self.assertIn((round(figure.centre.x, 4),
@@ -522,40 +620,194 @@ class DistractorTests(unittest.TestCase):
                             self.assertEqual(figure.angle, 0,
                                              puzzle.explanation)
 
-    def test_the_near_misses_are_spread_across_the_rules(self):
-        """Drawn independently they cluster: a matrix with four
-        attributes routinely produced five wrong answers that all
-        differed in size, which narrows the question to "which size?"
-        and throws away what the other rules were asking.
+    @staticmethod
+    def _description(panel):
+        """Everything a lazy eye can read off one panel at a glance."""
+        return {
+            'count': len(panel),
+            'shapes': tuple(sorted(f.shape for f in panel)),
+            'fills': tuple(sorted(f.fill.name for f in panel)),
+            'sizes': tuple(sorted(round(f.radius, 3) for f in panel)),
+            'angles': tuple(sorted(f._turn() for f in panel)),
+            'spots': tuple(sorted((round(f.centre.x, 2),
+                                   round(f.centre.y, 2)) for f in panel)),
+        }
 
-        Measured as how many wrong answers make the *same single*
-        mistake — differ from the answer in one thing, and the same
-        thing. Dealing them round the attributes holds this near two of
-        seven; drawing each independently pushes it towards three.
+    def _typicality(self, puzzle):
+        """Each answer's agreement with the others, feature by feature."""
+        told = [self._description(choice) for choice in puzzle.choices]
+        return [sum(1 for feature in told[index]
+                    for position, other in enumerate(told)
+                    if position != index
+                    and other[feature] == told[index][feature])
+                for index in range(len(told))]
 
-        Counting how many different things go wrong *somewhere* does
-        not measure this: with seven wrong answers, drawing at random
-        covers nearly every attribute too. It is the piling up that
-        matters, not the coverage.
+    def _guessing_beats_nothing(self, pick, allowance=1.8):
+        """Run a context-blind solver over three grades; it must do no
+        better than guessing, within sampling noise.
+
+        This is the leak the whole answer design exists to close. Wrong
+        answers built as "the right one with a single thing changed"
+        put the right answer at the centre of its own distractor set,
+        and picking the most typical answer solved 96 per cent of the
+        old puzzles without reading the matrix. The RAVEN dataset
+        shipped with the same fault. Balance — every targeted attribute
+        wrong in exactly half the answers — is what closes it, and this
+        is the test that keeps it closed.
         """
-        worst = []
-        for puzzle in every_puzzle(300, level=6):
-            answer = puzzle.choices[puzzle.answer]
-            tally = dict((cue, 0) for cue in DistractorTests.CUES)
-            for index, choice in enumerate(puzzle.choices):
-                if index == puzzle.answer:
-                    continue
-                differ = [cue for cue, read in DistractorTests.CUES.items()
-                          if read(choice) != read(answer)]
-                if len(differ) == 1:
-                    tally[differ[0]] += 1
-            worst.append(max(tally.values()))
-        average = sum(worst) / float(len(worst))
-        self.assertLess(
-            average, 2.45,
-            '%.2f of the seven wrong answers make the same single '
-            'mistake; they are piling up on one rule' % average)
+        trials = 200
+        for level in (2, 6, 12):
+            chance = 1.0 / engine.GRADES[level - 1].choices
+            hits = 0
+            for puzzle in every_puzzle(trials, level=level):
+                if pick(self._typicality(puzzle)) == puzzle.answer:
+                    hits += 1
+            self.assertLess(
+                hits / float(trials), chance * allowance,
+                'level %d: a solver that never reads the matrix scores '
+                '%d of %d against a chance of %.0f%%'
+                % (level, hits, trials, 100 * chance))
 
+    @staticmethod
+    def _read_attributes(panel, component):
+        """One component's attribute values, as a wrong answer sees them."""
+        mine = [f for f in panel if f.component == component]
+        if not mine:
+            return {}
+        return {'shape': set(f.shape for f in mine).pop(),
+                'size': round(set(f.radius for f in mine).pop(), 4)
+                        if len(set(round(f.radius, 4) for f in mine)) == 1
+                        else None,
+                'fill': set(f.fill.name for f in mine).pop(),
+                'angle': set(f._turn() for f in mine).pop(),
+                'places': frozenset((round(f.centre.x, 4),
+                                     round(f.centre.y, 4)) for f in mine)}
+
+    def test_every_live_rule_is_challenged_and_challenged_fairly(self):
+        """At a grade whose live rules all fit inside the answer
+        design, every attribute that varies across the matrix must be
+        wrong in *exactly half* of the answers offered. Fewer than
+        half and the right value is the most common one, which is the
+        centroid leak; more than half and it is the rarest, which is
+        the odd-one-out leak; all-agreeing and the rule was never
+        challenged at all — every answer being right about it, the
+        player never has to solve it."""
+        for puzzle in every_puzzle(200, level=4):
+            offered = len(puzzle.choices)
+            for component in range(len(puzzle.layout.components)):
+                varies = {}
+                for row in puzzle.panels:
+                    for panel in row:
+                        for name, value in self._read_attributes(
+                                panel, component).items():
+                            varies.setdefault(name, set()).add(value)
+                answer = self._read_attributes(
+                    puzzle.choices[puzzle.answer], component)
+                for name, values in varies.items():
+                    if len(values) < 2:
+                        continue
+                    agree = sum(
+                        1 for choice in puzzle.choices
+                        if self._read_attributes(choice, component)
+                        .get(name) == answer[name])
+                    self.assertEqual(
+                        agree, offered // 2,
+                        '%s: the answers agree with the right one %d of '
+                        '%d times' % (name, agree, offered))
+
+    def test_the_live_rules_are_challenged_before_held_attributes(self):
+        """A two-part puzzle has more attributes than the answer design
+        can target, so the choice of which four matters: a wrong
+        answer that breaks a rule the matrix actually runs tests that
+        rule, where one that breaks a held attribute only tests
+        whether the player noticed the theme. Whenever the varying
+        attributes fit the design, every one of them must be among
+        the challenged."""
+        for puzzle in every_puzzle(200, level=7):
+            offered = len(puzzle.choices)
+            varying = []
+            for component in range(len(puzzle.layout.components)):
+                values = {}
+                for row in puzzle.panels:
+                    for panel in row:
+                        for name, value in self._read_attributes(
+                                panel, component).items():
+                            values.setdefault(name, set()).add(value)
+                varying.extend((component, name)
+                               for name, seen in values.items()
+                               if len(seen) > 1)
+            if len(varying) > 4:
+                continue
+            for component, name in varying:
+                answer = self._read_attributes(
+                    puzzle.choices[puzzle.answer], component)
+                agree = sum(1 for choice in puzzle.choices
+                            if self._read_attributes(choice, component)
+                            .get(name) == answer[name])
+                self.assertEqual(
+                    agree, offered // 2,
+                    '%s varies across the matrix but no wrong answer '
+                    'challenges it' % name)
+
+    def test_the_easy_grades_offer_four_answers_and_the_rest_eight(self):
+        """Four for the easy grades, as the children's form of the
+        real test does; eight from grade four up."""
+        self.assertEqual(len(ravens.generate(level=1, seed=1).choices), 4)
+        self.assertEqual(len(ravens.generate(level=3, seed=1).choices), 4)
+        self.assertEqual(len(ravens.generate(level=4, seed=1).choices), 8)
+        self.assertEqual(len(ravens.generate(level=12, seed=1).choices), 8)
+
+    def test_all_three_logic_operations_come_up(self):
+        """One operation only would make every logic puzzle the same
+        question wearing different figures."""
+        seen = set()
+        for puzzle in every_puzzle(300, level=9):
+            for line in puzzle.explanation:
+                for phrase in ('gathers everything', 'keeps only what',
+                               'exactly one'):
+                    if phrase in line:
+                        seen.add(phrase)
+        self.assertEqual(len(seen), 3, seen)
+
+    def test_a_place_set_near_miss_is_one_flip_away(self):
+        """The logic rule's wrong answers add or drop a single figure;
+        anything wilder is a different picture, not a near miss."""
+        attribute = engine.Attribute('number', 'where the figures sit',
+                                     tuple(range(4)))
+        value = frozenset((0, 2))
+        options = attribute.alternatives(value)
+        self.assertTrue(options)
+        for option in options:
+            self.assertEqual(len(option ^ value), 1)
+            self.assertTrue(option)
+        lonely = engine.Attribute('number', 'where the figures sit', (0,))
+        self.assertEqual(lonely.alternatives(frozenset((0,))), [])
+
+    def test_the_easy_grades_use_few_sizes_and_keep_them_far_apart(self):
+        """Three rungs, each at least a third bigger than the last, so
+        "bigger" is something a child sees rather than judges."""
+        used = set()
+        for puzzle in every_puzzle(150, level=2):
+            for row in puzzle.panels:
+                for panel in row:
+                    for figure in panel:
+                        used.add(round(figure.radius / 0.42, 4))
+        self.assertLessEqual(len(used), 3, sorted(used))
+        rungs = sorted(used)
+        for smaller, bigger in zip(rungs, rungs[1:]):
+            self.assertGreater(bigger / smaller, 1.33, rungs)
+
+    def test_the_most_typical_answer_is_no_better_than_a_guess(self):
+        self._guessing_beats_nothing(
+            lambda scores: scores.index(max(scores)))
+
+    def test_the_least_typical_answer_is_no_better_than_a_guess(self):
+        """The other classic cheat — and the one the wide balanced
+        design failed before it was capped: the all-correct answer
+        agreed with the wrong ones less than they agreed with each
+        other, and "odd one out" found it 44 per cent of the time."""
+        self._guessing_beats_nothing(
+            lambda scores: scores.index(min(scores)))
 
 class PaletteTests(unittest.TestCase):
     """Colour has to be readable by everyone the game is for."""
@@ -656,7 +908,8 @@ class MatrixScreenTests(unittest.TestCase):
         self.task.start_run()
         self.task.on_draw()
         self.assertEqual(self.task.phase, 'asking')
-        self.assertEqual(len(self.task.sprites), 1 + engine.CHOICES)
+        self.assertEqual(len(self.task.sprites),
+                         1 + len(self.task.puzzle.choices))
 
     def test_every_level_draws(self):
         for level in LEVELS:
@@ -685,7 +938,8 @@ class MatrixScreenTests(unittest.TestCase):
         self.task.on_key_press(key._1 + self.task.puzzle.answer, 0)
         self.assertEqual(self.task.correct, 1)
         self.task.phase = 'asking'
-        self.task.on_key_press(key._1 + (self.task.puzzle.answer + 1) % 8, 0)
+        wrong = (self.task.puzzle.answer + 1) % len(self.task.puzzle.choices)
+        self.task.on_key_press(key._1 + wrong, 0)
         self.assertEqual(self.task.correct, 1)
 
     def test_clicking_a_box_answers_it(self):
@@ -709,12 +963,13 @@ class MatrixScreenTests(unittest.TestCase):
         self.task.answer(self.task.puzzle.answer)
         self.assertEqual(self.task.level, 2)
         self.task.phase = 'asking'
-        self.task.answer((self.task.puzzle.answer + 1) % 8)
+        self.task.answer((self.task.puzzle.answer + 1)
+                         % len(self.task.puzzle.choices))
         self.assertEqual(self.task.level, 1)
 
     def test_the_level_never_leaves_the_ladder(self):
         self.assertEqual(self.task.clamped(-5), 0)
-        self.assertEqual(self.task.clamped(99), len(engine.LADDER) - 1)
+        self.assertEqual(self.task.clamped(99), len(engine.GRADES) - 1)
 
     def test_the_reported_level_is_the_one_the_puzzle_was_asked_at(self):
         self.task.adaptive = True
@@ -749,6 +1004,21 @@ class MatrixScreenTests(unittest.TestCase):
         self.task = MatrixReasoning()
         self.assertIsNone(first.matrix_card)
         self.assertIs(MatrixReasoning.instance, self.task)
+
+    def test_crossing_the_four_answer_line_redraws_the_cards(self):
+        """An adaptive run climbing from grade three to grade four goes
+        from four answers to eight; the cards, whose size depends on
+        how many rows they share, have to follow."""
+        self.task.adaptive = True
+        self.task.feedback = False
+        self.task.start_level = 3
+        self.task.start_run()
+        self.assertEqual(len(self.task.choice_cards), 4)
+        self.task.answer(self.task.puzzle.answer)
+        self.assertEqual(len(self.task.puzzle.choices), 8)
+        self.assertEqual(len(self.task.choice_cards), 8)
+        self.task.on_draw()
+        self.assertEqual(len(self.task.sprites), 1 + 8)
 
     def test_a_run_ends_with_a_score(self):
         self.task.total_trials = 3

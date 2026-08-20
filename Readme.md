@@ -222,10 +222,11 @@ networks are generated.
 #### Matrix Reasoning
 
 A three-by-three grid of figures that follow rules you have to work
-out, with the bottom-right panel missing and eight candidates for it
-beside the grid. Answer with **1**–**8** or by clicking a box. This is
-the shape of a Raven's Progressive Matrices item, the standard test of
-reasoning that owes nothing to language or to what you already know.
+out, with the bottom-right panel missing and the candidates for it
+beside the grid — four on the easy levels, eight otherwise. Answer
+with **1**–**8** or by clicking a box. This is the shape of a Raven's
+Progressive Matrices item, the standard test of reasoning that owes
+nothing to language or to what you already know.
 
 The puzzles are generated rather than drawn, and the generator is
 built around the three things that make a matrix read as a designed
@@ -233,12 +234,13 @@ object rather than a heap:
 
 **A layout.** Every panel of a puzzle uses the same arrangement — one
 figure in the middle, two side by side, one above another, one inside
-another, or a lattice of two-by-two or three-by-three. The layout is
-part of the puzzle's shape, not one of its variables, so it is never
-something you have to work out. A layout carries one or two
-*components* — the outer ring and the inner mark are two of them — and
-each follows rules of its own, which is how a matrix asks two
-questions at once without drawing the answers on top of each other.
+another, a lattice of two-by-two or three-by-three, or three abreast.
+The layout is part of the puzzle's shape, not one of its variables, so
+it is never something you have to work out. A layout carries up to
+three *components* — the outer ring and the inner mark are two of them
+— and each follows rules of its own, which is how a matrix asks
+several questions at once without drawing the answers on top of each
+other.
 
 **Regular figures.** Triangle, square, pentagon, hexagon, circle, each
 inscribed in a circle and sitting the way the eye expects: the
@@ -248,7 +250,7 @@ spaced, because what the eye judges is the ratio between two sizes and
 not the difference — an evenly spaced ladder is obvious at the small
 end and guesswork at the large end.
 
-**Rules along the rows.** Four of them, and the same rule governs all
+**Rules along the rows.** Five of them, and the same rule governs all
 three rows, which is what makes the third row answerable from the
 first two:
 
@@ -266,6 +268,13 @@ first two:
 * *Arithmetic* — the third value is the first plus or minus the
   second. Only ever applied to how many figures there are, where it is
   something a person can actually do in their head.
+* *Logic* — on a lattice, the places holding a figure in the third
+  panel follow from the first two: everything in either, only what is
+  in both, or what is in exactly one. Nothing steps or repeats, so the
+  rule cannot be spotted by watching one figure — it has to be
+  inferred from what two whole panels have to do with a third. These
+  are the items at the hard end of the real test, and they only
+  appear at the hard end here.
 
 The attributes a rule can govern are which figure, its size, its
 colour, how many there are, and — where it can be seen — which way it
@@ -273,13 +282,23 @@ faces. That last one takes its turns from the figure's own symmetry: a
 fixed ladder of sixths of a turn would offer a triangle 0°, 120° and
 240°, which are three names for the same triangle.
 
-*Start at level* picks a rung of a six-step ladder, from one rule on a
-single-component layout to five rules across two components, and with
-*Go up a level when right* the run follows how you do. *Name the rules
-after each answer* prints the rules behind the puzzle once it has been
-answered, which turns a run into practice rather than a test. Nothing
-is downloaded — a puzzle costs under a tenth of a millisecond to
-build, so they are made as you play.
+*Start at level* picks a rung of a twelve-step ladder, and the rungs
+turn more dials than one. Level 1 is not a matrix at all but pattern
+completion — every panel the same picture, find the matching piece
+among four — which is the genuinely easy end of the real test,
+answerable by a five-year-old. The early levels offer four candidates,
+keep to a single rule drawn from a narrowed pool, and use a coarse
+three-step size ladder so "bigger" is something you see rather than
+judge. From there each level up adds rules, then more components to
+carry them, then the logic rules, and at the top a seven-step size
+ladder on which a rule you have *found* still takes care to apply.
+Level 12 runs nine rules at once across three components, which is
+more than a person tracks — deliberately so, so the ladder ends past
+everyone. With *Go up a level when right* the run follows how you do.
+*Name the rules after each answer* prints the rules behind the puzzle
+once it has been answered, which turns a run into practice rather than
+a test. Nothing is downloaded — a puzzle costs under a tenth of a
+millisecond to build, so they are made as you play.
 
 ##### Colour
 
@@ -303,24 +322,33 @@ which is the same rule the grey puzzles ask for.
 
 ##### The wrong answers
 
-A puzzle is only as good as the choices it offers. Most of them here
-are *near misses*: the right answer with one property of one component
-changed, rebuilt through the same machinery so that it is always a
-panel the layout could have produced. A wrong answer that could not
-exist is answerable by noticing that it could not, and a wrong answer
-that breaks a rule the matrix never mentions can be dismissed without
-understanding anything.
+A puzzle is only as good as the choices it offers, and the obvious
+way to build them is a trap. Make each wrong answer "the right one
+with a single thing changed" and the right answer agrees with every
+wrong one on everything but its one change — it sits at the centre of
+its own distractor set, and picking the most typical candidate solves
+the puzzle without reading the matrix. An earlier version of this
+generator had exactly that leak, and so did the RAVEN research
+dataset, which a model solved from its answer lists alone.
 
-They are dealt round the attributes rather than drawn independently,
-so every rule the matrix asks about is challenged by a wrong answer
-before any is challenged twice. Drawn independently they pile up: a
-matrix with four attributes routinely produced five wrong answers that
-all differed in size, which narrows the question to "which size?" and
-throws away what the other rules were asking.
+So the wrong answers are *balanced*. A few of the puzzle's attributes
+are targeted — the ones carrying live rules first — each is given one
+wrong value, and the wrong answers are fixed combinations of those
+wrong values swapped into the right answer, arranged so that every
+targeted attribute is wrong in exactly half of the candidates offered.
+A vote on any attribute is then a dead tie, and the only way in is the
+rules. Every wrong answer is still rebuilt through the same machinery
+as the puzzle, so it is always a panel the layout could have produced;
+one that could not exist is answerable by noticing that it could not.
 
-The tests measure this rather than trusting it. No single shallow cue
-— how many figures, which figures, which colours, which sizes — may
-pick the answer out more often than guessing would.
+The tests measure this rather than trusting it. Two context-blind
+solvers — pick the candidate most like the others, pick the one least
+like them — run against the generator at easy, middle and top levels,
+and neither may beat guessing. The "least like" solver is there
+because balance can leak in reverse: a wider design that targeted
+seven attributes kept every one of them balanced and still gave the
+game away, because the all-correct answer agreed with the wrong ones
+*less* than they agreed with each other.
 
 ##### Where this came from
 
