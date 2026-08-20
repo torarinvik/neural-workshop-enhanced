@@ -34,9 +34,9 @@ class AttentionCategoryTests(unittest.TestCase):
         self.assertIn('attention', ids)
         self.assertIn('attention', TASKS)
 
-    def test_reflex_is_in_it(self):
+    def test_reflex_and_the_cups_are_in_it(self):
         self.assertEqual([task for task, _name in TASKS['attention']],
-                         ['reflex'])
+                         ['reflex', 'ncup_monte'])
 
     def test_it_has_an_options_screen(self):
         from neural_workshop.ui import taskoptions

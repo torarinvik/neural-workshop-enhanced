@@ -124,7 +124,8 @@ class TaskOptionsTests(unittest.TestCase):
         self.assertEqual(task.cups, 4)
 
     def test_hub_c_opens_the_highlighted_task(self):
-        hub = TaskHub(category='misc')
+        hub = TaskHub(category='attention')
+        hub.move_task(1)
         self.assertEqual(hub.selected_task(), 'ncup_monte')
         hub.on_key_press(key.C, 0)
         self.assertIsInstance(Menu.instance, taskoptions.TaskOptions)

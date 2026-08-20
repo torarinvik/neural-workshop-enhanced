@@ -28,7 +28,6 @@ CATEGORIES: Sequence[Tuple[str, str]] = (
     ('perception', _('Perception')),
     ('reasoning', _('Reasoning')),
     ('planning', _('Planning')),
-    ('misc', _('Misc')),
 )
 
 #: Category id → list of (task id, label).
@@ -43,6 +42,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
     ],
     'attention': [
         ('reflex', _('Reflex')),
+        ('ncup_monte', _('N-Cup Monte')),
     ],
     'perception': [
         ('count', _('Count')),
@@ -55,9 +55,6 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
     'planning': [
         ('tower_of_hanoi', _('Tower of Hanoi')),
         ('salesman', _('Traveling Salesman')),
-    ],
-    'misc': [
-        ('ncup_monte', _('N-Cup Monte')),
     ],
 }
 
