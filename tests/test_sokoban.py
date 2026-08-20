@@ -17,8 +17,19 @@ from uisupport import (SokobanTask, TASKS, close_overlays, key, needs_ui,
                        reset_window, state, taskoptions)
 
 from neural_workshop import sokoban
-from neural_workshop.sokoban import (GRADES, Level, generate, live_cells,
+from neural_workshop.sokoban import (GRADES, Level, deadlocked, fatal_share,
+                                     generate, live_cells, opening_pushes,
                                      solve, solve_bounded, _solve_py)
+
+
+def open_room(width, height, goals, boxes, player):
+    """A bare rectangular room: wall border, nothing but floor inside."""
+    walls = frozenset(
+        cell for cell in range(width * height)
+        if cell % width in (0, width - 1)
+        or cell // width in (0, height - 1))
+    return Level(width, height, walls, frozenset(goals), frozenset(boxes),
+                 player, None, 0, 0)
 
 
 def tiny_level():
@@ -73,6 +84,38 @@ class SolverTests(unittest.TestCase):
                 py = _solve_py(level, 300000)
                 native = sokoban._solve_native(level, 300000)
                 self.assertEqual(py[0], native[0], (rung, seed))
+
+    def test_the_kernel_takes_a_board_past_sixteen_squares(self):
+        """The bitboard is sized at run time, so a bigger room is
+        simply more words -- 16x16 was a compiled-in ceiling, not a
+        property of the search."""
+        if sokoban._native is None:
+            self.skipTest('C kernel not built')
+        level = open_room(18, 18, goals={62}, boxes={57}, player=56)
+        self.assertEqual(sokoban._solve_native(level, 200000)[0], 5)
+        self.assertEqual(_solve_py(level, 200000)[0], 5)
+
+    def test_a_big_board_still_reaches_the_kernel(self):
+        """A 20x20 room is 400 cells: past the old cap, under the new."""
+        level = open_room(20, 20, goals={7 * 20 + 12}, boxes={7 * 20 + 4},
+                          player=7 * 20 + 3)
+        self.assertEqual(solve(level), 8)
+
+    def test_the_kernel_takes_a_board_past_sixteen_squares(self):
+        """The bitboard is sized at run time, so a bigger room is
+        simply more words -- 16x16 was a compiled-in ceiling, not a
+        property of the search."""
+        if sokoban._native is None:
+            self.skipTest('C kernel not built')
+        level = open_room(18, 18, goals={62}, boxes={57}, player=56)
+        self.assertEqual(sokoban._solve_native(level, 200000)[0], 5)
+        self.assertEqual(_solve_py(level, 200000)[0], 5)
+
+    def test_a_big_board_still_reaches_the_kernel(self):
+        """A 20x20 room is 400 cells: past the old cap, under the new."""
+        level = open_room(20, 20, goals={7 * 20 + 12}, boxes={7 * 20 + 4},
+                          player=7 * 20 + 3)
+        self.assertEqual(solve(level), 8)
 
 
 class GeneratorTests(unittest.TestCase):
@@ -156,6 +199,106 @@ class GeneratorTests(unittest.TestCase):
 
 
 @needs_ui
+class DeadlockTests(unittest.TestCase):
+    """The cheap "already lost" verdict, and the axis built on it.
+
+    The verdict has to be *sound* above all: it may miss a deadlock,
+    but it must never call a live position dead, because the third
+    difficulty axis counts positions it condemns.
+    """
+
+    def test_a_box_in_a_corner_off_its_goal_is_lost(self):
+        level = open_room(5, 5, goals={18}, boxes={6}, player=7)
+        self.assertTrue(deadlocked(5, 5, level.walls, level.goals,
+                                   level.boxes))
+
+    def test_the_same_corner_is_fine_when_it_is_the_goal(self):
+        level = open_room(5, 5, goals={6}, boxes={6}, player=7)
+        self.assertFalse(deadlocked(5, 5, level.walls, level.goals,
+                                    level.boxes))
+
+    def test_four_boxes_in_a_huddle_freeze_each_other(self):
+        """No box here touches a wall: each is held by the other three."""
+        level = open_room(6, 6, goals={7, 8, 13, 19},
+                          boxes={14, 15, 20, 21}, player=7)
+        self.assertTrue(deadlocked(6, 6, level.walls, level.goals,
+                                   level.boxes))
+
+    def test_a_loose_box_in_an_open_room_is_not_condemned(self):
+        level = open_room(6, 6, goals={7}, boxes={14}, player=15)
+        self.assertFalse(deadlocked(6, 6, level.walls, level.goals,
+                                    level.boxes))
+
+    def test_the_verdict_never_condemns_a_solvable_position(self):
+        """Soundness, held against the solver on real deals."""
+        checked = 0
+        for rung in (2, 4, 6):
+            for seed in (3, 8):
+                level = generate(rung, seed=seed)
+                alive = live_cells(level.width, level.height, level.walls,
+                                   level.goals)
+                for box, ahead in opening_pushes(level):
+                    after = (level.boxes - {box}) | {ahead}
+                    if not deadlocked(level.width, level.height,
+                                      level.walls, level.goals, after,
+                                      alive):
+                        continue
+                    probe = level._replace(boxes=frozenset(after),
+                                           player=box)
+                    self.assertIsNone(solve(probe, 400000),
+                                      'condemned a position that solves')
+                    checked += 1
+        self.assertGreater(checked, 0, 'no condemned position to check')
+
+
+class DeceptionTests(unittest.TestCase):
+    """The third axis: how much of what you can do right now loses."""
+
+    def test_opening_pushes_are_all_legal(self):
+        from neural_workshop.sokoban import _floor_flags, _reachable
+        level = generate(9, seed=4)
+        flags = _floor_flags(level.width, level.height, level.walls)
+        region = _reachable(level.width, flags, level.boxes, level.player)
+        for box, ahead in opening_pushes(level):
+            self.assertIn(box, level.boxes)
+            self.assertTrue(flags[ahead])
+            self.assertNotIn(ahead, level.boxes)
+            self.assertIn(box - (ahead - box), region)
+
+    def test_a_box_between_two_corners_has_no_safe_push(self):
+        """Both ways out of this one end in a corner, so the share is all."""
+        level = open_room(5, 5, goals={17}, boxes={7}, player=12)
+        self.assertEqual(len(opening_pushes(level)), 2)
+        self.assertEqual(fatal_share(level), 1.0)
+
+    def test_an_open_room_keeps_a_safe_push_available(self):
+        level = open_room(7, 7, goals={24}, boxes={16}, player=15)
+        self.assertLess(fatal_share(level), 1.0)
+
+    def test_the_deceptive_rungs_open_onto_real_traps(self):
+        for rung in (13, 16):
+            grade = GRADES[rung - 1]
+            shares = [fatal_share(generate(rung, seed=seed))
+                      for seed in (2, 6)]
+            self.assertGreater(max(shares), grade.deceit * 0.8,
+                               'rung %d opens too safely' % rung)
+
+    def test_the_push_floor_outranks_the_deception_floor(self):
+        """A deal that clears its rung never loses to one that cannot.
+
+        The axes are ranked, not merged: adding deception must not
+        cost the depth the ladder already promised.
+        """
+        for rung in (13, 14, 16):
+            grade = GRADES[rung - 1]
+            level = generate(rung, seed=5)
+            certified = (level.minimum if level.minimum is not None
+                         else level.at_least)
+            self.assertGreaterEqual(certified, grade.floor,
+                                    'rung %d gave up depth for deception'
+                                    % rung)
+
+
 class SokobanScreenTests(unittest.TestCase):
 
     def setUp(self):

@@ -21,6 +21,26 @@ Three guarantees hold this module together:
   length as an upper bound. The scoring then says "at most", never
   pretending a bound is a minimum.
 
+Difficulty runs on three measured axes, ranked rather than merged.
+Push count is the spine: how much work the level is. The trap share
+is the room: how much of the floor a box can never come back from.
+The deception share is the position: how much of what the player can
+do *on move one* throws the level away. A rung's push floor outranks
+the other two, because adding an axis must never cost the depth the
+ladder already promised.
+
+One thing these levels are *not* is entangled, and the code says so
+rather than implying otherwise. Measured across every rung, the true
+minimum equals the assignment bound almost always: each box walks its
+own shortest path home and the boxes rarely have to get out of each
+other's way. That is inherent to generating backwards — a walk that
+pulls boxes outward along their own paths reverses into a solution
+that pushes them home along their own paths. It is why these levels
+are long and lethal rather than deep, and why no cheap strengthening
+of the lower bound buys anything here: every such bound relaxes by
+removing the other boxes, and the interaction it would price is not
+present to begin with.
+
 The state space uses one integer per cell and frozensets of box
 cells; the player's exact square never matters between pushes, only
 the connected region it stands in, which is normalised to its
@@ -73,6 +93,13 @@ class Grade(NamedTuple):
     #: how much work a level takes; this says how much of the room
     #: is a landmine while you do it.
     trap_share: float = 0.0
+    #: The third axis: the least share of the *opening pushes* that
+    #: must be fatal. The trap share measures the room; this
+    #: measures the position — how much of what the player can do on
+    #: move one throws the level away. A room can be full of
+    #: landmines and still open with six safe pushes; this is the
+    #: number that says otherwise.
+    deceit: float = 0.0
 
 
 #: Kindergarten to superhuman. Every number here is measured, not
@@ -84,24 +111,27 @@ class Grade(NamedTuple):
 #: which scales to any board. Superhuman carries thirteen boxes, not
 #: the fifteen its room could hold, because fifteen choke their own
 #: warren: measured, two fewer boxes let the walks drag every one
-#: deeper and the certified floors nearly double.
+#: deeper and the certified floors nearly double. The deception floors sit
+#: below what the rooms usually manage, deliberately: they are the
+#: junior axis, and a rung that could not meet both would rather be
+#: deep than treacherous.
 GRADES: Tuple[Grade, ...] = (
-    Grade('first steps', 5, 5, 1, 0.9, 6, 2, 0.0),
-    Grade('one box', 6, 6, 1, 0.65, 20, 4, 0.0),
-    Grade('two boxes', 6, 6, 2, 0.65, 24, 5, 0.0),
-    Grade('a little room', 7, 7, 2, 0.6, 30, 7, 0.2),
-    Grade('three boxes', 7, 7, 3, 0.6, 40, 8, 0.2),
-    Grade('tight corners', 8, 8, 3, 0.55, 50, 12, 0.3),
-    Grade('four boxes', 9, 9, 4, 0.55, 70, 14, 0.3),
-    Grade('five boxes', 9, 9, 5, 0.55, 90, 17, 0.35),
-    Grade('the warehouse', 10, 10, 5, 0.52, 110, 20, 0.35),
-    Grade('six boxes', 10, 10, 6, 0.52, 130, 23, 0.4),
-    Grade('seven boxes', 11, 11, 7, 0.5, 160, 26, 0.4),
-    Grade('packed tight', 11, 11, 8, 0.48, 190, 28, 0.45),
-    Grade('the labyrinth', 13, 13, 9, 0.46, 240, 45, 0.45),
-    Grade('nightmare', 14, 14, 11, 0.45, 300, 52, 0.5),
-    Grade('inhuman', 15, 15, 13, 0.43, 380, 52, 0.5),
-    Grade('superhuman', 16, 16, 13, 0.46, 500, 60, 0.55),
+    Grade('first steps', 5, 5, 1, 0.9, 6, 2, 0.0, 0.0),
+    Grade('one box', 6, 6, 1, 0.65, 20, 4, 0.0, 0.0),
+    Grade('two boxes', 6, 6, 2, 0.65, 24, 5, 0.0, 0.0),
+    Grade('a little room', 7, 7, 2, 0.6, 30, 7, 0.2, 0.0),
+    Grade('three boxes', 7, 7, 3, 0.6, 40, 8, 0.2, 0.1),
+    Grade('tight corners', 8, 8, 3, 0.55, 50, 12, 0.3, 0.15),
+    Grade('four boxes', 9, 9, 4, 0.55, 70, 14, 0.3, 0.2),
+    Grade('five boxes', 9, 9, 5, 0.55, 90, 17, 0.35, 0.25),
+    Grade('the warehouse', 10, 10, 5, 0.52, 110, 20, 0.35, 0.25),
+    Grade('six boxes', 10, 10, 6, 0.52, 130, 23, 0.4, 0.3),
+    Grade('seven boxes', 11, 11, 7, 0.5, 160, 26, 0.4, 0.3),
+    Grade('packed tight', 11, 11, 8, 0.48, 190, 28, 0.45, 0.3),
+    Grade('the labyrinth', 13, 13, 9, 0.46, 240, 45, 0.45, 0.35),
+    Grade('nightmare', 14, 14, 11, 0.45, 300, 52, 0.5, 0.35),
+    Grade('inhuman', 15, 15, 13, 0.43, 380, 52, 0.5, 0.4),
+    Grade('superhuman', 16, 16, 13, 0.46, 500, 60, 0.55, 0.4),
 )
 
 DIRECTIONS = ((0, -1), (0, 1), (-1, 0), (1, 0))
@@ -168,6 +198,106 @@ def live_cells(width: int, height: int, walls: FrozenSet[int],
     return frozenset(alive)
 
 
+def _stuck(width: int, floor_ok: Sequence[bool], dead: Sequence[bool],
+           boxes: FrozenSet[int], cell: int,
+           assumed: FrozenSet[int]) -> bool:
+    """Is the box on *cell* frozen where it stands, for good?
+
+    A box travels an axis only when both squares along it are free
+    floor: the player needs one to stand on and the box needs the
+    other to land on. So the axis is shut when either side is rock,
+    when both sides are squares nothing returns from, or when either
+    side holds a box that is itself stuck. Shut on both axes and off
+    a goal means the level is already lost, however many moves are
+    left on the clock.
+
+    The recursion treats any box it is already asking about as
+    immovable, which is the standard reading and the right one: two
+    boxes that block only each other are both stuck.
+    """
+    if cell in assumed:
+        return True
+    assumed = assumed | {cell}
+    for step in (1, width):
+        low, high = cell - step, cell + step
+        if not floor_ok[low] or not floor_ok[high]:
+            continue                      # rock on one side: no lane
+        if dead[low] and dead[high]:
+            continue                      # both landings already lost
+        if low in boxes and _stuck(width, floor_ok, dead, boxes, low,
+                                   assumed):
+            continue
+        if high in boxes and _stuck(width, floor_ok, dead, boxes, high,
+                                    assumed):
+            continue
+        return False                      # this axis is still open
+    return True
+
+
+def deadlocked(width: int, height: int, walls: FrozenSet[int],
+               goals: FrozenSet[int], boxes: FrozenSet[int],
+               alive: Optional[FrozenSet[int]] = None) -> bool:
+    """Has this position already lost, whatever the player does now?
+
+    True when a box stands where no push could ever bring it to a
+    goal, or when a box is frozen off-goal. Both tests are
+    sufficient but not exhaustive — Sokoban hides deadlocks no cheap
+    test catches — so False means "not provably lost", never "still
+    winnable".
+    """
+    if alive is None:
+        alive = live_cells(width, height, walls, goals)
+    if any(box not in alive for box in boxes):
+        return True
+    floor_ok = _floor_flags(width, height, walls)
+    dead = [floor_ok[c] and c not in alive for c in range(width * height)]
+    return any(box not in goals
+               and _stuck(width, floor_ok, dead, boxes, box, frozenset())
+               for box in boxes)
+
+
+def opening_pushes(level: Level) -> List[Tuple[int, int]]:
+    """Every push available from the start, as (box cell, where to)."""
+    floor_ok = _floor_flags(level.width, level.height, level.walls)
+    region = _reachable(level.width, floor_ok, level.boxes, level.player)
+    moves = []
+    for box in sorted(level.boxes):
+        for step in _steps(level.width):
+            behind, ahead = box - step, box + step
+            if (behind in region and floor_ok[ahead]
+                    and ahead not in level.boxes):
+                moves.append((box, ahead))
+    return moves
+
+
+def fatal_share(level: Level) -> float:
+    """The share of opening pushes that lose the level on the spot.
+
+    A third axis, and the one the player actually stands in front
+    of. Push count says how long the work is; the trap share says
+    how much of the room is lethal; this says how much of what you
+    can *do right now* is lethal — the difference between a
+    minefield across the warehouse and a minefield under your feet.
+    """
+    moves = opening_pushes(level)
+    if not moves:
+        return 0.0
+    width, cells = level.width, level.width * level.height
+    alive = live_cells(width, level.height, level.walls, level.goals)
+    floor_ok = _floor_flags(width, level.height, level.walls)
+    dead = [floor_ok[c] and c not in alive for c in range(cells)]
+    lost = 0
+    for box, ahead in moves:
+        after = (level.boxes - {box}) | {ahead}
+        if ahead not in alive:
+            lost += 1                     # pushed somewhere nothing returns from
+        elif any(cell not in level.goals
+                 and _stuck(width, floor_ok, dead, after, cell, frozenset())
+                 for cell in after):
+            lost += 1                     # pushed into a frozen huddle
+    return lost / len(moves)
+
+
 try:
     import bwcore as _native            # the C kernels, when built
 except ImportError:                     # pure Python still plays fine
@@ -196,7 +326,7 @@ def solve_bounded(level: Level,
     top rungs lean on this — a level too hard to certify exactly can
     still *prove* it clears its difficulty floor.
     """
-    if _native is not None and level.width * level.height <= 256:
+    if _native is not None and level.width * level.height <= 1024:
         return _solve_native(level, budget)
     return _solve_py(level, budget)
 
@@ -702,6 +832,39 @@ def generate(level_number: int, seed: Optional[int] = None,
              attempts: int = 300) -> Level:
     """A solvable level of the given rung, at or above its floor.
 
+    A round of attempts misses the floor now and then — measured at
+    the superhuman rung, one deal in eight — and a certificate that
+    fails one deal in eight is not a certificate. Rooms are drawn
+    independently, so a fresh round is a fresh draw: two more of them
+    take the miss rate from an eighth to a thousandth, and cost the
+    extra time only on the deals that needed it. Same seed, same
+    level, still.
+    """
+    grade = GRADES[max(0, min(len(GRADES) - 1, level_number - 1))]
+    best: Optional[Level] = None
+    for round_number in range(3):
+        turn = (seed if seed is None or round_number == 0
+                else seed + round_number * 7919)
+        try:
+            level = _deal(grade, random.Random(turn), attempts)
+        except ValueError:
+            if best is not None:
+                return best
+            raise
+        certified = (level.minimum if level.minimum is not None
+                     else level.at_least)
+        if certified >= grade.floor:
+            return level
+        best_so_far = -1 if best is None else (
+            best.minimum if best.minimum is not None else best.at_least)
+        if certified > best_so_far:
+            best = level
+    return best if best is not None else level
+
+
+def _deal(grade: Grade, rng: random.Random, attempts: int) -> Level:
+    """One round of attempts: rooms, walks, and what they certified.
+
     Retries fresh rooms until the floor is certified — either the
     exact minimum, or, past the solver's budget, the breadth-first
     frontier's proven lower bound. Either way "level 9" carries a
@@ -710,11 +873,10 @@ def generate(level_number: int, seed: Optional[int] = None,
     if every attempt collapses, which the ladder's tests never let
     happen.
     """
-    grade = GRADES[max(0, min(len(GRADES) - 1, level_number - 1))]
     if grade.boxes >= 9:
         attempts = attempts * 6           # room deals, mostly unwalked
-    rng = random.Random(seed)
-    fallback: Optional[Level] = None
+    strong: Optional[Level] = None        # deep enough, opens too safely
+    fallback: Optional[Level] = None      # treacherous, but too shallow
     desperate: Optional[Level] = None     # solvable but short on traps
     for _attempt in range(attempts):
         walls = _carve_room(grade, rng)
@@ -786,14 +948,32 @@ def generate(level_number: int, seed: Optional[int] = None,
             # achievable solution, so the minimum is known exactly by
             # squeeze — no search ever ran, and none was needed.
             minimum = proven = level.bound
-        if minimum is None and proven >= grade.floor:
-            return level._replace(at_least=proven)
-        if minimum is not None and minimum >= grade.floor:
-            return level._replace(minimum=minimum, at_least=minimum)
-        best_so_far = fallback.at_least if fallback is not None else -1
-        if max(minimum or 0, proven) > best_so_far:
-            fallback = level._replace(minimum=minimum,
-                                      at_least=max(minimum or 0, proven))
+        certified = level._replace(minimum=minimum,
+                                   at_least=max(minimum or 0, proven))
+        # Two axes, ranked rather than merged. A rung's push floor is
+        # what the ladder promises and what the screen reports, so a
+        # deal that clears it never loses to one that does not — the
+        # deception floor decides between deals of equal standing, it
+        # does not veto depth. Adding an axis must not cost the one
+        # already there.
+        if certified.at_least >= grade.floor:
+            # Priced here and nowhere else: deception only ever
+            # decides between deals that already clear the floor, and
+            # counting fatal pushes for every shallow room the walk
+            # threw up would cost more than the axis is worth.
+            tame = bool(grade.deceit) and fatal_share(level) < grade.deceit
+            if not tame:
+                return certified          # deep and treacherous: done
+            if strong is None or certified.at_least > strong.at_least:
+                strong = certified        # deep, but opens too safely
+        elif fallback is None or certified.at_least > fallback.at_least:
+            # Too shallow either way, so depth alone ranks it. Sorting
+            # these by deception too would drop a deep tame deal for a
+            # shallow treacherous one, which is the trade the ranking
+            # exists to refuse.
+            fallback = certified
+    if strong is not None:
+        return strong
     if fallback is not None:
         return fallback
     if desperate is not None:
@@ -801,5 +981,5 @@ def generate(level_number: int, seed: Optional[int] = None,
         certified = minimum if minimum is not None else \
             max(proven, matching_bound(desperate))
         return desperate._replace(minimum=minimum, at_least=certified)
-    raise ValueError('no level survived %d attempts at rung %d'
-                     % (attempts, level_number))
+    raise ValueError('no level survived %d attempts at "%s"'
+                     % (attempts, grade.name))

@@ -609,6 +609,10 @@ def sokoban_note(chosen: Dict[str, Any]) -> str:
         said.append(_('At least %d%% of the floor is a trap: one '
                       'wrong push there and the box is lost for '
                       'good.') % int(grade.trap_share * 100))
+    if grade.deceit:
+        said.append(_('And at least %d%% of the pushes open to you on '
+                      'move one throw the level away outright.')
+                    % int(grade.deceit * 100))
     if rung >= 11:
         said.append(_('Up here the exact minimum outgrows the '
                       'solver; the par is a proven lower bound, '
