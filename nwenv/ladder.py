@@ -165,6 +165,11 @@ def verify_ladder_outcome(outcome: Optional[Mapping[str, Any]], rgba: bytes,
     result frame, so the preview is looked up in the archive by the
     first evidence digest -- which means a verifier holding a partial
     archive fails closed rather than guessing.
+
+    Mid-round frames are scored ``0.0`` here rather than refused, so a
+    caller taking one outcome per action can check all of them. That
+    concedes nothing: a claim worth something still has to survive the
+    same pixel test, and a forged nothing is still nothing.
     """
     from .outcome import verify_public_outcome
 
@@ -181,7 +186,7 @@ def verify_ladder_outcome(outcome: Optional[Mapping[str, Any]], rgba: bytes,
                ) -> Optional[Dict[str, Any]]:
         return derive_ladder_outcome(
             frame, w, h, evidence, receipt_id, preview_rgba=preview,
-            frame_seq=frame_seq, timestamp_ns=timestamp_ns)
+            frame_seq=frame_seq, timestamp_ns=timestamp_ns, neutral=True)
 
     return verify_public_outcome(outcome, rgba, width, height, archive,
                                  receipt_ledger, derive=derive)
@@ -204,6 +209,7 @@ class MonkeyLadderEnv:
                  adaptive: bool = False,
                  cursor: bool = False,
                  neutral_outcomes: bool = False,
+                 round_tick_limit: int = 0,
                  frame_hz: float = DEFAULT_FRAME_HZ,
                  visible: bool = False) -> None:
         self._asked = {
@@ -229,6 +235,19 @@ class MonkeyLadderEnv:
         # action it takes needs this; a caller reading the task's own
         # contract does not, and gets one outcome per round.
         self._neutral_outcomes = bool(neutral_outcomes)
+        # A round waits for as many tiles as it asked for, so an agent
+        # that never places one leaves it open for ever and the run
+        # cannot be bounded. Past this many ticks the round is closed as
+        # a miss: the driver places a tile that was not in the set, so
+        # the frame paints a real miss and the pixels stay the authority
+        # on the verdict. Choosing that tile uses the answer key, which
+        # is the driver's to see and never the learner's -- the same
+        # licence the other boundaries take. Zero leaves it off.
+        self._round_tick_limit = int(round_tick_limit)
+        if self._round_tick_limit < 0:
+            raise ValueError('a round tick limit cannot be negative')
+        self._round_ticks = 0
+        self._round_timeouts = 0
         self._rounds = int(rounds)
         if self._rounds < 1:
             raise ValueError('a run needs at least one round')
@@ -393,6 +412,11 @@ class MonkeyLadderEnv:
 
         self._virtual_now += self._dt
         self.task.update(self._dt)
+        self._round_ticks += 1
+        if (self._round_tick_limit
+                and self._round_ticks >= self._round_tick_limit
+                and self.task.phase == 'input'):
+            self._time_out_round()
         self._publish()
         return self.observe()
 
@@ -458,6 +482,8 @@ class MonkeyLadderEnv:
         self.accounting.reset()
         self._events = []
         self._round = 0
+        self._round_ticks = 0
+        self._round_timeouts = 0
         self._round_digests = []
         self._preview_rgba = None
         self._receipt = None
@@ -484,7 +510,10 @@ class MonkeyLadderEnv:
         self._receipt = {
             'ok': True,
             'receipt_id': self._receipt_seq,
-            'trial_seq': self._round,
+            # One window is one trial as far as the ledger is concerned;
+            # the round is what an outcome is *about*, not what a receipt
+            # is keyed by.
+            'trial_seq': self._receipt_seq,
             'frame_seq': self._seq,
             'timestamp_ns': now_ns(),
             'ports': (),
@@ -513,6 +542,23 @@ class MonkeyLadderEnv:
             return [int(k) for k, v in ports.items() if v]
         return [int(p) for p in ports]
 
+    def _bind_receipt_to_round(self, receipt_id: Optional[int],
+                              evidence: List[str]) -> None:
+        """Record which frames this receipt answers for.
+
+        A window opens on whatever frame is up, but what it is answerable
+        against is the round: the frame that showed the set, and the
+        frame that showed the result. Binding says so, so a verifier can
+        check the pair it was handed really belongs to this receipt.
+        """
+        if receipt_id is None or receipt_id not in self._receipt_ledger:
+            return
+        bound = self._receipt_ledger[receipt_id]
+        bound['stimulus_digest'] = evidence[0]
+        bound['evidence_digests'] = list(evidence)
+        bound['feedback_digest'] = self._digest
+        bound['feedback_frame_seq'] = self._seq
+
     def _emit_once(self, key: Any, event: Dict[str, Any]) -> bool:
         """Queue *event* unless something with this key already went out."""
         if key in self._delivered:
@@ -527,8 +573,14 @@ class MonkeyLadderEnv:
         key = ('outcome', self._round, receipt_id)
         if key in self._delivered:
             return
+        if not self._round_digests:
+            return
+        # Two digests, as in the other boundaries: the frame that showed
+        # the set, and the frame being scored.
+        evidence = [self._round_digests[0], self._digest]
+        self._bind_receipt_to_round(receipt_id, evidence)
         outcome = derive_ladder_outcome(
-            self._rgba, self._width, self._height, self._round_digests,
+            self._rgba, self._width, self._height, evidence,
             receipt_id, preview_rgba=self._preview_rgba, frame_seq=self._seq,
             timestamp_ns=self._timestamp_ns, neutral=neutral)
         if outcome is None:
@@ -595,6 +647,13 @@ class MonkeyLadderEnv:
         if self._neutral_outcomes and self._outcome_owed:
             self._outcome_owed = False
             self._publish_outcome(neutral=phase != 'result')
+        if self._neutral_outcomes:
+            # A runtime that acts on every tick needs a window on every
+            # tick. Moving the marker while the set is still up is a
+            # thing a person does too, and it commits nothing: the task
+            # only takes a tile during the recall.
+            if self._action_finalized or not self._response_open:
+                self._open_window()
         if phase == 'show':
             # Every preview frame paints the whole set, so the last one
             # is as good as the first and is what the result is scored
@@ -604,13 +663,32 @@ class MonkeyLadderEnv:
             # One window per click: the window that just took an action
             # closes with the frame that shows its result, and the next
             # tile's window opens on the same frame.
-            if self._action_finalized or not self._response_open:
+            if not self._neutral_outcomes and (
+                self._action_finalized or not self._response_open
+            ):
                 self._open_window()
         elif phase == 'result':
-            self._response_open = False
             if not self._neutral_outcomes:
+                # In per-round mode the window belongs to a click, and
+                # the round is over. In per-action mode the window
+                # belongs to the tick, and the next tick still gets one.
+                self._response_open = False
                 self._publish_outcome()
             self._finish_round()
+
+    def _time_out_round(self) -> None:
+        """Close a round that ran long, as a miss."""
+        task = self.task
+        spare = next(
+            ((row, col) for row in range(task.grid)
+             for col in range(task.grid)
+             if (row, col) not in task.sequence),
+            None,
+        )
+        if spare is None:              # a set covering the whole board
+            return
+        self._round_timeouts += 1
+        task.click_cell(spare)
 
     def _finish_round(self) -> None:
         """Close out a scored round and start the next, or end the run."""
@@ -628,8 +706,10 @@ class MonkeyLadderEnv:
             })
             return
         self._round_digests = []
+        self._round_ticks = 0
         self._preview_rgba = None
-        self._receipt = None
+        if not self._neutral_outcomes:
+            self._receipt = None
         self.task.start_round()
 
 
