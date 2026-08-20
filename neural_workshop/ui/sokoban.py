@@ -42,6 +42,7 @@ GOAL = (230, 159, 0)
 BOX = (86, 180, 233)
 BOX_HOME = (0, 158, 115)
 PLAYER = (213, 94, 0)
+TRAP = (150, 150, 150)
 
 #: How close to par a solve must be for an adaptive run to climb.
 CLIMB_AT = 1.4
@@ -84,6 +85,7 @@ class SokobanTask:
         self.start_rung = int(opts['SOKOBAN_LEVEL'])
         self.total_trials = int(opts['SOKOBAN_TRIALS'])
         self.adaptive = bool(opts['SOKOBAN_ADAPTIVE'])
+        self.show_traps = bool(opts['SOKOBAN_SHOW_TRAPS'])
 
     @staticmethod
     def clamped(rung: int) -> int:
@@ -302,6 +304,17 @@ class SokobanTask:
                     self.drawn.append(pyglet.shapes.Circle(
                         x + side / 2, y + side / 2, side * 0.13,
                         color=GOAL, batch=self.batch))
+                elif self.show_traps and cell in level.traps:
+                    # The landmines, marked on request: a box pushed
+                    # onto one of these can never reach a goal again.
+                    self.drawn.append(pyglet.shapes.Line(
+                        x + side * 0.36, y + side * 0.36,
+                        x + side * 0.64, y + side * 0.64,
+                        thickness=2, color=TRAP, batch=self.batch))
+                    self.drawn.append(pyglet.shapes.Line(
+                        x + side * 0.36, y + side * 0.64,
+                        x + side * 0.64, y + side * 0.36,
+                        thickness=2, color=TRAP, batch=self.batch))
             for box in self.boxes:
                 x, y, side = self._cell_rect(box)
                 pad = side * 0.16

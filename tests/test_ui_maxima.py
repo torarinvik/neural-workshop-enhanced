@@ -280,7 +280,8 @@ class MaximaTests(unittest.TestCase):
             certified = (task.level.minimum
                          if task.level.minimum is not None
                          else task.level.at_least)
-            self.assertGreaterEqual(certified, 66)
+            from neural_workshop.sokoban import GRADES
+            self.assertGreaterEqual(certified, GRADES[15].floor)
             task.on_draw()
         finally:
             task.close()

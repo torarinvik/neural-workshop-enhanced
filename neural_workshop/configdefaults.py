@@ -682,9 +682,15 @@ TSP_SHOW_BEST = True
 # cannot. U undoes, R restarts; the score is pushes against the
 # minimum. With SOKOBAN_ADAPTIVE a solve near the minimum climbs a
 # level and a wasteful one steps down.
+# level and a wasteful one steps down. Difficulty climbs on several
+# axes at once: room size, box count, corridor tightness, certified
+# push floors, and trap share - the fraction of the floor from which
+# a box can never reach a goal, so one wrong push there loses it
+# forever. SOKOBAN_SHOW_TRAPS marks those squares, as training wheels.
 SOKOBAN_LEVEL = 2
 SOKOBAN_TRIALS = 5
 SOKOBAN_ADAPTIVE = True
+SOKOBAN_SHOW_TRAPS = False
 
 ######################################################################
 # This is the end of the configuration file.

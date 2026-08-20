@@ -52,6 +52,9 @@ class Level(NamedTuple):
     #: Pushes the generator's own walk needs — an upper bound, and
     #: the fallback par when the minimum is out of reach.
     bound: int
+    #: Floor squares a box dies on — one wrong push there and it can
+    #: never reach a goal again. The second axis of difficulty.
+    traps: FrozenSet[int] = frozenset()
 
 
 class Grade(NamedTuple):
@@ -64,6 +67,12 @@ class Grade(NamedTuple):
     floor_share: float  # how much of the interior the digger opens
     pulls: int          # length of the backwards walk
     floor: int          # reject levels needing fewer pushes than this
+    #: The ladder's second axis: the least share of the floor that
+    #: must be *dead* — squares a box can never reach a goal from, so
+    #: one wrong push there loses the box forever. Push count says
+    #: how much work a level takes; this says how much of the room
+    #: is a landmine while you do it.
+    trap_share: float = 0.0
 
 
 #: Kindergarten to superhuman. Every number here is measured, not
@@ -74,22 +83,22 @@ class Grade(NamedTuple):
 #: solving on purpose; their floors stand on the assignment bound,
 #: which scales to any board.
 GRADES: Tuple[Grade, ...] = (
-    Grade('first steps', 5, 5, 1, 0.9, 6, 2),
-    Grade('one box', 6, 6, 1, 0.65, 20, 4),
-    Grade('two boxes', 6, 6, 2, 0.65, 24, 5),
-    Grade('a little room', 7, 7, 2, 0.6, 30, 7),
-    Grade('three boxes', 7, 7, 3, 0.6, 40, 8),
-    Grade('tight corners', 8, 8, 3, 0.55, 50, 12),
-    Grade('four boxes', 9, 9, 4, 0.55, 70, 14),
-    Grade('five boxes', 9, 9, 5, 0.55, 90, 17),
-    Grade('the warehouse', 10, 10, 5, 0.52, 110, 20),
-    Grade('six boxes', 10, 10, 6, 0.52, 130, 23),
-    Grade('seven boxes', 11, 11, 7, 0.5, 160, 26),
-    Grade('packed tight', 11, 11, 8, 0.48, 190, 30),
-    Grade('the labyrinth', 13, 13, 9, 0.46, 240, 36),
-    Grade('nightmare', 14, 14, 11, 0.45, 300, 44),
-    Grade('inhuman', 15, 15, 13, 0.43, 380, 54),
-    Grade('superhuman', 16, 16, 15, 0.42, 500, 66),
+    Grade('first steps', 5, 5, 1, 0.9, 6, 2, 0.0),
+    Grade('one box', 6, 6, 1, 0.65, 20, 4, 0.0),
+    Grade('two boxes', 6, 6, 2, 0.65, 24, 5, 0.0),
+    Grade('a little room', 7, 7, 2, 0.6, 30, 7, 0.2),
+    Grade('three boxes', 7, 7, 3, 0.6, 40, 8, 0.2),
+    Grade('tight corners', 8, 8, 3, 0.55, 50, 12, 0.3),
+    Grade('four boxes', 9, 9, 4, 0.55, 70, 14, 0.3),
+    Grade('five boxes', 9, 9, 5, 0.55, 90, 17, 0.35),
+    Grade('the warehouse', 10, 10, 5, 0.52, 110, 20, 0.35),
+    Grade('six boxes', 10, 10, 6, 0.52, 130, 23, 0.4),
+    Grade('seven boxes', 11, 11, 7, 0.5, 160, 26, 0.4),
+    Grade('packed tight', 11, 11, 8, 0.48, 190, 28, 0.45),
+    Grade('the labyrinth', 13, 13, 9, 0.46, 240, 34, 0.45),
+    Grade('nightmare', 14, 14, 11, 0.45, 300, 40, 0.5),
+    Grade('inhuman', 15, 15, 13, 0.43, 380, 44, 0.5),
+    Grade('superhuman', 16, 16, 15, 0.46, 500, 35, 0.55),
 )
 
 DIRECTIONS = ((0, -1), (0, 1), (-1, 0), (1, 0))
@@ -340,6 +349,40 @@ def _goal_distance(width: int, height: int, walls: FrozenSet[int],
     return far
 
 
+def _dig_traps(width: int, height: int, walls: FrozenSet[int],
+               goals: FrozenSet[int], share: float,
+               rng: random.Random) -> FrozenSet[int]:
+    """Dig one-cell pockets until *share* of the floor is dead.
+
+    A pocket has a single entrance, so a box pushed into it can
+    never come out — the player would have to stand beyond it,
+    inside the rock. Dug *after* the backwards walk on purpose:
+    adding floor can only widen the forward solution's options, so
+    solvability survives, while every pocket is a fresh landmine.
+    Pockets can also *revive* other squares (a new standing spot
+    gives the player a new push lane), so the tally is recomputed
+    until the share genuinely holds.
+    """
+    carved = set(walls)
+    for _round in range(6):
+        flags = _floor_flags(width, height, frozenset(carved))
+        floor = [cell for cell in range(width * height) if flags[cell]]
+        alive = live_cells(width, height, frozenset(carved), goals)
+        dead = sum(1 for cell in floor if cell not in alive)
+        missing = int(share * len(floor)) - dead
+        if missing <= 0:
+            return frozenset(carved)
+        candidates = [cell for cell in carved
+                      if 0 < cell % width < width - 1
+                      and 0 < cell // width < height - 1
+                      and sum(1 for step in _steps(width)
+                              if flags[cell + step]) == 1]
+        rng.shuffle(candidates)
+        for cell in candidates[:missing + 2]:
+            carved.discard(cell)
+    return frozenset(carved)
+
+
 def _pull_walk(grade: Grade, walls: FrozenSet[int], goals: FrozenSet[int],
                rng: random.Random) -> Optional[Tuple[FrozenSet[int], int, int]]:
     """Drag the boxes backwards off their goals; return the start.
@@ -378,9 +421,18 @@ def _pull_walk(grade: Grade, walls: FrozenSet[int], goals: FrozenSet[int],
                     options.append((box, near, away))
         if not options:
             break
-        outward = [option for option in options
+        # Evacuate before wandering: in a tight warren, boxes pulled
+        # early park in the corridors and seal the rest onto their
+        # goals, so the walk stalls with the clump half-solved.
+        # Pulling still-on-goal boxes first keeps the exits open —
+        # measured: seventy-five of eighty superhuman walks failed
+        # without this, five with it still failing for other reasons.
+        stuck = [option for option in options if option[0] in goals]
+        pool = stuck if stuck else options
+        outward = [option for option in pool
                    if far[option[1]] > far[option[0]]]
-        pool = outward if outward and rng.random() < 0.8 else options
+        if outward and rng.random() < 0.8:
+            pool = outward
         box, near, away = rng.choice(pool)
         boxes.discard(box)
         boxes.add(near)
@@ -452,7 +504,7 @@ def matching_bound(level: Level) -> int:
 
 
 def generate(level_number: int, seed: Optional[int] = None,
-             attempts: int = 200) -> Level:
+             attempts: int = 300) -> Level:
     """A solvable level of the given rung, at or above its floor.
 
     Retries fresh rooms until the floor is certified — either the
@@ -466,6 +518,7 @@ def generate(level_number: int, seed: Optional[int] = None,
     grade = GRADES[max(0, min(len(GRADES) - 1, level_number - 1))]
     rng = random.Random(seed)
     fallback: Optional[Level] = None
+    desperate: Optional[Level] = None     # solvable but short on traps
     for _attempt in range(attempts):
         walls = _carve_room(grade, rng)
         floor = [cell for cell in range(grade.width * grade.height)
@@ -478,12 +531,36 @@ def generate(level_number: int, seed: Optional[int] = None,
                             grade.boxes, rng)
         if goals is None:
             continue
-        pulled = _pull_walk(grade, walls, goals, rng)
+        pulled = None
+        deepest = -1
+        for _retry in range(3 if grade.boxes >= 9 else 1):
+            # One room, several walks: at a dozen boxes the walk is
+            # the lottery, and the assignment bound is cheap enough
+            # to let three tickets in and keep the deepest.
+            attempt = _pull_walk(grade, walls, goals, rng)
+            if attempt is None:
+                continue
+            depth = matching_bound(Level(
+                grade.width, grade.height, walls, goals, attempt[0],
+                attempt[1], None, 0, attempt[2]))
+            if depth > deepest:
+                pulled, deepest = attempt, depth
         if pulled is None:
             continue
         boxes, player, bound = pulled
+        walls = _dig_traps(grade.width, grade.height, walls, goals,
+                           grade.trap_share, rng)
+        flags = _floor_flags(grade.width, grade.height, walls)
+        alive = live_cells(grade.width, grade.height, walls, goals)
+        dead = frozenset(cell for cell in range(grade.width * grade.height)
+                         if flags[cell] and cell not in alive)
+        floor_count = sum(flags)
         level = Level(grade.width, grade.height, walls, goals, boxes,
-                      player, None, 0, bound)
+                      player, None, 0, bound, dead)
+        if desperate is None:
+            desperate = level             # solvable, whatever else
+        if len(dead) < grade.trap_share * floor_count:
+            continue                      # not enough landmines yet
         if grade.width * grade.height > 121:
             # Beyond exact solving by design: the assignment bound is
             # the certificate, and it is cheap at any size.
@@ -508,5 +585,10 @@ def generate(level_number: int, seed: Optional[int] = None,
                                       at_least=max(minimum or 0, proven))
     if fallback is not None:
         return fallback
+    if desperate is not None:
+        minimum, proven = solve_bounded(desperate, GENERATION_BUDGET // 4)
+        certified = minimum if minimum is not None else \
+            max(proven, matching_bound(desperate))
+        return desperate._replace(minimum=minimum, at_least=certified)
     raise ValueError('no level survived %d attempts at rung %d'
                      % (attempts, level_number))

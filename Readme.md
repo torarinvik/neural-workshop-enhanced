@@ -551,6 +551,19 @@ grown as one connected clump because that is what makes Sokoban
 Sokoban: boxes must arrive in an order that does not wall the rest
 out.
 
+Push count is only one axis. Each rung also enforces a *trap
+share*: the fraction of the floor from which a box can never reach
+a goal, so a single wrong push there loses it forever. The
+generator digs one-cell pockets off the corridors — a pocket has a
+single entrance, so a box pushed in can never come out — until the
+required share of the floor is deadly, and it digs them *after*
+building the puzzle, since adding floor can only widen the
+solution's options, never break it. The kindergarten rungs demand
+no traps at all; "superhuman" requires over half the floor to be
+lethal, so its sixty-odd certified pushes must all be threaded
+between landmines. An option marks the deadly squares, as training
+wheels.
+
 ### Window size, full screen, and the two coordinate spaces
 
 The window is resizable, and **F11** switches to and from full screen

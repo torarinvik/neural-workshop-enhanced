@@ -106,6 +106,46 @@ class GeneratorTests(unittest.TestCase):
                      else level.at_least)
         self.assertGreaterEqual(certified, GRADES[15].floor)
 
+    def test_every_trap_rung_delivers_its_landmines(self):
+        from neural_workshop.sokoban import _floor_flags
+        for rung in (6, 10, 14):
+            grade = GRADES[rung - 1]
+            level = generate(rung, seed=17)
+            flags = _floor_flags(level.width, level.height, level.walls)
+            share = len(level.traps) / sum(flags)
+            self.assertGreaterEqual(share, grade.trap_share - 0.02,
+                                    'rung %d short on traps' % rung)
+
+    def test_traps_really_are_deadly(self):
+        """A box parked on any reported trap makes the level lost."""
+        level = generate(6, seed=17)
+        self.assertTrue(level.traps)
+        trap = min(level.traps)
+        doomed = level._replace(
+            boxes=frozenset(list(level.boxes - {min(level.boxes)})
+                            + [trap]))
+        self.assertIsNone(solve(doomed))
+
+    def test_a_dug_pocket_has_one_entrance(self):
+        """The trap digger only ever carves single-door pockets."""
+        from neural_workshop.sokoban import (_blob_goals, _carve_room,
+                                             _dig_traps, _floor_flags,
+                                             _steps)
+        import random
+        rng = random.Random(5)
+        grade = GRADES[13]
+        walls = _carve_room(grade, rng)
+        goals = _blob_goals(grade.width, grade.height, walls,
+                            grade.boxes, rng)
+        self.assertIsNotNone(goals)
+        dug = _dig_traps(grade.width, grade.height, walls, goals,
+                         grade.trap_share, rng)
+        flags = _floor_flags(grade.width, grade.height, dug)
+        for cell in walls - dug:          # every newly carved pocket
+            doors = sum(1 for step in _steps(grade.width)
+                        if flags[cell + step])
+            self.assertEqual(doors, 1)
+
     def test_the_matching_bound_never_exceeds_the_minimum(self):
         from neural_workshop.sokoban import matching_bound
         for rung in (3, 6, 9):

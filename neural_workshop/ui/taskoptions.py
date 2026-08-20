@@ -605,6 +605,10 @@ def sokoban_note(chosen: Dict[str, Any]) -> str:
             % (rung, _(grade.name), grade.width, grade.height,
                grade.boxes, _('box') if grade.boxes == 1 else _('boxes'),
                grade.floor)]
+    if grade.trap_share:
+        said.append(_('At least %d%% of the floor is a trap: one '
+                      'wrong push there and the box is lost for '
+                      'good.') % int(grade.trap_share * 100))
     if rung >= 11:
         said.append(_('Up here the exact minimum outgrows the '
                       'solver; the par is a proven lower bound, '
@@ -624,6 +628,8 @@ SOKOBAN = TaskSpec(
                values=(1, 2, 3, 5, 8, 10, 15, 20)),
         Option('SOKOBAN_ADAPTIVE',
                _('Climb a level when you solve near the minimum'), True),
+        Option('SOKOBAN_SHOW_TRAPS',
+               _('Mark the squares a box dies on'), False),
     ),
     note=sokoban_note)
 
