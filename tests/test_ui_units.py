@@ -369,7 +369,7 @@ class OverlayRuleTests(unittest.TestCase):
     def test_the_scan_finds_the_overlays(self):
         names = {name for _path, name, _body in self._overlay_classes()}
         for expected in ('Menu', 'TaskHub', 'MonkeyLadder', 'NCupMonte',
-                         'Message', 'Panhandle', 'TextInputScreen'):
+                         'Message', 'TextInputScreen'):
             self.assertIn(expected, names)
 
     def test_every_overlay_registers_and_unregisters(self):

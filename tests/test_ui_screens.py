@@ -171,6 +171,40 @@ class KeyDispatchTests(unittest.TestCase):
         finally:
             end_session(cancelled=True)
 
+    def test_the_web_link_keys_are_gone(self):
+        """Donate, forum and tutorial were removed; nothing may reopen them."""
+        import webbrowser
+        opened = []
+        real = webbrowser.open_new_tab
+        webbrowser.open_new_tab = opened.append
+        try:
+            for on_title in (True, False):
+                state.mode.title_screen = on_title
+                for symbol in (key.H, key.D, key.F):
+                    on_key_press(symbol, 0)
+        finally:
+            webbrowser.open_new_tab = real
+        self.assertEqual(opened, [])
+
+    def test_no_key_list_advertises_them(self):
+        """A key list offering a key that does nothing is worse than none.
+
+        The hub list is built differently in manual mode, and Donate
+        used to sit in the branch only one of them takes.
+        """
+        manual = state.mode.manual
+        listings = [state.title_keys_label.keys.text]
+        try:
+            for state.mode.manual in (False, True):
+                state.keys_list_label.update()
+                listings.append(state.keys_list_label.label.text)
+        finally:
+            state.mode.manual = manual
+            state.keys_list_label.update()
+        for gone in ('Donate', 'Tutorial', 'Forum', 'Mailing'):
+            for listing in listings:
+                self.assertNotIn(gone, listing)
+
     def test_unbound_key_is_harmless(self):
         state.mode.title_screen = False
         on_key_press(key.Z, 0)

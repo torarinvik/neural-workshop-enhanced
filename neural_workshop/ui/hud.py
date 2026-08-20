@@ -169,7 +169,6 @@ class KeysListLabel:
         parts: List[str] = []
         if 'morse' in cfg.AUDIO1_SETS or 'morse' in cfg.AUDIO2_SETS:
             parts.extend([_('J: Morse Code Reference\n'), '\n'])
-        parts.extend([_('H: Help / Tutorial\n'), '\n'])
         if mode.manual:
             parts.extend([
                 _('F1: Decrease N-Back\n'), _('F2: Increase N-Back\n'), '\n',
@@ -181,7 +180,7 @@ class KeysListLabel:
             parts.append(_('M: Standard Mode\n'))
         else:
             parts.extend([
-                _('M: Manual Mode\n'), _('D: Donate\n'), '\n',
+                _('M: Manual Mode\n'), '\n',
                 _('G: Daily Progress Graph\n'), '\n',
                 _('W: Brain Workshop Web Site\n')])
         if cfg.WINDOW_FULLSCREEN:
@@ -244,11 +243,8 @@ class TitleKeysLabel:
             parts.extend([_('U: Choose User\n'),
                           _('G: Daily Progress Graph\n')])
         parts.append(_('F11: Full Screen\n'))
-        parts.append(_('H: Help / Tutorial\n'))
         if not CLINICAL_MODE:
-            parts.extend([_('D: Donate\n'),
-                          _('F: Go to Forum / Mailing List\n'),
-                          _('O: Edit configuration file')])
+            parts.append(_('O: Edit configuration file'))
 
         self.keys = pyglet.text.Label(
             ''.join(parts), multiline=True, width=scale_to_width(260),

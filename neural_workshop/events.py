@@ -26,8 +26,7 @@ from pyglet.window import key
 import bwaccel
 
 from . import display, runtime, state
-from .constants import (CLINICAL_MODE, WEB_DONATE, WEB_FORUM, WEB_MORSE,
-                        WEB_SITE, WEB_TUTORIAL)
+from .constants import CLINICAL_MODE, WEB_MORSE, WEB_SITE
 from .paths import dump_pyglet_info, edit_config_ini
 from .session import (end_session, generate_stimulus, new_session,
                       reset_input, toggle_manual_mode, update_all_labels,
@@ -85,10 +84,6 @@ def _on_key_title_screen(symbol: int, modifiers: int) -> None:
         GameSelect()
     elif symbol == key.I and not cfg.JAEGGI_MODE:
         ImageSelect()
-    elif symbol == key.H:
-        webbrowser.open_new_tab(WEB_TUTORIAL)
-    elif symbol == key.D and not CLINICAL_MODE:
-        webbrowser.open_new_tab(WEB_DONATE)
     elif symbol == key.V and runtime.DEBUG:
         OptionsScreen()
     elif symbol == key.G:
@@ -99,8 +94,6 @@ def _on_key_title_screen(symbol: int, modifiers: int) -> None:
         LanguageScreen()
     elif symbol == key.S and not cfg.JAEGGI_MODE:
         SoundSelect()
-    elif symbol == key.F:
-        webbrowser.open_new_tab(WEB_FORUM)
     elif symbol == key.O:
         edit_config_ini()
 
@@ -197,10 +190,6 @@ def _on_key_hub(symbol: int, modifiers: int) -> None:
         toggle_manual_mode()
         mode.progress = 0
         state.circles.update()
-    elif symbol == key.H:
-        webbrowser.open_new_tab(WEB_TUTORIAL)
-    elif symbol == key.D:
-        webbrowser.open_new_tab(WEB_DONATE)
     elif symbol == key.J and ('morse' in cfg.AUDIO1_SETS
                               or 'morse' in cfg.AUDIO2_SETS):
         webbrowser.open_new_tab(WEB_MORSE)

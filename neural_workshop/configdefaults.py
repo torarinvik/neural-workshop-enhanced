@@ -374,12 +374,6 @@ CHANCE_OF_GUARANTEED_MATCH = 0.125
 
 DEFAULT_CHANCE_OF_INTERFERENCE = 0.125
 
-# How often should Brain Workshop panhandle for a donation?  After every
-# PANHANDLE_FREQUENCY sessions, Brain Workshop will annoy you slightly by
-# asking for money.  Set this to 0 if you have a clear conscience.
-# Default: 100
-PANHANDLE_FREQUENCY = 100
-
 # Arithmetic mode settings.
 ARITHMETIC_MAX_NUMBER = 12
 ARITHMETIC_USE_NEGATIVES = False

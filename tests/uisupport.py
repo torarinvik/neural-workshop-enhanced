@@ -73,8 +73,8 @@ def close_overlays() -> None:
     """Shut every overlay that is on screen.
 
     Reads the display registry rather than a list of classes, so an
-    overlay a test did not open — the donation nag turns up on its own
-    after enough sessions — is closed too.
+    overlay a test did not open — the game raises a Message for itself
+    when something goes wrong — is closed too.
     """
     for screen in display.open_overlays():
         try:

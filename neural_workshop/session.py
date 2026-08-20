@@ -21,7 +21,7 @@ import bwaccel
 
 from . import audio, resources, runtime, state
 from .config import parse_config, rewrite_configfile, save_last_user
-from .constants import CLINICAL_MODE, PREVENT_MUSIC_SKIPPING
+from .constants import PREVENT_MUSIC_SKIPPING
 from .grid import (current_3d_color_count, current_active_position_ids,
                    current_grid_3d)
 from .paths import get_data_dir
@@ -151,20 +151,6 @@ def new_session() -> None:
     pyglet.clock.schedule_interval(audio.fade_out, 0.05)
 
 
-def _maybe_panhandle() -> None:
-    """Ask for a donation every PANHANDLE_FREQUENCY sessions."""
-    from .ui.effects import Panhandle
-    cfg = state.cfg
-    if not cfg.PANHANDLE_FREQUENCY or CLINICAL_MODE:
-        return
-    statsfile_path = os.path.join(get_data_dir(), cfg.STATSFILE)
-    with open(statsfile_path, 'r') as statsfile:
-        # Assumes nobody hand-edits their stats file.
-        sessions = len(statsfile.readlines())
-    if sessions % cfg.PANHANDLE_FREQUENCY == 0:
-        Panhandle(n=sessions)
-
-
 def end_session(cancelled: bool = False) -> None:
     """Finish or abandon the running session."""
     mode = state.mode
@@ -188,8 +174,6 @@ def end_session(cancelled: bool = False) -> None:
     reset_input()
 
     update_all_labels(do_analysis=not cancelled)
-    if not cancelled:
-        _maybe_panhandle()
 
 
 def compute_bt_sequence() -> None:

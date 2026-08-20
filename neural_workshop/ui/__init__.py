@@ -32,7 +32,7 @@
     Labels: the permanent furniture, the ones belonging to a trial in
     progress, and the ones reporting past performance.
 ``graph`` / ``effects``
-    The progress chart, and the two full-screen extras.
+    The progress chart, and the saccadic eye exercise.
 
 Every screen here that pushes its own ``on_draw`` is an *overlay*: it
 registers with :mod:`neural_workshop.display` while it is open, offers

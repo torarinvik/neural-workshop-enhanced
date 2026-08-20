@@ -25,13 +25,8 @@ ATTEMPT_TO_SAVE_STATS: Final[bool] = True
 STATS_SEPARATOR: Final[str] = ','
 
 WEB_SITE: Final[str] = 'http://brainworkshop.net/'
-WEB_TUTORIAL: Final[str] = 'http://brainworkshop.net/tutorial.html'
-# FIXME: Add a tutorial catered to clinical trials.
-CLINICAL_TUTORIAL: Final[str] = WEB_TUTORIAL
-WEB_DONATE: Final[str] = 'http://brainworkshop.net/donate.html'
 WEB_VERSION_CHECK: Final[str] = 'http://brainworkshop.net/version.txt'
 WEB_PYGLET_DOWNLOAD: Final[str] = 'http://pyglet.org'
-WEB_FORUM: Final[str] = 'https://groups.google.com/group/brain-training'
 WEB_MORSE: Final[str] = 'https://en.wikipedia.org/wiki/Morse_code'
 
 #: Seconds before the update check gives up.
