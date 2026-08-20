@@ -20,8 +20,9 @@ import math
 import random
 import unittest
 
-from uisupport import (MatrixReasoning, TASKS, close_overlays, display, key,
-                       needs_ui, reset_window, state)
+from uisupport import (MatrixReasoning, Menu, TASKS, close_overlays,
+                       display, key, needs_ui, reset_window, state,
+                       taskoptions)
 
 from neural_workshop import ravens
 from neural_workshop.ravens import figures, layouts, palette
@@ -1092,6 +1093,44 @@ class MatrixScreenTests(unittest.TestCase):
         self.assertEqual(len(self.task.choice_cards), 8)
         self.task.on_draw()
         self.assertEqual(len(self.task.sprites), 1 + 8)
+
+    def test_c_opens_the_options_and_applying_restarts_at_the_level(self):
+        self.task.start_run()
+        self.task.phase = 'ready'
+        self.task.on_key_press(key.C, 0)
+        menu = Menu.instance
+        self.assertIsInstance(menu, taskoptions.TaskOptions)
+        menu.values['RAVENS_LEVEL'].choose(9)
+        menu.on_key_press(key.RETURN, 0)
+        self.assertEqual(self.task.start_level, 9)
+        self.assertEqual(self.task.phase, 'ready')
+        self.task.start_run()
+        self.assertEqual(self.task.trial_level, 8)
+        self.assertEqual(len(self.task.puzzle.choices), 8)
+
+    def test_escape_leaves_the_options_as_they_were(self):
+        before = self.task.start_level
+        self.task.on_key_press(key.C, 0)
+        menu = Menu.instance
+        menu.values['RAVENS_LEVEL'].choose(9)
+        menu.on_key_press(key.ESCAPE, 0)
+        self.assertEqual(self.task.start_level, before)
+
+    def test_the_options_note_says_what_the_level_means(self):
+        """"Start at level 7" says nothing by itself; the note under
+        the rows is where a rung is explained before it is stood on,
+        and it has to follow the selection."""
+        self.task.on_key_press(key.C, 0)
+        menu = Menu.instance
+        menu.values['RAVENS_LEVEL'].choose(1)
+        menu.update_labels()
+        self.assertIn('matching', menu.note.text)
+        self.assertIn('4', menu.note.text)
+        menu.values['RAVENS_LEVEL'].choose(12)
+        menu.update_labels()
+        self.assertIn('9 rules', menu.note.text)
+        self.assertIn('change between rows', menu.note.text)
+        menu.on_key_press(key.ESCAPE, 0)
 
     def test_a_run_ends_with_a_score(self):
         self.task.total_trials = 3

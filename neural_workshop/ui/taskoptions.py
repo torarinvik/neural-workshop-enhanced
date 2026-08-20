@@ -314,6 +314,48 @@ GRAPH_MAPPING = TaskSpec(
     ),
     note=graph_mapping_note)
 
+def matrix_reasoning_note(chosen: Dict[str, Any]) -> str:
+    """What the chosen starting level actually asks.
+
+    "Start at level 7" says nothing by itself — the levels turn
+    several dials at once, and the grade table that defines them lives
+    three modules away from this screen. This is the one place the
+    player can see what a rung means before standing on it.
+    """
+    from ..ravens.matrix import GRADES
+    level = int(chosen['RAVENS_LEVEL'])
+    grade = GRADES[max(0, min(len(GRADES) - 1, level - 1))]
+    if grade.active == 0:
+        opening = _('Level 1 is matching: every panel draws the same '
+                    'picture, and the question is which of %d pieces '
+                    'fits.') % grade.choices
+    else:
+        parts = max(len(layout.components) for layout in grade.layouts)
+        carried = {
+            1: _('one figure group'),
+            2: _('up to two figure groups'),
+            3: _('up to three figure groups'),
+        }[parts]
+        rules = (_('one rule') if grade.active == 1
+                 else _('up to %d rules at once') % grade.active)
+        opening = _('Level %d: %s on %s, %d answers offered.') % (
+            level, rules, carried, grade.choices)
+    hard = []
+    if grade.logic:
+        hard.append(_('two panels combining into a third'))
+    if grade.rules is None and grade.active:
+        hard.append(_('rules that change between rows'))
+    if len(grade.sizes) > 5:
+        hard.append(_('finely stepped sizes'))
+    said = [opening]
+    if hard:
+        said.append(_('In the mix: %s.') % _(', ').join(hard))
+    if chosen['RAVENS_ADAPTIVE']:
+        said.append(_('From there the run moves a level with each '
+                      'answer.'))
+    return '  '.join(said)
+
+
 MATRIX_REASONING = TaskSpec(
     title=_('Matrix Reasoning options'),
     options=(
@@ -330,7 +372,8 @@ MATRIX_REASONING = TaskSpec(
         Option('RAVENS_EXPLAIN', _('Name the rules after each answer'),
                False),
         Option('RAVENS_COLOR', _('Mix in coloured puzzles'), True),
-    ))
+    ),
+    note=matrix_reasoning_note)
 
 #: Task id → the settings screen it owns.
 TASK_SPECS: Dict[str, TaskSpec] = {
