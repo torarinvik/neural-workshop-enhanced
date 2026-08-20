@@ -30,18 +30,23 @@ warnings.filterwarnings('ignore', category=ResourceWarning)
 try:
     import bwaccel
     import brainworkshop as bw
-    from nwenv import (DiagnosticEnv, NeuralWorkshopEnv, OutOfSightEnv,
+    from nwenv import (DiagnosticEnv, MonkeyLadderEnv, NeuralWorkshopEnv,
+                       OutOfSightEnv, derive_ladder_outcome,
                        derive_public_outcome, derive_sight_outcome,
                        diagnose_public_outcome, digest_rgba,
-                       render_significant_frame, verify_public_outcome,
-                       verify_public_pixels, verify_sight_outcome)
+                       render_significant_frame, verify_ladder_outcome,
+                       verify_public_outcome, verify_public_pixels,
+                       verify_sight_outcome)
     ENV_IMPORT_ERROR = None
 except Exception as exc:  # pragma: no cover - no GL context available
     bwaccel = None
     bw = None
     DiagnosticEnv = None
     NeuralWorkshopEnv = None
+    MonkeyLadderEnv = None
     OutOfSightEnv = None
+    derive_ladder_outcome = None
+    verify_ladder_outcome = None
     derive_public_outcome = None
     derive_sight_outcome = None
     verify_sight_outcome = None

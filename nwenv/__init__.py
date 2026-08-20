@@ -41,7 +41,7 @@ Parity tests compare the step driver against the scheduled ``update()``
 clock with the window hidden, so they prove stepped-versus-scheduled
 parity rather than literal visible-window execution.
 
-Two tasks are wrapped. ``NeuralWorkshopEnv`` is the n-back workshop,
+Three tasks are wrapped. ``NeuralWorkshopEnv`` is the n-back workshop,
 where a trial is a stimulus and one action window per trial. ``sight``
 holds ``OutOfSightEnv``, where the task is a continuous animation the
 driver clocks itself: one step is one rendered tick, a trial is one
@@ -55,6 +55,7 @@ Modules
 ``frames``       capturing and digesting the screen
 ``outcome``      deriving and verifying the public outcome
 ``sight``        the Out of Sight environment and its outcome
+``ladder``       the Monkey Ladder environment and its outcome
 ``export``       the optional shared-memory framebuffer dump
 ``accounting``   per-run counters
 ``env``          the environment itself
@@ -89,16 +90,19 @@ from .diagnostics import DiagnosticEnv, TestProbe  # noqa: E402
 from .env import NeuralWorkshopEnv, make_env  # noqa: E402
 from .export import FrameExport  # noqa: E402
 from .frames import capture_rgba, digest_rgba, render_significant_frame  # noqa: E402
+from .ladder import (MonkeyLadderEnv, derive_ladder_outcome,  # noqa: E402
+                     make_ladder_env, verify_ladder_outcome)
 from .outcome import (derive_public_outcome, diagnose_public_outcome,  # noqa: E402
                       verify_public_outcome, verify_public_pixels)
 from .sight import (OutOfSightEnv, derive_sight_outcome,  # noqa: E402
                     make_sight_env, verify_sight_outcome)
 
 __all__ = [
-    'Accounting', 'DiagnosticEnv', 'FrameExport', 'NeuralWorkshopEnv',
-    'OutOfSightEnv', 'TestProbe', 'capture_rgba', 'derive_public_outcome',
-    'derive_sight_outcome', 'diagnose_public_outcome', 'digest_rgba',
-    'format_accounting', 'make_env', 'make_sight_env',
-    'render_significant_frame', 'verify_public_outcome',
-    'verify_public_pixels', 'verify_sight_outcome',
+    'Accounting', 'DiagnosticEnv', 'FrameExport', 'MonkeyLadderEnv',
+    'NeuralWorkshopEnv', 'OutOfSightEnv', 'TestProbe', 'capture_rgba',
+    'derive_ladder_outcome', 'derive_public_outcome', 'derive_sight_outcome',
+    'diagnose_public_outcome', 'digest_rgba', 'format_accounting', 'make_env',
+    'make_ladder_env', 'make_sight_env', 'render_significant_frame',
+    'verify_ladder_outcome', 'verify_public_outcome', 'verify_public_pixels',
+    'verify_sight_outcome',
 ]

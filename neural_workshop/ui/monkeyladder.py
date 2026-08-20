@@ -31,6 +31,11 @@ class MonkeyLadder:
             MonkeyLadder.instance.close()
         self.grid = 5
         self.level = 3
+        # Injection points, as in Out of Sight: a driver that owns the
+        # clock and the stream may replace both, and a run under a given
+        # seed then means the same thing every time.
+        self.rng = random.Random()
+        self.clock = time.time
         self._read_options()
         self.phase = 'ready'
         self.sequence: List[GridCell] = []
@@ -130,18 +135,18 @@ class MonkeyLadder:
     def start_round(self) -> None:
         cells = [(r, c) for r in range(self.grid) for c in range(self.grid)]
         count = min(self.level, len(cells))
-        self.sequence = random.sample(cells, count)
+        self.sequence = self.rng.sample(cells, count)
         self.next_index = 0
         self.clicked = []
         self.wrong = None
         self.phase = 'show'
-        self.show_until = time.time() + (self.show_ms
-                                         + self.per_tile_ms * count) / 1000.
+        self.show_until = self.clock() + (self.show_ms
+                                          + self.per_tile_ms * count) / 1000.
         self.message = _('Remember the order')
         self._redraw()
 
     def update(self, dt: float) -> None:
-        if self.phase == 'show' and time.time() >= self.show_until:
+        if self.phase == 'show' and self.clock() >= self.show_until:
             self.phase = 'input'
             self.message = _('Click 1 through %d') % len(self.sequence)
             self._redraw()
