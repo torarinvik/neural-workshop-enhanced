@@ -296,3 +296,17 @@ class SokobanScreenTests(unittest.TestCase):
         note = taskoptions.SOKOBAN.note(
             {'SOKOBAN_LEVEL': 16, 'SOKOBAN_ADAPTIVE': True})
         self.assertIn('lower bound', note)
+
+
+class SqueezeTests(unittest.TestCase):
+
+    def test_a_bound_meeting_the_walk_is_an_exact_minimum(self):
+        """When the proven lower bound equals the walk's own length,
+        the minimum is known by squeeze and reported as exact."""
+        for seed in range(40):
+            level = generate(16, seed=seed)
+            if level.minimum is not None:
+                self.assertEqual(level.minimum, level.at_least)
+                if level.minimum == level.bound:
+                    return                 # found one squeezed exact
+        self.fail('no squeezed-exact deal in forty seeds')

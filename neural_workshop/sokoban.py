@@ -781,6 +781,11 @@ def generate(level_number: int, seed: Optional[int] = None,
             minimum, proven = solve_bounded(level, budget)
             if minimum is None:
                 proven = max(proven, matching_bound(level))
+        if minimum is None and proven >= level.bound:
+            # The proof met the walk: the lower bound reached an
+            # achievable solution, so the minimum is known exactly by
+            # squeeze — no search ever ran, and none was needed.
+            minimum = proven = level.bound
         if minimum is None and proven >= grade.floor:
             return level._replace(at_least=proven)
         if minimum is not None and minimum >= grade.floor:
