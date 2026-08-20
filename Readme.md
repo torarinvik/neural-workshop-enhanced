@@ -197,6 +197,24 @@ divided attention — two independent signals through one churn, each
 with its own key. The adaptive option adds a shape to the flock on a
 hit and removes one on a mistake.
 
+**Pursuit** is "keep your eye on the ball" with the hand made to
+follow: one shape wanders the screen and the job is to hold the
+mouse cursor on it. The shape does not move like a ball — it breaks
+direction without warning, surges and dawdles, swells and shrinks,
+and now and then becomes a different shape entirely, everything
+aimed at the moment prediction fails and the hand has to catch up.
+The score is continuous rather than hit-or-miss: the share of each
+round the cursor spent on the shape, plus the average miss distance
+in pixels — a dense signal fit for training real-time control, human
+or artificial. The difficulty is six independent dials rather than
+one: base speed, surge depth, how often the direction breaks, how
+sharp the breaks are, size wobble, and shape shifting, with a zero
+switching an axis off entirely. The adaptive option multiplies speed
+and break rate together in five-per-cent steps — hold on 70% of a
+round and it tightens, drop under 40% and it eases — so a run
+settles onto a precise frontier, and the multiplier it settles at is
+reported as part of the score.
+
 ### Perception
 
 The *Perception* category holds **Count**: a tangle of overlapping

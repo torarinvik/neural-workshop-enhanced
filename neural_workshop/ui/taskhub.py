@@ -45,6 +45,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('ncup_monte', _('N-Cup Monte')),
         ('moving_targets', _('Moving Targets')),
         ('lookout', _('Lookout')),
+        ('pursuit', _('Pursuit')),
     ],
     'perception': [
         ('count', _('Count')),
@@ -372,6 +373,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'lookout':
         from .lookout import Lookout
         Lookout()
+        return
+    if task_id == 'pursuit':
+        from .pursuit import Pursuit
+        Pursuit()
         return
     if task_id == 'count':
         from .counting import Counting

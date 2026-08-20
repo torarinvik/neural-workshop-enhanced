@@ -568,6 +568,26 @@ LOOKOUT_MORPH_MS = 2000
 LOOKOUT_CUES = 10
 LOOKOUT_ADAPTIVE = True
 
+# Pursuit: keep the mouse on one shape that breaks direction without
+# warning (about every PURSUIT_TURN_MS, up to PURSUIT_TURN_DEGREES at
+# a time), surges and dawdles (up to PURSUIT_SURGE percent around the
+# base PURSUIT_SPEED), wobbles in size and shifts its shape. Scored
+# continuously: the share of each round the cursor was on it, plus
+# the mean miss distance. Each awkwardness has its own dial and a
+# zero switches that axis off. With PURSUIT_ADAPTIVE, holding on 70%
+# of a round multiplies speed and break rate by 1.05; dropping under
+# 40% eases them by the same step.
+PURSUIT_SPEED = 18
+PURSUIT_SURGE = 60
+PURSUIT_TURN_MS = 900
+PURSUIT_TURN_DEGREES = 120
+PURSUIT_SIZE = 22
+PURSUIT_SIZE_WOBBLE = 40
+PURSUIT_MORPH_MS = 2000
+PURSUIT_SECONDS = 20
+PURSUIT_ROUNDS = 3
+PURSUIT_ADAPTIVE = True
+
 
 # Count: a tangle of overlapping outlines, and the question is how
 # many. COUNT_SHAPE is 'lines', 'circles', 'triangles', 'rectangles'

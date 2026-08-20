@@ -21,6 +21,7 @@ import unittest
 
 from uisupport import (Concentration, Counting, GraphMapping, JigsawPuzzle,
                        Lookout, MatrixReasoning, MonkeyLadder, MovingTargets,
+                       Pursuit,
                        NCupMonte, Recognition, Reflex, TowerOfHanoi,
                        TravelingSalesman, close_overlays, needs_ui,
                        reset_window, state, taskoptions)
@@ -241,6 +242,29 @@ class MaximaTests(unittest.TestCase):
             for _frame in range(120):
                 task._move(1 / 60.)
             task._sync_shapes()
+            task.on_draw()
+        finally:
+            task.close()
+
+    def test_pursuit_every_screw_tightened(self):
+        self._push('pursuit')
+        task = Pursuit()
+        try:
+            task.start_run()
+            self.assertEqual(task.seconds, 120)
+            self.assertEqual(task.total_rounds, 20)
+            quarry = task.quarry
+            for _frame in range(600):
+                if _frame % 10 == 0:
+                    task._swerve(quarry, 0.0)
+                    task._lurch(quarry, 0.0)
+                    task._swell(quarry, 0.0)
+                    task._shift(quarry, 0.0)
+                task._move(1 / 60.)
+                task._sample(1 / 60.)
+            low_x, high_x, low_y, high_y = task._bounds()
+            self.assertTrue(low_x <= quarry.x <= high_x)
+            self.assertTrue(low_y <= quarry.y <= high_y)
             task.on_draw()
         finally:
             task.close()

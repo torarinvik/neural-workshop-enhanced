@@ -536,6 +536,65 @@ LOOKOUT = TaskSpec(
     note=lookout_note)
 
 
+def pursuit_note(chosen: Dict[str, Any]) -> str:
+    """The chosen quarry in one line, and what the dials trade.
+
+    Six independent axes make a wide space; the note names the two
+    that matter most at a glance — how fast, how unpredictable — and
+    says when an axis is switched off entirely.
+    """
+    speed = int(chosen['PURSUIT_SPEED'])
+    gap = int(chosen['PURSUIT_TURN_MS'])
+    said = [_('The shape covers about %d%% of the screen a second and '
+              'breaks direction every %.1f s or so, up to %d degrees '
+              'at a time.') % (speed, gap / 1000.,
+                               int(chosen['PURSUIT_TURN_DEGREES']))]
+    still = []
+    if not int(chosen['PURSUIT_SURGE']):
+        still.append(_('steady pace'))
+    if not int(chosen['PURSUIT_SIZE_WOBBLE']):
+        still.append(_('fixed size'))
+    if not int(chosen['PURSUIT_MORPH_MS']):
+        still.append(_('fixed shape'))
+    if still:
+        said.append(_('Switched off: %s.') % _(', ').join(still))
+    if chosen['PURSUIT_ADAPTIVE']:
+        said.append(_('Hold on 70%% of a round and everything speeds '
+                      'up 5%%; drop under 40%% and it eases 5%%.'))
+    return '  '.join(said)
+
+
+PURSUIT = TaskSpec(
+    title=_('Pursuit options'),
+    options=(
+        Option('PURSUIT_SPEED', _('Base speed'), 18,
+               values=(4, 6, 8, 10, 12, 14, 16, 18, 20, 25, 30, 35, 40,
+                       50, 60, 75, 90)),
+        Option('PURSUIT_SURGE', _('Speed surges up to'), 60,
+               values=(0, 20, 40, 60, 80, 100, 150, 200, 300),
+               suffix='%'),
+        Option('PURSUIT_TURN_MS', _('Direction breaks about every'), 900,
+               values=(200, 300, 400, 600, 900, 1200, 1600, 2200, 3000,
+                       5000), suffix=' ms'),
+        Option('PURSUIT_TURN_DEGREES', _('Sharpest break'), 120,
+               values=(30, 45, 60, 90, 120, 150, 180)),
+        Option('PURSUIT_SIZE', _('Base size'), 22,
+               values=(10, 13, 16, 19, 22, 26, 31, 38, 46, 60)),
+        Option('PURSUIT_SIZE_WOBBLE', _('Size wobbles up to'), 40,
+               values=(0, 15, 30, 40, 55, 70, 85), suffix='%'),
+        Option('PURSUIT_MORPH_MS', _('Shape shifts about every'), 2000,
+               values=(0, 500, 900, 1400, 2000, 3000, 5000),
+               suffix=' ms'),
+        Option('PURSUIT_SECONDS', _('Seconds per round'), 20,
+               values=(10, 15, 20, 30, 45, 60, 90, 120), suffix=' s'),
+        Option('PURSUIT_ROUNDS', _('Rounds per run'), 3,
+               values=(1, 2, 3, 5, 8, 10, 15, 20)),
+        Option('PURSUIT_ADAPTIVE',
+               _('Tighten the screws while you hold on'), True),
+    ),
+    note=pursuit_note)
+
+
 def salesman_note(chosen: Dict[str, Any]) -> str:
     """What the score means at this size, and that it is exact.
 
@@ -581,6 +640,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'reflex': REFLEX,
     'moving_targets': TRACKING,
     'lookout': LOOKOUT,
+    'pursuit': PURSUIT,
     'count': COUNTING,
     'graph_mapping': GRAPH_MAPPING,
     'matrix_reasoning': MATRIX_REASONING,

@@ -75,6 +75,41 @@ DROUGHT_SECONDS = 6.0
 REVEAL_SECONDS = 1.4
 
 
+def make_glyph(form: int, x: float, y: float, r: float,
+               color: Tuple[int, int, int],
+               batch: pyglet.graphics.Batch) -> object:
+    """A new drawable of *form* centred on (x, y).
+
+    Module-level because the pursuit task draws the same family of
+    shapes; one maker keeps a "square" the same square everywhere.
+    """
+    if FORMS[form] == _('circle'):
+        return pyglet.shapes.Circle(x, y, r, color=color, batch=batch)
+    if FORMS[form] == _('square'):
+        side = r * 1.8
+        square = pyglet.shapes.Rectangle(x, y, side, side, color=color,
+                                         batch=batch)
+        square.anchor_position = (side / 2, side / 2)
+        return square
+    if FORMS[form] == _('triangle'):
+        return pyglet.shapes.Triangle(
+            x - r, y - r * 0.8, x + r, y - r * 0.8, x, y + r * 1.1,
+            color=color, batch=batch)
+    return pyglet.shapes.Star(x, y, r * 1.25, r * 0.55, num_spikes=5,
+                              color=color, batch=batch)
+
+
+def place_glyph(drawn: object, form: int, x: float, y: float,
+                r: float) -> None:
+    """Move an existing glyph, minding the triangle's three corners."""
+    if FORMS[form] == _('triangle'):
+        drawn.x, drawn.y = x - r, y - r * 0.8
+        drawn.x2, drawn.y2 = x + r, y - r * 0.8
+        drawn.x3, drawn.y3 = x, y + r * 1.1
+    else:
+        drawn.position = (x, y)
+
+
 class Cue(NamedTuple):
     """The glyph on the HUD: always a full coloured shape."""
 
@@ -457,31 +492,11 @@ class Lookout:
 
     def _made(self, form: int, x: float, y: float, r: float,
               color: Tuple[int, int, int]) -> object:
-        """A new drawable of *form* centred on (x, y)."""
-        if FORMS[form] == _('circle'):
-            return pyglet.shapes.Circle(x, y, r, color=color,
-                                        batch=self.batch)
-        if FORMS[form] == _('square'):
-            side = r * 1.8
-            square = pyglet.shapes.Rectangle(x, y, side, side, color=color,
-                                             batch=self.batch)
-            square.anchor_position = (side / 2, side / 2)
-            return square
-        if FORMS[form] == _('triangle'):
-            return pyglet.shapes.Triangle(
-                x - r, y - r * 0.8, x + r, y - r * 0.8, x, y + r * 1.1,
-                color=color, batch=self.batch)
-        return pyglet.shapes.Star(x, y, r * 1.25, r * 0.55, num_spikes=5,
-                                  color=color, batch=self.batch)
+        return make_glyph(form, x, y, r, color, self.batch)
 
     def _place(self, drawn: object, form: int, x: float, y: float,
                r: float) -> None:
-        if FORMS[form] == _('triangle'):
-            drawn.x, drawn.y = x - r, y - r * 0.8
-            drawn.x2, drawn.y2 = x + r, y - r * 0.8
-            drawn.x3, drawn.y3 = x, y + r * 1.1
-        else:
-            drawn.position = (x, y)
+        place_glyph(drawn, form, x, y, r)
 
     def _sync_shapes(self) -> None:
         window = state.window

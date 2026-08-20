@@ -37,7 +37,7 @@ class AttentionCategoryTests(unittest.TestCase):
     def test_the_roster_is_complete(self):
         self.assertEqual([task for task, _name in TASKS['attention']],
                          ['reflex', 'ncup_monte', 'moving_targets',
-                          'lookout'])
+                          'lookout', 'pursuit'])
 
     def test_it_has_an_options_screen(self):
         from neural_workshop.ui import taskoptions
@@ -669,3 +669,140 @@ class LookoutScreenTests(unittest.TestCase):
             {'LOOKOUT_SHAPES': 8, 'LOOKOUT_CUE': 'both',
              'LOOKOUT_ADAPTIVE': True})
         self.assertIn('Two keys', note)
+
+
+@needs_ui
+class PursuitScreenTests(unittest.TestCase):
+
+    def setUp(self):
+        close_overlays()
+        from uisupport import Pursuit
+        self.task = Pursuit()
+        self.task.total_rounds = 2
+        self.task.adaptive = False
+
+    def tearDown(self):
+        self.task.close()
+        close_overlays()
+        reset_window()
+
+    def _cursor_on(self):
+        quarry = self.task.quarry
+        self.task.mouse = (quarry.x * state.window.width,
+                           quarry.y * state.window.height)
+
+    def _cursor_off(self):
+        self.task.mouse = (-500.0, -500.0)
+
+    def test_it_is_in_the_attention_category(self):
+        self.assertIn('pursuit',
+                      [task for task, _name in TASKS['attention']])
+
+    def test_a_round_spawns_the_quarry_mid_screen(self):
+        self.task.start_run()
+        self.assertEqual(self.task.phase, 'chasing')
+        self.assertAlmostEqual(self.task.quarry.x, 0.5)
+        self.assertAlmostEqual(self.task.quarry.y, 0.5)
+        self.task.on_draw()
+
+    def test_on_and_off_frames_split_the_round(self):
+        self.task.start_run()
+        self._cursor_on()
+        self.task._sample(0.5)
+        self._cursor_off()
+        self.task._sample(0.5)
+        self.assertAlmostEqual(self.task.on_time, 0.5)
+        self.assertAlmostEqual(self.task.run_time, 1.0)
+        self.assertEqual(self.task.off_samples, 1)
+        self.assertGreater(self.task.off_sum, 0)
+
+    def test_the_round_scores_its_share_and_drift(self):
+        self.task.start_run()
+        self._cursor_on()
+        self.task._sample(3.0)
+        self._cursor_off()
+        self.task._sample(1.0)
+        self.task._score()
+        share, drift, _mult = self.task.results[-1]
+        self.assertAlmostEqual(share, 0.75)
+        self.assertGreater(drift, 100)
+        self.assertEqual(self.task.phase, 'feedback')
+
+    def test_swerves_change_heading_abruptly(self):
+        self.task.start_run()
+        quarry = self.task.quarry
+        for _try in range(20):
+            was = quarry.heading
+            self.task._swerve(quarry, time.time())
+            self.assertNotEqual(quarry.heading, was)
+            self.assertLessEqual(abs(quarry.heading - was),
+                                 self.task.sharpness + 1e-9)
+
+    def test_surges_stay_around_the_base_pace(self):
+        self.task.surge_depth = 0.6
+        self.task.start_run()
+        quarry = self.task.quarry
+        for _try in range(50):
+            self.task._lurch(quarry, time.time())
+            self.assertGreaterEqual(quarry.surge, 0.15)
+            self.assertLessEqual(quarry.surge, 1.6)
+
+    def test_motion_stays_inside_the_bounds(self):
+        self.task.start_run()
+        self.task.multiplier = 3.0        # fast enough to hit walls
+        for _frame in range(1200):
+            if _frame % 40 == 0:
+                self.task._swerve(self.task.quarry, time.time())
+            self.task._move(1 / 60.)
+        low_x, high_x, low_y, high_y = self.task._bounds()
+        self.assertTrue(low_x <= self.task.quarry.x <= high_x)
+        self.assertTrue(low_y <= self.task.quarry.y <= high_y)
+
+    def test_zeroed_axes_never_fire(self):
+        self.task.surge_depth = 0.0
+        self.task.wobble = 0.0
+        self.task.morph_gap = 0.0
+        self.task.start_run()
+        quarry = self.task.quarry
+        was = (quarry.surge, quarry.radius, quarry.form)
+        quarry.next_surge = quarry.next_resize = quarry.next_morph = 0.0
+        quarry.next_turn = time.time() + 60
+        self.task.update(1 / 60.)
+        self.assertEqual((quarry.surge, quarry.radius, quarry.form), was)
+
+    def test_adaptive_multiplier_moves_in_five_percent_steps(self):
+        self.task.adaptive = True
+        self.task.start_run()
+        self._cursor_on()
+        self.task._sample(1.0)
+        self.task._score()                   # 100% on -> harder
+        self.assertAlmostEqual(self.task.multiplier, 1.05)
+        self.task.phase = 'chasing'
+        self.task.on_time = 0.0
+        self.task.run_time = 0.0
+        self._cursor_off()
+        self.task._sample(1.0)
+        self.task._score()                   # 0% on -> easier
+        self.assertAlmostEqual(self.task.multiplier, 1.05 * 0.95)
+
+    def test_the_run_finishes_with_an_aggregate(self):
+        self.task.start_run()
+        for _round in range(2):
+            self._cursor_on()
+            self.task._sample(1.0)
+            self.task._score()
+            self.task.until = time.time() - 1
+            self.task.update(1 / 60.)
+        self.assertEqual(self.task.phase, 'done')
+        self.assertEqual(self.task.score()['on_percent'], 100)
+        self.task.on_draw()
+
+    def test_it_has_an_options_screen(self):
+        from neural_workshop.ui import taskoptions
+        self.assertTrue(taskoptions.has_options('pursuit'))
+        note = taskoptions.PURSUIT.note(
+            {'PURSUIT_SPEED': 18, 'PURSUIT_TURN_MS': 900,
+             'PURSUIT_TURN_DEGREES': 120, 'PURSUIT_SURGE': 0,
+             'PURSUIT_SIZE_WOBBLE': 0, 'PURSUIT_MORPH_MS': 0,
+             'PURSUIT_ADAPTIVE': True})
+        self.assertIn('Switched off', note)

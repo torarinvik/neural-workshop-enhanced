@@ -44,10 +44,10 @@ class MenuTests(unittest.TestCase):
                 ['concentration', 'recognition'])
             self.assertEqual([task[0] for task in tasks_for('attention')],
                              ['reflex', 'ncup_monte', 'moving_targets',
-                              'lookout'])
+                              'lookout', 'pursuit'])
             hub.set_category('attention')
             self.assertEqual(hub.category, 'attention')
-            self.assertEqual(len(hub.task_rects), 4)
+            self.assertEqual(len(hub.task_rects), 5)
             hub.set_category('long_term_memory')
             self.assertEqual(hub.category, 'long_term_memory')
             self.assertEqual(len(hub.task_rects), 2)
