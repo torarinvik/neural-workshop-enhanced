@@ -41,7 +41,15 @@ Parity tests compare the step driver against the scheduled ``update()``
 clock with the window hidden, so they prove stepped-versus-scheduled
 parity rather than literal visible-window execution.
 
-Three tasks are wrapped. ``NeuralWorkshopEnv`` is the n-back workshop,
+**Every task in the workshop is wrapped**, and ``catalog`` is the list.
+Nineteen of them are declarations on :class:`TaskEnv` rather than code
+— where the task class lives, what one port calls, which phase takes
+input, which phase means the trial is over — and they paint
+:class:`neural_workshop.ui.verdict.VerdictLabel` when a trial settles,
+so they carry neither a deriver nor a verifier. The four written before
+that existed still carry both.
+
+``NeuralWorkshopEnv`` is the n-back workshop,
 where a trial is a stimulus and one action window per trial. ``sight``
 holds ``OutOfSightEnv``, where the task is a continuous animation the
 driver clocks itself: one step is one rendered tick, a trial is one
@@ -85,7 +93,27 @@ if _HEADLESS:
         except Exception:
             pass
 
+from . import catalog  # noqa: E402,F401
 from .accounting import Accounting, format_accounting  # noqa: E402
+from .concentration import ConcentrationEnv  # noqa: E402
+from .counting import CountingEnv  # noqa: E402
+from .graphmapping import GraphMappingEnv  # noqa: E402
+from .hanoi import HanoiEnv  # noqa: E402
+from .jigsaw import JigsawEnv  # noqa: E402
+from .lookout import LookoutEnv  # noqa: E402
+from .ncupmonte import NCupMonteEnv  # noqa: E402
+from .pursuit import PursuitEnv  # noqa: E402
+from .ravens import MatrixReasoningEnv  # noqa: E402
+from .recognition import RecognitionEnv  # noqa: E402
+from .reflex import ReflexEnv  # noqa: E402
+from .salesman import SalesmanEnv  # noqa: E402
+from .sudoku import SudokuEnv  # noqa: E402
+from .tracking import MovingTargetsEnv  # noqa: E402
+from .crossedwires import CrossedWiresEnv  # noqa: E402
+from .inthedark import InTheDarkEnv  # noqa: E402
+from .maze import MazeEnv  # noqa: E402
+from .removals import RemovalsEnv  # noqa: E402
+from .sokoban import SokobanEnv  # noqa: E402
 from .diagnostics import DiagnosticEnv, TestProbe  # noqa: E402
 from .env import NeuralWorkshopEnv, make_env  # noqa: E402
 from .export import FrameExport  # noqa: E402
@@ -117,4 +145,13 @@ __all__ = [
     'SealedContractError', 'TaskEnv',
     'YouAreHereEnv', 'make_youarehere_env', 'verify_youarehere_outcome',
     'verify_fog_outcome',
+    # The rest of the workshop, wrapped on TaskEnv. Every task a person
+    # can play from the hub is here; nwenv.catalog is the list, and
+    # tests/test_env_catalog.py fails the build if it falls behind.
+    'catalog',
+    'ConcentrationEnv', 'CountingEnv', 'CrossedWiresEnv', 'GraphMappingEnv',
+    'HanoiEnv', 'InTheDarkEnv', 'JigsawEnv', 'LookoutEnv',
+    'MatrixReasoningEnv', 'MazeEnv', 'MovingTargetsEnv', 'NCupMonteEnv',
+    'PursuitEnv', 'RecognitionEnv', 'ReflexEnv', 'RemovalsEnv',
+    'SalesmanEnv', 'SokobanEnv', 'SudokuEnv',
 ]

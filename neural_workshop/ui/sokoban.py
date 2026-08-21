@@ -34,7 +34,7 @@ from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
                         width_center)
 from ..sokoban import GRADES, Level, deadlocked, generate
 from . import cursor, taskoptions
-from .verdict import VerdictLabel
+from .verdict import VerdictLabel, above_the_band
 from ..i18n import _
 
 #: Okabe-Ito again, consistent with the rest of the workshop.
@@ -68,6 +68,8 @@ class SokobanTask:
         if SokobanTask.instance is not None:
             SokobanTask.instance.close()
         self.rng = random.Random()
+        #: Swapped out by an agent environment for a virtual clock.
+        self.clock = time.time
         self.level: Optional[Level] = None
         self.boxes: frozenset = frozenset()
         self.player = 0
@@ -152,7 +154,7 @@ class SokobanTask:
     def _canvas(self) -> Tuple[float, float, float, float]:
         window = state.window
         top = from_top_edge(100)
-        bottom = from_bottom_edge(56)
+        bottom = above_the_band(from_bottom_edge(56))
         return (window.width * 0.08, bottom,
                 window.width * 0.84, max(40.0, top - bottom))
 
@@ -199,7 +201,7 @@ class SokobanTask:
         self.pushes = 0
         self.moves = 0
         self.history = []
-        self.started_at = time.time()
+        self.started_at = self.clock()
         self.phase = 'pushing'
         grade = GRADES[self.rung - 1]
         if self.level.minimum is not None:
@@ -293,7 +295,7 @@ class SokobanTask:
         certified = self.level.minimum is not None
         par = self.par()
         self.results.append((self.rung, self.pushes, par, certified))
-        took = int(time.time() - self.started_at)
+        took = int(self.clock() - self.started_at)
         if certified and self.pushes <= par:
             self.message = _('Perfect — the minimum %d pushes, %ds') % (
                 par, took)

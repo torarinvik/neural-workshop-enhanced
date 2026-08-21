@@ -40,6 +40,7 @@ from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
                         scale_to_height, width_center)
 from . import cursor, taskoptions
 from .tracking import bounced
+from .verdict import VerdictLabel
 from ..i18n import _
 
 #: Shapes a run may hold. The ceiling is the same as the ball flock's:
@@ -158,6 +159,8 @@ class Lookout:
         if Lookout.instance is not None:
             Lookout.instance.close()
         self.rng = random.Random()
+        #: Swapped out by an agent environment for a virtual clock.
+        self.clock = time.time
         self.shapes: List[Drifter] = []
         self.cue = Cue(0, 0)
         self.cue_number = 0
@@ -240,6 +243,16 @@ class Lookout:
             font_size=calc_fontsize(12), color=self.textcolor,
             batch=self.batch, x=width_center(), y=from_bottom_edge(26),
             anchor_x='center', anchor_y='center', font_name=FONTLIST)
+        # Read by the agent boundary, which pays the trial by this
+        # label's colour; tests/check_band.py is what says nothing else
+        # this task draws puts a saturated colour in the bottom quarter.
+        # Rebuilt with the chrome, so a verdict already up is put back —
+        # a relayout on the frame a trial settles would otherwise drop
+        # it, and an outcome only sometimes derivable is worse than one
+        # that never is.
+        self.verdict = VerdictLabel(batch=self.batch, y_from_bottom=60)
+        if getattr(self, 'verdict_shown', None) is not None:
+            self.verdict.show(*self.verdict_shown)
         self.cue_glyph: List[object] = []
         for drifter in self.shapes:
             drifter.drawn = None
@@ -273,6 +286,7 @@ class Lookout:
         self.count = self.clamped(self.start_count)
         self.phase = 'ready'
         self.message = _('Press Space to start')
+        self.verdict_shown = None
 
     def start_run(self) -> None:
         self._reset()
@@ -293,7 +307,7 @@ class Lookout:
         self._drop_shapes()
         low_x, high_x, low_y, high_y = self._bounds()
         apart = 2.4 * self.radius() / state.window.height
-        now = time.time()
+        now = self.clock()
         spots: List[Tuple[float, float]] = []
         while len(spots) < self.count:
             for _attempt in range(self.count * 60):
@@ -313,8 +327,10 @@ class Lookout:
             self._finish()
             return
         self.cue_number += 1
+        self.verdict_shown = None
+        self.verdict.clear()
         self.cue = self._absent_cue()
-        self.cued_at = time.time()
+        self.cued_at = self.clock()
         self.seen = {channel: None for channel in self.channels()}
         self.phase = 'watching'
         self.message = _('Watch for it')
@@ -398,7 +414,7 @@ class Lookout:
                    for s in self.shapes)
 
     def update(self, dt: float) -> None:
-        now = time.time()
+        now = self.clock()
         if self.phase == 'watching':
             self._move(min(dt, 0.1))
             for drifter in self.shapes:
@@ -424,19 +440,19 @@ class Lookout:
         """A press on *channel*'s key. Dead keys do nothing."""
         if self.phase != 'watching' or channel not in self.channels():
             return
-        if self.seen.get(channel) is not None:
+        hit = self.seen.get(channel) is not None
+        if hit:
             self.hits += 1
-            self.reaction_times.append(time.time() - self.seen[channel])
+            self.reaction_times.append(self.clock() - self.seen[channel])
             self.message = _('Hit — %s, %d ms') % (
                 channel_words(self.cue, channel),
                 int(self.reaction_times[-1] * 1000))
-            self._adapt(right=True)
         else:
             self.false_alarms += 1
             self.message = _('No — %s is not on screen') % \
                 channel_words(self.cue, channel)
-            self._adapt(right=False)
-        self._show_feedback()
+        self._adapt(right=hit)
+        self._show_feedback(right=hit)
 
     def _miss(self, channel: str) -> None:
         """The match churned away unpressed."""
@@ -452,16 +468,26 @@ class Lookout:
         grown = self.count + 1 if right else self.count - 1
         self.count = self.clamped(grown)
 
-    def _show_feedback(self) -> None:
+    def _show_feedback(self, right: bool = False) -> None:
+        """Close the episode and say how it went.
+
+        *right* is the whole of what is paid, and only a hit earns it. A
+        false alarm and a slip both cost, which is the point of a
+        vigilance task: a learner that presses on every frame catches
+        every match and is not thereby doing the task, so the two ways
+        of being wrong have to cost the same as each other.
+        """
+        self.verdict_shown = (right, self.message)
+        self.verdict.show(*self.verdict_shown)
         self.phase = 'feedback'
         self.seen = {}
-        self.until = time.time() + REVEAL_SECONDS
+        self.until = self.clock() + REVEAL_SECONDS
         # The flock churns on through feedback, but grows or shrinks
         # to the adapted count only between cues, quietly at the edge.
         while len(self.shapes) > self.count:
             self._drop_one(self.shapes.pop())
         low_x, high_x, low_y, high_y = self._bounds()
-        now = time.time()
+        now = self.clock()
         while len(self.shapes) < self.count:
             self.shapes.append(self._fresh_drifter(
                 self.rng.uniform(low_x, high_x),

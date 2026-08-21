@@ -34,6 +34,7 @@ from ..constants import FONTLIST
 from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
                         scale_to_height, width_center)
 from . import cursor, taskoptions
+from .verdict import VerdictLabel
 from ..i18n import _
 
 #: Balls a trial may hold, and targets among them. The ceilings are
@@ -99,6 +100,8 @@ class MovingTargets:
         if MovingTargets.instance is not None:
             MovingTargets.instance.close()
         self.rng = random.Random()
+        #: Swapped out by an agent environment for a virtual clock.
+        self.clock = time.time
         self.balls: List[Ball] = []
         self.round = 0
         self.results: List[Tuple[int, int, int]] = []  # (balls, asked, caught)
@@ -161,6 +164,16 @@ class MovingTargets:
             font_size=calc_fontsize(12), color=self.textcolor,
             batch=self.batch, x=width_center(), y=from_bottom_edge(26),
             anchor_x='center', anchor_y='center', font_name=FONTLIST)
+        # Read by the agent boundary, which pays the trial by this
+        # label's colour; tests/check_band.py is what says nothing else
+        # this task draws puts a saturated colour in the bottom quarter.
+        # Rebuilt with the chrome, so a verdict already up is put back —
+        # a relayout on the frame a trial settles would otherwise drop
+        # it, and an outcome only sometimes derivable is worse than one
+        # that never is.
+        self.verdict = VerdictLabel(batch=self.batch, y_from_bottom=60)
+        if getattr(self, 'verdict_shown', None) is not None:
+            self.verdict.show(*self.verdict_shown)
         # Circles belong to the old batch; let them be remade.
         for ball in self.balls:
             ball.circle = None
@@ -190,6 +203,7 @@ class MovingTargets:
         self.tracked = self.clamped_targets(self.start_targets)
         self.phase = 'ready'
         self.message = _('Press Space to start')
+        self.verdict_shown = None
 
     def start_run(self) -> None:
         self._reset()
@@ -216,6 +230,8 @@ class MovingTargets:
             self._finish()
             return
         self.round += 1
+        self.verdict_shown = None
+        self.verdict.clear()
         self._drop_balls()
         count = self.clamped_targets(self.tracked)
         chosen = set(self.rng.sample(range(self.ball_count), count))
@@ -229,7 +245,7 @@ class MovingTargets:
                 target=index in chosen))
         self.balls = balls
         self.phase = 'cueing'
-        self.until = time.time() + CUE_SECONDS
+        self.until = self.clock() + CUE_SECONDS
         self.message = _('Follow the %s') % (
             _('coloured ball') if count == 1 else
             _('%d coloured balls') % count)
@@ -237,7 +253,7 @@ class MovingTargets:
         self._update_status()
 
     def update(self, dt: float) -> None:
-        now = time.time()
+        now = self.clock()
         if self.phase == 'cueing' and now >= self.until:
             self.phase = 'tracking'
             self.until = now + self.seconds
@@ -312,8 +328,10 @@ class MovingTargets:
         if self.adaptive:
             grown = self.tracked + 1 if caught == asked else self.tracked - 1
             self.tracked = self.clamped_targets(grown)
+        self.verdict_shown = (caught == asked, self.message)
+        self.verdict.show(*self.verdict_shown)
         self.phase = 'revealing'
-        self.until = time.time() + REVEAL_SECONDS
+        self.until = self.clock() + REVEAL_SECONDS
 
     def _finish(self) -> None:
         self.phase = 'done'

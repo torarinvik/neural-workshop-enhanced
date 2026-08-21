@@ -26,70 +26,24 @@ SPDX-License-Identifier: GPL-2.0-or-later
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Optional
 
 from .taskenv import TaskEnv
-
-#: What the four ports do, in an order the learner has to discover.
-STEPS = ((0, -1), (0, 1), (-1, 0), (1, 0))
 
 
 class MazeEnv(TaskEnv):
     """Deterministic, stepped view of one Maze run."""
 
+    task_class = ('neural_workshop.ui.maze', 'MazeTask')
     ports = 4
     clocked = False
-
-    def __init__(self, seed: Optional[int] = None,
-                 rung: Optional[int] = None,
-                 trials: Optional[int] = None,
-                 trail: Optional[bool] = None,
-                 **kwargs: Any) -> None:
-        self._rung = rung
-        self._trials = trials
-        self._trail = trail
-        self._solved_seen = False
-        super().__init__(seed=seed, **kwargs)
-
-    def build(self, seed: int, **dials: Any) -> Any:
-        from neural_workshop.ui.maze import MazeTask
-        return MazeTask()
-
-    def apply_dials(self, task: Any) -> None:
-        if self._rung is not None:
-            task.start_rung = int(self._rung)
-        if self._trials is not None:
-            task.total_trials = int(self._trials)
-        if self._trail is not None:
-            task.show_trail = bool(self._trail)
-
-    def drive(self, task: Any, port: int) -> None:
-        task.step(*STEPS[port])
-
-    def trial_open(self, task: Any) -> bool:
-        """Only while a maze is being walked."""
-        return getattr(task, 'phase', None) == 'walking'
-
-    def tick(self, task: Any, dt: float) -> None:
-        """Nothing moves on its own; a solved maze needs dealing on.
-
-        The wait before dealing is the one every task on this boundary
-        needs: dealing clears the verdict, so going straight there
-        would take the label down on the frame it went up and the
-        outcome would never be derivable.
-        """
-        if getattr(task, 'phase', None) != 'solved':
-            self._solved_seen = False
-            return
-        if self._solved_seen:
-            self._solved_seen = False
-            task._next_trial()
-        else:
-            self._solved_seen = True
-
-    def dials(self) -> Dict[str, Any]:
-        return {'rung': self._rung, 'trials': self._trials,
-                'trail': self._trail}
+    action = 'step'
+    #: What the four ports do, in an order the learner has to discover.
+    action_table = ((0, -1), (0, 1), (-1, 0), (1, 0))
+    open_phase = ('walking',)
+    settled_phase = ('solved',)
+    knobs = {'rung': 'start_rung', 'trials': 'total_trials',
+             'trail': 'show_trail'}
 
 
 def make_maze_env(seed: int = 0,

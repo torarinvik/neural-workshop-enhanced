@@ -24,7 +24,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Optional
 
 from .taskenv import TaskEnv
 
@@ -35,61 +35,21 @@ STEPS = ((0, -1), (0, 1), (-1, 0), (1, 0))
 class SokobanEnv(TaskEnv):
     """Deterministic, stepped view of one Sokoban run."""
 
+    task_class = ('neural_workshop.ui.sokoban', 'SokobanTask')
     ports = 4
     clocked = False
-
-    def __init__(self, seed: Optional[int] = None,
-                 rung: Optional[int] = None,
-                 trials: Optional[int] = None,
-                 **kwargs: Any) -> None:
-        self._rung = rung
-        self._trials = trials
-        self._solved_seen = False
-        super().__init__(seed=seed, **kwargs)
-
-    def build(self, seed: int, **dials: Any) -> Any:
-        from neural_workshop.ui.sokoban import SokobanTask
-        return SokobanTask()
-
-    def apply_dials(self, task: Any) -> None:
-        if self._rung is not None:
-            task.start_rung = int(self._rung)
-        if self._trials is not None:
-            task.total_trials = int(self._trials)
-
-    def drive(self, task: Any, port: int) -> None:
-        task.step(*STEPS[port])
-
-    def trial_open(self, task: Any) -> bool:
-        """Only while a level is being pushed."""
-        return getattr(task, 'phase', None) == 'pushing'
-
-    def tick(self, task: Any, dt: float) -> None:
-        """Nothing moves on its own; a settled level needs dealing on.
-
-        Settled is *solved or lost*, and the second one matters more
-        here than anywhere else on this boundary. A box pushed into a
-        pocket can never come out, so a learner that shoves one there
-        is in a position it cannot win and cannot leave — and before
-        the task learned to say so, that was an absorbing state with
-        no verdict in it: the episode ran to its step limit having
-        been paid nothing since the mistake.
-
-        The wait before dealing is the usual one: dealing clears the
-        verdict, so going straight there would take the label down on
-        the frame it went up.
-        """
-        if getattr(task, 'phase', None) not in ('solved', 'lost'):
-            self._solved_seen = False
-            return
-        if self._solved_seen:
-            self._solved_seen = False
-            task._next_trial()
-        else:
-            self._solved_seen = True
-
-    def dials(self) -> Dict[str, Any]:
-        return {'rung': self._rung, 'trials': self._trials}
+    action = 'step'
+    action_table = STEPS
+    open_phase = ('pushing',)
+    #: Solved *or lost*, and the second one matters more here than
+    #: anywhere else on this boundary. A box pushed into a pocket can
+    #: never come out, so a learner that shoves one there is in a
+    #: position it cannot win and cannot leave — and before the task
+    #: learned to say so, that was an absorbing state with no verdict in
+    #: it: the episode ran to its step limit having been paid nothing
+    #: since the mistake.
+    settled_phase = ('solved', 'lost')
+    knobs = {'rung': 'start_rung', 'trials': 'total_trials'}
 
 
 def make_sokoban_env(seed: int = 0,

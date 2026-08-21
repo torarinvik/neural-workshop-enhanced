@@ -84,6 +84,75 @@ class TaskEnv:
     #: Required. How many opaque ports the learner may press.
     ports: int = 0
 
+    # --- the declared form ------------------------------------------------
+    #
+    # Five wrappers were written against the hooks below before these
+    # existed, and they came out 100 to 115 lines each. Set side by side
+    # the five differ in about a dozen values and in nothing else: where
+    # the task class lives, what one port calls, which phase takes input,
+    # which phase means the trial is over, and what the difficulty knobs
+    # are called. Everything around those values was the same code five
+    # times, including the one part of it that is easy to get wrong --
+    # the one-frame wait before dealing the next trial, without which
+    # the verdict is cleared on the frame it went up and the outcome is
+    # never derivable.
+    #
+    # So a task may declare the values instead of writing the code. The
+    # hooks are all still there and still win when overridden; declaring
+    # is the short road, not the only one.
+
+    #: Where the UI task lives: ``('neural_workshop.ui.maze', 'MazeTask')``.
+    #: Imported lazily, inside :meth:`build`, because importing a UI module
+    #: at boundary-import time pulls in pyglet's window before the headless
+    #: options in :mod:`nwenv` have been set.
+    task_class: Tuple[str, str] = ('', '')
+
+    #: The task method one port calls. ``'answer'`` means ``task.answer(port)``.
+    action: str = ''
+
+    #: Optional per-port arguments, when a port is not just its own index --
+    #: ``((0, -1), (0, 1), (-1, 0), (1, 0))`` for a task driven by deltas.
+    #: The tuple's length is what :attr:`ports` should be.
+    action_table: Tuple[Any, ...] = ()
+
+    #: The phases in which a port does anything. Empty means always open.
+    open_phase: Tuple[str, ...] = ()
+
+    #: The phases that mean this trial is over and the next one is owed.
+    #: The driver waits one published frame in them before dealing, so the
+    #: verdict is on screen for a frame the learner is actually handed.
+    settled_phase: Tuple[str, ...] = ()
+
+    #: What deals the next trial once a settled phase has been shown.
+    deal: str = '_next_trial'
+
+    #: What starts a run. Most tasks in the workshop count their trials
+    #: and call this ``start_run``; the two that run until they are
+    #: closed have no run to start and name their round-dealer here
+    #: instead. A task with no such method opens in whatever phase it
+    #: constructs itself in, which for every task here is a waiting one
+    #: -- so getting this wrong is a run that never begins rather than
+    #: one that begins wrongly.
+    start: str = 'start_run'
+
+    #: Constructor keyword -> attribute on the task. ``RavensEnv(rung=4)``
+    #: with ``{'rung': 'start_level'}`` sets ``task.start_level = 4``. A
+    #: knob left unset is left alone, so the task keeps its own default.
+    knobs: Mapping[str, str] = {}
+
+    #: Task attributes the boundary sets whatever the player's own
+    #: preferences say, because a run without them is not derivable.
+    #:
+    #: Nearly all of these are one setting: several tasks let a player
+    #: turn feedback off to go faster, and a trial that resolves with no
+    #: verdict painted resolves into nothing a third party could read.
+    #: Turning it off is a fine choice for a person, who knows how they
+    #: did; it is not available to a learner whose whole payment is that
+    #: label. Kept separate from :attr:`knobs` on purpose — a knob is a
+    #: difficulty the caller chose, this is a precondition the caller
+    #: does not get a say in.
+    requires: Mapping[str, Any] = {}
+
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
         broken = sorted(SEALED & set(cls.__dict__))
@@ -99,12 +168,40 @@ class TaskEnv:
     # --- required hooks ---------------------------------------------------
 
     def build(self, seed: int, **dials: Any) -> Any:
-        """Construct the underlying UI task. Task-specific."""
-        raise NotImplementedError
+        """Construct the underlying UI task.
+
+        The default builds :attr:`task_class`. A task whose constructor
+        needs arguments overrides this instead.
+        """
+        module_name, class_name = self.task_class
+        if not class_name:
+            raise NotImplementedError(
+                '%s declares neither task_class nor build()'
+                % type(self).__name__)
+        import importlib
+        return getattr(importlib.import_module(module_name), class_name)()
 
     def drive(self, task: Any, port: int) -> None:
-        """Apply one opaque port index to the task. Task-specific."""
-        raise NotImplementedError
+        """Apply one opaque port index to the task.
+
+        The default calls :attr:`action` with the port index, or with the
+        :attr:`action_table` entry for it when the task wants something
+        other than an index. A port past the end of the table does
+        nothing, which is not a special case: a task whose rung offers
+        four choices out of a possible eight already refuses the other
+        four, and the learner has the same amount to discover about a
+        port that is out of range this round as about one that is in it.
+        """
+        if not self.action:
+            raise NotImplementedError(
+                '%s declares neither action nor drive()'
+                % type(self).__name__)
+        method = getattr(task, self.action)
+        if not self.action_table:
+            method(port)
+        elif port < len(self.action_table):
+            arg = self.action_table[port]
+            method(*arg) if isinstance(arg, tuple) else method(arg)
 
     @staticmethod
     def derive(rgba: bytes, width: int, height: int, evidence: Any,
@@ -160,10 +257,29 @@ class TaskEnv:
 
     def dials(self) -> Dict[str, Any]:
         """Difficulty knobs, as the task's own option names."""
-        return {}
+        return dict(self._knobs)
 
     def apply_dials(self, task: Any) -> None:
-        """Push this run's knobs into the task that was just built."""
+        """Push this run's knobs into the task that was just built.
+
+        Coerced to the type the task already holds, so ``rung='4'`` off a
+        command line sets an int rather than leaving a string somewhere
+        that will be compared against numbers three phases later.
+        """
+        for attr, value in self.requires.items():
+            setattr(task, attr, value)
+        for name, value in self._knobs.items():
+            if value is None:
+                continue                      # unset: keep the task's own
+            attr = self.knobs[name]
+            held = getattr(task, attr, None)
+            if isinstance(held, bool):
+                value = bool(value)
+            elif isinstance(held, int):
+                value = int(value)
+            elif isinstance(held, float):
+                value = float(value)
+            setattr(task, attr, value)
 
     def tick(self, task: Any, dt: float) -> None:
         """Advance the task by *dt*. Clocked tasks update; turn-based do not.
@@ -175,15 +291,45 @@ class TaskEnv:
         """
         if self.clocked:
             task.update(dt)
+        self._deal_when_settled(task)
+
+    def _deal_when_settled(self, task: Any) -> None:
+        """Deal the next trial, one published frame after this one settles.
+
+        The wait is the whole of it, and it is the part every wrapper
+        written by hand got wrong first. Dealing clears the verdict, so
+        going straight there takes the label down on the very frame it
+        went up: the driver publishes the next trial's frame, the
+        deriver finds nothing on it, and the trial that was scored is
+        paid nothing. One frame is published with the label showing
+        first, and only then does the next trial open.
+
+        A task that declares no :attr:`settled_phase` is one that deals
+        itself -- on its own clock, or because a verdict is not a phase
+        it stops in -- and this does nothing to it.
+        """
+        if not self.settled_phase:
+            return
+        if getattr(task, 'phase', None) not in self.settled_phase:
+            self._settled_seen = False
+            return
+        if self._settled_seen:
+            self._settled_seen = False
+            getattr(task, self.deal)()
+        else:
+            self._settled_seen = True
 
     def trial_open(self, task: Any) -> bool:
         """Whether an action may be finalized right now.
 
-        The default suits a task that is always ready for input. A task with
-        distinct question windows says so here, and the driver opens a
-        receipt as each one comes up.
+        The default is :attr:`open_phase`, or -- for a task that declares
+        none -- always. A task with distinct question windows names the
+        phases they happen in, and the driver opens a receipt as each one
+        comes up.
         """
-        return True
+        if not self.open_phase:
+            return True
+        return getattr(task, 'phase', None) in self.open_phase
 
     def resolved(self, task: Any) -> bool:
         """Whether the current trial has produced a verdict to pay.
@@ -356,6 +502,17 @@ class TaskEnv:
                              % self.slowest_frame_hz)
         self._dt = 1. / self._hz
         self._asked = dict(dials)
+        # A declared knob is a constructor keyword. One that is not
+        # declared is refused rather than ignored: a run started with
+        # `rungs=7` where the task spells it `rung` would otherwise open
+        # at the default difficulty and say nothing about it, and every
+        # number that came out of it would be about the wrong ladder.
+        stray = sorted(set(dials) - set(self.knobs))
+        if stray and self.knobs:
+            raise TypeError('%s has no knob %s; it has %s'
+                            % (type(self).__name__, ', '.join(stray),
+                               ', '.join(sorted(self.knobs)) or 'none'))
+        self._knobs = {name: dials.get(name) for name in self.knobs}
 
         self._export = FrameExport(
             shm_name=shm_name or os.environ.get('NW_SHM'))
@@ -390,6 +547,7 @@ class TaskEnv:
         self._events: List[Dict[str, Any]] = []
         self._delivered: Set[Any] = set()
         self._cached_outcome: Optional[Dict[str, Any]] = None
+        self._settled_seen = False
 
     def reset(self, seed: int = 0) -> Dict[str, Any]:
         """Start a fresh run under *seed* and return the first frame."""
@@ -428,8 +586,9 @@ class TaskEnv:
 
         self.accounting.reset()
         self._blank_state()
-        if hasattr(task, 'start_run'):
-            task.start_run()
+        starter = getattr(task, self.start, None)
+        if callable(starter):
+            starter()
         self._publish()
         if self.trial_open(task):
             self._open_trial()

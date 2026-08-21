@@ -15,161 +15,125 @@ moves:
 
     PYTHONPATH=.. ../.venv/bin/python check_band.py
 
-It has already earned itself once. Sokoban drew its pusher in Okabe-Ito
+**It sweeps the catalogue rather than a list of its own.** The first
+version had a hand-written driver per task, which meant a task nobody
+remembered to add here was reported on by not being reported on. Now
+every task in :mod:`nwenv.catalog` is opened and played through its own
+wrapper, so a task that is wrapped is a task that is swept.
+
+It has already earned itself twice. Sokoban drew its pusher in Okabe-Ito
 vermillion, ``(213, 94, 0)`` — red at or above 180 with the other two at or
 below 140, which is exactly the reader's pattern for a *negative verdict* —
 and the board reaches into the band, so a pusher standing low on it was
-1054 pixels of "this trial scored -1" on a level nobody had lost. Nothing
-about the task looked wrong. The scalar was simply not the one the screen
+1054 pixels of "this trial scored -1" on a level nobody had lost. Then the
+Maze at its top rung read a negative run off the *anti-aliased edge* of
+Okabe-Ito orange: the orange itself is clear at G=159, but its ramp towards
+the background dips G below 140 while R stays above 180. Nothing about
+either task looked wrong. The scalar was simply not the one the screen
 meant.
+
+The second one is why the rule is not "avoid three colours" — a blend
+passes through them on its way to the background, and no palette can help
+that. The rule is that the art stops above the band, which is what
+:func:`neural_workshop.ui.verdict.above_the_band` is for.
 
 SPDX-License-Identifier: GPL-2.0-or-later
 """
 import random
+import sys
 
 import bwaccel
 from uisupport import close_overlays, state
 
-from neural_workshop import youarehere as Y
+from nwenv import catalog
 from nwenv.frames import capture_rgba
 
 WORST = {}
-STEPS = ((0, -1), (0, 1), (-1, 0), (1, 0))
+
+#: How many steps to play each task for. Long enough that a trial
+#: settles on the fast tasks and that a slow one gets well into its
+#: first round; the sweep is about what is on screen, not about
+#: finishing runs.
+STEPS = 700
+
+#: How often to read the band while playing. Every frame would be
+#: honest and slow; this is often enough to catch a token that has
+#: wandered low without reading the same still frame forty times.
+EVERY = 7
 
 
-def read(task_name, where, allow_verdict=False):
-    """The band as the shared reader sees it.
+def read(task_name, where, obs, allow_verdict=False):
+    """The band of *obs* as the shared reader sees it.
+
+    Read off the observation the boundary handed the learner rather
+    than off a fresh capture, because those are not always the same
+    bytes: the driver draws, captures and then flips, so capturing
+    again afterwards reads whatever is in the back buffer. The first
+    version of this sweep did that and reported a phantom run on nine
+    tasks at once, which is the sort of finding that is obviously
+    wrong only because it was on nine.
 
     *allow_verdict* is for a frame where a trial really has settled and
     a label is meant to be up: one run, of one kind, is right there.
     Anywhere else — and any second run anywhere — is the task's own art
     being read as a score.
     """
-    wide, tall, rgba = capture_rgba(state.window)
-    runs = bwaccel.count_feedback_label_runs(rgba, wide, tall)
+    runs = bwaccel.count_feedback_label_runs(obs['rgba'], obs['width'],
+                                             obs['height'])
     ok = sum(runs) <= 1 if allow_verdict else runs == (0, 0, 0)
     if not ok:
         WORST.setdefault(task_name, []).append((where, runs))
     return runs
 
 
-def opened(make, rung, seed=4):
+def swept(row, steps=STEPS, seed=0):
+    """Play one task through its wrapper, watching the band.
+
+    Read through the wrapper rather than by driving the task by hand,
+    because the wrapper is what a run will actually use: if a phase is
+    reachable by a learner it is reachable here, and if it is not then
+    the band there does not matter.
+    """
     close_overlays()
-    task = make()
-    task.total_trials = 1
-    task.adaptive = False
-    task.start_rung = task.rung = rung
-    task.rng.seed(seed)
-    task.start_run()
-    return task
-
-
-def stepped(name, make, rungs, playing, act, cap=600):
-    """Drive a turn-based task right through a trial, watching the band."""
-    for rung in rungs:
-        task = opened(make, rung)
-        task.on_draw()
-        read(name, 'rung %d opening' % rung)
-        rng = random.Random(0)
-        for turn in range(cap):
-            if getattr(task, 'phase', None) != playing:
+    env = catalog.env_class(row.task_id)(seed=seed)
+    rng = random.Random(seed)
+    obs = env.observe()
+    try:
+        read(row.label, 'opening', obs)
+        for step in range(steps):
+            obs, _events, done = env.step(rng.randrange(env.n_actions))
+            if step % EVERY == 0:
+                # A verdict standing is the one run the reader is meant
+                # to find, so it is allowed on every frame: which of
+                # them a task settles on is its own business.
+                read(row.label, 'playing', obs, allow_verdict=True)
+            if done:
                 break
-            act(task, rng)
-            if turn % 25 == 0:
-                task.on_draw()
-                read(name, 'rung %d playing' % rung)
-        task.on_draw()
-        read(name, 'rung %d settled' % rung, allow_verdict=True)
-        task.close()
+        read(row.label, 'ending', obs, allow_verdict=True)
+    finally:
+        env.close()
+    close_overlays()
 
 
-def removals(rungs):
-    from neural_workshop.ui.removals import Removals
-    for rung in rungs:
-        task = opened(Removals, rung, seed=11)
-        task.on_draw()
-        read('Removals', 'rung %d moving' % rung)
-        while task.phase == 'moving':
-            task.until = -1e9
-            task.update(0.0)
-        task.on_draw()
-        read('Removals', 'rung %d asking' % rung)
-        for spot in range(len(task.round.asked)):
-            task.answer(task.round.answers[spot])
-        task.on_draw()
-        read('Removals', 'rung %d scored' % rung, allow_verdict=True)
-        task.close()
-
-
-def in_the_dark(rungs):
-    from neural_workshop.ui.inthedark import InTheDark
-    for rung in rungs:
-        task = opened(InTheDark, rung, seed=11)
-        task.on_draw()
-        read('In the Dark', 'rung %d walking' % rung)
-        while task.phase == 'walking':
-            task.until = -1e9
-            task.update(0.0)
-        task.on_draw()
-        read('In the Dark', 'rung %d asking' % rung)
-        for spot in range(len(task.round.asked)):
-            task.answer(task.round.answers[spot])
-        task.on_draw()
-        read('In the Dark', 'rung %d scored' % rung, allow_verdict=True)
-        task.close()
-
-
-def crossed(rungs):
-    from neural_workshop.ui.crossedwires import CrossedWires
-    for rung in rungs:
-        task = opened(CrossedWires, rung, seed=11)
-        task.on_draw()
-        read('Crossed Wires', 'rung %d playing' % rung)
-        rng = random.Random(3)
-        while task.phase == 'playing':
-            task.press(rng.randrange(task.grade().keys))
-        task.on_draw()
-        read('Crossed Wires', 'rung %d scored' % rung, allow_verdict=True)
-        task.close()
-
-
-def here(rungs):
-    from neural_workshop.ui.youarehere import YouAreHere
-    for rung in rungs:
-        task = opened(YouAreHere, rung, seed=404)
-        task.on_draw()
-        read('You Are Here', 'rung %d walking' % rung)
-        for doing in Y.route(task.maze):
-            task.walk(doing)
-        task.on_draw()
-        read('You Are Here', 'rung %d solved' % rung, allow_verdict=True)
-        task.close()
-
-
-def main():
-    from neural_workshop.ui.maze import MazeTask
-    from neural_workshop.ui.sokoban import SokobanTask
+def main(only=()):
     print('bwaccel backend:', bwaccel.backend())
     close_overlays()
-    task = opened(MazeTask, 1)
-    wide, tall, _rgba = capture_rgba(state.window)
+    from neural_workshop.ui.maze import MazeTask
+    task = MazeTask()
+    _wide, tall, _rgba = capture_rgba(state.window)
     low, high = bwaccel.default_band(tall)
     task.close()
-    print('the band the reader looks at: rows %d-%d of %d\n' % (low, high,
-                                                                tall))
-    walk = (lambda t, rng: t.step(*STEPS[rng.randrange(4)]))
-    here(range(1, 8))
-    print('You Are Here   rungs 1-7')
-    removals(range(1, 13))
-    print('Removals       rungs 1-12')
-    in_the_dark(range(1, 13))
-    print('In the Dark    rungs 1-12')
-    crossed(range(1, 13))
-    print('Crossed Wires  rungs 1-12')
-    stepped('Maze', MazeTask, range(1, 8), 'walking', walk)
-    print('Maze           rungs 1-7')
-    stepped('Sokoban', SokobanTask, range(1, 8), 'pushing', walk)
-    print('Sokoban        rungs 1-7')
+    close_overlays()
+    print('the band the reader looks at: rows %d-%d of %d\n'
+          % (low, high, tall))
+
+    for row in catalog.overlays():
+        if only and row.task_id not in only:
+            continue
+        swept(row)
+        print('%-20s %s' % (row.label,
+                            'paints in the band' if row.label in WORST
+                            else 'clean'))
 
     print()
     if WORST:
@@ -179,10 +143,11 @@ def main():
                 print('   %-24s %s' % (where, runs))
             if len(spots) > 6:
                 print('   ... and %d more' % (len(spots) - 6))
-    else:
-        print('nothing painted in the band anywhere, on any rung: every '
-              'wrapped task can use the shared deriver as it stands')
+        return 1
+    print('nothing painted in the band anywhere, on any task: every '
+          'wrapped task can use the shared deriver as it stands')
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main(tuple(sys.argv[1:])))

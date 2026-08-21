@@ -35,7 +35,7 @@ from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
                         width_center)
 from ..maze import GRADES, Maze, generate
 from . import cursor, taskoptions
-from .verdict import VerdictLabel
+from .verdict import VerdictLabel, above_the_band
 from ..i18n import _
 
 #: Okabe-Ito, as everywhere else in the workshop. Six door colours,
@@ -73,6 +73,8 @@ class MazeTask:
         if MazeTask.instance is not None:
             MazeTask.instance.close()
         self.rng = random.Random()
+        #: Swapped out by an agent environment for a virtual clock.
+        self.clock = time.time
         self.maze: Optional[Maze] = None
         self.walker = 0
         self.held = 0
@@ -156,7 +158,7 @@ class MazeTask:
     def _canvas(self) -> Tuple[float, float, float, float]:
         window = state.window
         top = from_top_edge(100)
-        bottom = from_bottom_edge(56)
+        bottom = above_the_band(from_bottom_edge(56))
         return (window.width * 0.08, bottom,
                 window.width * 0.84, max(40.0, top - bottom))
 
@@ -195,7 +197,7 @@ class MazeTask:
         self.verdict.clear()
         self.maze = generate(self.rung, seed=self.rng.randrange(1 << 30))
         self._restart_walk()
-        self.started_at = time.time()
+        self.started_at = self.clock()
         self.phase = 'walking'
         grade = GRADES[self.rung - 1]
         doors = len(self.maze.doors)
@@ -266,7 +268,7 @@ class MazeTask:
     def _solved(self) -> None:
         par = self.par()
         self.results.append((self.rung, self.steps, par))
-        took = int(time.time() - self.started_at)
+        took = int(self.clock() - self.started_at)
         if self.steps <= par:
             self.message = _('Perfect — the minimum %d steps, %ds') % (
                 par, took)

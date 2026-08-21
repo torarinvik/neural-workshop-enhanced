@@ -555,6 +555,12 @@ class YouAreHereScreenTests(unittest.TestCase):
         map, this is where it would show.
         """
         self.task.start_rung = self.task.rung = 4
+        # Pinned, because the maze is dealt from an unseeded generator
+        # and the halfway point of a route can land back on the start
+        # cell — on such a deal this test would pass by measuring
+        # nothing, or fail on the assertion below, depending on the
+        # deal rather than on anything about the map.
+        self.task.rng.seed(7)
         self.task.start_run()
         self.task.on_draw()
         before = self._map_pixels()
