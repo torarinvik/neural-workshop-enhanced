@@ -53,6 +53,7 @@ try:
     from neural_workshop.ui.pursuit import Pursuit
     from neural_workshop.ui.outofsight import OutOfSight
     from neural_workshop.ui.sokoban import SokobanTask
+    from neural_workshop.ui.maze import MazeTask
     from neural_workshop.ui.menu import AllCycler, Cycler, Menu, PercentCycler
     from neural_workshop.ui.message import Message
     from neural_workshop.ui.jigsaw import JigsawPuzzle

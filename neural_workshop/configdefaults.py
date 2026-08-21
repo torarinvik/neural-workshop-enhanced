@@ -713,6 +713,23 @@ SOKOBAN_TRIALS = 5
 SOKOBAN_ADAPTIVE = True
 SOKOBAN_SHOW_TRAPS = False
 
+# Maze: find the keys, open the doors, get out in as few steps as you
+# can. A share of the dead ends are opened back into the maze so there
+# is more than one way round and one hand on one wall is no longer a
+# solution, and every coloured door sits on a cell that separates the
+# start from the way out, so every key is genuinely needed. Every key
+# can be had before its own door, which makes the walk one problem
+# rather than several - the order you sweep them up in is what the
+# maze is worth. The par is always an exact minimum, found by
+# breadth-first search over (cell, keys held). MAZE_SHOW_TRAIL marks
+# where you have already been; turning it off makes the task carry
+# its own map. With MAZE_ADAPTIVE a walk near the minimum climbs a
+# level and a wasteful one steps down.
+MAZE_LEVEL = 2
+MAZE_TRIALS = 5
+MAZE_ADAPTIVE = True
+MAZE_SHOW_TRAIL = True
+
 ######################################################################
 # This is the end of the configuration file.
 ######################################################################

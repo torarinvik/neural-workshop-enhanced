@@ -20,8 +20,8 @@ import tempfile
 import unittest
 
 from uisupport import (Concentration, Counting, GraphMapping, JigsawPuzzle,
-                       Lookout, MatrixReasoning, MonkeyLadder, MovingTargets,
-                       OutOfSight, Pursuit, SokobanTask,
+                       Lookout, MatrixReasoning, MazeTask, MonkeyLadder,
+                       MovingTargets, OutOfSight, Pursuit, SokobanTask,
                        NCupMonte, Recognition, Reflex, TowerOfHanoi,
                        TravelingSalesman, close_overlays, needs_ui,
                        reset_window, state, taskoptions)
@@ -319,6 +319,32 @@ class MaximaTests(unittest.TestCase):
                          else task.level.at_least)
             from neural_workshop.sokoban import GRADES
             self.assertGreaterEqual(certified, GRADES[15].floor)
+            task.on_draw()
+        finally:
+            task.close()
+
+    def test_maze_at_the_superhuman_rung(self):
+        """The biggest maze the ladder offers, solved exactly.
+
+        Unlike Sokoban there is no budget to run out of here: the
+        search over (cell, keys held) is affordable at every size the
+        ladder deals, so the top rung still hands back a real minimum
+        rather than a bound.
+        """
+        from neural_workshop.maze import GRADES, planning_share, route
+        self._push('maze')
+        task = MazeTask()
+        try:
+            task.total_trials = 1
+            task.start_run()
+            self.assertEqual(task.rung, len(GRADES))
+            grade = GRADES[-1]
+            maze = task.maze
+            self.assertEqual(maze.width, 2 * grade.rooms + 1)
+            self.assertEqual(len(maze.doors), grade.doors)
+            self.assertGreaterEqual(maze.minimum, grade.floor)
+            self.assertGreaterEqual(planning_share(maze), grade.planning)
+            self.assertEqual(len(route(maze)) - 1, maze.minimum)
             task.on_draw()
         finally:
             task.close()

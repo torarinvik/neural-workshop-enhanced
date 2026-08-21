@@ -702,6 +702,53 @@ SOKOBAN = TaskSpec(
     note=sokoban_note)
 
 
+def maze_note(chosen: Dict[str, Any]) -> str:
+    """What the chosen rung is made of, and what the par will mean.
+
+    The two axes are both named here because the second one is not
+    visible on screen: a maze that punishes fetching the keys in the
+    wrong order looks exactly like one that does not, and the only
+    way to know the rung guarantees it is to be told.
+    """
+    from ..maze import GRADES
+    rung = int(chosen['MAZE_LEVEL'])
+    grade = GRADES[max(0, min(len(GRADES) - 1, rung - 1))]
+    said = [_('Level %d, "%s": a %d by %d maze%s, and never fewer than '
+              '%d steps to get out.')
+            % (rung, _(grade.name), 2 * grade.rooms + 1, 2 * grade.rooms + 1,
+               (_(' behind %d locked doors') % grade.doors) if grade.doors
+               else '', grade.floor)]
+    if grade.braid:
+        said.append(_('About %d%% of the dead ends are opened back into '
+                      'the maze, so there is more than one way round.')
+                    % int(grade.braid * 100))
+    if grade.planning:
+        said.append(_('And fetching the keys nearest-first throws away '
+                      'at least %d%% of the walk, so the order is the '
+                      'puzzle.') % int(grade.planning * 100))
+    if not chosen['MAZE_SHOW_TRAIL']:
+        said.append(_('Without the trail you have to carry the map '
+                      'yourself.'))
+    if chosen['MAZE_ADAPTIVE']:
+        said.append(_('Get out within a quarter of the minimum and the '
+                      'next maze is a level harder.'))
+    return '  '.join(said)
+
+
+MAZE = TaskSpec(
+    title=_('Maze options'),
+    options=(
+        Option('MAZE_LEVEL', _('Level'), 2,
+               values=tuple(range(1, 16))),
+        Option('MAZE_TRIALS', _('Mazes per run'), 5,
+               values=(1, 2, 3, 5, 8, 10, 15, 20)),
+        Option('MAZE_SHOW_TRAIL', _('Mark where you have been'), True),
+        Option('MAZE_ADAPTIVE',
+               _('Climb a level when you get out near the minimum'), True),
+    ),
+    note=maze_note)
+
+
 def salesman_note(chosen: Dict[str, Any]) -> str:
     """What the score means at this size, and that it is exact.
 
@@ -756,6 +803,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'tower_of_hanoi': HANOI,
     'salesman': SALESMAN,
     'sokoban': SOKOBAN,
+    'maze': MAZE,
 }
 
 

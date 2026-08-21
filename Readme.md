@@ -520,9 +520,9 @@ again; the default hundred images is a hundred fresh puzzles.
 
 ### Planning
 
-The *Planning* category holds two classics, and both are scored the
-same honest way: against a knowable optimum, because merely finishing
-either one measures patience rather than planning.
+Every task in the *Planning* category is scored the same honest way:
+against a knowable optimum, because merely finishing any of them
+measures patience rather than planning.
 
 **Tower of Hanoi.** Three pegs, a tower of disks, two rules: one disk
 at a time, never a disk on a smaller one. Click a peg (or press
@@ -605,6 +605,51 @@ no traps at all; "superhuman" requires over half the floor to be
 lethal, so its sixty-odd certified pushes must all be threaded
 between landmines. An option marks the deadly squares, as training
 wheels.
+
+**Maze.** Find the keys, open the doors, get out — in as few steps as
+you can. Arrows walk, **R** puts you back at the start, and the par is
+always an exact minimum, found by breadth-first search over
+`(cell, keys held)`; that search is affordable at every size the ladder
+deals, so unlike Sokoban this screen never has to say "at most".
+
+A maze on its own is not a planning task, which is the problem the
+generator sets out to solve. A perfect maze has one route between any
+two cells, so there is nothing to choose and one hand on one wall
+solves it without thinking at all. Two things make the route a
+decision. A share of the dead ends are opened back into the maze, so
+there are several ways round and the shortest has to be picked rather
+than found. And coloured doors are placed on cells that genuinely
+*separate* the start from the way out — each is a real lock, not
+scenery, and each key is genuinely needed. Every key can be had before
+its own door, by construction, so every maze is solvable by induction
+along the doors rather than by hope.
+
+That leaves the question of whether any of it is worth *planning*, and
+the first answer measured was no. Burying each key one region deeper
+than the last makes the keys a queue: the next one to fetch is always
+the nearest one, and a walker who never looks further than one key
+ahead ties the optimum every time. Scattering them instead — anywhere
+at all that can be reached before their own door — leaves several
+within reach at once, so which to fetch first is a real choice. That
+one change took the share of mazes where fetching them nearest-first
+costs something from one in ten to six in ten.
+
+So the ladder runs on two measured axes, ranked rather than merged.
+The step floor is the spine: how long the maze is, and what the screen
+reports. The *planning* floor is the second: the least share of the
+walk that fetching the keys nearest-first throws away. It starts only
+at four doors, because below that the keys are too few for the order
+to be worth anything, and it never outranks the step floor — a rung
+that cannot manage both would rather be long than clever. The fifteen
+rungs run from "first steps" (a 9x9 maze, no doors, twenty-two steps)
+through "the gauntlet" (25x25, four doors, at least 172 steps of which
+at least 2% is wasted by walking it greedily) to "superhuman" (37x37,
+six doors, at least 297 steps and 4%). Every floor was measured over
+two hundred mazes a rung rather than guessed.
+
+An option marks where you have already been; turning it off makes the
+maze a memory task as well, since you then have to carry the map
+yourself.
 
 ### Window size, full screen, and the two coordinate spaces
 

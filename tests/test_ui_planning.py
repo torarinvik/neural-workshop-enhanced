@@ -314,10 +314,10 @@ class PlanningHubTests(unittest.TestCase):
         close_overlays()
         reset_window()
 
-    def test_planning_is_a_category_with_both_tasks(self):
+    def test_planning_holds_every_task_that_scores_against_an_optimum(self):
         listed = [task_id for task_id, _label in TASKS['planning']]
-        self.assertIn('tower_of_hanoi', listed)
-        self.assertIn('salesman', listed)
+        self.assertEqual(listed, ['tower_of_hanoi', 'salesman', 'sokoban',
+                                  'maze'])
 
     def test_the_hub_can_launch_both(self):
         from neural_workshop.ui.taskhub import launch_task
