@@ -56,6 +56,7 @@ from ..youarehere import (AHEAD, BACK, COLUMNS, FAR, LEFT, RIGHT, Pose,
                           picked_up)
 from . import cursor, taskoptions
 from .maze import KEY_COLORS, WALKER, WALL
+from .verdict import VerdictLabel
 from ..i18n import _
 
 #: How much of the width the corridor gets, and how much the map. The
@@ -178,6 +179,20 @@ class YouAreHere:
             font_size=calc_fontsize(12), color=self.textcolor,
             batch=self.batch, x=width_center(), y=from_bottom_edge(26),
             anchor_x='center', anchor_y='center', font_name=FONTLIST)
+        # Sits above the footnote, and inside the band the agent
+        # boundary reads: a task that paints this needs no deriver and no
+        # verifier of its own. Measured across every rung, nothing else
+        # this task draws puts a saturated colour down there.
+        #
+        # relayout() rebuilds this whole batch, so a verdict already on
+        # screen has to be put back or it disappears on the next window
+        # change -- and on_draw calls ensure_laid_out() before it draws,
+        # so the very first frame after solving is exactly when that
+        # happens. An outcome that is only sometimes derivable is worse
+        # than one that never is, because it looks like it works.
+        self.verdict = VerdictLabel(batch=self.batch, y_from_bottom=60)
+        if getattr(self, 'verdict_shown', None) is not None:
+            self.verdict.show(*self.verdict_shown)
         self._build_map()
         self._build_view()
         self._redraw()
@@ -221,6 +236,7 @@ class YouAreHere:
         self.rung = self.clamped(self.start_rung)
         self.phase = 'ready'
         self.message = _('Press Space to start')
+        self.verdict_shown = None
 
     def start_run(self) -> None:
         self._reset()
@@ -231,6 +247,8 @@ class YouAreHere:
             self._finish()
             return
         self.trial += 1
+        self.verdict_shown = None
+        self.verdict.clear()
         self.maze = deal(self.rung, seed=self.rng.randrange(1 << 30))
         self.par = par(self.maze)
         self._restart_walk()
@@ -304,6 +322,11 @@ class YouAreHere:
             elif self.steps > self.par * 2:
                 self.rung = self.clamped(self.rung - 1)
         self.phase = 'solved'
+        # Only now: the way out is reached, the action window is shut, and
+        # nothing the learner does next can change what this says. Painted
+        # any earlier it would be an answer key rather than a verdict.
+        self.verdict_shown = (self.steps <= self.par, self.message)
+        self.verdict.show(*self.verdict_shown)
 
     def _finish(self) -> None:
         self.phase = 'done'

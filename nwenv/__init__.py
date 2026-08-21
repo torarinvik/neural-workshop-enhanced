@@ -96,6 +96,9 @@ from .ladder import (MonkeyLadderEnv, derive_ladder_outcome,  # noqa: E402
                      make_ladder_env, verify_ladder_outcome)
 from .outcome import (derive_public_outcome, diagnose_public_outcome,  # noqa: E402
                       verify_public_outcome, verify_public_pixels)
+from .taskenv import SealedContractError, TaskEnv  # noqa: E402
+from .youarehere import (YouAreHereEnv, make_youarehere_env,  # noqa: E402
+                         verify_youarehere_outcome)
 from .sight import (OutOfSightEnv, derive_sight_outcome,  # noqa: E402
                     make_sight_env, verify_sight_outcome)
 
@@ -111,5 +114,7 @@ __all__ = [
     # editing this file live, and inserting here reflows no
     # existing line. Fold them in when that settles.
     'FogOfWarEnv', 'derive_fog_outcome', 'make_fog_env',
+    'SealedContractError', 'TaskEnv',
+    'YouAreHereEnv', 'make_youarehere_env', 'verify_youarehere_outcome',
     'verify_fog_outcome',
 ]

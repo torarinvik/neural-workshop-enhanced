@@ -55,9 +55,10 @@ BRIGHT, DIM = 180, 140
 class VerdictLabel:
     """A resolved trial's verdict, painted where the boundary can read it."""
 
-    def __init__(self, font_size: float = 16.0, batch=None) -> None:
+    def __init__(self, font_size: float = 16.0, batch=None,
+                 y_from_bottom: float = 30.0) -> None:
         self.label = pyglet.text.Label(
-            text='', x=width_center(), y=from_bottom_edge(30),
+            text='', x=width_center(), y=from_bottom_edge(y_from_bottom),
             anchor_x='center', anchor_y='center',
             batch=state.batch if batch is None else batch,
             font_size=calc_fontsize(font_size))

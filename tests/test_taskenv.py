@@ -47,9 +47,11 @@ class Minimal(TaskEnv):
 
 
 class SealingTest(unittest.TestCase):
+    """``autostart=False`` throughout: these read the contract, never run it."""
+
     def test_a_conforming_subclass_is_allowed(self):
         self.assertEqual(Minimal.ports, 3)
-        self.assertEqual(Minimal().n_actions, 3)
+        self.assertEqual(Minimal(autostart=False).n_actions, 3)
 
     def test_every_sealed_name_is_refused(self):
         """Not a sample -- each sealed name gets its own attempt."""
@@ -78,15 +80,15 @@ class SealingTest(unittest.TestCase):
             'settled': lambda self, task: False,
             'dials': lambda self: {'X': 1},
         })
-        self.assertFalse(later().settled(None))
-        self.assertEqual(later().dials(), {'X': 1})
+        self.assertFalse(later(autostart=False).settled(None))
+        self.assertEqual(later(autostart=False).dials(), {'X': 1})
 
 
 class ObservationTest(unittest.TestCase):
     """The learner sees pixels and a scalar, and nothing that is not checkable."""
 
     def setUp(self):
-        self.env = Minimal()
+        self.env = Minimal(autostart=False)
         self.env._seq = 4
         self.env._timestamp_ns = 99
         self.env._width, self.env._height = 8, 6
@@ -105,7 +107,7 @@ class ObservationTest(unittest.TestCase):
 
 class EmitOnceTest(unittest.TestCase):
     def setUp(self):
-        self.env = Minimal()
+        self.env = Minimal(autostart=False)
         self.env._delivered = set()
         self.env._events = []
 
