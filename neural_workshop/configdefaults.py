@@ -769,6 +769,25 @@ FOG_MOVES = 400
 FOG_WORLDS = 3
 FOG_PERSIST = False
 
+# Sudoku, graded by what a puzzle actually forces rather than by how
+# many blanks it has - the two barely correlate. A rating solver runs
+# a stack of techniques cheapest-first (naked and hidden singles,
+# locked candidates, naked and hidden subsets, fish) and reports the
+# deepest one the puzzle made it reach; past that the puzzle is graded
+# by how many branch points a propagating search still has to guess
+# at. SUDOKU_LEVEL runs from a four-by-four that falls to singles up
+# to a sixteen-by-sixteen with a hundred and fifty-six blanks that
+# needs hundreds of guesses once the logic is spent. The top rungs
+# take a second or two to deal, because there is no way to dig
+# *towards* a difficulty - only to deal and rate. With
+# SUDOKU_SHOW_CLASHES a digit that contradicts one of its peers is
+# marked as soon as it is written; with it off nothing is checked
+# until the grid is full, which is the real game and much harder.
+SUDOKU_LEVEL = 3
+SUDOKU_TRIALS = 3
+SUDOKU_SHOW_CLASHES = True
+SUDOKU_ADAPTIVE = True
+
 ######################################################################
 # This is the end of the configuration file.
 ######################################################################

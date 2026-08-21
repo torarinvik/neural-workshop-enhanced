@@ -833,6 +833,55 @@ FOG_OF_WAR = TaskSpec(
     note=fog_of_war_note)
 
 
+def sudoku_note(chosen: Dict[str, Any]) -> str:
+    """What the rung forces, and the two things that surprise people.
+
+    The deal cost is spelled out because the top rungs really do
+    pause: a difficulty cannot be dug towards, only dealt and rated,
+    so a rare band is found by dealing until one turns up. And the
+    clash marker is named as the difficulty setting it is, rather
+    than as a display option, because turning it off is a bigger
+    jump than a rung.
+    """
+    from ..sudoku import GRADES, TECHNIQUES
+    rung = int(chosen['SUDOKU_LEVEL'])
+    grade = GRADES[max(0, min(len(GRADES) - 1, rung - 1))]
+    size = grade.box * grade.box
+    said = [_('Level %d, "%s": a %d by %d grid, and %s.')
+            % (rung, _(grade.name), size, size,
+               (_('nothing deeper than %s') % _(TECHNIQUES[grade.ceiling]))
+               if grade.ceiling < len(TECHNIQUES) - 1
+               else _('more than plain deduction will finish'))]
+    if grade.guesses:
+        said.append(_('Past the technique stack it still takes at least '
+                      '%d guesses to close.') % grade.guesses)
+    if grade.box == 4:
+        said.append(_('Sixteens run on 1-9 and then A-G.'))
+    if not chosen['SUDOKU_SHOW_CLASHES']:
+        said.append(_('With clashes unmarked nothing is checked until the '
+                      'grid is full, which is a long way harder than any '
+                      'one rung of the ladder.'))
+    if grade.tries > 60 or grade.box == 4:
+        said.append(_('This rung takes a second or two to deal: a '
+                      'difficulty cannot be aimed at, only dealt and '
+                      'rated.'))
+    return '  '.join(said)
+
+
+SUDOKU = TaskSpec(
+    title=_('Sudoku options'),
+    options=(
+        Option('SUDOKU_LEVEL', _('Level'), 3,
+               values=tuple(range(1, 13))),
+        Option('SUDOKU_TRIALS', _('Puzzles per run'), 3,
+               values=(1, 2, 3, 5, 8, 10)),
+        Option('SUDOKU_SHOW_CLASHES', _('Mark a digit that clashes'), True),
+        Option('SUDOKU_ADAPTIVE',
+               _('Climb a level after a clean solve'), True),
+    ),
+    note=sudoku_note)
+
+
 def salesman_note(chosen: Dict[str, Any]) -> str:
     """What the score means at this size, and that it is exact.
 
@@ -890,6 +939,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'maze': MAZE,
     'in_the_dark': IN_THE_DARK,
     'fog_of_war': FOG_OF_WAR,
+    'sudoku': SUDOKU,
 }
 
 

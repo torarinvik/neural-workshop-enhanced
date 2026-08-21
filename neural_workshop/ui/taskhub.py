@@ -57,6 +57,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('graph_mapping', _('Graph Mapping')),
         ('matrix_reasoning', _('Matrix Reasoning')),
         ('jigsaw', _('Jigsaw Puzzle')),
+        ('sudoku', _('Sudoku')),
     ],
     'planning': [
         ('tower_of_hanoi', _('Tower of Hanoi')),
@@ -362,6 +363,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'fog_of_war':
         from .fogofwar import FogOfWar
         FogOfWar()
+        return
+    if task_id == 'sudoku':
+        from .sudoku import Sudoku
+        Sudoku()
         return
     if task_id == 'ncup_monte':
         from .ncupmonte import NCupMonte

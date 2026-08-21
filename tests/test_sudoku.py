@@ -20,7 +20,12 @@ from __future__ import annotations
 import random
 import unittest
 
+from uisupport import (Sudoku, TASKS, close_overlays, key, needs_ui,
+                       reset_window, state, taskoptions)
+
 from neural_workshop import sudoku as S
+from neural_workshop.i18n import _
+from neural_workshop.ui.sudoku import fit, glyph
 
 #: Rungs cheap enough to deal several of. The sixteens cost about a
 #: second and a half apiece, so they are visited once and by name.
@@ -457,6 +462,314 @@ class GenerateTests(unittest.TestCase):
         got = S.generate(len(S.GRADES), seed=13)
         self.assertEqual(got.tier, S.SEARCH_TIER)
         self.assertGreater(got.guesses, 1)
+
+
+@needs_ui
+class SudokuScreenTests(unittest.TestCase):
+    """The screen: moving, writing, pencilling and finishing."""
+
+    #: A nine that deals fast and still has plenty to fill in.
+    RUNG = 4
+
+    def setUp(self):
+        close_overlays()
+        self.task = Sudoku()
+        self.task.total_trials = 2
+        self.task.adaptive = False
+        self.task.show_clashes = True
+        self.task.start_rung = self.task.rung = self.RUNG
+
+    def tearDown(self):
+        self.task.close()
+        close_overlays()
+        reset_window()
+
+    def _blank(self):
+        """Some cell the puzzle left empty."""
+        return next(c for c, v in enumerate(self.task.filled) if not v)
+
+    def _given(self):
+        return next(c for c, v in enumerate(self.task.filled) if v)
+
+    def _solve(self):
+        for cell, value in enumerate(self.task.puzzle.solution):
+            if not self.task.puzzle.givens[cell]:
+                self.task.at = cell
+                self.task.write(value)
+
+    def test_it_is_in_the_reasoning_category(self):
+        self.assertIn('sudoku', [task for task, _n in TASKS['reasoning']])
+
+    def test_a_trial_deals_a_puzzle_and_stands_on_a_blank(self):
+        self.task.start_run()
+        self.assertEqual(self.task.phase, 'solving')
+        self.assertEqual(self.task.filled, list(self.task.puzzle.givens))
+        self.assertFalse(self.task.filled[self.task.at])
+        self.task.on_draw()
+
+    def test_the_arrows_move_inside_the_grid(self):
+        self.task.start_run()
+        self.task.at = 0
+        self.task.move(1, 0)
+        self.assertEqual(self.task.at, 1)
+        self.task.move(0, 1)
+        self.assertEqual(self.task.at, 1 + self.task.size())
+
+    def test_the_arrows_stop_at_the_edge(self):
+        self.task.start_run()
+        self.task.at = 0
+        self.task.move(-1, 0)
+        self.task.move(0, -1)
+        self.assertEqual(self.task.at, 0)
+
+    def test_a_digit_is_written_where_the_cursor_is(self):
+        self.task.start_run()
+        cell = self._blank()
+        self.task.at = cell
+        self.task.write(3)
+        self.assertEqual(self.task.filled[cell], 3)
+
+    def test_writing_the_same_digit_twice_rubs_it_out(self):
+        self.task.start_run()
+        cell = self._blank()
+        self.task.at = cell
+        self.task.write(3)
+        self.task.write(3)
+        self.assertEqual(self.task.filled[cell], 0)
+
+    def test_a_given_refuses_to_be_written_over(self):
+        self.task.start_run()
+        cell = self._given()
+        held = self.task.filled[cell]
+        self.task.at = cell
+        self.task.write(1 if held != 1 else 2)
+        self.assertEqual(self.task.filled[cell], held)
+
+    def test_a_given_refuses_to_be_erased(self):
+        self.task.start_run()
+        cell = self._given()
+        held = self.task.filled[cell]
+        self.task.at = cell
+        self.task.erase()
+        self.assertEqual(self.task.filled[cell], held)
+
+    def test_a_digit_the_grid_does_not_go_up_to_is_refused(self):
+        self.task.start_run()
+        cell = self._blank()
+        self.task.at = cell
+        self.task.write(self.task.size() + 1)
+        self.assertEqual(self.task.filled[cell], 0)
+
+    def test_erasing_empties_a_cell(self):
+        self.task.start_run()
+        cell = self._blank()
+        self.task.at = cell
+        self.task.write(5)
+        self.task.erase()
+        self.assertEqual(self.task.filled[cell], 0)
+
+    def test_pencilling_marks_instead_of_writing(self):
+        self.task.start_run()
+        cell = self._blank()
+        self.task.at = cell
+        self.task.toggle_pencil()
+        self.task.write(4)
+        self.assertEqual(self.task.filled[cell], 0)
+        self.assertEqual(self.task.marks[cell], 1 << 3)
+
+    def test_pencilling_the_same_digit_twice_rubs_it_out(self):
+        self.task.start_run()
+        cell = self._blank()
+        self.task.at = cell
+        self.task.toggle_pencil()
+        self.task.write(4)
+        self.task.write(4)
+        self.assertEqual(self.task.marks[cell], 0)
+
+    def test_writing_a_digit_clears_the_pencil_marks_under_it(self):
+        self.task.start_run()
+        cell = self._blank()
+        self.task.at = cell
+        self.task.toggle_pencil()
+        self.task.write(4)
+        self.task.toggle_pencil()
+        self.task.write(7)
+        self.assertNotIn(cell, self.task.marks)
+
+    def test_a_clash_with_a_peer_is_spotted(self):
+        self.task.start_run()
+        cell = self._given()
+        held = self.task.filled[cell]
+        near = next(c for c in S.peers(self.task.puzzle.box)[cell]
+                    if not self.task.filled[c])
+        self.task.at = near
+        self.task.write(held)
+        self.assertIn(near, self.task.clashes())
+        self.assertIn(cell, self.task.clashes())
+
+    def test_a_grid_with_no_repeats_has_no_clashes(self):
+        self.task.start_run()
+        self.assertEqual(self.task.clashes(), set())
+
+    def test_a_wrong_digit_is_counted_as_a_slip(self):
+        self.task.start_run()
+        cell = self._blank()
+        right = self.task.puzzle.solution[cell]
+        self.task.at = cell
+        self.task.write(right % self.task.size() + 1)
+        self.assertEqual(self.task.mistakes, 1)
+
+    def test_the_right_digit_is_not_a_slip(self):
+        self.task.start_run()
+        cell = self._blank()
+        self.task.at = cell
+        self.task.write(self.task.puzzle.solution[cell])
+        self.assertEqual(self.task.mistakes, 0)
+
+    def test_filling_the_grid_correctly_solves_it(self):
+        self.task.start_run()
+        self._solve()
+        self.assertEqual(self.task.phase, 'solved')
+        self.assertEqual(self.task.mistakes, 0)
+
+    def test_a_full_but_wrong_grid_is_not_solved(self):
+        """Full is not the same as right, and only right finishes it."""
+        self.task.start_run()
+        blanks = [c for c, v in enumerate(self.task.filled) if not v]
+        spoiled = blanks[-1]
+        for cell in blanks:
+            self.task.at = cell
+            right = self.task.puzzle.solution[cell]
+            self.task.write(right if cell != spoiled
+                            else right % self.task.size() + 1)
+        self.assertNotIn(0, self.task.filled)
+        self.assertNotEqual(tuple(self.task.filled),
+                            self.task.puzzle.solution)
+        self.assertEqual(self.task.phase, 'solving')
+
+    def test_correcting_the_last_cell_finishes_it(self):
+        self.task.start_run()
+        blanks = [c for c, v in enumerate(self.task.filled) if not v]
+        spoiled = blanks[-1]
+        for cell in blanks:
+            self.task.at = cell
+            right = self.task.puzzle.solution[cell]
+            self.task.write(right if cell != spoiled
+                            else right % self.task.size() + 1)
+        self.task.at = spoiled
+        self.task.erase()
+        self.task.write(self.task.puzzle.solution[spoiled])
+        self.assertEqual(self.task.phase, 'solved')
+
+    def test_the_run_finishes_after_its_puzzles(self):
+        self.task.start_run()
+        for _trial in range(self.task.total_trials):
+            self._solve()
+            self.task.on_key_press(key.SPACE, 0)
+        self.assertEqual(self.task.phase, 'done')
+        self.assertEqual(self.task.score()['solved'], self.task.total_trials)
+
+    def test_adaptive_climbs_after_a_clean_solve(self):
+        self.task.adaptive = True
+        self.task.start_run()
+        was = self.task.rung
+        self._solve()
+        self.assertEqual(self.task.rung, was + 1)
+
+    def test_adaptive_drops_after_a_messy_one(self):
+        self.task.adaptive = True
+        self.task.start_rung = self.task.rung = 5
+        self.task.start_run()
+        was = self.task.rung
+        blanks = [c for c, v in enumerate(self.task.filled) if not v]
+        for cell in blanks[:5]:
+            self.task.at = cell
+            wrong = self.task.puzzle.solution[cell] % self.task.size() + 1
+            self.task.write(wrong)
+            self.task.erase()
+        self._solve()
+        self.assertEqual(self.task.rung, was - 1)
+
+    def test_it_draws_in_every_phase(self):
+        self.task.on_draw()                      # ready
+        self.task.start_run()
+        self.task.on_draw()                      # solving
+        self.task.toggle_pencil()
+        self.task.write(1)
+        self.task.on_draw()                      # with pencil marks
+        self.task.toggle_pencil()
+        self._solve()
+        self.task.on_draw()                      # solved
+        self.task.total_trials = 1
+        self.task.on_key_press(key.SPACE, 0)
+        self.task.on_draw()                      # done
+
+    def test_every_cell_lands_on_screen(self):
+        self.task.start_run()
+        for cell in range(len(self.task.filled)):
+            x, y, step = self.task._cell_rect(cell)
+            self.assertGreaterEqual(x, 0)
+            self.assertGreaterEqual(y, 0)
+            self.assertLessEqual(x + step, state.window.width + 1)
+            self.assertLessEqual(y + step, state.window.height + 1)
+
+    def test_a_sixteen_deals_and_draws(self):
+        self.task.start_rung = self.task.rung = 9
+        self.task.start_run()
+        self.assertEqual(self.task.size(), 16)
+        self.task.on_draw()
+        cell = self._blank()
+        self.task.at = cell
+        self.task.write(16)
+        self.assertEqual(self.task.filled[cell], 16)
+        self.task.on_draw()
+
+    def test_the_letter_keys_write_the_high_digits(self):
+        self.task.start_rung = self.task.rung = 9
+        self.task.start_run()
+        cell = self._blank()
+        self.task.at = cell
+        self.task.on_key_press(key.G, 0)
+        self.assertEqual(self.task.filled[cell], 16)
+
+    def test_c_writes_twelve_on_a_board_that_goes_that_high(self):
+        self.task.start_rung = self.task.rung = 9
+        self.task.start_run()
+        cell = self._blank()
+        self.task.at = cell
+        self.task.on_key_press(key.C, 0)
+        self.assertEqual(self.task.filled[cell], 12)
+
+    def test_the_glyphs_run_one_to_g(self):
+        self.assertEqual(glyph(1), '1')
+        self.assertEqual(glyph(9), '9')
+        self.assertEqual(glyph(10), 'A')
+        self.assertEqual(glyph(16), 'G')
+        self.assertEqual(glyph(0), '')
+
+    def test_a_cell_font_comes_from_the_cell_not_the_window(self):
+        self.assertGreater(fit(60.0, 0.34), fit(20.0, 0.34))
+        self.assertLessEqual(fit(100000.0, 0.34), 200.0)
+
+    def test_it_has_an_options_screen(self):
+        spec = taskoptions.TASK_SPECS['sudoku']
+        chosen = {opt.key: opt.default for opt in spec.options}
+        self.assertIn('SUDOKU_LEVEL', chosen)
+        self.assertTrue(spec.note(chosen))
+
+    def test_the_note_warns_when_clashes_are_unmarked(self):
+        spec = taskoptions.TASK_SPECS['sudoku']
+        chosen = {opt.key: opt.default for opt in spec.options}
+        chosen['SUDOKU_SHOW_CLASHES'] = False
+        self.assertIn('full', spec.note(chosen))
+
+    def test_the_note_names_the_rung_and_its_size(self):
+        spec = taskoptions.TASK_SPECS['sudoku']
+        chosen = {opt.key: opt.default for opt in spec.options}
+        chosen['SUDOKU_LEVEL'] = 12
+        said = spec.note(chosen)
+        self.assertIn(_(S.GRADES[11].name), said)
+        self.assertIn('16 by 16', said)
 
 
 if __name__ == '__main__':
