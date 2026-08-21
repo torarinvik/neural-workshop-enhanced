@@ -917,9 +917,14 @@ corridor.
 
 The par is its own exact minimum over cell, facing and keys rather
 than the flat one on the maze, so the walk is scored the way the rest
-of the planning category is scored. On the largest rungs that takes a
-second to solve before the maze opens, which the options screen says
-in advance.
+of the planning category is scored. Breadth-first over a state packed
+into one integer — `(cell * 4 + facing) * 64 + keys` — which is about
+three times the speed of the same search written with tuples and a
+call to `move()` per edge, and gives the identical answer, as the
+tests require of it. The largest rungs still take about a second to
+open, but most of that is the 2D Maze's own generator hunting for a
+maze that meets the rung's floors: a wait this task inherits rather
+than adds.
 
 ### Window size, full screen, and the two coordinate spaces
 

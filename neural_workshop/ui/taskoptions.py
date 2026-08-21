@@ -885,9 +885,10 @@ def you_are_here_note(chosen: Dict[str, Any]) -> str:
 
     Two things get spelled out because both read as bugs otherwise:
     that the map genuinely never moves — people wait for it to start
-    following them — and that a big maze takes a moment to deal,
-    because the minimum has to be solved over facings as well as cells
-    before a step is walked.
+    following them — and that a big maze takes about a second to
+    appear. Measured at the top rung, the larger share of that is the
+    2D Maze's own generator hunting for a maze that meets the rung's
+    floors, which is a wait this task inherits rather than adds.
     """
     from ..maze import GRADES
     rung = int(chosen['HERE_LEVEL'])
@@ -910,9 +911,9 @@ def you_are_here_note(chosen: Dict[str, Any]) -> str:
                       'corridors at all, so a count of corners is the only '
                       'thing you will have.'))
     if grade.rooms >= 14:
-        said.append(_('A maze this size takes a moment to deal: the '
-                      'minimum is solved over every facing as well as '
-                      'every cell.'))
+        said.append(_('A maze this size takes about a second to deal, '
+                      'most of it spent generating a maze that meets the '
+                      "rung's floors rather than solving it."))
     if chosen['HERE_ADAPTIVE']:
         said.append(_('Get out near the minimum and the next maze is a '
                       'level harder.'))

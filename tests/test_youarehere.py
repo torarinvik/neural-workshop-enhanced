@@ -186,6 +186,40 @@ class ParTests(unittest.TestCase):
         self.assertEqual(Y.facing_at(maze), 3)
         self.assertEqual(Y.par(maze), 2)
 
+    def test_the_flat_sweep_agrees_with_the_plain_one(self):
+        """The optimisation has to give the same answer or it is a bug.
+
+        :func:`_sweep` packs a state into one integer and reads the
+        maze off precomputed tables, which is about three times the
+        speed of the obvious search but is no longer obviously the
+        same search. This is the obvious one, written out with
+        :func:`move` per edge, held against it.
+        """
+        for rung in SPREAD:
+            maze = Y.deal(rung, seed=1300 + rung)
+            first = (maze.start, Y.facing_at(maze),
+                     Y.picked_up(maze, maze.start, 0))
+            came = {first: None}
+            queue, found = [first], -1
+            while queue and found < 0:
+                nextup = []
+                for state in queue:
+                    if state[0] == maze.way_out:
+                        found = 0
+                        while came[state] is not None:
+                            state, _doing = came[state]
+                            found += 1
+                        break
+                    pose, keys = Y.Pose(state[0], state[1]), state[2]
+                    for doing in Y.MOVES:
+                        went, got, _m = Y.move(maze, pose, keys, doing)
+                        below = (went.cell, went.facing, got)
+                        if below not in came:
+                            came[below] = (state, doing)
+                            nextup.append(below)
+                queue = nextup
+            self.assertEqual(Y.par(maze), found, 'rung %d' % rung)
+
     def test_planning_from_a_belief_plans_from_the_belief(self):
         maze = Y.deal(1, seed=13)
         here = Y.Pose(maze.start, Y.facing_at(maze))

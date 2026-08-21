@@ -234,23 +234,79 @@ def route(maze: Maze) -> List[str]:
     return _sweep(maze)[1]
 
 
-def _sweep(maze: Maze) -> Tuple[int, List[str]]:
-    """Breadth-first over pose and keys, back to front once it lands."""
-    start = Pose(maze.start, facing_at(maze))
-    held = picked_up(maze, maze.start, 0)
-    first = (start.cell, start.facing, held)
-    came: Dict[Tuple[int, int, int], Optional[Tuple[Tuple[int, int, int],
-                                                    str]]] = {first: None}
+def _tables(maze: Maze) -> Tuple[List[List[int]], Dict[int, int],
+                                 Dict[int, int]]:
+    """The maze, flattened into what the sweep's inner loop wants.
+
+    Where a step from each cell and facing lands, which bit each
+    door wants, and which bits each cell hands over. All three are
+    read millions of times by :func:`_sweep` and none of them change,
+    so they are worked out once rather than rediscovered by scanning
+    the door and key tuples on every edge.
+    """
+    cells = maze.width * maze.height
+    steps = [[-1] * 4 for _cell in range(cells)]
+    for cell in range(cells):
+        if cell in maze.walls:
+            continue
+        for facing in range(4):
+            landed = ahead_of(maze, cell, facing)
+            steps[cell][facing] = -1 if landed is None else landed
+    doors: Dict[int, int] = {}
+    for colour, door in enumerate(maze.doors):
+        doors[door] = doors.get(door, 0) | 1 << colour
+    keys: Dict[int, int] = {}
+    for colour, key in enumerate(maze.keys):
+        keys[key] = keys.get(key, 0) | 1 << colour
+    return steps, doors, keys
+
+
+def _sweep(maze: Maze, pose: Optional[Pose] = None,
+           held: Optional[int] = None) -> Tuple[int, List[str]]:
+    """Breadth-first over pose and keys, back to front once it lands.
+
+    Every edge costs one, so plain breadth-first is already the
+    shortest path and there is nothing to weigh. A state is packed
+    into one integer — ``(cell * 4 + facing) * 64 + keys`` — because
+    the alternative is several hundred thousand tuples and namedtuple
+    constructions, and this loop is the one thing in the task that
+    takes long enough to notice.
+
+    :func:`move` remains the definition of what a move does; this is
+    the same rules written out flat, and the tests hold the route it
+    returns to being walkable by :func:`move` itself.
+    """
+    if pose is None:
+        pose = Pose(maze.start, facing_at(maze))
+    if held is None:
+        held = picked_up(maze, maze.start, 0)
+    steps, doors, keys = _tables(maze)
+    way_out = maze.way_out
+    first = (pose.cell * 4 + pose.facing) * 64 + held
+    came: Dict[int, Optional[Tuple[int, str]]] = {first: None}
     queue = [first]
     while queue:
-        nextup: List[Tuple[int, int, int]] = []
+        nextup: List[int] = []
         for state in queue:
-            if state[0] == maze.way_out:
+            spun, carried = state >> 6, state & 63
+            cell, facing = spun >> 2, spun & 3
+            if cell == way_out:
                 return _unwind(came, state)
-            pose, keys = Pose(state[0], state[1]), state[2]
-            for doing in MOVES:
-                went, got, _moved = move(maze, pose, keys, doing)
-                below = (went.cell, went.facing, got)
+            for doing, turned in ((LEFT, (facing - 1) % 4),
+                                  (RIGHT, (facing + 1) % 4)):
+                below = ((cell * 4 + turned) << 6) | carried
+                if below not in came:
+                    came[below] = (state, doing)
+                    nextup.append(below)
+            for doing, way in ((AHEAD, facing), (BACK, (facing + 2) % 4)):
+                landed = steps[cell][way]
+                if landed < 0:
+                    continue
+                shut = doors.get(landed, 0)
+                if shut and not carried & shut:
+                    continue
+                below = ((landed * 4 + facing) << 6) | (
+                    carried | keys.get(landed, 0))
                 if below not in came:
                     came[below] = (state, doing)
                     nextup.append(below)
@@ -275,24 +331,7 @@ def route_from(maze: Maze, pose: Pose, held: int) -> List[str]:
     which is the whole trouble, because they are carried out by a
     player somewhere else.
     """
-    first = (pose.cell, pose.facing, held)
-    came: Dict[Tuple[int, int, int], Optional[Tuple[Tuple[int, int, int],
-                                                    str]]] = {first: None}
-    queue = [first]
-    while queue:
-        nextup: List[Tuple[int, int, int]] = []
-        for state in queue:
-            if state[0] == maze.way_out:
-                return _unwind(came, state)[1]
-            here, keys = Pose(state[0], state[1]), state[2]
-            for doing in MOVES:
-                went, got, _moved = move(maze, here, keys, doing)
-                below = (went.cell, went.facing, got)
-                if below not in came:
-                    came[below] = (state, doing)
-                    nextup.append(below)
-        queue = nextup
-    return []
+    return _sweep(maze, pose, held)[1]
 
 
 # --- players -------------------------------------------------------------
