@@ -66,6 +66,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('salesman', _('Traveling Salesman')),
         ('sokoban', _('Sokoban')),
         ('maze', _('Maze')),
+        ('you_are_here', _('You Are Here')),
     ],
 }
 
@@ -369,6 +370,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'removals':
         from .removals import Removals
         Removals()
+        return
+    if task_id == 'you_are_here':
+        from .youarehere import YouAreHere
+        YouAreHere()
         return
     if task_id == 'sudoku':
         from .sudoku import Sudoku

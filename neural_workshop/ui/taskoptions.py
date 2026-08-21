@@ -880,6 +880,59 @@ FOG_OF_WAR = TaskSpec(
     note=fog_of_war_note)
 
 
+def you_are_here_note(chosen: Dict[str, Any]) -> str:
+    """What the map will and will not do, and what the top rungs cost.
+
+    Two things get spelled out because both read as bugs otherwise:
+    that the map genuinely never moves — people wait for it to start
+    following them — and that a big maze takes a moment to deal,
+    because the minimum has to be solved over facings as well as cells
+    before a step is walked.
+    """
+    from ..maze import GRADES
+    rung = int(chosen['HERE_LEVEL'])
+    grade = GRADES[max(0, min(len(GRADES) - 1, rung - 1))]
+    across = 2 * grade.rooms + 1
+    said = [_('Level %d, "%s": a %d by %d maze with %d doors — the very '
+              'same maze the 2D Maze deals at this level, walked from '
+              'inside it.') % (rung, _(grade.name), across, across,
+                               grade.doors)]
+    said.append(_('The map beside the view shows all of it, including '
+                  'where you started and where the way out is. It never '
+                  'moves and it never says where you are — that part is '
+                  'yours to keep track of, and it is the whole task.'))
+    said.append(_('Turning costs a step, so looking around is a decision '
+                  'rather than something free; the par runs about a '
+                  'quarter above the flat one next door for that reason. '
+                  'Walking into a wall costs nothing.'))
+    if not chosen['HERE_MARKS']:
+        said.append(_('With the marks off there is nothing hanging in the '
+                      'corridors at all, so a count of corners is the only '
+                      'thing you will have.'))
+    if grade.rooms >= 14:
+        said.append(_('A maze this size takes a moment to deal: the '
+                      'minimum is solved over every facing as well as '
+                      'every cell.'))
+    if chosen['HERE_ADAPTIVE']:
+        said.append(_('Get out near the minimum and the next maze is a '
+                      'level harder.'))
+    return '  '.join(said)
+
+
+YOU_ARE_HERE = TaskSpec(
+    title=_('You Are Here options'),
+    options=(
+        Option('HERE_LEVEL', _('Level'), 2, values=tuple(range(1, 16))),
+        Option('HERE_TRIALS', _('Mazes per run'), 3,
+               values=(1, 2, 3, 5, 8, 10)),
+        Option('HERE_ADAPTIVE',
+               _('Climb a level when you get out near the minimum'), True),
+        Option('HERE_MARKS',
+               _('Show keys and the way out in the corridors'), True),
+    ),
+    note=you_are_here_note)
+
+
 def crossed_wires_note(chosen: Dict[str, Any]) -> str:
     """What is scrambled, how little is spare, and what moves under you.
 
@@ -1036,6 +1089,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'salesman': SALESMAN,
     'sokoban': SOKOBAN,
     'maze': MAZE,
+    'you_are_here': YOU_ARE_HERE,
     'in_the_dark': IN_THE_DARK,
     'fog_of_war': FOG_OF_WAR,
     'removals': REMOVALS,

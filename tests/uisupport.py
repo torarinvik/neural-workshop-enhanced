@@ -58,6 +58,7 @@ try:
     from neural_workshop.ui.sudoku import Sudoku
     from neural_workshop.ui.removals import Removals
     from neural_workshop.ui.crossedwires import CrossedWires
+    from neural_workshop.ui.youarehere import YouAreHere
     from neural_workshop.ui.menu import AllCycler, Cycler, Menu, PercentCycler
     from neural_workshop.ui.message import Message
     from neural_workshop.ui.jigsaw import JigsawPuzzle

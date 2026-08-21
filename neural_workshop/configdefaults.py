@@ -790,6 +790,31 @@ FOG_MOVES = 400
 FOG_WORLDS = 3
 FOG_PERSIST = False
 
+# You Are Here is the maze from inside it. The same generator deals
+# the same mazes at the same rungs as the 2D Maze, but the screen is
+# split: a first-person view cast one ray to a column on the left, and
+# on the right a map of the whole maze - corridors, start, way out,
+# every door and key in its colour. The map is drawn once when a maze
+# is dealt and never touched again. It does not follow the player, it
+# carries no marker saying where the player is, and it does not dim
+# what has been walked. Keeping your place on it is the entire task:
+# you know where you began and you know what you have done, so your
+# position is determined by arithmetic you have to do yourself, once
+# per action, without ever being shown the answer.
+# Turning costs a step, which is why the par here is its own exact
+# minimum over cell, facing and keys rather than the flat one on the
+# maze - about 1.28 times it, measured across the ladder. With free
+# turns a player would spin on the spot at every cell and read all
+# four corridors for nothing. Bumping into a wall costs nothing, as in
+# the 2D maze: the wall is plainly visible from where you stand.
+# HERE_MARKS draws the keys and the way out as marks hanging in the
+# corridor; they are the only landmarks there are, and turning them
+# off leaves nothing at all to check a count of corridors against.
+HERE_LEVEL = 2
+HERE_TRIALS = 3
+HERE_ADAPTIVE = True
+HERE_MARKS = True
+
 # Crossed Wires is the one task that hands the player nothing. A
 # marker on a grid that wraps round at every edge, a target to reach,
 # and four or eight keys whose directions have been scrambled - and

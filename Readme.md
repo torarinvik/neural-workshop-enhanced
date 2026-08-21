@@ -867,6 +867,60 @@ An option marks where you have already been; turning it off makes the
 maze a memory task as well, since you then have to carry the map
 yourself.
 
+#### You Are Here
+
+The same maze, from inside it. The screen splits: a first-person view
+on the left, cast one ray to a screen column, and on the right a map
+of the whole maze — corridors, where you started, where the way out
+is, and every door and key in its colour. The map is complete and
+accurate.
+
+It is also **fixed**. It is drawn once when a maze is dealt and never
+touched again: it does not scroll, it does not follow you, it does not
+dim what you have walked, and it carries no marker saying where you
+are. That is not an omission, it is the task. You know where you began
+and you know what you have done since, so your position is entirely
+determined — by arithmetic you do yourself, once per action, without
+ever being shown the answer. Miss one turn thirty moves ago and every
+corridor still looks plausible and every decision after it is wrong.
+The claim is checked the only way worth checking: the tests digest the
+pixels under the map panel before a walk and after it, with the player
+somewhere else entirely and carrying a key it did not start with, and
+require the bytes to be identical.
+
+The maze is not a new one. It comes from the 2D Maze's generator at
+the same rungs, so level nine here is the very same maze level nine is
+there — which is what makes the price of the view readable straight
+off rather than guessed at across two ladders tuned separately.
+**Turning costs a step**, and that is what the price is: measured
+across all fifteen rungs, the minimum runs a steady 1.27–1.34 times
+the flat one next door. Turns have to cost something, or a player
+spins on the spot at every cell, reads all four corridors for nothing,
+and the task collapses into a 2D maze with a narrow window. Walking
+into a wall costs nothing, as in the 2D maze — the wall is plainly
+visible from where you are standing.
+
+Two foils say what the rungs are worth. One hand on one wall solves
+any maze without loops, and is what a player falls back on once it has
+lost its place. Rung one is a perfect maze — no loops at all — and it
+gets out of every one of thirty, at 2.7 times the minimum. From rung
+two upward the ladder braids dead ends back into loops, and it starts
+both wandering further and failing outright: 3.0 to 4.5 times the
+minimum where it succeeds, and on a fifth to two fifths of mazes it
+never finds the way out at all within twenty thousand steps. The
+second foil is the one the task is really about: a player that plans perfectly from
+where it *believes* it is, and now and then fails to notice that it
+moved. At no slip it walks the exact minimum. At one dropped update in
+fifty it gets out of "four doors" twice in eight tries; at one in
+twenty, never. Nothing tells it. Every corridor still looks like a
+corridor.
+
+The par is its own exact minimum over cell, facing and keys rather
+than the flat one on the maze, so the walk is scored the way the rest
+of the planning category is scored. On the largest rungs that takes a
+second to solve before the maze opens, which the options screen says
+in advance.
+
 ### Window size, full screen, and the two coordinate spaces
 
 The window is resizable, and **F11** switches to and from full screen
