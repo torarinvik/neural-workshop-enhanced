@@ -140,6 +140,69 @@ image or audio library is involved either way.
 .venv/bin/python -m pip install pyarrow   # optional, for bulk fetches
 ```
 
+### Working memory
+
+**In the Dark.** A row of lamps is lit behind you in colours you are
+never shown. You walk through a string of rooms and each one does a
+single thing to the lamps — paints one a colour, turns one on to the
+next, swaps two over, copies one onto another — and at the end you are
+asked what colour some of them ended up. Rooms are drawn in full. The
+lamps never are.
+
+The point is what the screen makes impossible. Nothing on it at any
+moment says what colour any lamp is, and because a room is drawn from
+its operation alone, two runs with different lamps behind them draw
+*exactly the same pixels* and want different answers. A player reading
+only what is in front of them is not handicapped, they are at chance,
+and by construction rather than by measurement. The screen tests check
+it the only way worth checking: render the same rooms over two
+different hidden arrangements and compare the frame digests.
+
+The floor is a proof rather than a benchmark. Walk a lamp's history
+backwards — a copy moves which lamp you are following, a swap
+exchanges it, a turn shifts the value, a paint fixes it and ends the
+chain. Until the chain reaches a paint, the final colour is a
+*bijection* applied to some lamp's unseen starting colour, and those
+are uniform. So a player who remembers fewer than `needed` rooms holds
+no information at all and scores exactly one in `colours` — measured
+across every rung at 0.0000, not "near zero". `trace()` computes that
+distance in one pass and `belief()` recomputes it by enumerating every
+starting arrangement, so the fast derivation is held against the slow
+one rather than trusted.
+
+Dealing walks and keeping the deep ones does not work: the median walk
+pins its weakest question four rooms from the end against a floor of
+twenty, and seven deals in eight ask about a lamp no room ever pinned.
+So a walk is laid *backwards*, refusing to paint a lamp a question is
+still resting on until the floor is behind it. Both floors then hold
+without searching, at a fifth of the cost.
+
+The second axis exists because distance is not effort: a chain twenty
+rooms long whose value merely sat there is a long wait, not a hard
+question, so `work` counts only the rooms that actually moved or
+changed the value being carried.
+
+**Fog of War.** A braided grid of corridors, an avatar, and a
+two-cell eye; everything further off is flat black. The dark is real
+rather than decorative — the frame is drawn from the revealed set
+alone, so changing an unseen cell moves no pixel, which the tests
+check by changing one.
+
+The screen is deliberately bare: no step counter, no coverage bar, no
+bump flash, nothing that blinks. The frame is a pure function of where
+the walker is and what it has revealed. Anything an agent could make
+happen *without going somewhere new* is something it would learn to do
+instead of exploring — an agent on a prediction-based intrinsic reward
+elsewhere learned to bump walls rather than travel, at corr(payment,
+bumping) +0.79 against corr(payment, coverage) −0.59, because bump
+animations were cheaper to produce than distance. Measured here: 1196
+bumps across ten worlds changed zero bytes.
+
+It is filed under working memory rather than planning because the
+planning category holds tasks that score against a computed optimum
+and this one has none — and because with the map off, which is how it
+ships, what it asks for is holding where you have been.
+
 ### Attention
 
 The *Attention* category holds **Reflex**: photographs appear at random
@@ -517,6 +580,51 @@ the rotation is remembered across sessions — a jigsaw of a picture
 you have already assembled is a memory task, not a reasoning one. A
 larger library therefore means longer before anything comes round
 again; the default hundred images is a hundred fresh puzzles.
+
+#### Sudoku
+
+Twelve rungs, from a four by four that falls to naked singles up to a
+sixteen by sixteen with a hundred and fifty-six blanks that still
+needs hundreds of guesses once deduction is spent. Arrows move, digits
+write, **N** pencils a candidate in, **O** opens the options — sixteens
+run on 1-9 and then A-G, which costs **C** its usual job on the boards
+that go that high.
+
+Counting blanks is the obvious way to grade a sudoku and it is very
+nearly worthless: measured over four hundred minimal nine-by-nines,
+puzzles with the same number of givens ran from "naked singles all the
+way" to "the whole technique stack runs out". So difficulty here is
+what a puzzle actually *forces*. A rating solver runs a stack
+cheapest-first — naked single, hidden single, locked candidates, naked
+subset, hidden subset, fish — always applying the cheapest technique
+that changes anything and going back to the top of the stack after
+each, and reports the deepest it had to reach. Past that the puzzle is
+graded by how many branch points a propagating search still has to
+guess at.
+
+The measured tier spread killed the obvious ladder design. Across
+those four hundred puzzles the tiers came out 0.8, 43, 10, 8.8, 0.8,
+0.2 and 36 per cent — so "at least tier two" is satisfied four times in
+ten by a puzzle the logic cannot finish at all, and a rung asking for
+*moderate* kept dealing *diabolical*. Rungs are bands instead, and the
+gentle end is reached by digging less rather than by hoping for it,
+since a puzzle dug to minimal is nearly always a hard one.
+
+Two generator bugs the measurements caught, both invisible from the
+outside. Filling a sixteen by blind backtracking took 216 seconds on
+one seed in a handful where its neighbours took four thousandths of
+one; propagating between placements and restarting past a node budget
+put the worst of sixty seeds at 0.017s. And digging asked "does this
+have exactly one solution", which means exhausting a tree to prove a
+second does not exist — asking instead whether any particular digit
+fits the blanked cell prunes on the pinned cell.
+
+Where a band is missed — only *hard*, which asks for the 1.0% of
+puzzles at tiers four to five — the fallback overshoots by
+construction, so a rung's name stays a floor on the work: 25 deals
+landed 16, 6 and 3 across tiers four, five and six, and none below.
+The screen always reports the tier it actually got, never the one it
+wanted.
 
 ### Planning
 
