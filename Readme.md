@@ -203,6 +203,66 @@ planning category holds tasks that score against a computed optimum
 and this one has none — and because with the map off, which is how it
 ships, what it asks for is holding where you have been.
 
+**Removals.** A yard of vans, a stack of boxes, and a pile of things
+to pack. One move happens at a time and each is drawn in full — this
+thing into that box, that box into another box, that one into a van,
+these two swapped over — and at the end you are asked which van some
+of the things ended up in. Where anything actually *is* is never
+drawn.
+
+That question is not "what did you just see". A thing is in a box,
+that box is in another, that one is in a van, and no single move ever
+said so: the answer is a *composition* of facts learned at three or
+four separate moments, each of them ordinary at the time. It is a
+different faculty from In the Dark next door, which asks you to carry
+six values and update them; this asks you to carry a shape and then
+walk it.
+
+The floor is half proof and half measurement, and it is worth being
+clear which half is which. The proof is that a short memory settles
+nothing: every move is unconditional — a pack writes a constant into
+one slot, a swap exchanges two, and neither reads a value to decide
+what to do — so the resting map is a fixed function of the starting
+one, and each entry is either a constant the walk wrote or, traced
+back through the swaps, a slot it never touched. Fall off the chain
+onto one of those and what is there was settled before anything you
+saw. Measured: a player recalling the last `floor - 1` moves is
+certain of exactly *none* of the questions, on every one of the twelve
+rungs.
+
+What the proof does not settle is what such a player should then
+guess, since the state before the tail is the generator's doing rather
+than a coin. So that half is measured: over three thousand rounds a
+rung the van an answer lands in is even to within two standard
+deviations on all twelve, and the best fixed guess beats chance by at
+most 0.010. Between them the floor is one in `vans` and there is
+nothing to be had below it.
+
+Dealing walks and keeping the deep ones fails here for a sharper
+reason than it did in In the Dark: a random walk almost never *nests*
+anything, so the chain the whole task is about comes out one hop long
+and the rung has nothing to grade. Chains are therefore designed first
+— a thing, its box, that box's box, its van — and the walk is built
+around them, with each chain given one link among the early moves so
+its answer is pinned at least as far back as the rung promises. A
+chain reuses a box already standing at the right depth under the right
+holder about half the time, which is what lets the top rung ask for
+five hops from ten boxes instead of twenty.
+
+Three numbers grade a round because they are not the same number:
+`needed` is how far back the memory must reach, `nest` is how many
+hops the answer is composed of, and `churn` counts moves that touched
+a chain and were then overridden. The middle one is the axis the task
+exists for — a chain twenty moves back but one hop long is a long
+wait, not a hard question.
+
+One verb was designed and dropped. *Tip* — empty a box out onto the
+floor — is the most natural move in a removal, and it is not here: its
+effect depends on what is inside the box and so on the unseen start,
+which makes an unpinned answer a restricted draw rather than a uniform
+one and turns the floor from a proof into a bound. An exact floor is
+worth more than a richer verb.
+
 ### Attention
 
 The *Attention* category holds **Reflex**: photographs appear at random
@@ -625,6 +685,54 @@ construction, so a rung's name stays a floor on the work: 25 deals
 landed 16, 6 and 3 across tiers four, five and six, and none below.
 The screen always reports the tier it actually got, never the one it
 wanted.
+
+#### Crossed Wires
+
+Every other task in the workshop hands the player all the information
+it is ever going to give and then asks what follows. This one does
+not. A marker on a grid that wraps at every edge, a target to reach,
+and four or eight keys whose directions have been quietly scrambled —
+and nothing on screen ever says how. There is no legend, no readout of
+what has been worked out, and no mark on the key just pressed. The
+information does not exist until you go and make some.
+
+Which is why it survives the agent environment's virtual clock, where
+most control tasks do not. An agent gets unbounded thinking time
+between presses, so anything whose difficulty is reaction speed is
+free; here thinking buys nothing at all, because the answer is only
+available to somebody willing to spend a move finding it out. Presses
+are budgeted — the shortest trip plus a few spare — so probing every
+key before committing costs more than the round can afford, and
+committing without probing walks the wrong way. Neither pure exploring
+nor pure exploiting clears a rung.
+
+Four players measure what the rungs mean, and each number is measured
+rather than claimed. Pressing at random reaches 1–4% of targets, which
+is a real floor rather than a zero because a random walk on a torus
+does stumble onto things. A greedy player who already knows the wiring
+clears every rung — it misses about two targets in ten thousand on
+the top two, and that is its greed and not the budget. A learner that
+presses an unknown key when nothing known helps, and trusts what it
+saw last, runs from 1.000 down to 0.23 across the twelve rungs, and
+the space between it and the oracle is what a rung actually asks for.
+
+The fourth is the foil. The senior rungs turn the whole wiring
+silently every few presses, and let one key stop working partway
+through, also silently — so a player that identifies the wiring once
+and then trusts it forever is exactly wrong, and there is no notice
+that it has become so. Frozen against fresh: 0.72 against 0.44, then
+0.56 against 0.24, 0.36 against 0.10, 0.23 against 0.05. On the rungs
+where nothing moves the two agree exactly, which is the check that the
+separation is measuring drift rather than the relearning machinery.
+
+The grid wraps deliberately. On a bounded arena a press into the wall
+looks exactly like a press on a dead key, and an ambiguity between
+"this key does nothing" and "this key does something I cannot do from
+here" is a muddle rather than a difficulty. On a torus every press
+moves, so every press is evidence. What is left of the budget is drawn
+as a bar as well as a number, because an agent reads this screen as
+pixels and a quantity it can only get by parsing a glyph is one it
+effectively cannot see.
 
 ### Planning
 

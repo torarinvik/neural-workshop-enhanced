@@ -37,6 +37,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('monkey_ladder', _('Monkey Ladder')),
         ('in_the_dark', _('In the Dark')),
         ('fog_of_war', _('Fog of War')),
+        ('removals', _('Removals')),
     ],
     'long_term_memory': [
         ('concentration', _('Concentration')),
@@ -58,6 +59,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('matrix_reasoning', _('Matrix Reasoning')),
         ('jigsaw', _('Jigsaw Puzzle')),
         ('sudoku', _('Sudoku')),
+        ('crossed_wires', _('Crossed Wires')),
     ],
     'planning': [
         ('tower_of_hanoi', _('Tower of Hanoi')),
@@ -364,9 +366,17 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
         from .fogofwar import FogOfWar
         FogOfWar()
         return
+    if task_id == 'removals':
+        from .removals import Removals
+        Removals()
+        return
     if task_id == 'sudoku':
         from .sudoku import Sudoku
         Sudoku()
+        return
+    if task_id == 'crossed_wires':
+        from .crossedwires import CrossedWires
+        CrossedWires()
         return
     if task_id == 'ncup_monte':
         from .ncupmonte import NCupMonte

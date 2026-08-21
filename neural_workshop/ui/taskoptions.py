@@ -793,6 +793,53 @@ IN_THE_DARK = TaskSpec(
     note=in_the_dark_note)
 
 
+def removals_note(chosen: Dict[str, Any]) -> str:
+    """What the rung buries, how deep it composes, and what chance is.
+
+    Two numbers are spelled out because they are the two the ladder
+    actually promises, and they are easy to confuse: how far back the
+    answer sits, and how many facts it is made of. A chain twenty
+    moves back but one hop long is a long wait; a chain five hops long
+    is five things remembered from five different moments.
+    """
+    from ..removals import GRADES
+    rung = int(chosen['REMOVALS_LEVEL'])
+    grade = GRADES[max(0, min(len(GRADES) - 1, rung - 1))]
+    said = [_('Level %d, "%s": %d vans, %d boxes and %d things, moved %d '
+              'times, with %d of the things asked about at the end.')
+            % (rung, _(grade.name), grade.vans, grade.boxes, grade.items,
+               grade.depth, grade.asks)]
+    said.append(_('Every answer is %d hops deep — a thing in a box, that '
+                  'box in another, and so on to a van — and none is '
+                  'pinned nearer than %d moves from the end, so '
+                  'remembering the last %d of them is worth exactly '
+                  'nothing: one guess in %d.')
+                % (grade.nest, grade.floor, grade.floor - 1, grade.vans))
+    seconds = float(chosen['REMOVALS_SECONDS'])
+    said.append(_('At %.1fs a move that is about %d seconds of loading '
+                  'before the first question.')
+                % (seconds, int(round(seconds * grade.depth))))
+    if chosen['REMOVALS_ADAPTIVE']:
+        said.append(_('Answer every question and the next round is a '
+                      'level harder.'))
+    return '  '.join(said)
+
+
+REMOVALS = TaskSpec(
+    title=_('Removals options'),
+    options=(
+        Option('REMOVALS_LEVEL', _('Level'), 3,
+               values=tuple(range(1, 13))),
+        Option('REMOVALS_TRIALS', _('Rounds per run'), 5,
+               values=(1, 2, 3, 5, 8, 10, 15, 20)),
+        Option('REMOVALS_SECONDS', _('Seconds a move is shown'), 1.2,
+               values=(0.5, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0)),
+        Option('REMOVALS_ADAPTIVE',
+               _('Climb a level after a clean round'), True),
+    ),
+    note=removals_note)
+
+
 def fog_of_war_note(chosen: Dict[str, Any]) -> str:
     """What the eye reaches, and what the map does or does not keep.
 
@@ -831,6 +878,58 @@ FOG_OF_WAR = TaskSpec(
         Option('FOG_PERSIST', _('Keep the map you have uncovered'), True),
     ),
     note=fog_of_war_note)
+
+
+def crossed_wires_note(chosen: Dict[str, Any]) -> str:
+    """What is scrambled, how little is spare, and what moves under you.
+
+    The spare presses are spelled out as a number rather than left
+    implicit in the level, because they are the whole difficulty of
+    the junior rungs: with twelve to waste a player can try every key
+    twice before deciding, and with two it cannot try them all once.
+    """
+    from ..crossedwires import CROSSED, MIRRORED, STEADY, GRADES
+    rung = int(chosen['WIRES_LEVEL'])
+    grade = GRADES[max(0, min(len(GRADES) - 1, rung - 1))]
+    scrambled = {STEADY: _('not scrambled at all — the keys go where they '
+                           'say, so this rung is the one to check the rest '
+                           'against'),
+                 MIRRORED: _('reflected, which is the one people find '
+                             'hardest: you cannot lean your way out of a '
+                             'mirror the way you can out of a turn'),
+                 CROSSED: _('scrambled outright, any way at all')}.get(
+                     grade.family, _('turned bodily round the ring'))
+    said = [_('Level %d, "%s": %d keys on a %d by %d grid that wraps at '
+              'every edge, %d targets, and the wiring %s.')
+            % (rung, _(grade.name), grade.keys, grade.across, grade.down,
+               grade.targets, scrambled)]
+    said.append(_('You get the shortest trip plus %d presses and no more, '
+                  'so every key you try out costs one of those %d.')
+                % (grade.spare, grade.spare))
+    if grade.drift:
+        said.append(_('The whole wiring turns, silently, every %d presses '
+                      '— so whatever you worked out goes stale and there '
+                      'is no notice that it has.') % grade.drift)
+    if grade.dies:
+        said.append(_('And one key stops working after press %d, also '
+                      'silently.') % grade.dies)
+    if chosen['WIRES_ADAPTIVE']:
+        said.append(_('Reach every target and the next round is a level '
+                      'harder.'))
+    return '  '.join(said)
+
+
+CROSSED_WIRES = TaskSpec(
+    title=_('Crossed Wires options'),
+    options=(
+        Option('WIRES_LEVEL', _('Level'), 3, values=tuple(range(1, 13))),
+        Option('WIRES_ROUNDS', _('Rounds per run'), 5,
+               values=(1, 2, 3, 5, 8, 10, 15, 20)),
+        Option('WIRES_ADAPTIVE',
+               _('Climb a level after a clean round'), True),
+        Option('WIRES_GRID', _('Draw the cell lines'), True),
+    ),
+    note=crossed_wires_note)
 
 
 def sudoku_note(chosen: Dict[str, Any]) -> str:
@@ -939,7 +1038,9 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'maze': MAZE,
     'in_the_dark': IN_THE_DARK,
     'fog_of_war': FOG_OF_WAR,
+    'removals': REMOVALS,
     'sudoku': SUDOKU,
+    'crossed_wires': CROSSED_WIRES,
 }
 
 

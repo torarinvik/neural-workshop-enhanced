@@ -749,6 +749,27 @@ DARK_TRIALS = 5
 DARK_SECONDS = 1.2
 DARK_ADAPTIVE = True
 
+# Removals asks where a thing ended up, not what just happened. A yard
+# of vans, a stack of boxes and a pile of things; one move at a time
+# packs something into a box, packs a box into another box, stands a
+# box in a van, or swaps two things over. Where anything actually is
+# is never drawn, so the picture comes from the move alone and two
+# rounds with different yards behind them are the same pixels. The
+# answer is a chain - this is in that, that is in the other, the other
+# is in van two - and no single move ever said so, which is what makes
+# it a different task from In the Dark rather than a reskin of it.
+# REMOVALS_LEVEL picks the vans, boxes and things, how long the walk
+# is, how deep the chains run and how far back the answer is buried;
+# the chains are designed first and the walk built around them, so the
+# depth a rung promises is a guarantee and not an average.
+# REMOVALS_SECONDS is how long each move is on screen. With
+# REMOVALS_ADAPTIVE a clean round climbs a level and a poor one steps
+# down.
+REMOVALS_LEVEL = 3
+REMOVALS_TRIALS = 5
+REMOVALS_SECONDS = 1.2
+REMOVALS_ADAPTIVE = True
+
 # Fog of War is a world you can only learn by walking it. A braided
 # grid of corridors is generated from a seed, and everything further
 # than FOG_RADIUS cells from the walker is painted flat black - so two
@@ -768,6 +789,27 @@ FOG_RADIUS = 2
 FOG_MOVES = 400
 FOG_WORLDS = 3
 FOG_PERSIST = False
+
+# Crossed Wires is the one task that hands the player nothing. A
+# marker on a grid that wraps round at every edge, a target to reach,
+# and four or eight keys whose directions have been scrambled - and
+# nothing on screen ever says how. The only way to learn what a key
+# does is to spend a press finding out, and presses are budgeted: a
+# round allows the shortest trip plus a few spare, so probing every
+# key before committing costs more than the round can afford and
+# committing without probing walks the wrong way. WIRES_LEVEL picks
+# the keys, how the wiring is scrambled, how much is spare, and - at
+# the top - whether the whole ring turns silently every few presses
+# and whether one key stops working partway through. Those last two
+# are what separate a player who keeps checking from one that
+# identifies the wiring once and trusts it forever. WIRES_GRID draws
+# the cell lines, which makes a step countable; the wrapping is not
+# animated, because a step across an edge is one step and sliding it
+# across the board would say otherwise.
+WIRES_LEVEL = 3
+WIRES_ROUNDS = 5
+WIRES_ADAPTIVE = True
+WIRES_GRID = True
 
 # Sudoku, graded by what a puzzle actually forces rather than by how
 # many blanks it has - the two barely correlate. A rating solver runs
