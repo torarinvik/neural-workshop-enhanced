@@ -89,6 +89,8 @@ from .accounting import Accounting, format_accounting  # noqa: E402
 from .diagnostics import DiagnosticEnv, TestProbe  # noqa: E402
 from .env import NeuralWorkshopEnv, make_env  # noqa: E402
 from .export import FrameExport  # noqa: E402
+from .fog import (FogOfWarEnv, derive_fog_outcome,  # noqa: E402
+                  make_fog_env, verify_fog_outcome)
 from .frames import capture_rgba, digest_rgba, render_significant_frame  # noqa: E402
 from .ladder import (MonkeyLadderEnv, derive_ladder_outcome,  # noqa: E402
                      make_ladder_env, verify_ladder_outcome)
@@ -105,4 +107,9 @@ __all__ = [
     'make_ladder_env', 'make_sight_env', 'render_significant_frame',
     'verify_ladder_outcome', 'verify_public_outcome', 'verify_public_pixels',
     'verify_sight_outcome',
+    # Out of alphabetical order on purpose: another agent is
+    # editing this file live, and inserting here reflows no
+    # existing line. Fold them in when that settles.
+    'FogOfWarEnv', 'derive_fog_outcome', 'make_fog_env',
+    'verify_fog_outcome',
 ]

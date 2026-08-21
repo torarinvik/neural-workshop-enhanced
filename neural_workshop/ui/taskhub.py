@@ -36,6 +36,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('nback', _('N-Back')),
         ('monkey_ladder', _('Monkey Ladder')),
         ('in_the_dark', _('In the Dark')),
+        ('fog_of_war', _('Fog of War')),
     ],
     'long_term_memory': [
         ('concentration', _('Concentration')),
@@ -357,6 +358,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'in_the_dark':
         from .inthedark import InTheDark
         InTheDark()
+        return
+    if task_id == 'fog_of_war':
+        from .fogofwar import FogOfWar
+        FogOfWar()
         return
     if task_id == 'ncup_monte':
         from .ncupmonte import NCupMonte

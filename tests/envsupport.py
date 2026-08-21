@@ -57,6 +57,17 @@ except Exception as exc:  # pragma: no cover - no GL context available
     verify_public_pixels = None
     ENV_IMPORT_ERROR = exc
 
+# Imported on its own rather than folded into the tuple above, so that
+# adding the fog boundary edits no line another agent may be holding.
+try:
+    from nwenv import (FogOfWarEnv, derive_fog_outcome, make_fog_env,
+                       verify_fog_outcome)
+except Exception:  # pragma: no cover - no GL context available
+    FogOfWarEnv = None
+    derive_fog_outcome = None
+    make_fog_env = None
+    verify_fog_outcome = None
+
 
 #: Decorator every test class in this suite carries.
 requires_env = unittest.skipIf(

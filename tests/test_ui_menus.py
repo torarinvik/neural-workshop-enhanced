@@ -38,7 +38,8 @@ class MenuTests(unittest.TestCase):
         hub = TaskHub()
         try:
             self.assertEqual([task[0] for task in tasks_for('working_memory')],
-                             ['nback', 'monkey_ladder', 'in_the_dark'])
+                             ['nback', 'monkey_ladder', 'in_the_dark',
+                              'fog_of_war'])
             self.assertEqual(
                 [task for task, _name in TASKS['long_term_memory']],
                 ['concentration', 'recognition'])

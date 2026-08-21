@@ -793,6 +793,46 @@ IN_THE_DARK = TaskSpec(
     note=in_the_dark_note)
 
 
+def fog_of_war_note(chosen: Dict[str, Any]) -> str:
+    """What the eye reaches, and what the map does or does not keep.
+
+    The quiet screen is worth mentioning here, because it reads as a
+    missing feature rather than as the design it is: there is no step
+    counter and no coverage bar on purpose, and this is the only place
+    a player is told why.
+    """
+    from ..fogworld import ROOMS_ACROSS, ROOMS_DOWN
+    radius = int(chosen['FOG_RADIUS'])
+    said = [_('A %d by %d world of corridors, seen %d cells at a time.')
+            % (2 * ROOMS_ACROSS + 1, 2 * ROOMS_DOWN + 1, radius)]
+    if chosen['FOG_PERSIST']:
+        said.append(_('Ground stays lit once you have seen it, so a map '
+                      'builds up as you go.'))
+    else:
+        said.append(_('Only the circle around you is ever lit, so the map '
+                      'is yours to carry.'))
+    said.append(_('%d moves a world, and walking into a wall spends one '
+                  'and changes nothing — there is no counter and no '
+                  'progress bar on screen, deliberately, so that going '
+                  'somewhere new is the only thing that can make the '
+                  'picture change.') % int(chosen['FOG_MOVES']))
+    return '  '.join(said)
+
+
+FOG_OF_WAR = TaskSpec(
+    title=_('Fog of War options'),
+    options=(
+        Option('FOG_RADIUS', _('How far you can see'), 2,
+               values=(1, 2, 3, 4, 5)),
+        Option('FOG_MOVES', _('Moves per world'), 400,
+               values=(100, 200, 300, 400, 600, 800, 1200)),
+        Option('FOG_WORLDS', _('Worlds per run'), 3,
+               values=(1, 2, 3, 5, 8, 10)),
+        Option('FOG_PERSIST', _('Keep the map you have uncovered'), True),
+    ),
+    note=fog_of_war_note)
+
+
 def salesman_note(chosen: Dict[str, Any]) -> str:
     """What the score means at this size, and that it is exact.
 
@@ -849,6 +889,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'sokoban': SOKOBAN,
     'maze': MAZE,
     'in_the_dark': IN_THE_DARK,
+    'fog_of_war': FOG_OF_WAR,
 }
 
 

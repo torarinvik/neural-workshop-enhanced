@@ -749,6 +749,26 @@ DARK_TRIALS = 5
 DARK_SECONDS = 1.2
 DARK_ADAPTIVE = True
 
+# Fog of War is a world you can only learn by walking it. A braided
+# grid of corridors is generated from a seed, and everything further
+# than FOG_RADIUS cells from the walker is painted flat black - so two
+# worlds that differ only somewhere far off draw the same pixels until
+# somebody goes and looks. With FOG_PERSIST the ground stays lit once
+# seen and a map builds up on screen; with it off - which is how it
+# ships - only the circle around the walker is ever visible and the
+# map has to be carried in your head, which is the whole of why this
+# sits among the working memory tasks rather than the planning ones.
+# The agent environment turns it back on, because a map that only
+# grows is what makes the lit pixel count a measure of coverage. FOG_MOVES is how many moves a world allows, bumps into
+# walls included - a bump spends a move and changes nothing else, on
+# screen or off, which is deliberate: anything an agent could make
+# happen without going somewhere new is something it would learn to do
+# instead of exploring.
+FOG_RADIUS = 2
+FOG_MOVES = 400
+FOG_WORLDS = 3
+FOG_PERSIST = False
+
 ######################################################################
 # This is the end of the configuration file.
 ######################################################################
