@@ -84,6 +84,16 @@ class MazeTask:
         self.results: List[Tuple[int, int, int]] = []   # (rung, steps, par)
         self.started_at = 0.0
         self.phase = 'ready'
+        #: Coach mode: paint a per-move consequence verdict, warmer or
+        #: colder by Manhattan distance to the way out.  Off for people --
+        #: it changes the game -- and switched on by the agent boundary,
+        #: where it is potential-based shaping for the potential -distance.
+        #: Policy invariance does not need the potential to be *right*: the
+        #: distance ignores walls and locked doors and is only a lower
+        #: bound on the walk left, and the guarantee holds for any function
+        #: of the state at all.  What it needs is that a move changes it by
+        #: exactly one, which on a grid of unit steps it does.
+        self.coach = False
         self.message = _('Press Space to start')
         self._read_options()
         self.rung = self.clamped(self.start_rung)
@@ -241,13 +251,17 @@ class MazeTask:
         maze = self.maze
         x, y = self.walker % maze.width, self.walker // maze.width
         nx, ny = x + dx, y + dy
+        before = self._distance_out()
         if not (0 <= nx < maze.width and 0 <= ny < maze.height):
+            self._coach_verdict(None)
             return
         ahead = ny * maze.width + nx
         if ahead in maze.walls:
+            self._coach_verdict(None)
             return
         if self.needs_key(ahead) is not None:
             self.message = _('Locked — that door needs its key')
+            self._coach_verdict(None)
             self._update_status()
             return
         self.walker = ahead
@@ -256,6 +270,8 @@ class MazeTask:
         self._take_key()
         if self.walker == maze.way_out:
             self._solved()
+        else:
+            self._coach_verdict(self._distance_out() - before)
         self._redraw()
 
     def restart(self) -> None:
@@ -264,6 +280,35 @@ class MazeTask:
         self._restart_walk()
         self.message = _('Back to the start')
         self._redraw()
+
+    def _distance_out(self) -> int:
+        """Manhattan distance from the walker to the way out, in cells."""
+        maze = self.maze
+        w = maze.width
+        wx, wy = self.walker % w, self.walker // w
+        ox, oy = maze.way_out % w, maze.way_out // w
+        return abs(wx - ox) + abs(wy - oy)
+
+    def _coach_verdict(self, delta: Optional[int]) -> None:
+        """Paint what the move just taken did to the distance out.
+
+        A verdict, not a directive: it reports the consequence of a move
+        already committed, never which one to make next.  ``None`` -- a
+        wall, an edge, a locked door -- clears the label, because none of
+        those moved the walker and a move that changes nothing is owed
+        exactly nothing.  Paying for them is what would let a learner farm
+        reward by grinding on a wall.
+        """
+        if not self.coach:
+            return
+        if delta is None:
+            self.verdict_shown = None
+            self.verdict.clear()
+            return
+        closer = delta < 0
+        self.verdict_shown = (closer,
+                              _('Warmer') if closer else _('Colder'))
+        self.verdict.show(*self.verdict_shown)
 
     def _solved(self) -> None:
         par = self.par()

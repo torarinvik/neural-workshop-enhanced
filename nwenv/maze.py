@@ -37,13 +37,26 @@ class MazeEnv(TaskEnv):
     task_class = ('neural_workshop.ui.maze', 'MazeTask')
     ports = 4
     clocked = False
+    dense = True
     action = 'step'
     #: What the four ports do, in an order the learner has to discover.
     action_table = ((0, -1), (0, 1), (-1, 0), (1, 0))
     open_phase = ('walking',)
     settled_phase = ('solved',)
     knobs = {'rung': 'start_rung', 'trials': 'total_trials',
-             'trail': 'show_trail'}
+             'trail': 'show_trail', 'coach': 'coach'}
+    #: Coach mode on unless the caller says otherwise. A maze has no
+    #: accidental solutions, so the sparse reward pays a random walker
+    #: nothing at all -- this task measured 0.0% density over 400 ticks --
+    #: and a trainer that skips zero-reward ticks has nothing to update on
+    #: for a whole lifetime.
+    #:
+    #: It is in both tables on purpose, which is the one place these two
+    #: overlap. ``requires`` runs first and sets the default, so a caller
+    #: who says nothing gets a task that pays; naming it in ``knobs`` as
+    #: well lets a caller who *does* say something turn it off, which the
+    #: unshaped control arm of any experiment about shaping needs to do.
+    requires = {'coach': True}
 
 
 def make_maze_env(seed: int = 0,

@@ -19,6 +19,23 @@ frame shows.  A move shifts the distance by exactly 1, so the pixel verdict
 label and pay zero, so loops telescope to nothing and the shaping cannot be
 farmed.  ``coach=False`` restores the sparse solve-only reward.
 
+Two caveats a reader should have, because neither is visible from the
+pixels.  Potential-based shaping is *gamma* Phi(s') - Phi(s), and a
+two-colour label can only carry +1 or -1, so what is painted is the
+gamma=1 term d - d'.  A learner discounting at gamma < 1 is therefore
+shaped with an error of (1 - gamma) * d -- smallest at the way out and
+largest far from it, which is where a fresh policy spends its time.
+Run this task undiscounted, or measure the bias; do not assume it away.
+
+The other is the one episodic shaping usually gets wrong: policy
+invariance needs Phi = 0 at every terminal state.  It holds here, but by
+luck rather than design -- a trial ends only by reaching the way out,
+where the distance, and so the potential, is zero.  There is no step
+limit that could end a trial somewhere else.  A *run* still stops after
+``trials`` mazes, which truncates mid-maze at a nonzero potential; that
+is the ordinary truncation-versus-termination case and is the trainer's
+to bootstrap through.
+
 Two things about the task shape the wrapper. It is **turn-based**: nothing
 moves unless a key is pressed, so there is no clock to tick and ``clocked``
 is False. And a solved maze waits on a keypress before dealing the next one,
