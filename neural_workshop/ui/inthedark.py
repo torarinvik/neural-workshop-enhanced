@@ -42,6 +42,7 @@ from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
 from ..inthedark import (GRADES, MOST_COLOURS, PAINT, SWAP, TURN, Room,
                          Round, generate)
 from . import cursor, taskoptions
+from .verdict import VerdictLabel
 from ..i18n import _
 
 #: Okabe-Ito, as everywhere else in the workshop. Five lamp colours,
@@ -150,6 +151,16 @@ class InTheDark:
             font_size=calc_fontsize(12), color=self.textcolor,
             batch=self.batch, x=width_center(), y=from_bottom_edge(26),
             anchor_x='center', anchor_y='center', font_name=FONTLIST)
+        # Read by the agent boundary, which pays the trial by this
+        # label's colour; tests/check_band.py is what says nothing else
+        # this task draws puts a saturated colour in the bottom quarter.
+        # Rebuilt with the chrome, so a verdict already up is put back —
+        # a relayout on the frame a trial settles would otherwise drop
+        # it, and an outcome only sometimes derivable is worse than one
+        # that never is.
+        self.verdict = VerdictLabel(batch=self.batch, y_from_bottom=60)
+        if getattr(self, 'verdict_shown', None) is not None:
+            self.verdict.show(*self.verdict_shown)
         self._redraw()
 
     def relayout(self) -> None:
@@ -182,6 +193,7 @@ class InTheDark:
         self.rung = self.clamped(self.start_rung)
         self.phase = 'ready'
         self.message = _('Press Space to start')
+        self.verdict_shown = None
 
     def start_run(self) -> None:
         self._reset()
@@ -192,6 +204,8 @@ class InTheDark:
             self._finish()
             return
         self.trial += 1
+        self.verdict_shown = None
+        self.verdict.clear()
         self.round = generate(self.rung, seed=self.rng.randrange(1 << 30))
         self.cursor = 0
         self.given = []
@@ -259,6 +273,8 @@ class InTheDark:
                 self.rung = self.clamped(self.rung - 1)
         self.phase = 'scored'
         self.until = self.clock() + VERDICT_SECONDS
+        self.verdict_shown = (got == asked, self.message)
+        self.verdict.show(*self.verdict_shown)
 
     def _finish(self) -> None:
         self.phase = 'done'
