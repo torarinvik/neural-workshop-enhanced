@@ -19,7 +19,13 @@ from __future__ import annotations
 import random
 import unittest
 
+from uisupport import (InTheDark, TASKS, close_overlays, key, needs_ui,
+                       reset_window, state, taskoptions)
+
 from neural_workshop import inthedark as D
+from neural_workshop.i18n import _
+from neural_workshop.ui.inthedark import ANSWER_KEYS, VERDICT_SECONDS
+from nwenv.frames import capture_rgba, digest_rgba
 
 #: A rung small enough to enumerate every starting arrangement of.
 SMALL_RUNG = 4
@@ -384,6 +390,257 @@ class GenerateTests(unittest.TestCase):
         got = D.generate(8, seed=21)
         by_hand = [D.trace(got.rooms, lamp)[0] for lamp in got.asked]
         self.assertEqual(got.needed, min(by_hand))
+
+
+@needs_ui
+class DarkScreenTests(unittest.TestCase):
+    """The screen: walking it, answering it, and what it never shows."""
+
+    def setUp(self):
+        close_overlays()
+        self.now = 1000.0
+        self.task = InTheDark()
+        self.task.clock = lambda: self.now
+        self.task.total_trials = 2
+        self.task.adaptive = False
+        self.task.room_seconds = 1.0
+        self.task.start_rung = SMALL_RUNG
+        self.task.rung = SMALL_RUNG
+
+    def tearDown(self):
+        self.task.close()
+        close_overlays()
+        reset_window()
+
+    def _tick(self, seconds=1.0):
+        """Let *seconds* of the virtual clock go by, a frame at a time."""
+        for _frame in range(max(1, int(seconds * 60))):
+            self.now += 1 / 60.
+            self.task.update(1 / 60.)
+
+    def _walk_the_rooms(self):
+        """Run the walk out, leaving the task at its first question."""
+        while self.task.phase == 'walking':
+            self._tick(self.task.room_seconds + 0.02)
+
+    def _answer_all(self, right=True):
+        for spot in range(len(self.task.round.asked)):
+            truth = self.task.round.answers[spot]
+            self.task.answer(truth if right
+                             else (truth + 1) % self.task.round.colours)
+
+    def test_it_is_in_the_working_memory_category(self):
+        self.assertIn('in_the_dark',
+                      [task for task, _n in TASKS['working_memory']])
+
+    def test_a_trial_deals_a_round_and_shows_its_first_room(self):
+        self.task.start_run()
+        self.assertEqual(self.task.phase, 'walking')
+        self.assertEqual(self.task.cursor, 0)
+        self.assertEqual(self.task.room_now(), self.task.round.rooms[0])
+        self.task.on_draw()
+
+    def test_the_rooms_go_by_one_at_a_time(self):
+        self.task.start_run()
+        self._tick(self.task.room_seconds + 0.02)
+        self.assertEqual(self.task.cursor, 1)
+        self._tick(self.task.room_seconds + 0.02)
+        self.assertEqual(self.task.cursor, 2)
+
+    def test_a_room_stays_put_until_its_time_is_up(self):
+        self.task.start_run()
+        self._tick(self.task.room_seconds * 0.5)
+        self.assertEqual(self.task.cursor, 0)
+
+    def test_the_walk_ends_in_questions(self):
+        self.task.start_run()
+        self._walk_the_rooms()
+        self.assertEqual(self.task.phase, 'asking')
+        self.assertEqual(self.task.asked_now(), self.task.round.asked[0])
+
+    def test_no_room_is_shown_once_the_questions_start(self):
+        self.task.start_run()
+        self._walk_the_rooms()
+        self.assertIsNone(self.task.room_now())
+
+    def test_the_questions_come_one_after_another(self):
+        self.task.start_run()
+        self._walk_the_rooms()
+        asked = self.task.round.asked
+        for spot in range(len(asked) - 1):
+            self.assertEqual(self.task.asked_now(), asked[spot])
+            self.task.answer(0)
+        self.assertEqual(self.task.asked_now(), asked[-1])
+
+    def test_no_verdict_is_given_until_the_last_question_is_taken(self):
+        """Saying which was right would narrow what the others can be."""
+        self.task.start_run()
+        self._walk_the_rooms()
+        for _spot in range(len(self.task.round.asked) - 1):
+            self.task.answer(0)
+            self.assertEqual(self.task.phase, 'asking')
+            self.assertEqual(self.task.results, [])
+        self.task.answer(0)
+        self.assertEqual(self.task.phase, 'scored')
+
+    def test_a_clean_round_scores_every_question(self):
+        self.task.start_run()
+        self._walk_the_rooms()
+        asked = len(self.task.round.asked)
+        self._answer_all(right=True)
+        self.assertEqual(self.task.results[-1][1:], (asked, asked))
+
+    def test_a_wrong_answer_is_counted_as_one(self):
+        self.task.start_run()
+        self._walk_the_rooms()
+        asked = len(self.task.round.asked)
+        self._answer_all(right=False)
+        self.assertEqual(self.task.results[-1][1:], (0, asked))
+
+    def test_a_colour_the_round_does_not_have_is_not_an_answer(self):
+        self.task.start_run()
+        self._walk_the_rooms()
+        before = self.task.asking_at
+        self.task.answer(self.task.round.colours + 1)
+        self.assertEqual(self.task.asking_at, before)
+
+    def test_a_key_past_the_round_s_colours_does_nothing(self):
+        self.task.start_run()
+        self._walk_the_rooms()
+        self.assertLess(self.task.round.colours, D.MOST_COLOURS)
+        before = self.task.asking_at
+        self.task.on_key_press(ANSWER_KEYS[D.MOST_COLOURS - 1], 0)
+        self.assertEqual(self.task.asking_at, before)
+
+    def test_a_key_inside_them_answers(self):
+        self.task.start_run()
+        self._walk_the_rooms()
+        self.task.on_key_press(ANSWER_KEYS[0], 0)
+        self.assertEqual(self.task.given, [0])
+
+    def test_the_run_finishes_after_its_rounds(self):
+        self.task.start_run()
+        for _trial in range(self.task.total_trials):
+            self._walk_the_rooms()
+            self._answer_all(right=True)
+            self.now += VERDICT_SECONDS + 0.1
+            self.task.on_key_press(key.SPACE, 0)
+        self.assertEqual(self.task.phase, 'done')
+        self.assertEqual(self.task.score()['rounds'], self.task.total_trials)
+
+    def test_the_score_counts_questions_not_rounds(self):
+        self.task.start_run()
+        self._walk_the_rooms()
+        self._answer_all(right=True)
+        self.assertEqual(self.task.score()['accuracy'], 100)
+        self.assertEqual(self.task.score()['perfect'], 1)
+
+    def test_adaptive_climbs_on_a_clean_round(self):
+        self.task.adaptive = True
+        self.task.start_run()
+        was = self.task.rung
+        self._walk_the_rooms()
+        self._answer_all(right=True)
+        self.assertEqual(self.task.rung, was + 1)
+
+    def test_adaptive_drops_on_a_poor_one(self):
+        self.task.adaptive = True
+        self.task.start_rung = self.task.rung = 5
+        self.task.start_run()
+        was = self.task.rung
+        self._walk_the_rooms()
+        self._answer_all(right=False)
+        self.assertEqual(self.task.rung, was - 1)
+
+    def test_it_draws_in_every_phase(self):
+        self.task.on_draw()                      # ready
+        self.task.start_run()
+        self.task.on_draw()                      # walking
+        self._walk_the_rooms()
+        self.task.on_draw()                      # asking
+        self._answer_all(right=True)
+        self.task.on_draw()                      # scored
+        self.task.total_trials = 1
+        self.now += VERDICT_SECONDS + 0.1
+        self.task.on_key_press(key.SPACE, 0)
+        self.task.on_draw()                      # done
+
+    def test_every_socket_lands_on_screen(self):
+        self.task.start_run()
+        for lamp in range(self.task.round.lamps):
+            x, y, radius = self.task._socket(lamp)
+            self.assertGreaterEqual(x - radius, 0)
+            self.assertLessEqual(x + radius, state.window.width)
+            self.assertGreaterEqual(y - radius, 0)
+            self.assertLessEqual(y + radius, state.window.height)
+
+    def test_the_sockets_do_not_overlap(self):
+        self.task.start_run()
+        spots = [self.task._socket(lamp)
+                 for lamp in range(self.task.round.lamps)]
+        for (x, _y, radius), (nx, _ny, _nr) in zip(spots, spots[1:]):
+            self.assertGreater(nx - x, radius * 2)
+
+    def _frames_of(self, a_round, first=0):
+        """Digest every frame of *a_round*'s walk from *first* onwards."""
+        self.task.round = a_round
+        self.task.phase = 'walking'
+        prints = []
+        for cursor_at in range(first, len(a_round.rooms)):
+            self.task.cursor = cursor_at
+            self.task._redraw()
+            self.task.on_draw()
+            prints.append(digest_rgba(capture_rgba(state.window)[2]))
+        return prints
+
+    def test_the_walk_looks_the_same_whatever_is_behind_it(self):
+        """The claim the task rests on, read off the pixels themselves.
+
+        Two rounds with the same rooms and different colours behind
+        them must draw the same bytes in every frame of the walk. If a
+        lamp ever reached the screen, this is where it would show.
+        """
+        one = D.generate(SMALL_RUNG, seed=606)
+        other = tuple((colour + 1) % one.colours for colour in one.start)
+        self.assertNotEqual(other, one.start)
+        mine = self._frames_of(one)
+        theirs = self._frames_of(one._replace(start=other))
+        self.assertEqual(mine, theirs)
+        self.assertGreater(len(set(mine)), 1)     # and not all one picture
+
+    def test_two_walks_that_end_alike_look_alike_at_the_end(self):
+        """The other half: the same pixels, and the answers still differ.
+
+        A tail shared by two different walks draws identically, which
+        is why watching only the tail cannot tell them apart — and so
+        why the answer has to come from further back than it reaches.
+        """
+        tail = script('turn 0', 'swap 0 1', 'turn 1')
+        seen, answers = [], []
+        for head in (script('paint 0 0'), script('paint 0 1')):
+            rooms = head + tail
+            made = D.Round(lamps=2, colours=3, rooms=rooms, start=(0, 0),
+                           asked=(1,), answers=(D.walk(rooms, (0, 0), 3)[1],),
+                           needed=D.trace(rooms, 1)[0], work=0.0)
+            answers.append(made.answers)
+            seen.append(self._frames_of(made, first=len(head)))
+        self.assertEqual(seen[0], seen[1])
+        self.assertNotEqual(answers[0], answers[1])
+
+    def test_it_has_an_options_screen(self):
+        spec = taskoptions.TASK_SPECS['in_the_dark']
+        chosen = {opt.key: opt.default for opt in spec.options}
+        self.assertIn('DARK_LEVEL', chosen)
+        self.assertTrue(spec.note(chosen))
+
+    def test_the_note_says_what_a_short_memory_is_worth(self):
+        spec = taskoptions.TASK_SPECS['in_the_dark']
+        chosen = {opt.key: opt.default for opt in spec.options}
+        chosen['DARK_LEVEL'] = 9
+        said = spec.note(chosen)
+        grade = D.GRADES[8]
+        self.assertIn(str(grade.floor), said)
+        self.assertIn(_(grade.name), said)
 
 
 if __name__ == '__main__':

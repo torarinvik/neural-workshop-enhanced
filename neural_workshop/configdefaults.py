@@ -730,6 +730,25 @@ MAZE_TRIALS = 5
 MAZE_ADAPTIVE = True
 MAZE_SHOW_TRAIL = True
 
+# In the Dark is a row of lamps you are never shown. Each room paints
+# one a colour, turns one along by one, swaps two over or copies one
+# onto another, and the lamps themselves are drawn as empty sockets
+# from first room to last - so two runs with different colours behind
+# them are the same picture pixel for pixel, and the only thing that
+# can carry an answer is a register you keep between the rooms. At the
+# end some of the lamps are asked about, all of them before any
+# verdict, because saying which one was right would narrow the rest.
+# DARK_LEVEL picks how many lamps and colours there are, how long the
+# walk is, and how far back the answer is buried: the rung's floor is
+# laid into the walk rather than hoped for, so a player who remembers
+# fewer rooms than that is at chance exactly and not merely nearly.
+# DARK_SECONDS is how long each room is on screen. With DARK_ADAPTIVE
+# a clean round climbs a level and a poor one steps down.
+DARK_LEVEL = 2
+DARK_TRIALS = 5
+DARK_SECONDS = 1.2
+DARK_ADAPTIVE = True
+
 ######################################################################
 # This is the end of the configuration file.
 ######################################################################

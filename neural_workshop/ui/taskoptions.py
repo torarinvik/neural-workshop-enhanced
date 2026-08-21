@@ -749,6 +749,50 @@ MAZE = TaskSpec(
     note=maze_note)
 
 
+def in_the_dark_note(chosen: Dict[str, Any]) -> str:
+    """What the rung buries, and what remembering less than it is worth.
+
+    The floor is spelled out in rooms because it is the one number on
+    the ladder that is a guarantee rather than an average: below it a
+    player holds no information at all, so it is worth saying what
+    "level 9" actually costs before it is chosen.
+    """
+    from ..inthedark import GRADES
+    rung = int(chosen['DARK_LEVEL'])
+    grade = GRADES[max(0, min(len(GRADES) - 1, rung - 1))]
+    said = [_('Level %d, "%s": %d lamps in %d colours, %d rooms, and %d '
+              'of the lamps asked about at the end.')
+            % (rung, _(grade.name), grade.lamps, grade.colours, grade.depth,
+               grade.asks)]
+    said.append(_('The answer is never nearer than %d rooms from the end, '
+                  'so remembering the last %d of them is worth exactly '
+                  'nothing — one guess in %d.')
+                % (grade.floor, grade.floor - 1, grade.colours))
+    seconds = float(chosen['DARK_SECONDS'])
+    said.append(_('At %.1fs a room that is about %d seconds of walking '
+                  'before the first question.')
+                % (seconds, int(round(seconds * grade.depth))))
+    if chosen['DARK_ADAPTIVE']:
+        said.append(_('Answer every question and the next round is a '
+                      'level harder.'))
+    return '  '.join(said)
+
+
+IN_THE_DARK = TaskSpec(
+    title=_('In the Dark options'),
+    options=(
+        Option('DARK_LEVEL', _('Level'), 2,
+               values=tuple(range(1, 13))),
+        Option('DARK_TRIALS', _('Rounds per run'), 5,
+               values=(1, 2, 3, 5, 8, 10, 15, 20)),
+        Option('DARK_SECONDS', _('Seconds a room is shown'), 1.2,
+               values=(0.5, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0)),
+        Option('DARK_ADAPTIVE',
+               _('Climb a level after a clean round'), True),
+    ),
+    note=in_the_dark_note)
+
+
 def salesman_note(chosen: Dict[str, Any]) -> str:
     """What the score means at this size, and that it is exact.
 
@@ -804,6 +848,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'salesman': SALESMAN,
     'sokoban': SOKOBAN,
     'maze': MAZE,
+    'in_the_dark': IN_THE_DARK,
 }
 
 
