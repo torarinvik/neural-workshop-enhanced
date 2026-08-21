@@ -32,6 +32,7 @@ from ..constants import FONTLIST
 from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
                         scale_to_height, width_center)
 from . import cursor, taskoptions
+from .verdict import VerdictLabel
 from ..i18n import _
 
 #: Smallest a target is drawn before it counts as gone. Below this it
@@ -95,6 +96,8 @@ class Reflex:
         if Reflex.instance is not None:
             Reflex.instance.close()
         self.rng = random.Random()
+        #: Swapped out by an agent environment for a virtual clock.
+        self.clock = time.time
         self.targets: List[Target] = []
         self.spawned = 0
         self.hits = 0
@@ -159,11 +162,21 @@ class Reflex:
             font_size=calc_fontsize(12), color=self.textcolor,
             batch=self.batch, x=width_center(), y=from_bottom_edge(30),
             anchor_x='center', anchor_y='center')
+        # Read by the agent boundary, which pays the trial by this
+        # label's colour; tests/check_band.py is what says nothing else
+        # this task draws puts a saturated colour in the bottom quarter.
+        # Rebuilt with the chrome, so a verdict already up is put back —
+        # a relayout on the frame a trial settles would otherwise drop
+        # it, and an outcome only sometimes derivable is worse than one
+        # that never is.
+        self.verdict = VerdictLabel(batch=self.batch, y_from_bottom=60)
+        if getattr(self, 'verdict_shown', None) is not None:
+            self.verdict.show(*self.verdict_shown)
         # Sprites belong to the old batch; give every live target a new
         # one at its current place rather than leaving it invisible.
         for target in self.targets:
             target.sprite = None
-        self._sync_sprites(time.time())
+        self._sync_sprites(self.clock())
         self._update_status()
 
     def relayout(self) -> None:
@@ -187,6 +200,7 @@ class Reflex:
         self.lifetime = self.base_lifetime
         self.phase = 'ready'
         self.message = _('Press Space to start')
+        self.verdict_shown = None
 
     def start_run(self) -> bool:
         """Begin a run. False when there are no images to show."""
@@ -198,7 +212,7 @@ class Reflex:
             return False
         self.phase = 'running'
         self.message = _('Click them before they go')
-        self.next_spawn = time.time()
+        self.next_spawn = self.clock()
         self._update_status()
         return True
 
@@ -223,6 +237,11 @@ class Reflex:
             lifetime=self.lifetime, born=now)
         self.targets.append(target)
         self.spawned += 1
+        # A fresh target is a fresh chance, so the last one's verdict
+        # comes down here. There is no gap between rounds in this task
+        # to take it down in.
+        self.verdict_shown = None
+        self.verdict.clear()
 
     def _drop_sprite(self, target: Target) -> None:
         if target.sprite is not None:
@@ -265,12 +284,17 @@ class Reflex:
             return
         target.dead = True
         self.hits += 1
-        self.reaction_times.append(time.time() - target.born)
+        self.reaction_times.append(self.clock() - target.born)
+        self.verdict_shown = (True, _('%d ms')
+                              % int(self.reaction_times[-1] * 1000))
+        self.verdict.show(*self.verdict_shown)
         self._adapt(hit=True)
 
     def _expire(self, target: Target) -> None:
         target.dead = True
         self.misses += 1
+        self.verdict_shown = (False, _('Gone'))
+        self.verdict.show(*self.verdict_shown)
         self._adapt(hit=False)
 
     def target_at(self, x: float, y: float) -> Optional[Target]:
@@ -281,7 +305,7 @@ class Reflex:
     def update(self, dt: float) -> None:
         if self.phase != 'running':
             return
-        now = time.time()
+        now = self.clock()
         for target in self.targets:
             if not target.dead and target.remaining(now) <= MIN_SCALE:
                 self._expire(target)

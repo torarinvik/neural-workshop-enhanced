@@ -28,6 +28,7 @@ from ..constants import FONTLIST
 from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
                         height_center, width_center)
 from . import cursor, taskoptions
+from .verdict import VerdictLabel
 from ..i18n import _
 
 
@@ -51,6 +52,8 @@ class Recognition:
         if Recognition.instance is not None:
             Recognition.instance.close()
         self.rng = random.Random()
+        #: Swapped out by an agent environment for a virtual clock.
+        self.clock = time.time
         self.trials: List[Trial] = []
         self.index = 0
         self.answers: List[Tuple[Trial, str]] = []
@@ -120,6 +123,16 @@ class Recognition:
             font_size=calc_fontsize(12), color=self.textcolor,
             batch=self.batch, x=width_center(), y=from_bottom_edge(30),
             anchor_x='center', anchor_y='center')
+        # Read by the agent boundary, which pays the trial by this
+        # label's colour; tests/check_band.py is what says nothing else
+        # this task draws puts a saturated colour in the bottom quarter.
+        # Rebuilt with the chrome, so a verdict already up is put back —
+        # a relayout on the frame a trial settles would otherwise drop
+        # it, and an outcome only sometimes derivable is worse than one
+        # that never is.
+        self.verdict = VerdictLabel(batch=self.batch, y_from_bottom=60)
+        if getattr(self, 'verdict_shown', None) is not None:
+            self.verdict.show(*self.verdict_shown)
         self._redraw()
 
     def relayout(self) -> None:
@@ -229,7 +242,9 @@ class Recognition:
             self._finish()
             return
         self.phase = 'showing'
-        self.shown_at = time.time()
+        self.verdict_shown = None
+        self.verdict.clear()
+        self.shown_at = self.clock()
         self.message = _('Seen it, or new?')
         if self.medium == 'sound':
             self.replay()
@@ -260,8 +275,10 @@ class Recognition:
         self.index += 1
         if self.feedback:
             self.phase = 'feedback'
-            self.feedback_until = time.time() + 0.35
+            self.feedback_until = self.clock() + 0.35
             self.message = _('Yes') if self.last_correct else _('No')
+            self.verdict_shown = (self.last_correct, self.message)
+            self.verdict.show(*self.verdict_shown)
             self._redraw()
         else:
             self._present()
@@ -304,9 +321,10 @@ class Recognition:
         self.index = 0
         self.phase = 'ready'
         self.message = _('Press Space to begin')
+        self.verdict_shown = None
 
     def update(self, dt: float) -> None:
-        now = time.time()
+        now = self.clock()
         if self.phase == 'feedback' and now >= self.feedback_until:
             self._present()
         elif (self.phase == 'showing' and self.study_ms > 0

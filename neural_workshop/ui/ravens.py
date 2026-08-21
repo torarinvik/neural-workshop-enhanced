@@ -54,6 +54,7 @@ from ..ravens.palette import GREYS, PALETTES
 from ..ravens.figures import Figure
 from ..ravens.geometry import triangulate
 from . import cursor, taskoptions
+from .verdict import VerdictLabel
 
 #: How much bigger than its final size a card is drawn before being
 #: scaled down. Three is where the stair-stepping on a slow diagonal
@@ -276,6 +277,8 @@ class MatrixReasoning:
         if MatrixReasoning.instance is not None:
             MatrixReasoning.instance.close()
         self.rng = random.Random()
+        #: Swapped out by an agent environment for a virtual clock.
+        self.clock = time.time
         self.puzzle = None
         self.level = 0
         #: The level of the puzzle on screen. Kept apart from
@@ -361,6 +364,16 @@ class MatrixReasoning:
             font_size=calc_fontsize(12), color=self.textcolor,
             batch=self.batch, x=width_center(), y=from_bottom_edge(26),
             anchor_x='center', anchor_y='center', font_name=FONTLIST)
+        # Read by the agent boundary, which pays the trial by this
+        # label's colour; tests/check_band.py is what says nothing else
+        # this task draws puts a saturated colour in the bottom quarter.
+        # Rebuilt with the chrome, so a verdict already up is put back —
+        # a relayout on the frame a trial settles would otherwise drop
+        # it, and an outcome only sometimes derivable is worse than one
+        # that never is.
+        self.verdict = VerdictLabel(batch=self.batch, y_from_bottom=60)
+        if getattr(self, 'verdict_shown', None) is not None:
+            self.verdict.show(*self.verdict_shown)
         # Anchored at its bottom, above the key line, so that a puzzle
         # carrying five rules grows upward into the empty page rather
         # than downward through the keys.
@@ -530,6 +543,7 @@ class MatrixReasoning:
         self.results = []
         self.phase = 'ready'
         self.message = _('Press Space to start')
+        self.verdict_shown = None
 
     def start_run(self) -> None:
         self._reset()
@@ -558,31 +572,46 @@ class MatrixReasoning:
             # group whose hash has shifted under it cannot draw.
             self._build_chrome()
         self.picked = None
-        self.asked_at = time.time()
+        self.verdict_shown = None
+        self.verdict.clear()
+        self.asked_at = self.clock()
         self.phase = 'asking'
         self.message = _('Which one finishes the pattern?')
         self._paint_cards()
         self._redraw()
 
     def answer(self, choice: int) -> None:
-        """Take the candidate at *choice* and score it."""
-        if self.phase != 'asking' or self.puzzle is None:
+        """Take the candidate at *choice* and score it.
+
+        Answerable in ``hidden`` as well as ``asking``. That is what
+        "Hide the puzzle after" is for — the matrix goes away and the
+        candidates stay, and you finish from memory. Taking answers
+        only in ``asking`` made the option unplayable: the choices sat
+        there being drawn and nothing would pick one, so a run with an
+        exposure set stopped at the first puzzle and never moved. The
+        default is off, which is why nobody had run into it. The other
+        three tasks in the workshop that hide a stimulus all take
+        answers in both phases; this one now agrees with them.
+        """
+        if self.phase not in ('asking', 'hidden') or self.puzzle is None:
             return
         if not 0 <= choice < len(self.puzzle.choices):
             return
         right = choice == self.puzzle.answer
         self.picked = choice
-        self.results.append((right, time.time() - self.asked_at,
+        self.results.append((right, self.clock() - self.asked_at,
                              self.trial_level))
         if right:
             self.correct += 1
         self._adapt(right)
         if self.feedback:
             self.phase = 'feedback'
-            self.feedback_until = time.time() + (1.6 if self.explain else 0.9)
+            self.feedback_until = self.clock() + (1.6 if self.explain else 0.9)
             self.message = (_('Right') if right
                             else _('No — %d was the answer')
                             % (self.puzzle.answer + 1))
+            self.verdict_shown = (right, self.message)
+            self.verdict.show(*self.verdict_shown)
             self._redraw()
         else:
             self._next_trial()
@@ -623,7 +652,7 @@ class MatrixReasoning:
         }
 
     def update(self, dt: float) -> None:
-        now = time.time()
+        now = self.clock()
         if self.phase == 'feedback' and now >= self.feedback_until:
             self._next_trial()
         elif (self.phase == 'asking' and self.exposure_ms > 0

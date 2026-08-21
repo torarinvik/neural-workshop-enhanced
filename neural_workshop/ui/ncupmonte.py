@@ -16,6 +16,7 @@ from .. import display, state
 from ..constants import FONTLIST
 from ..geometry import calc_fontsize, from_bottom_edge, from_top_edge, width_center
 from . import cursor, taskoptions
+from .verdict import VerdictLabel
 from ..i18n import _
 
 
@@ -34,6 +35,8 @@ class NCupMonte:
         self.xs: List[float] = []
         self.targets: List[float] = []
         self.start_xs: List[float] = []
+        #: Swapped out by an agent environment for a virtual clock.
+        self.clock = time.time
         self.phase = 'ready'
         self.swaps: List[Tuple[int, int]] = []
         self.swap_i = 0
@@ -78,6 +81,16 @@ class NCupMonte:
             font_size=calc_fontsize(12), color=self.textcolor,
             batch=self.batch, x=width_center(), y=from_bottom_edge(30),
             anchor_x='center', anchor_y='center')
+        # Read by the agent boundary, which pays the trial by this
+        # label's colour; tests/check_band.py is what says nothing else
+        # this task draws puts a saturated colour in the bottom quarter.
+        # Rebuilt with the chrome, so a verdict already up is put back —
+        # a relayout on the frame a trial settles would otherwise drop
+        # it, and an outcome only sometimes derivable is worse than one
+        # that never is.
+        self.verdict = VerdictLabel(batch=self.batch, y_from_bottom=60)
+        if getattr(self, 'verdict_shown', None) is not None:
+            self.verdict.show(*self.verdict_shown)
         self._resize_slots()
         self._redraw()
 
@@ -118,6 +131,7 @@ class NCupMonte:
         self._read_options()
         self.phase = 'ready'
         self.guess = None
+        self.verdict_shown = None
         self.swaps = []
         self.swap_i = 0
         self.message = _('Press Space to hide the ball')
@@ -138,10 +152,12 @@ class NCupMonte:
 
     def start_round(self) -> None:
         self._place_cups()
+        self.verdict_shown = None
+        self.verdict.clear()
         self.ball = random.randrange(self.cups)
         self.guess = None
         self.phase = 'reveal'
-        self.reveal_until = time.time() + self.reveal_seconds
+        self.reveal_until = self.clock() + self.reveal_seconds
         self.message = _('Watch the ball')
         self._redraw()
 
@@ -182,7 +198,7 @@ class NCupMonte:
         self._redraw()
 
     def update(self, dt: float) -> None:
-        if self.phase == 'reveal' and time.time() >= self.reveal_until:
+        if self.phase == 'reveal' and self.clock() >= self.reveal_until:
             self._plan_swaps()
             self._begin_swap()
             return
@@ -231,6 +247,8 @@ class NCupMonte:
                 self.cups = max(3, self.cups - 1)
             self.message = (_('Miss — back to %d cups') % self.cups
                             if self.adaptive else _('Miss'))
+        self.verdict_shown = (cup_id == self.ball, self.message)
+        self.verdict.show(*self.verdict_shown)
         self._place_cups()
         self._redraw()
 

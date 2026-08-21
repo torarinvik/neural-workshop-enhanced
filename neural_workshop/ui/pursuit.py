@@ -41,6 +41,7 @@ from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
 from . import cursor, taskoptions
 from .lookout import COLORS, FORMS, make_glyph, place_glyph
 from .tracking import bounced
+from .verdict import VerdictLabel
 from ..i18n import _
 
 #: The adaptive multiplier's range and step. Five percent a round is
@@ -55,6 +56,15 @@ RAISE_AT, LOWER_AT = 0.7, 0.4
 #: The cursor counts as "on" within this much of the drawn radius —
 #: a fingertip of forgiveness, since the shapes are not all round.
 GRACE = 1.15
+
+#: How far one keyboard or port step moves the cursor, in window
+#: heights. Sized against the quarry's default pace so that steering by
+#: steps is a chase rather than a crawl: see :meth:`Pursuit.nudge`.
+CURSOR_STEP = 0.012
+
+#: Arrow keys to cursor steps. Steering without a mouse.
+ARROWS = {key.UP: (0.0, 1.0), key.DOWN: (0.0, -1.0),
+          key.LEFT: (-1.0, 0.0), key.RIGHT: (1.0, 0.0)}
 
 REVEAL_SECONDS = 1.8
 
@@ -91,6 +101,8 @@ class Pursuit:
         if Pursuit.instance is not None:
             Pursuit.instance.close()
         self.rng = random.Random()
+        #: Swapped out by an agent environment for a virtual clock.
+        self.clock = time.time
         self.quarry: Optional[Quarry] = None
         self.mouse: Tuple[float, float] = (0.0, 0.0)
         self.round = 0
@@ -153,11 +165,21 @@ class Pursuit:
             batch=self.batch, x=width_center(), y=from_top_edge(70),
             anchor_x='center', anchor_y='center', font_name=FONTLIST)
         self.footnote = pyglet.text.Label(
-            _('Esc: task menu     Space: start     keep the mouse on '
-              'the shape     C: options'),
+            _('Esc: task menu     Space: start     keep the mouse (or '
+              'the arrows) on the shape     C: options'),
             font_size=calc_fontsize(12), color=self.textcolor,
             batch=self.batch, x=width_center(), y=from_bottom_edge(26),
             anchor_x='center', anchor_y='center', font_name=FONTLIST)
+        # Read by the agent boundary, which pays the trial by this
+        # label's colour; tests/check_band.py is what says nothing else
+        # this task draws puts a saturated colour in the bottom quarter.
+        # Rebuilt with the chrome, so a verdict already up is put back —
+        # a relayout on the frame a trial settles would otherwise drop
+        # it, and an outcome only sometimes derivable is worse than one
+        # that never is.
+        self.verdict = VerdictLabel(batch=self.batch, y_from_bottom=60)
+        if getattr(self, 'verdict_shown', None) is not None:
+            self.verdict.show(*self.verdict_shown)
         if self.quarry is not None:
             self.quarry.drawn = None
         self._sync_quarry()
@@ -187,6 +209,7 @@ class Pursuit:
         self.multiplier = 1.0
         self.phase = 'ready'
         self.message = _('Press Space to start')
+        self.verdict_shown = None
 
     def start_run(self) -> None:
         self._reset()
@@ -197,11 +220,13 @@ class Pursuit:
             self._finish()
             return
         self.round += 1
+        self.verdict_shown = None
+        self.verdict.clear()
         self.on_time = 0.0
         self.run_time = 0.0
         self.off_sum = 0.0
         self.off_samples = 0
-        now = time.time()
+        now = self.clock()
         self._drop_quarry()
         self.quarry = Quarry(
             x=0.5, y=0.5, heading=self.rng.uniform(0.0, 2 * math.pi),
@@ -269,7 +294,7 @@ class Pursuit:
             quarry.heading = math.atan2(folded_vy, folded_vx)
 
     def update(self, dt: float) -> None:
-        now = time.time()
+        now = self.clock()
         if self.phase == 'chasing':
             quarry = self.quarry
             if now >= quarry.next_turn:
@@ -313,13 +338,18 @@ class Pursuit:
                  else 0.0)
         self.results.append((share, drift, self.multiplier))
         self.message = _('On it %d%% of the time') % int(round(share * 100))
+        # Green at the same share the ladder raises the pace at, so the
+        # bar and the difficulty move together: staying green means the
+        # quarry keeps getting faster until it does not.
+        self.verdict_shown = (share >= RAISE_AT, self.message)
+        self.verdict.show(*self.verdict_shown)
         if self.adaptive:
             if share >= RAISE_AT:
                 self.multiplier = min(FASTEST, self.multiplier * STEP_UP)
             elif share < LOWER_AT:
                 self.multiplier = max(SLOWEST, self.multiplier * STEP_DOWN)
         self.phase = 'feedback'
-        self.until = time.time() + REVEAL_SECONDS
+        self.until = self.clock() + REVEAL_SECONDS
         self._update_status()
 
     def _finish(self) -> None:
@@ -397,6 +427,25 @@ class Pursuit:
 
     # --- events ----------------------------------------------------------
 
+    def nudge(self, dx: float, dy: float) -> None:
+        """Move the cursor one step, in units of the window's height.
+
+        Steering by steps rather than by pointing. It is here so the
+        chase can be played without a mouse — the arrow keys use it,
+        and so does the agent boundary, which has no pointer at all.
+
+        A step is small enough that the chase is still a chase: at the
+        quarry's default pace one step is roughly what it covers in a
+        frame, so a learner that nudges once per frame can keep up
+        with it in a straight line and has to anticipate the swerves.
+        """
+        window = state.window
+        step = window.height * CURSOR_STEP
+        self.mouse = (min(max(0.0, self.mouse[0] + dx * step),
+                          float(window.width)),
+                      min(max(0.0, self.mouse[1] + dy * step),
+                          float(window.height)))
+
     def on_key_press(self, symbol: int, modifiers: int) -> bool:
         if symbol == key.ESCAPE:
             self.return_to_hub()
@@ -406,6 +455,8 @@ class Pursuit:
             self.open_options()
         elif symbol == key.F11:
             display.toggle_fullscreen()
+        elif symbol in ARROWS:
+            self.nudge(*ARROWS[symbol])
         return pyglet.event.EVENT_HANDLED
 
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> bool:

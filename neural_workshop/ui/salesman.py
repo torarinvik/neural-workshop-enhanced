@@ -36,6 +36,7 @@ from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
                         width_center)
 from ..i18n import _
 from . import cursor, taskoptions
+from .verdict import VerdictLabel
 
 #: Cities a round may hold. Five is a warm-up. The ceiling is set by
 #: the exact solver, whose table doubles with every city: eighteen
@@ -151,6 +152,8 @@ class TravelingSalesman:
         if TravelingSalesman.instance is not None:
             TravelingSalesman.instance.close()
         self.rng = random.Random()
+        #: Swapped out by an agent environment for a virtual clock.
+        self.clock = time.time
         self.cities: List[Point] = []
         self.route: List[int] = []
         self.best_order: List[int] = []
@@ -223,6 +226,16 @@ class TravelingSalesman:
             font_size=calc_fontsize(12), color=self.textcolor,
             batch=self.batch, x=width_center(), y=from_bottom_edge(26),
             anchor_x='center', anchor_y='center', font_name=FONTLIST)
+        # Read by the agent boundary, which pays the trial by this
+        # label's colour; tests/check_band.py is what says nothing else
+        # this task draws puts a saturated colour in the bottom quarter.
+        # Rebuilt with the chrome, so a verdict already up is put back —
+        # a relayout on the frame a trial settles would otherwise drop
+        # it, and an outcome only sometimes derivable is worse than one
+        # that never is.
+        self.verdict = VerdictLabel(batch=self.batch, y_from_bottom=60)
+        if getattr(self, 'verdict_shown', None) is not None:
+            self.verdict.show(*self.verdict_shown)
         self._redraw()
 
     def _canvas(self) -> Tuple[float, float, float, float]:
@@ -248,6 +261,7 @@ class TravelingSalesman:
         self.route = []
         self.phase = 'ready'
         self.message = _('Press Space to start')
+        self.verdict_shown = None
 
     def start_run(self) -> None:
         self._reset()
@@ -263,14 +277,23 @@ class TravelingSalesman:
         self.cities = scatter(self.trial_cities, self.rng)
         self.best_order, self.best_length = optimal_tour(self.cities)
         self.route = []
-        self.started_at = time.time()
+        self.verdict_shown = None
+        self.verdict.clear()
+        self.started_at = self.clock()
         self.phase = 'touring'
         self.message = _('Visit every city and come home, the short way')
         self._redraw()
 
     def _pick(self, city: int) -> None:
-        """Extend the tour; picking the last city again retracts it."""
-        if self.phase != 'touring':
+        """Extend the tour; picking the last city again retracts it.
+
+        A city off the end of the scatter is refused rather than
+        added. A click cannot produce one — the hit test only ever
+        names a city that is there — but a caller driving the task
+        directly can, and a route holding an index nothing is at
+        cannot be drawn, let alone measured.
+        """
+        if self.phase != 'touring' or not 0 <= city < len(self.cities):
             return
         if self.route and city == self.route[-1]:
             self.route.pop()
@@ -281,7 +304,7 @@ class TravelingSalesman:
         self._redraw()
 
     def _toured(self) -> None:
-        took = time.time() - self.started_at
+        took = self.clock() - self.started_at
         length = tour_length(self.cities, self.route)
         closeness = self.best_length / max(length, self.best_length)
         self.results.append((self.trial_cities, closeness, took))
@@ -291,13 +314,18 @@ class TravelingSalesman:
             elif closeness < SHRINK_AT:
                 self.city_count = self.clamped(self.city_count - 1)
         self.phase = 'toured'
-        self.feedback_until = time.time() + (2.2 if self.show_best else 1.4)
+        self.feedback_until = self.clock() + (2.2 if self.show_best else 1.4)
         over = 100.0 * (length / self.best_length - 1.0)
         if over < 0.05:
             self.message = _('The shortest route there is — in %.0fs') % took
         else:
             self.message = (_('%.0f%% longer than the shortest route — '
                               'in %.0fs') % (over, took))
+        # Green means the shortest route there is, found exactly rather
+        # than approximated, so the bar here is the real optimum and
+        # not a heuristic's idea of one.
+        self.verdict_shown = (over < 0.05, self.message)
+        self.verdict.show(*self.verdict_shown)
         self._redraw()
 
     def _finish(self) -> None:
@@ -325,7 +353,7 @@ class TravelingSalesman:
         }
 
     def update(self, dt: float) -> None:
-        if self.phase == 'toured' and time.time() >= self.feedback_until:
+        if self.phase == 'toured' and self.clock() >= self.feedback_until:
             self._next_round()
 
     # --- drawing ---------------------------------------------------------

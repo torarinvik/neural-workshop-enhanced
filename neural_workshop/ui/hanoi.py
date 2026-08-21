@@ -32,6 +32,7 @@ from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
                         width_center)
 from ..i18n import _
 from . import cursor, taskoptions
+from .verdict import VerdictLabel
 
 #: Towers a puzzle may hold. Three disks is seven moves, a child's
 #: puzzle; twelve disks is 4095 and a siege. The ceiling is visual,
@@ -86,6 +87,8 @@ class TowerOfHanoi:
         if TowerOfHanoi.instance is not None:
             TowerOfHanoi.instance.close()
         self.rng = random.Random()
+        #: Swapped out by an agent environment for a virtual clock.
+        self.clock = time.time
         self.pegs: List[List[int]] = []
         self.disks = SMALLEST_TOWER
         self.trial_disks = SMALLEST_TOWER
@@ -153,6 +156,16 @@ class TowerOfHanoi:
             font_size=calc_fontsize(12), color=self.textcolor,
             batch=self.batch, x=width_center(), y=from_bottom_edge(26),
             anchor_x='center', anchor_y='center', font_name=FONTLIST)
+        # Read by the agent boundary, which pays the trial by this
+        # label's colour; tests/check_band.py is what says nothing else
+        # this task draws puts a saturated colour in the bottom quarter.
+        # Rebuilt with the chrome, so a verdict already up is put back —
+        # a relayout on the frame a trial settles would otherwise drop
+        # it, and an outcome only sometimes derivable is worse than one
+        # that never is.
+        self.verdict = VerdictLabel(batch=self.batch, y_from_bottom=60)
+        if getattr(self, 'verdict_shown', None) is not None:
+            self.verdict.show(*self.verdict_shown)
         self._redraw()
 
     def _canvas(self) -> Tuple[float, float, float, float]:
@@ -181,6 +194,7 @@ class TowerOfHanoi:
         self.picked = None
         self.phase = 'ready'
         self.message = _('Press Space to start')
+        self.verdict_shown = None
 
     def start_run(self) -> None:
         self._reset()
@@ -197,7 +211,9 @@ class TowerOfHanoi:
         self.par = minimum_moves(self.trial_disks)
         self.moves = 0
         self.picked = None
-        self.started_at = time.time()
+        self.verdict_shown = None
+        self.verdict.clear()
+        self.started_at = self.clock()
         self.phase = 'solving'
         self.message = _('Rebuild the tower on another peg')
         self._redraw()
@@ -225,7 +241,7 @@ class TowerOfHanoi:
         self._redraw()
 
     def _solved(self) -> None:
-        took = time.time() - self.started_at
+        took = self.clock() - self.started_at
         efficiency = self.par / max(self.par, self.moves)
         self.results.append((self.trial_disks, efficiency, took))
         if self.adaptive:
@@ -234,9 +250,14 @@ class TowerOfHanoi:
             elif efficiency < SHRINK_AT:
                 self.disks = self.clamped(self.disks - 1)
         self.phase = 'solved'
-        self.feedback_until = time.time() + 1.6
+        self.feedback_until = self.clock() + 1.6
         self.message = (_('Solved in %d moves — the minimum is %d — '
                           'in %.0fs') % (self.moves, self.par, took))
+        # Green means the exact minimum, which for this puzzle is
+        # known in closed form rather than searched for: the tower is
+        # the one task here where "perfect" is a formula.
+        self.verdict_shown = (self.moves <= self.par, self.message)
+        self.verdict.show(*self.verdict_shown)
         self._redraw()
 
     def _finish(self) -> None:
@@ -263,7 +284,7 @@ class TowerOfHanoi:
         }
 
     def update(self, dt: float) -> None:
-        if self.phase == 'solved' and time.time() >= self.feedback_until:
+        if self.phase == 'solved' and self.clock() >= self.feedback_until:
             self._next_round()
 
     # --- drawing ---------------------------------------------------------

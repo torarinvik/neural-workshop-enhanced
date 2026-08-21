@@ -57,6 +57,7 @@ from ..constants import FONTLIST
 from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
                         width_center)
 from . import cursor, taskoptions
+from .verdict import VerdictLabel, above_the_band
 from ..i18n import _
 
 #: The two answers.
@@ -386,6 +387,8 @@ class GraphMapping:
         if GraphMapping.instance is not None:
             GraphMapping.instance.close()
         self.rng = random.Random()
+        #: Swapped out by an agent environment for a virtual clock.
+        self.clock = time.time
         self.graphs: List[Graph] = []
         self.spots: List[Tuple[Tuple[float, float], ...]] = []
         self.really_same = True
@@ -478,6 +481,16 @@ class GraphMapping:
             font_size=calc_fontsize(12), color=self.textcolor,
             batch=self.batch, x=width_center(), y=from_bottom_edge(30),
             anchor_x='center', anchor_y='center')
+        # Read by the agent boundary, which pays the trial by this
+        # label's colour; tests/check_band.py is what says nothing else
+        # this task draws puts a saturated colour in the bottom quarter.
+        # Rebuilt with the chrome, so a verdict already up is put back —
+        # a relayout on the frame a trial settles would otherwise drop
+        # it, and an outcome only sometimes derivable is worse than one
+        # that never is.
+        self.verdict = VerdictLabel(batch=self.batch, y_from_bottom=60)
+        if getattr(self, 'verdict_shown', None) is not None:
+            self.verdict.show(*self.verdict_shown)
         self.buttons: List[pyglet.text.Label] = []
         self._redraw()
 
@@ -489,9 +502,10 @@ class GraphMapping:
         """The rectangle both graphs are drawn in: left, bottom, w, h."""
         window = state.window
         width = window.width * 0.90
-        height = window.height * 0.54
-        return ((window.width - width) / 2,
-                from_bottom_edge(150), width, height)
+        _bl, button_bottom, _bw, button_height, _tag = self._button_rects()[0]
+        bottom = button_bottom + button_height + window.height * 0.03
+        height = max(80.0, from_top_edge(96) - bottom)
+        return ((window.width - width) / 2, bottom, width, height)
 
     def panels(self) -> List[Tuple[float, float, float]]:
         """Centre and side of the square each graph is drawn in."""
@@ -513,7 +527,11 @@ class GraphMapping:
         width = min(window.width * 0.22, window.width / 3.2)
         height = max(40.0, window.height * 0.07)
         gap = window.width * 0.04
-        bottom = from_bottom_edge(84)
+        # The buttons are filled in the accent blue, which is exactly
+        # what the agent boundary's reader counts as a verdict, so they
+        # have to sit clear of the band it reads. Everything above them
+        # is laid out from where they land.
+        bottom = above_the_band(from_bottom_edge(84))
         left = (window.width - (width * 2 + gap)) / 2
         return [(left, bottom, width, height, SAME),
                 (left + width + gap, bottom, width, height, DIFFERENT)]
@@ -530,6 +548,7 @@ class GraphMapping:
         self._deck = []
         self.phase = 'ready'
         self.message = self._ready_message()
+        self.verdict_shown = None
 
     def _ready_message(self) -> str:
         """The waiting message, saying so if the size had to come up."""
@@ -569,7 +588,9 @@ class GraphMapping:
         self.spots = [ring_positions(self.nodes, self.rng),
                       ring_positions(self.nodes, self.rng)]
         self.really_same = pair.same
-        self.asked_at = time.time()
+        self.verdict_shown = None
+        self.verdict.clear()
+        self.asked_at = self.clock()
         self.phase = 'asking'
         self.message = _('The same network?')
         self._redraw()
@@ -581,15 +602,20 @@ class GraphMapping:
         said_same = choice == SAME
         right = said_same == self.really_same
         self.results.append((self.really_same, said_same,
-                             time.time() - self.asked_at))
+                             self.clock() - self.asked_at))
         if right:
             self.correct += 1
         self._adapt(right)
         if self.feedback:
             self.phase = 'feedback'
-            self.feedback_until = time.time() + 0.9
+            self.feedback_until = self.clock() + 0.9
             self.message = (_('Yes — the same network') if self.really_same
                             else _('No — not the same network'))
+            # The message says what the pair *was*, which is not the
+            # same thing as how the answer went; the verdict says the
+            # second, because that is what is being paid.
+            self.verdict_shown = (right, _('Right') if right else _('Wrong'))
+            self.verdict.show(*self.verdict_shown)
             self._redraw()
         else:
             self.message = _('Yes') if right else _('No')
@@ -645,7 +671,7 @@ class GraphMapping:
         }
 
     def update(self, dt: float) -> None:
-        now = time.time()
+        now = self.clock()
         if self.phase == 'feedback' and now >= self.feedback_until:
             self._next_trial()
         elif (self.phase == 'asking' and self.exposure_ms > 0

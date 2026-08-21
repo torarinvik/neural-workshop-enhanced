@@ -34,7 +34,8 @@ from typing import Optional
 import pyglet
 
 from .. import state
-from ..geometry import calc_fontsize, from_bottom_edge, width_center
+from ..geometry import (calc_fontsize, from_bottom_edge, pixel_size,
+                        width_center)
 
 #: Where the label sits. The reader looks at rows from three quarters of
 #: the way down to the bottom edge, so anything painted here is in the band
@@ -50,6 +51,55 @@ BAND_TOP = 0.75
 #: window, the persistent furniture already contributes one blue run, so a
 #: task that paints here must own the band.
 BRIGHT, DIM = 180, 140
+
+#: How far above the band a task's own art has to stop, in pixels.
+#:
+#: Not zero, and the reason is anti-aliasing rather than sloppiness. The
+#: Maze drew its doors in Okabe-Ito orange, ``(230, 159, 0)``, which is
+#: not a verdict colour: green sits at 159, comfortably over
+#: :data:`DIM`. But an orange square on a pale background is edged by
+#: every blend between the two, and part of that ramp has green already
+#: below 140 while red is still above 180 — which *is* the reader's
+#: pattern for a positive verdict. Nine such pixels in a row were being
+#: paid as a scored trial.
+#:
+#: So the rule is not "avoid three colours". Any colour with two
+#: channels far apart passes through the window on its way to the
+#: background, and a task cannot know which of its blends will. The
+#: rule is the simpler one: keep the art out of the band, and leave a
+#: few pixels of slack for the edge of the art nearest it.
+CLEARANCE = 8
+
+
+def band_rows(height: Optional[int] = None) -> tuple:
+    """The image rows the boundary's reader scans, as ``(first, past)``.
+
+    Row 0 is the top of the captured frame, which is what
+    :func:`nwenv.frames.capture_rgba` hands back. Deliberately computed
+    the same way :func:`bwaccel.default_band` computes it, and
+    ``tests/test_ui_band.py`` fails if the two ever disagree — this
+    module is where a task asks where the band is, so it must not be a
+    second opinion about it.
+    """
+    height = pixel_size()[1] if height is None else int(height)
+    return int(height * BAND_TOP), height
+
+
+def above_the_band(y: float = 0.0) -> int:
+    """Hold *y* clear of the strip the agent boundary reads.
+
+    The one call a task's layout needs. Pass whatever bottom margin the
+    layout wanted and use what comes back::
+
+        bottom = above_the_band(from_bottom_edge(56))
+
+    On a window too short to have a playfield at all this still returns
+    the band's ceiling, so the task is laid out badly rather than laid
+    out into the band: a cramped screen is a nuisance, a scalar read
+    off the scenery is a wrong result.
+    """
+    height = pixel_size()[1]
+    return max(int(y), height - band_rows(height)[0] + CLEARANCE)
 
 
 class VerdictLabel:

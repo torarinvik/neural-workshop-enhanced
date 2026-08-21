@@ -35,6 +35,7 @@ from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
                         width_center)
 from ..maze import GRADES, Maze, generate
 from . import cursor, taskoptions
+from .verdict import VerdictLabel, above_the_band
 from ..i18n import _
 
 #: Okabe-Ito, as everywhere else in the workshop. Six door colours,
@@ -72,6 +73,8 @@ class MazeTask:
         if MazeTask.instance is not None:
             MazeTask.instance.close()
         self.rng = random.Random()
+        #: Swapped out by an agent environment for a virtual clock.
+        self.clock = time.time
         self.maze: Optional[Maze] = None
         self.walker = 0
         self.held = 0
@@ -137,6 +140,16 @@ class MazeTask:
             font_size=calc_fontsize(12), color=self.textcolor,
             batch=self.batch, x=width_center(), y=from_bottom_edge(26),
             anchor_x='center', anchor_y='center', font_name=FONTLIST)
+        # Read by the agent boundary, which pays the trial by this
+        # label's colour; tests/check_band.py is what says nothing else
+        # this task draws puts a saturated colour in the bottom quarter.
+        # Rebuilt with the chrome, so a verdict already up is put back —
+        # a relayout on the frame a trial settles would otherwise drop
+        # it, and an outcome only sometimes derivable is worse than one
+        # that never is.
+        self.verdict = VerdictLabel(batch=self.batch, y_from_bottom=60)
+        if getattr(self, 'verdict_shown', None) is not None:
+            self.verdict.show(*self.verdict_shown)
         self._redraw()
 
     def relayout(self) -> None:
@@ -145,7 +158,7 @@ class MazeTask:
     def _canvas(self) -> Tuple[float, float, float, float]:
         window = state.window
         top = from_top_edge(100)
-        bottom = from_bottom_edge(56)
+        bottom = above_the_band(from_bottom_edge(56))
         return (window.width * 0.08, bottom,
                 window.width * 0.84, max(40.0, top - bottom))
 
@@ -169,6 +182,7 @@ class MazeTask:
         self.rung = self.clamped(self.start_rung)
         self.phase = 'ready'
         self.message = _('Press Space to start')
+        self.verdict_shown = None
 
     def start_run(self) -> None:
         self._reset()
@@ -179,9 +193,11 @@ class MazeTask:
             self._finish()
             return
         self.trial += 1
+        self.verdict_shown = None
+        self.verdict.clear()
         self.maze = generate(self.rung, seed=self.rng.randrange(1 << 30))
         self._restart_walk()
-        self.started_at = time.time()
+        self.started_at = self.clock()
         self.phase = 'walking'
         grade = GRADES[self.rung - 1]
         doors = len(self.maze.doors)
@@ -252,7 +268,7 @@ class MazeTask:
     def _solved(self) -> None:
         par = self.par()
         self.results.append((self.rung, self.steps, par))
-        took = int(time.time() - self.started_at)
+        took = int(self.clock() - self.started_at)
         if self.steps <= par:
             self.message = _('Perfect — the minimum %d steps, %ds') % (
                 par, took)
@@ -265,6 +281,8 @@ class MazeTask:
             elif self.steps > par * 2:
                 self.rung = self.clamped(self.rung - 1)
         self.phase = 'solved'
+        self.verdict_shown = (self.steps <= par, self.message)
+        self.verdict.show(*self.verdict_shown)
 
     def _finish(self) -> None:
         self.phase = 'done'

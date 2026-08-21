@@ -12,6 +12,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 from __future__ import annotations
 
 import os
+import random
 import shutil
 import sys
 import tempfile
@@ -84,7 +85,14 @@ class FetcherTests(unittest.TestCase):
     def test_pages_are_not_taken_in_order(self):
         # Random offsets are what stop a small library being the first
         # few classes of a split sorted by label.
-        datasets.fetch(FAKE, 400)
+        #
+        # Seeded, because four pages drawn at random come out in order
+        # about once in every twenty-four runs. Unseeded, this test
+        # failed the whole suite that often and passed on the retry,
+        # which is worse than not having it: a test that cries wolf
+        # one run in twenty-four teaches people to re-run rather than
+        # to read.
+        datasets.fetch(FAKE, 400, rng=random.Random(0))
         self.assertNotEqual(self.listed, sorted(self.listed))
 
     def test_fetching_again_adds_nothing(self):

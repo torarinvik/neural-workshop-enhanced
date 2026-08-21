@@ -32,8 +32,9 @@ from .. import display, state
 from ..constants import FONTLIST
 from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
                         width_center)
-from ..sokoban import GRADES, Level, generate
+from ..sokoban import GRADES, Level, deadlocked, generate
 from . import cursor, taskoptions
+from .verdict import VerdictLabel, above_the_band
 from ..i18n import _
 
 #: Okabe-Ito again, consistent with the rest of the workshop.
@@ -41,7 +42,17 @@ WALL = (110, 110, 110)
 GOAL = (230, 159, 0)
 BOX = (86, 180, 233)
 BOX_HOME = (0, 158, 115)
-PLAYER = (213, 94, 0)
+# Reddish purple rather than the vermillion this was, and the reason
+# is the agent boundary rather than taste. The public outcome is read
+# off saturated red, green and blue runs in the bottom quarter of the
+# frame, and vermillion is (213, 94, 0): red at or above 180 with the
+# other two at or below 140, which is exactly the pattern for a
+# *negative verdict*. The board reaches into that band, so the pusher
+# standing low on it was being read as "this trial scored -1" — 1054
+# pixels of it, on a level nobody had lost. Reddish purple's blue
+# channel is 167 and stays clear of the test. tests/check_band.py is
+# what catches this, and is worth running whenever this palette moves.
+PLAYER = (204, 121, 167)
 TRAP = (150, 150, 150)
 
 #: How close to par a solve must be for an adaptive run to climb.
@@ -57,6 +68,8 @@ class SokobanTask:
         if SokobanTask.instance is not None:
             SokobanTask.instance.close()
         self.rng = random.Random()
+        #: Swapped out by an agent environment for a virtual clock.
+        self.clock = time.time
         self.level: Optional[Level] = None
         self.boxes: frozenset = frozenset()
         self.player = 0
@@ -69,6 +82,7 @@ class SokobanTask:
         self.started_at = 0.0
         self.phase = 'ready'
         self.message = _('Press Space to start')
+        self.lost = 0
         self._read_options()
         self.rung = self.clamped(self.start_rung)
         self.drawn: List[object] = []
@@ -122,6 +136,16 @@ class SokobanTask:
             font_size=calc_fontsize(12), color=self.textcolor,
             batch=self.batch, x=width_center(), y=from_bottom_edge(26),
             anchor_x='center', anchor_y='center', font_name=FONTLIST)
+        # Read by the agent boundary, which pays the trial by this
+        # label's colour; tests/check_band.py is what says nothing else
+        # this task draws puts a saturated colour in the bottom quarter.
+        # Rebuilt with the chrome, so a verdict already up is put back —
+        # a relayout on the frame a trial settles would otherwise drop
+        # it, and an outcome only sometimes derivable is worse than one
+        # that never is.
+        self.verdict = VerdictLabel(batch=self.batch, y_from_bottom=60)
+        if getattr(self, 'verdict_shown', None) is not None:
+            self.verdict.show(*self.verdict_shown)
         self._redraw()
 
     def relayout(self) -> None:
@@ -130,7 +154,7 @@ class SokobanTask:
     def _canvas(self) -> Tuple[float, float, float, float]:
         window = state.window
         top = from_top_edge(100)
-        bottom = from_bottom_edge(56)
+        bottom = above_the_band(from_bottom_edge(56))
         return (window.width * 0.08, bottom,
                 window.width * 0.84, max(40.0, top - bottom))
 
@@ -156,6 +180,8 @@ class SokobanTask:
         self.rung = self.clamped(self.start_rung)
         self.phase = 'ready'
         self.message = _('Press Space to start')
+        self.verdict_shown = None
+        self.lost = 0
 
     def start_run(self) -> None:
         self._reset()
@@ -166,6 +192,8 @@ class SokobanTask:
             self._finish()
             return
         self.trial += 1
+        self.verdict_shown = None
+        self.verdict.clear()
         self.level = generate(self.rung,
                               seed=self.rng.randrange(1 << 30))
         self.boxes = self.level.boxes
@@ -173,7 +201,7 @@ class SokobanTask:
         self.pushes = 0
         self.moves = 0
         self.history = []
-        self.started_at = time.time()
+        self.started_at = self.clock()
         self.phase = 'pushing'
         grade = GRADES[self.rung - 1]
         if self.level.minimum is not None:
@@ -219,7 +247,32 @@ class SokobanTask:
         self.moves += 1
         if self.boxes <= level.goals:
             self._solved()
+        elif deadlocked(level.width, level.height, level.walls,
+                        level.goals, self.boxes):
+            self._lost()
         self._redraw()
+
+    def _lost(self) -> None:
+        """This level cannot be won any more, so say so.
+
+        Sokoban is unforgiving on purpose and a box in a pocket is
+        gone for good, but until now the screen said nothing about it
+        — a player could push on for as long as they liked in a
+        position already lost, and the agent boundary could sit in one
+        forever without a verdict ever being derivable.
+
+        :func:`~neural_workshop.sokoban.deadlocked` is sound rather
+        than complete: False means "not provably lost" and never
+        "still winnable", so this fires late rather than wrongly. A
+        level called dead really is dead.
+        """
+        self.lost += 1
+        self.message = _('Stuck — that box can never reach a goal now')
+        if self.adaptive:
+            self.rung = self.clamped(self.rung - 1)
+        self.phase = 'lost'
+        self.verdict_shown = (False, self.message)
+        self.verdict.show(*self.verdict_shown)
 
     def undo(self) -> None:
         if self.phase != 'pushing' or not self.history:
@@ -242,7 +295,7 @@ class SokobanTask:
         certified = self.level.minimum is not None
         par = self.par()
         self.results.append((self.rung, self.pushes, par, certified))
-        took = int(time.time() - self.started_at)
+        took = int(self.clock() - self.started_at)
         if certified and self.pushes <= par:
             self.message = _('Perfect — the minimum %d pushes, %ds') % (
                 par, took)
@@ -259,6 +312,8 @@ class SokobanTask:
                 self.rung = self.clamped(self.rung - 1)
         self.phase = 'solved'
         self._redraw()
+        self.verdict_shown = (self.pushes <= par, self.message)
+        self.verdict.show(*self.verdict_shown)
 
     def _finish(self) -> None:
         self.phase = 'done'
@@ -277,6 +332,10 @@ class SokobanTask:
             'efficiency': int(round(100. * pars / pushed)) if pushed else 0,
             'best_rung': max((rung for rung, _p, _par, _c in self.results),
                              default=0),
+            # Kept out of the efficiency, which is about levels that
+            # were solved and how well. A level pushed into a corner
+            # has no push count worth averaging.
+            'lost': self.lost,
         }
 
     # --- drawing ---------------------------------------------------------
@@ -291,7 +350,8 @@ class SokobanTask:
 
     def _redraw(self) -> None:
         self._clear_drawn()
-        if self.level is not None and self.phase in ('pushing', 'solved'):
+        if self.level is not None and self.phase in ('pushing', 'solved',
+                                                     'lost'):
             level = self.level
             for cell in range(level.width * level.height):
                 x, y, side = self._cell_rect(cell)
@@ -330,7 +390,7 @@ class SokobanTask:
 
     def _update_status(self) -> None:
         parts = [self.message]
-        if self.phase in ('pushing', 'solved'):
+        if self.phase in ('pushing', 'solved', 'lost'):
             parts.append(_('puzzle %d/%d   pushes %d')
                          % (self.trial, self.total_trials, self.pushes))
         self.status.text = '     '.join(parts)
@@ -359,7 +419,7 @@ class SokobanTask:
         elif symbol == key.SPACE:
             if self.phase in ('ready', 'done'):
                 self.start_run()
-            elif self.phase == 'solved':
+            elif self.phase in ('solved', 'lost'):
                 self._next_trial()
         elif symbol in (key.UP, key.W):
             self.step(0, -1)

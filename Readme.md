@@ -1126,6 +1126,66 @@ env.close()
 .venv/bin/python -m nwenv --sight
 ```
 
+#### The rest of the workshop
+
+Every task in the hub is reachable by the agent, on the same
+`reset → observe → act → advance` boundary. `nwenv.catalog` is the list,
+and `tests/test_env_catalog.py` fails the build if a task is added to the
+hub without one:
+
+```python
+from nwenv import catalog
+env = catalog.env_class('tower_of_hanoi')(seed=0, disks=4)
+obs, events, done = env.step(2)         # one of three opaque ports
+env.close()
+```
+
+Nineteen of the twenty-four are *declarations* rather than code — where
+the task class lives, what one port calls, which phase takes input, which
+phase means the trial is over, and what the difficulty knobs are called:
+
+```python
+class HanoiEnv(TaskEnv):
+    task_class = ('neural_workshop.ui.hanoi', 'TowerOfHanoi')
+    ports = 3
+    clocked = False
+    action = '_pick'
+    open_phase = ('solving',)
+    settled_phase = ('solved',)
+    knobs = {'disks': 'start_disks', 'rounds': 'total_rounds'}
+```
+
+They carry **no deriver and no verifier**, because they paint the shared
+verdict label and the boundary already knows how to read one. The four
+written before that existed still carry both, at about a hundred lines
+apiece. `ADDING_A_TASK.md` is the whole contract.
+
+Two things had to change across the workshop to make this work, and both
+were latent defects rather than boundary plumbing:
+
+- **Fifteen tasks read the wall clock directly**, so a stepped run either
+  never advanced past a feedback window or advanced at a rate set by how
+  fast the machine was. They now read `self.clock()`, which the boundary
+  swaps for a virtual one; `tests/test_ui_clock.py` keeps it that way.
+- **Six tasks painted into the strip the outcome reader looks at.** Not
+  by using a verdict colour — by using any colour with two channels far
+  apart, whose *anti-aliased edge* passes through the reader's window on
+  its way to the background. `neural_workshop.ui.verdict.above_the_band`
+  is now where that line lives, and `tests/check_band.py` sweeps every
+  task through its own wrapper on every rung.
+
+Random play is paid on eighteen of the twenty-three overlays. The other
+five — Sudoku, Jigsaw, Concentration and the two mazes — have no
+accidental solutions, and are tested by driving them with a policy that
+knows the answer through the same ports a learner would use.
+
+```
+cd tests && PYTHONPATH=.. ../.venv/bin/python drive_env.py --all 1500
+```
+
+One environment at a time: these bind shared-memory segments, and two
+workshop instances at once risk a name collision.
+
 ### Grid size
 
 The board is `GRID_SIZE` × `GRID_SIZE`. Squares, letters, and images

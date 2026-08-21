@@ -46,6 +46,7 @@ from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
                         width_center)
 from ..i18n import _
 from . import cursor, taskoptions
+from .verdict import VerdictLabel, above_the_band
 
 #: Grid sides a puzzle may use. Two-by-two is four tiles a child can
 #: do; ten-by-ten is a hundred tiles of one photograph. The ceiling is
@@ -108,6 +109,8 @@ class JigsawPuzzle:
         if JigsawPuzzle.instance is not None:
             JigsawPuzzle.instance.close()
         self.rng = random.Random()
+        #: Swapped out by an agent environment for a virtual clock.
+        self.clock = time.time
         self.pool = media.jigsaw_pool(self.rng)
         #: Paths shown this run, so that even a library too small for
         #: the run repeats as late as it can.
@@ -187,13 +190,23 @@ class JigsawPuzzle:
             font_size=calc_fontsize(12), color=self.textcolor,
             batch=self.batch, x=width_center(), y=from_bottom_edge(26),
             anchor_x='center', anchor_y='center', font_name=FONTLIST)
+        # Read by the agent boundary, which pays the trial by this
+        # label's colour; tests/check_band.py is what says nothing else
+        # this task draws puts a saturated colour in the bottom quarter.
+        # Rebuilt with the chrome, so a verdict already up is put back —
+        # a relayout on the frame a trial settles would otherwise drop
+        # it, and an outcome only sometimes derivable is worse than one
+        # that never is.
+        self.verdict = VerdictLabel(batch=self.batch, y_from_bottom=60)
+        if getattr(self, 'verdict_shown', None) is not None:
+            self.verdict.show(*self.verdict_shown)
         self._redraw()
 
     def _canvas(self) -> Tuple[float, float, float, float]:
         """Left, bottom, width, height of the room the board may use."""
         window = state.window
         top = from_top_edge(96)
-        bottom = from_bottom_edge(56)
+        bottom = above_the_band(from_bottom_edge(56))
         return (window.width * 0.04, bottom,
                 window.width * 0.92, max(40.0, top - bottom))
 
@@ -239,6 +252,7 @@ class JigsawPuzzle:
         self.picked = None
         self.phase = 'ready'
         self.message = _('Press Space to start')
+        self.verdict_shown = None
 
     def start_run(self) -> None:
         self._reset()
@@ -333,14 +347,22 @@ class JigsawPuzzle:
         self.par = minimum_swaps(self.order)
         self.swaps = 0
         self.picked = None
-        self.started_at = time.time()
+        self.verdict_shown = None
+        self.verdict.clear()
+        self.started_at = self.clock()
         self.phase = 'solving'
         self.message = _('Put the picture back together')
         self._redraw()
 
     def _pick(self, position: int) -> None:
-        """First click marks a tile; the second swaps the two."""
-        if self.phase != 'solving':
+        """First click marks a tile; the second swaps the two.
+
+        A position off the end of the board is refused. A click cannot
+        produce one, but a caller driving the task directly can, and a
+        swap against an index nothing is at would corrupt the
+        permutation rather than fail.
+        """
+        if self.phase != 'solving' or not 0 <= position < len(self.order):
             return
         if self.picked is None:
             self.picked = position
@@ -356,7 +378,7 @@ class JigsawPuzzle:
         self._redraw()
 
     def _solved(self) -> None:
-        took = time.time() - self.started_at
+        took = self.clock() - self.started_at
         efficiency = self.par / max(self.par, self.swaps)
         self.results.append((self.trial_side, efficiency, took))
         if self.adaptive:
@@ -365,9 +387,14 @@ class JigsawPuzzle:
             elif efficiency < SHRINK_AT:
                 self.side = self.clamped(self.side - 1)
         self.phase = 'solved'
-        self.feedback_until = time.time() + 1.6
+        self.feedback_until = self.clock() + 1.6
         self.message = (_('Solved in %d swaps — the minimum was %d — '
                           'in %.0fs') % (self.swaps, self.par, took))
+        # Green means the fewest swaps this scramble could be undone
+        # in, which is exact: the minimum is n minus the number of
+        # cycles in the permutation, not a bound on it.
+        self.verdict_shown = (self.swaps <= self.par, self.message)
+        self.verdict.show(*self.verdict_shown)
         self._redraw()
 
     def _finish(self) -> None:
@@ -404,7 +431,7 @@ class JigsawPuzzle:
         }
 
     def update(self, dt: float) -> None:
-        if self.phase == 'solved' and time.time() >= self.feedback_until:
+        if self.phase == 'solved' and self.clock() >= self.feedback_until:
             self._next_puzzle()
 
     # --- drawing ---------------------------------------------------------

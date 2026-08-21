@@ -46,6 +46,7 @@ from ..crossedwires import GRADES, Bench, deal
 from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
                         width_center)
 from . import cursor, taskoptions
+from .verdict import VerdictLabel
 from ..i18n import _
 
 #: The four keys, clockwise from north, three ways of naming them.
@@ -162,6 +163,18 @@ class CrossedWires:
             font_size=calc_fontsize(12), color=self.textcolor,
             batch=self.batch, x=width_center(), y=from_bottom_edge(26),
             anchor_x='center', anchor_y='center', font_name=FONTLIST)
+        # Read by the agent boundary, which pays the round by its
+        # colour. The budget bar is the one other thing this task draws
+        # low down, and its reddish purple misses being read as a
+        # verdict by 27 on the blue channel — close enough that
+        # tests/check_band.py exists to say so rather than a comment
+        # claiming it. Rebuilt with the chrome, so a verdict already up
+        # is put back: a relayout on the frame a round settles would
+        # otherwise drop it, and an outcome that is only sometimes
+        # derivable is worse than one that never is.
+        self.verdict = VerdictLabel(batch=self.batch, y_from_bottom=60)
+        if getattr(self, 'verdict_shown', None) is not None:
+            self.verdict.show(*self.verdict_shown)
         self._redraw()
 
     def relayout(self) -> None:
@@ -195,6 +208,7 @@ class CrossedWires:
         self.rung = self.clamped(self.start_rung)
         self.phase = 'ready'
         self.message = _('Press Space to start')
+        self.verdict_shown = None
 
     def start_run(self) -> None:
         self._reset()
@@ -205,6 +219,8 @@ class CrossedWires:
             self._finish()
             return
         self.trial += 1
+        self.verdict_shown = None
+        self.verdict.clear()
         self.bench = Bench(deal(self.rung, seed=self.rng.randrange(1 << 30)))
         self.phase = 'playing'
         grade = self.grade()
@@ -237,6 +253,10 @@ class CrossedWires:
                 self.rung = self.clamped(self.rung - 1)
         self.phase = 'scored'
         self.until = self.clock() + VERDICT_SECONDS
+        # Only now: the budget is spent or every target is reached, and
+        # no further press can change what this says.
+        self.verdict_shown = (got == asked, self.message)
+        self.verdict.show(*self.verdict_shown)
 
     def _finish(self) -> None:
         self.phase = 'done'

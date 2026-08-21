@@ -27,6 +27,7 @@ from ..constants import FONTLIST
 from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
                         width_center)
 from . import cursor, taskoptions
+from .verdict import VerdictLabel, above_the_band
 from ..i18n import _
 
 
@@ -56,6 +57,8 @@ class Concentration:
         if Concentration.instance is not None:
             Concentration.instance.close()
         self.rng = random.Random()
+        #: Swapped out by an agent environment for a virtual clock.
+        self.clock = time.time
         self.cards: List[Card] = []
         self.flipped: List[Card] = []
         self.turns = 0
@@ -123,6 +126,16 @@ class Concentration:
             font_size=calc_fontsize(12), color=self.textcolor,
             batch=self.batch, x=width_center(), y=from_bottom_edge(30),
             anchor_x='center', anchor_y='center')
+        # Read by the agent boundary, which pays the trial by this
+        # label's colour; tests/check_band.py is what says nothing else
+        # this task draws puts a saturated colour in the bottom quarter.
+        # Rebuilt with the chrome, so a verdict already up is put back —
+        # a relayout on the frame a trial settles would otherwise drop
+        # it, and an outcome only sometimes derivable is worse than one
+        # that never is.
+        self.verdict = VerdictLabel(batch=self.batch, y_from_bottom=60)
+        if getattr(self, 'verdict_shown', None) is not None:
+            self.verdict.show(*self.verdict_shown)
         self._layout_board()
         self._redraw()
 
@@ -134,7 +147,8 @@ class Concentration:
         """Columns and rows that fit the cards into the window."""
         count = max(2, len(self.cards) or self.pairs * 2)
         window = state.window
-        aspect = max(0.2, (window.width * 0.9) / max(1.0, window.height * 0.66))
+        room = max(80.0, from_top_edge(88) - above_the_band())
+        aspect = max(0.2, (window.width * 0.9) / room)
         columns = max(2, min(count, int(round(math.sqrt(count * aspect)))))
         rows = int(math.ceil(count / float(columns)))
         while columns * rows - count >= rows and columns > 2:
@@ -148,8 +162,15 @@ class Concentration:
             return
         window = state.window
         columns, rows = self._grid_shape()
+        # The room the board has: down to the top of the band the agent
+        # boundary reads, and no further. The cards are photographs and
+        # a photograph holds every colour there is, so a board that
+        # reached into the band would be read as a verdict about as
+        # often as not.
+        floor = above_the_band()
+        ceiling = from_top_edge(88)
         span_w = window.width * 0.9
-        span_h = window.height * 0.66
+        span_h = max(80.0, ceiling - floor)
         gap = max(4.0, min(span_w / columns, span_h / rows) * 0.09)
         card_w = (span_w - gap * (columns - 1)) / columns
         card_h = (span_h - gap * (rows - 1)) / rows
@@ -157,7 +178,7 @@ class Concentration:
         total_w = side * columns + gap * (columns - 1)
         total_h = side * rows + gap * (rows - 1)
         left = (window.width - total_w) / 2
-        top = (window.height + total_h) / 2 - window.height * 0.04
+        top = floor + total_h + (span_h - total_h) / 2
         for position, card in enumerate(self.cards):
             column = position % columns
             row = position // columns
@@ -172,8 +193,11 @@ class Concentration:
         self.cards = []
         self.flipped = []
         self.turns = 0
+        self.seen = {}
+        self.lapses = 0
         self.phase = 'ready'
         self.message = _('Press Space to deal')
+        self.verdict_shown = None
 
     def needed_items(self) -> int:
         return self.pairs
@@ -196,14 +220,18 @@ class Concentration:
         self.cards = cards
         self.flipped = []
         self.turns = 0
-        self.started_at = time.time()
+        self.seen = {}
+        self.lapses = 0
+        self.verdict_shown = None
+        self.verdict.clear()
+        self.started_at = self.clock()
         self.finished_at = 0.0
         self._layout_board()
         if self.peek_ms > 0 and self.medium != 'sound':
             for card in self.cards:
                 card.face_up = True
             self.phase = 'peek'
-            self.peek_until = time.time() + self.peek_ms / 1000.
+            self.peek_until = self.clock() + self.peek_ms / 1000.
             self.message = _('Look')
         else:
             self.phase = 'playing'
@@ -237,19 +265,50 @@ class Concentration:
             return
         if len(self.flipped) >= 2:
             self._resolve()
+        seen_before = id(card) in self.seen.get(card.index, ())
         card.face_up = True
         self.flipped.append(card)
         self._play(card)
-        if len(self.flipped) == 2:
+        self.seen.setdefault(card.index, set()).add(id(card))
+        if len(self.flipped) == 1:
+            # Counted with this card, so it covers both of the cases a
+            # player who forgot nothing would act on: a pair it can
+            # already see the whole of somewhere else, and the partner
+            # of the card it has just turned over.
+            self.owed = self._known_pair()
+        else:
             self.turns += 1
             first, second = self.flipped
             if first.index == second.index:
                 first.matched = second.matched = True
                 self.flipped = []
                 self._check_finished()
+                self.owed = False
             else:
-                self.hide_at = time.time() + self.hide_ms / 1000.
+                if self.owed or seen_before:
+                    self.lapses += 1
+                self.hide_at = self.clock() + self.hide_ms / 1000.
         self._redraw()
+
+    def _known_pair(self) -> bool:
+        """Is a whole unmatched pair already turned over somewhere?
+
+        The one thing this board can be scored on. Whether a turn
+        matched is mostly luck early on and mostly memory later, and
+        the two are not worth telling apart by counting turns. What a
+        player who forgot nothing would never do is *this*: leave a
+        pair on the table when both of its cards have already been
+        turned over once, or turn over a card it has seen before in
+        the hope of a match it has already been shown is not there.
+
+        A board cleared with none of those is a board played the way
+        perfect memory would have played it, whatever the deal gave.
+        Turns are not the measure -- an unlucky deal costs turns
+        nobody could have saved.
+        """
+        matched = {card.index for card in self.cards if card.matched}
+        return any(len(where) == 2 and index not in matched
+                   for index, where in self.seen.items())
 
     def _resolve(self) -> None:
         """Turn an unmatched pair back down."""
@@ -261,10 +320,16 @@ class Concentration:
     def _check_finished(self) -> None:
         if any(not card.matched for card in self.cards):
             return
-        self.finished_at = time.time()
+        self.finished_at = self.clock()
         self.phase = 'done'
         elapsed = self.finished_at - self.started_at
         self.message = _('Cleared in %d turns, %ds') % (self.turns, elapsed)
+        clean = self.lapses == 0
+        self.verdict_shown = (clean, _('Cleared in %d turns — nothing '
+                                       'forgotten') % self.turns if clean
+                              else _('Cleared in %d turns — %d forgotten')
+                              % (self.turns, self.lapses))
+        self.verdict.show(*self.verdict_shown)
 
     def card_at(self, x: float, y: float) -> Optional[Card]:
         for card in self.cards:
@@ -273,7 +338,7 @@ class Concentration:
         return None
 
     def update(self, dt: float) -> None:
-        now = time.time()
+        now = self.clock()
         if self.phase == 'peek' and now >= self.peek_until:
             for card in self.cards:
                 card.face_up = False

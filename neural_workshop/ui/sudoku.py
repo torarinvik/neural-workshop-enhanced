@@ -42,6 +42,7 @@ from ..geometry import (MAX_FONT_SIZE, calc_fontsize, from_bottom_edge,
                         from_top_edge, width_center)
 from ..sudoku import GRADES, Puzzle, TECHNIQUES, generate, peers
 from . import cursor, taskoptions
+from .verdict import VerdictLabel, above_the_band
 from ..i18n import _
 
 #: The lines between boxes, and the lighter ones between cells.
@@ -153,6 +154,16 @@ class Sudoku:
             font_size=calc_fontsize(11), color=self.textcolor,
             batch=self.batch, x=width_center(), y=from_bottom_edge(24),
             anchor_x='center', anchor_y='center', font_name=FONTLIST)
+        # Read by the agent boundary, which pays the trial by this
+        # label's colour; tests/check_band.py is what says nothing else
+        # this task draws puts a saturated colour in the bottom quarter.
+        # Rebuilt with the chrome, so a verdict already up is put back —
+        # a relayout on the frame a trial settles would otherwise drop
+        # it, and an outcome only sometimes derivable is worse than one
+        # that never is.
+        self.verdict = VerdictLabel(batch=self.batch, y_from_bottom=60)
+        if getattr(self, 'verdict_shown', None) is not None:
+            self.verdict.show(*self.verdict_shown)
         self._redraw()
 
     def relayout(self) -> None:
@@ -165,7 +176,7 @@ class Sudoku:
         """Left, bottom and side of the whole board on screen."""
         window = state.window
         top = from_top_edge(84)
-        bottom = from_bottom_edge(44)
+        bottom = above_the_band(from_bottom_edge(44))
         side = max(40.0, min(window.width * 0.86, top - bottom))
         return ((window.width - side) / 2, bottom + (top - bottom - side) / 2,
                 side)
@@ -186,6 +197,7 @@ class Sudoku:
         self.rung = self.clamped(self.start_rung)
         self.phase = 'ready'
         self.message = _('Press Space to start')
+        self.verdict_shown = None
 
     def start_run(self) -> None:
         self._reset()
@@ -202,6 +214,8 @@ class Sudoku:
         self.at = next((c for c, v in enumerate(self.filled) if not v), 0)
         self.pencil = False
         self.mistakes = 0
+        self.verdict_shown = None
+        self.verdict.clear()
         self.started_at = self.clock()
         self.phase = 'solving'
         grade = GRADES[self.rung - 1]
@@ -299,6 +313,12 @@ class Sudoku:
                 self.rung = self.clamped(self.rung + 1)
             elif self.mistakes > 4:
                 self.rung = self.clamped(self.rung - 1)
+        # Green means solved without ever writing a digit that clashed
+        # with one already on the board. The grid is always finished by
+        # the time this runs, so finishing is not the measure -- the
+        # measure is having deduced rather than tried.
+        self.verdict_shown = (not self.mistakes, self.message)
+        self.verdict.show(*self.verdict_shown)
         self.phase = 'solved'
 
     def _finish(self) -> None:
