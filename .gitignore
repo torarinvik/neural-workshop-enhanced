@@ -13,3 +13,6 @@ bwcore.*.so
 
 # macOS Finder metadata
 .DS_Store
+
+# Agent worktrees and session state: git plumbing, not content.
+.claude/

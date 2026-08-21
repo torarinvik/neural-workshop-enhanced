@@ -24,9 +24,14 @@ What a task actually supplies is small:
 ``ports``      how many opaque actions there are
 ``build``      construct the underlying UI task for a seed
 ``drive``      turn one port index into one action on that task
-``derive``     read the public scalar off the pixels
 
-and, if the default does not suit, ``begin``, ``settled`` and ``dials``.
+and, if the defaults do not suit, ``begin``, ``settled``, ``dials`` and
+``derive``.
+
+``derive`` has a default that reads the standard verdict label, so a task
+that paints :class:`neural_workshop.ui.verdict.VerdictLabel` when a trial
+resolves supplies **neither a deriver nor a verifier**. That is the whole of
+the hundred-odd lines each existing wrapper spends on the two of them.
 
 The verifier is **generated from** ``derive`` rather than written beside it.
 In the hand-written wrappers each task carries a 38-42 line verifier whose
@@ -102,11 +107,41 @@ class TaskEnv:
                neutral: bool = False) -> Optional[Dict[str, Any]]:
         """Read the public scalar off the pixels, or None if unresolved.
 
-        Must depend on nothing but the frame. A deriver that consulted the
-        task's own state would produce outcomes no third party can check,
-        which is the whole point of deriving from pixels.
+        **The default reads the standard verdict label**, so a task that
+        paints :class:`neural_workshop.ui.verdict.VerdictLabel` when a trial
+        resolves needs no deriver of its own and no verifier either -- both
+        already exist, are natively accelerated, and are the same ones every
+        other task uses. There is then one pixel reader in the programme to
+        get right rather than one per task.
+
+        Override this only for art that cannot carry the standard label.
+        The three wrappers written before it existed each do -- fog counts
+        world colours, ladder counts tile colours, sight counts ring colours
+        -- at a cost of roughly a hundred lines apiece.
+
+        Whatever replaces it must depend on nothing but the frame. A deriver
+        that consulted the task's own state would produce outcomes no third
+        party can check, which is the whole point of deriving from pixels.
         """
-        raise NotImplementedError
+        from .outcome import derive_public_outcome
+
+        if neutral:
+            # A conceded trial claims nothing, so it needs no pixels to
+            # support it -- but it still has to carry the receipt and the
+            # evidence it is conceding against.
+            outcome: Dict[str, Any] = {
+                'scalar': 0.0,
+                'evidence_digests': list(evidence),
+                'receipt_id': receipt_id,
+            }
+            if frame_seq is not None:
+                outcome['frame_seq'] = frame_seq
+            if timestamp_ns is not None:
+                outcome['timestamp_ns'] = timestamp_ns
+            return outcome
+        return derive_public_outcome(rgba, width, height, evidence,
+                                     receipt_id, frame_seq=frame_seq,
+                                     timestamp_ns=timestamp_ns)
 
     # --- optional hooks ---------------------------------------------------
 
