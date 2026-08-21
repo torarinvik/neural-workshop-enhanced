@@ -86,7 +86,8 @@ def _verdict_pixels(rgba: bytes, good: Tuple[int, int, int],
 def derive_sight_outcome(rgba: bytes, width: int, height: int,
                          evidence_digests: Any, receipt_id: Optional[int],
                          frame_seq: Optional[int] = None,
-                         timestamp_ns: Optional[int] = None
+                         timestamp_ns: Optional[int] = None,
+                         neutral: bool = False
                          ) -> Optional[Dict[str, Any]]:
     """The scalar for one question, read off the ring's colour.
 
@@ -105,9 +106,20 @@ def derive_sight_outcome(rgba: bytes, width: int, height: int,
     if not rgba:
         return None
     n_good, n_bad = _verdict_pixels(rgba, CAUGHT, MISSED)
-    if max(n_good, n_bad) < FEWEST_VERDICT_PIXELS:
+    resolved = max(n_good, n_bad) >= FEWEST_VERDICT_PIXELS
+    if neutral:
+        # ``neutral`` says this action is not the one the verdict is owed
+        # to -- either no ring resolved on it, or an earlier action
+        # already collected this one. A resolved ring stays on screen for
+        # about ten ticks, and paying it on each would turn one answer
+        # into ten. Claiming zero never claims more than was earned, so
+        # this direction is always safe; the rule for claiming a *verdict*
+        # below is untouched.
+        scalar = 0.0
+    elif not resolved:
         return None
-    scalar = 1.0 if n_good > n_bad else -1.0
+    else:
+        scalar = 1.0 if n_good > n_bad else -1.0
     outcome: Dict[str, Any] = {
         'scalar': scalar,
         'evidence_digests': list(evidence_digests),
@@ -133,8 +145,28 @@ def verify_sight_outcome(outcome: Optional[Mapping[str, Any]], rgba: bytes,
     the frame differs.
     """
     from .outcome import verify_public_outcome
+
+    # A claim of zero is allowed on any frame, because claiming zero
+    # never claims more than was earned -- whether the ring had not
+    # resolved yet, or had already been paid to an earlier action, or
+    # resolved and was simply given up on. Everything worth something
+    # keeps the strict reading and still has to be visible in the
+    # pixels, which is the only direction a verifier has to police.
+    #
+    # So paying a verdict exactly once is a property of the environment,
+    # not something a verifier can establish from one outcome, and it is
+    # covered by tests rather than by this rule.
+    conceded = float((outcome or {}).get('scalar', 0.0)) == 0.0
+
+    def derive(frame, w, h, evidence, receipt_id, frame_seq=None,
+               timestamp_ns=None):
+        return derive_sight_outcome(frame, w, h, evidence, receipt_id,
+                                    frame_seq=frame_seq,
+                                    timestamp_ns=timestamp_ns,
+                                    neutral=conceded)
+
     return verify_public_outcome(outcome, rgba, width, height, archive,
-                                 receipt_ledger, derive=derive_sight_outcome)
+                                 receipt_ledger, derive=derive)
 
 
 class OutOfSightEnv:
@@ -157,6 +189,8 @@ class OutOfSightEnv:
                  probes: Optional[int] = None,
                  rounds: Optional[int] = None,
                  adaptive: bool = False,
+                 neutral_outcomes: bool = False,
+                 runtime_ports: int = 0,
                  frame_hz: float = DEFAULT_FRAME_HZ,
                  visible: bool = False) -> None:
         self._asked = {
@@ -166,6 +200,19 @@ class OutOfSightEnv:
             'SIGHT_PROBES': probes, 'SIGHT_ROUNDS': rounds,
         }
         self._adaptive = bool(adaptive)
+        # A window on every tick and a verdict for every action, the
+        # ones outside a ring worth nothing. A runtime that acts on a
+        # fixed clock needs both; a caller reading this task's own
+        # contract wants neither, and gets one window per question.
+        self._neutral_outcomes = bool(neutral_outcomes)
+        # The task answers with two keys. A runtime built around a wider
+        # decoder can be given the width it expects: the extra ports do
+        # nothing, and which ports those are is not said here -- the
+        # learner has as much to discover about them as about the two
+        # that answer.
+        self._runtime_ports = int(runtime_ports)
+        if self._runtime_ports and self._runtime_ports < 2:
+            raise ValueError('a runtime needs at least the two answers')
         self._visible = bool(visible)
         self._hz = float(frame_hz)
         if self._hz < SLOWEST_FRAME_HZ:
@@ -196,6 +243,9 @@ class OutOfSightEnv:
         self._response_open = False
         self._receipt_seq = 0
         self._action_finalized = False
+        self._outcome_owed = False
+        self._question_seq = 0
+        self._scored_question = -1
         self._receipt_ledger: Dict[int, Dict[str, Any]] = {}
         self._archive: Dict[str, bytes] = {}
         self._events: List[Dict[str, Any]] = []
@@ -210,7 +260,7 @@ class OutOfSightEnv:
     @property
     def n_actions(self) -> int:
         """How many opaque action ports this task offers."""
-        return 2
+        return self._runtime_ports or 2
 
     def reset(self, seed: int = 0) -> Dict[str, Any]:
         """Start a fresh run under *seed* and return the first frame."""
@@ -284,8 +334,13 @@ class OutOfSightEnv:
             # not an answer and neither is pressing none.
             return rejected
 
-        self.task.answer(bool(indices[0]))
+        index = int(indices[0])
+        if index < 2 and self.task.probe is not None:
+            self.task.answer(bool(index))
+        elif index < 2 and not self._neutral_outcomes:
+            return rejected            # no ring up, so there is no answer
         self._action_finalized = True
+        self._outcome_owed = True
 
         held = self._receipt
         self._receipt = {
@@ -316,6 +371,14 @@ class OutOfSightEnv:
         self._publish()
 
         now_open = self.task.probe is not None
+        if self._neutral_outcomes:
+            if now_open and not was_open:
+                self._question_digests = [self._digest]
+                self._question_seq += 1
+                self.accounting.logical_trials += 1
+            if self._action_finalized or not self._response_open:
+                self._open_question()
+            return self.observe()
         if was_open and not now_open:
             self._response_open = False
         if now_open and not was_open:
@@ -392,6 +455,9 @@ class OutOfSightEnv:
         self._consumed = True
         self._archive = {}
         self._action_finalized = False
+        self._outcome_owed = False
+        self._question_seq = 0
+        self._scored_question = -1
         self._delivered = set()
         self._cached_outcome = None
         self._receipt_ledger = {}
@@ -437,7 +503,13 @@ class OutOfSightEnv:
         if receipt_id is None or receipt_id not in self._receipt_ledger:
             return
         bound = self._receipt_ledger[receipt_id]
-        bound['evidence_digests'] = list(self._question_digests)
+        evidence = list(self._question_digests)
+        bound['evidence_digests'] = evidence
+        if evidence:
+            # A window opens on whatever frame is up, but what it is
+            # answerable against is the question. Without this the two
+            # disagree and every outcome fails to verify.
+            bound['stimulus_digest'] = evidence[0]
         bound['feedback_digest'] = self._digest
         bound['feedback_frame_seq'] = self._seq
 
@@ -449,17 +521,19 @@ class OutOfSightEnv:
         self._events.append(event)
         return True
 
-    def _publish_outcome(self) -> None:
+    def _publish_outcome(self, neutral: bool = False) -> None:
         """Derive and emit the public outcome for a resolved question."""
         receipt_id = (self._receipt or {}).get('receipt_id')
         key = ('outcome', receipt_id)
         if key in self._delivered:
             return
+        if not self._question_digests:
+            self._question_digests = [self._digest]
         self._bind_receipt_to_question(receipt_id)
         outcome = derive_sight_outcome(
             self._rgba, self._width, self._height, self._question_digests,
             receipt_id, frame_seq=self._seq,
-            timestamp_ns=self._timestamp_ns)
+            timestamp_ns=self._timestamp_ns, neutral=neutral)
         if outcome is None:
             return                     # the ring has not resolved yet
         public = {k: outcome[k] for k in PUBLIC_OUTCOME_KEYS if k in outcome}
@@ -521,7 +595,19 @@ class OutOfSightEnv:
 
         if self._response_open or self.task.probe is not None:
             self._question_digests.append(self._digest)
-        if self.task.verdict is not None:
+        if self._neutral_outcomes:
+            verdict = self.task.verdict
+            # A verdict lingers on screen for a while. Paying it on every
+            # tick it is up would multiply one answer into ten and drown
+            # the tally; it is owed once, to the question it answers.
+            fresh = verdict is not None and self._scored_question != (
+                self._question_seq)
+            if self._outcome_owed:
+                self._outcome_owed = False
+                if fresh:
+                    self._scored_question = self._question_seq
+                self._publish_outcome(neutral=not fresh)
+        elif self.task.verdict is not None:
             self._publish_outcome()
         if self.task.phase == 'done' and not self._done:
             self._done = True
