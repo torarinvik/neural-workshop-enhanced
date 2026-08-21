@@ -38,6 +38,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('in_the_dark', _('In the Dark')),
         ('fog_of_war', _('Fog of War')),
         ('removals', _('Removals')),
+        ('chain_of_custody', _('Chain of Custody')),
     ],
     'long_term_memory': [
         ('concentration', _('Concentration')),
@@ -374,6 +375,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'you_are_here':
         from .youarehere import YouAreHere
         YouAreHere()
+        return
+    if task_id == 'chain_of_custody':
+        from .custody import ChainOfCustody
+        ChainOfCustody()
         return
     if task_id == 'sudoku':
         from .sudoku import Sudoku

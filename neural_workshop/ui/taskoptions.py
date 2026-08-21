@@ -1071,6 +1071,56 @@ SALESMAN = TaskSpec(
     note=salesman_note)
 
 
+def custody_note(chosen: Dict[str, Any]) -> str:
+    """What the rung puts on the belt, and what guessing is worth.
+
+    The floor is spelled out because the percentage means very little
+    without it: a run at rung three is guessing one in two and a half
+    and one at rung ten one in six, so the same score is a different
+    achievement. It is boxes divided by coats, which is exactly the
+    field a player who has lost the box is choosing from.
+    """
+    from ..custody import GRADES
+    grade = GRADES[max(0, min(len(GRADES) - 1,
+                              int(chosen['CUSTODY_LEVEL']) - 1))]
+    said = [_('%d boxes in %d coat(s): a colour leaves %.1f of them to '
+              'choose between, so guessing scores about %d%%.')
+            % (grade.boxes, grade.looks, grade.rivals,
+               int(round(100.0 / grade.rivals)))]
+    if not grade.moving:
+        said.append(_('The belt is still at this rung.'))
+    if grade.need_charge:
+        said.append(_('The bay wants %d charge and under %d heat. One pass '
+                      'through the charger clears the mark and leaves the '
+                      'box too hot, so the cooler comes after it.')
+                    % (grade.need_charge, grade.max_heat))
+    if grade.painters:
+        said.append(_('A painter moves the coat on of every box that rides '
+                      'past it.'))
+    if grade.decay:
+        said.append(_('Charge bleeds away on the belt, though not in the '
+                      'claw.'))
+    said.append(_('%d actions a round.') % grade.budget)
+    return '  '.join(said)
+
+
+CUSTODY = TaskSpec(
+    title=_('Chain of Custody options'),
+    options=(
+        Option('CUSTODY_LEVEL', _('Level'), 3,
+               values=tuple(range(1, 11))),
+        Option('CUSTODY_TRIALS', _('Rounds per run'), 5,
+               values=(1, 2, 3, 5, 8, 10, 15, 20)),
+        Option('CUSTODY_BELT_SECONDS', _('Seconds a slot of belt takes'),
+               0.40, values=(0.15, 0.25, 0.40, 0.60, 0.90, 1.5)),
+        Option('CUSTODY_MARK_SECONDS', _('Seconds the box is ringed for'),
+               1.6, values=(0.4, 0.8, 1.2, 1.6, 2.5, 4.0)),
+        Option('CUSTODY_ADAPTIVE',
+               _('Climb a rung after a clean delivery'), True),
+    ),
+    note=custody_note)
+
+
 #: Task id → the settings screen it owns.
 TASK_SPECS: Dict[str, TaskSpec] = {
     'monkey_ladder': MONKEY_LADDER,
@@ -1096,6 +1146,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'removals': REMOVALS,
     'sudoku': SUDOKU,
     'crossed_wires': CROSSED_WIRES,
+    'chain_of_custody': CUSTODY,
 }
 
 

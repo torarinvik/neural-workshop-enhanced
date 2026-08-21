@@ -1,6 +1,6 @@
 # Making a task reachable by the agent
 
-The Workshop ships twenty-four playable tasks and **all twenty-four are
+The Workshop ships twenty-five playable tasks and **all twenty-five are
 reachable by the learning agent**. Reachable means more than playable: the
 agent gets pixels and opaque ports, and every scalar it is paid must be
 re-derivable from the frames by someone who is not trusted with the game.
@@ -117,6 +117,60 @@ window on its way to the background, and no palette avoids that.
 So the rule is the simple one: the art stops above the band.
 `above_the_band` is where that line lives, and it works it out the same way
 `bwaccel.default_band` does, with a few pixels of slack for the edge.
+
+## If the task pays only at the end, shape it
+
+A task whose verdict arrives once a round is a task a learner starting
+from nothing is almost never paid on. The fix is not a new reward channel —
+it is the same `VerdictLabel`, painted after every action that changed how
+far the run has to go:
+
+```python
+class MyTaskEnv(TaskEnv):
+    dense = True                       # pay per action, not per trial
+
+    def apply_dials(self, task):
+        super().apply_dials(task)
+        task.coach = self._coach and self.paying_densely
+```
+
+and in the task, after an action:
+
+```python
+before = potential(...)
+...                                    # do the action
+delta = potential(...) - before
+self.verdict.show(delta < 0, _('Warmer') if delta < 0 else _('Colder'))
+```
+
+Three rules make it safe rather than merely dense.
+
+**One action must change the potential by at most one.** Then the sign of
+the change *is* the potential-based shaping term of Ng et al., every
+closed loop of actions telescopes to zero, and the optimal policy is
+unchanged. An action that changes nothing — a turn, a bump, a grab —
+clears the label and pays zero. If it paid, doing it on the spot would
+farm reward forever.
+
+**The potential must read only what is drawn.** Then the shaping tells a
+learner nothing a frame does not already carry, and it is pure
+acceleration. Chain of Custody's potential is deliberately blind to which
+box is the Core: had it read that, coach mode would have handed over the
+answer to the only question the task asks, and every number taken under
+it would have been about routing while claiming to be about identity.
+
+**Gate it on `paying_densely`.** `dense` is honoured only by the
+neutral-outcomes accounting, which is how a *runtime* builds an
+environment. Built the plain way, the sparse path pays the first verdict
+it finds and calls it the trial's — so a warmer/colder label a few steps
+in scores the whole round. Measured before the gate existed: Chain of
+Custody scored 44% against a 38% guessing floor, all of it earned by claw
+moves that happened to close a distance, and You Are Here was paid a `+1`
+on a maze random play had not solved.
+
+Keep it off for people (`coach = False` in the task's `__init__`), so the
+human game stays pixel-identical and every number taken before still
+compares.
 
 ## Read the clock the driver owns
 

@@ -263,6 +263,43 @@ which makes an unpinned answer a restricted draw rather than a uniform
 one and turns the floor from a proof into a bound. An exact floor is
 worth more than a richer verb.
 
+**Chain of Custody** asks Removals' question through motion instead of
+containment. A carousel of boxes runs round a belt; one is ringed for a
+moment at the start and then looks like all the rest. A claw slides
+round the ring, picks a box up and puts it down, and the round is
+scored on whether the box that reaches the bay is the box that was
+ringed — in the state the bay asked for.
+
+Everything on the belt is there because it affects that one box. The
+charger clears the charge mark in a single pass and leaves the box too
+hot, so the route is charger, then cooler, then bay, and cooling first
+is simply wasted. The painter is not a service anybody asks for: it is
+a hazard, and it moves the coat on of every box that rides past it, so
+following a colour loses the thread on its own. Charge bleeds away on
+the belt but not in the claw, which makes holding the box the safe
+place to keep it and the belt the price of reaching a machine.
+
+**A claw cannot chase a box.** Both move one slot a step, so a claw
+behind a box stays behind it forever, and the way to pick something up
+is to stand still and let the ring bring it to you. That is the first
+thing the task teaches and it is deliberately not signposted.
+
+The guessing floor is on the ladder rather than emergent, because
+deriving it made the rungs get *easier*: with one coat per two boxes
+the field is two boxes wide however many are on the belt, so a rung
+that added boxes added nothing on the axis the task is named for.
+Named instead, it climbs from one box in one at the bottom to one in
+six at the top, and the run reports it beside the score — a run at rung
+three is guessing one in two and a half and one at rung ten one in six,
+so the same percentage is a different achievement.
+
+The budget is a clock rather than an allowance: it is spent by the belt
+rather than by the action, so a person waiting by not pressing anything
+and an agent spending an action to let a beat pass are charged the same
+beat. Every rung is winnable — a player who already knows which box is
+the Core delivers it on 300 of 300 deals, using at most 28% of the
+budget, which `tests/oracle_custody.py` measures and the suite checks.
+
 ### Attention
 
 The *Attention* category holds **Reflex**: photographs appear at random

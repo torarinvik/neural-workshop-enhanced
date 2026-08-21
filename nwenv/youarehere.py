@@ -72,7 +72,11 @@ class YouAreHereEnv(TaskEnv):
             task.total_trials = int(self._trials)
         if self._marks is not None:
             task.show_marks = bool(self._marks)
-        task.coach = self._coach
+        # Only when the boundary will actually pay it per action: the
+        # sparse path reads the first label it finds as the trial's
+        # own verdict, and a warmer/colder one there would score the
+        # maze on a step rather than on the walk.
+        task.coach = self._coach and self.paying_densely
 
     def drive(self, task: Any, port: int) -> None:
         task.walk(WALKS[port])

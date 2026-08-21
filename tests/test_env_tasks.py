@@ -87,6 +87,7 @@ BY_LUCK = {
     'tower_of_hanoi': (2000, {'disks': 3}),
     'salesman': (600, {}),
     'sokoban': (2500, {'rung': 1, 'trials': 3}),
+    'chain_of_custody': (900, {'rung': 3, 'trials': 4}),
 }
 
 
@@ -177,6 +178,9 @@ class RandomPlayIsPaid(unittest.TestCase):
     def test_salesman(self):
         self.check('salesman')
 
+    def test_chain_of_custody(self):
+        self.check('chain_of_custody')
+
 
 @needs_ui
 class PlayedProperlyItIsPaid(unittest.TestCase):
@@ -258,6 +262,21 @@ class PlayedProperlyItIsPaid(unittest.TestCase):
 
         self.assertEqual(driven(env, moves), [1.0])
 
+    def test_the_right_box_delivered_right_is_paid(self):
+        """Driven by one that knows which box was ringed."""
+        import oracle_custody as O
+        from neural_workshop import custody as C
+        env = catalog.env_class('chain_of_custody')(seed=0, rung=5, trials=2)
+
+        def moves(task):
+            core = C.core_of(task.boxes, task.layout)
+            action = O.choose(task.boxes, core, task.held, task.claw,
+                              task.layout)
+            return {O.LEFT: 0, O.RIGHT: 1, O.GRAB: 2,
+                    O.DROP: 2, O.WAIT: 3}[action]
+
+        self.assertEqual(driven(env, moves), [1.0])
+
     def test_a_cleared_memory_board_is_paid(self):
         """Played by one that remembers, which is what green means here."""
         env = catalog.env_class('concentration')(seed=0, pairs=4, peek_ms=0)
@@ -315,7 +334,8 @@ class TheBoundaryKnowsWhichTasksHaveAClock(unittest.TestCase):
         for task_id in ('removals', 'in_the_dark', 'ncup_monte',
                         'moving_targets', 'lookout', 'pursuit', 'reflex',
                         'count', 'recognition', 'matrix_reasoning',
-                        'graph_mapping', 'concentration'):
+                        'graph_mapping', 'concentration',
+                        'chain_of_custody'):
             self.assertTrue(self.clocked(task_id), task_id)
 
     def test_the_ports_are_the_ones_the_task_has(self):
@@ -324,6 +344,72 @@ class TheBoundaryKnowsWhichTasksHaveAClock(unittest.TestCase):
         self.assertEqual(RemovalsEnv.ports, 5)
         self.assertEqual(InTheDarkEnv.ports, 5)
         self.assertEqual(CrossedWiresEnv.ports, 8)
+
+
+@needs_ui
+class DenseShapingOnlyPaintsWhereItIsPaid(unittest.TestCase):
+    """A per-move label must not be read as the trial's own verdict.
+
+    Two tasks paint a consequence after every move, and the accounting
+    that pays one per action is the neutral-outcomes one. Built the
+    plain way, the sparse path pays the *first* verdict it finds and
+    calls it the trial's — so a warmer/colder label a few steps into a
+    round scored the round, and a run of random actions came out
+    looking like a run of skilled ones.
+
+    Measured before the gate existed: Chain of Custody scored 44%
+    against a 38% guessing floor, all of it earned by claw moves that
+    happened to close a distance, and You Are Here was paid a +1 on a
+    maze random play had not solved.
+    """
+
+    def setUp(self):
+        close_overlays()
+
+    def tearDown(self):
+        close_overlays()
+        reset_window()
+
+    def dense_tasks(self):
+        return [row.task_id for row in catalog.CATALOG
+                if getattr(catalog.env_class(row.task_id), 'dense', False)]
+
+    def test_there_are_some(self):
+        """Or the rest of this class is checking nothing."""
+        self.assertIn('you_are_here', self.dense_tasks())
+        self.assertIn('chain_of_custody', self.dense_tasks())
+
+    def test_the_plain_build_leaves_the_per_move_label_off(self):
+        for task_id in self.dense_tasks():
+            env = catalog.env_class(task_id)(seed=0)
+            try:
+                self.assertFalse(env.paying_densely, task_id)
+                self.assertFalse(env.task.coach, task_id)
+            finally:
+                env.close()
+
+    def test_a_runtime_build_turns_it_on(self):
+        for task_id in self.dense_tasks():
+            env = catalog.env_class(task_id)(seed=0, neutral_outcomes=True)
+            try:
+                self.assertTrue(env.paying_densely, task_id)
+                self.assertTrue(env.task.coach, task_id)
+            finally:
+                env.close()
+
+    def test_asking_for_it_off_keeps_it_off(self):
+        for task_id in self.dense_tasks():
+            env = catalog.env_class(task_id)(seed=0, neutral_outcomes=True,
+                                             coach=False)
+            try:
+                self.assertFalse(env.task.coach, task_id)
+            finally:
+                env.close()
+
+    def test_random_play_is_not_paid_for_a_maze_it_did_not_solve(self):
+        """The symptom, on the task where it is unmistakable."""
+        env = catalog.env_class('you_are_here')(seed=0, rung=4, trials=2)
+        self.assertEqual(played(env, 900), [])
 
 
 @needs_ui

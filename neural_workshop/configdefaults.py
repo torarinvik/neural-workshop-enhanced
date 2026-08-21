@@ -855,6 +855,29 @@ SUDOKU_TRIALS = 3
 SUDOKU_SHOW_CLASHES = True
 SUDOKU_ADAPTIVE = True
 
+# Chain of Custody is one box among several and one bay to put it in.
+# The box is ringed for a moment at the start and then looks like the
+# rest of them, and the belt carries them all round a loop while the
+# claw picks up and puts down. What is scored is whether the box that
+# arrives is the box that was ringed - so the whole task is holding on
+# to an identity nothing on the screen carries. Every rung deals more
+# boxes than coats, so a colour narrows the field and never closes it,
+# and the painter moves a box's coat on as it rides past, so following
+# a colour loses the thread on its own. From CUSTODY_LEVEL four the
+# bay also asks for a state: the charger clears the charge mark in one
+# pass and leaves the box too hot, so the route is charger, then
+# cooler, then bay, and cooling first is wasted. A claw cannot chase a
+# box - both move a slot at a time - so picking one up means standing
+# still and letting the loop bring it round. CUSTODY_BELT_SECONDS is
+# how long a slot takes; lower is a faster belt and less time to think
+# between steps. CUSTODY_MARK_SECONDS is how long the ring is up at
+# the start, and is the one dial that makes the first look easier.
+CUSTODY_LEVEL = 3
+CUSTODY_TRIALS = 5
+CUSTODY_BELT_SECONDS = 0.40
+CUSTODY_MARK_SECONDS = 1.6
+CUSTODY_ADAPTIVE = True
+
 ######################################################################
 # This is the end of the configuration file.
 ######################################################################

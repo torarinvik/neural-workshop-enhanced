@@ -484,6 +484,27 @@ class TaskEnv:
     #: motion clamps start to bite and a tick stops meaning what it says.
     slowest_frame_hz: float = 10.0
 
+    @property
+    def paying_densely(self) -> bool:
+        """Whether a per-action verdict would actually be paid per action.
+
+        :attr:`dense` is honoured only by the neutral-outcomes
+        accounting, so a task that paints a consequence after every
+        move must ask this before switching that painting on. Built the
+        plain way, the first such label is on screen the moment the
+        driver next looks, and the sparse path pays it as *the trial's*
+        verdict — the trial then scores "that move got warmer" instead
+        of "the run was won", and a run of random actions comes out
+        looking like a run of skilled ones.
+
+        Measured on Chain of Custody before this existed: random play
+        scored 44% against a guessing floor of 38%, all of it earned by
+        claw moves that happened to close a distance. On You Are Here
+        it paid a single +1 on a maze that random play had not solved
+        and could not have.
+        """
+        return bool(self.dense and self._neutral_outcomes)
+
     def __init__(self, seed: Optional[int] = None,
                  shm_name: Optional[str] = None,
                  neutral_outcomes: bool = False,
