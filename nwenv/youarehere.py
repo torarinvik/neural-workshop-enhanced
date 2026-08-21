@@ -11,6 +11,14 @@ Here there is no deriver and no verifier. The task paints
 the boundary's own reader -- the one every other task will share -- turns it
 into +1 within par and -1 over it.
 
+By default the wrapper also switches the task's *coach mode* on and declares
+itself ``dense``: every move paints warmer(+1)/colder(-1) by Manhattan
+distance to the way out, and every action's receipt pays the verdict its own
+frame shows.  A move shifts the distance by exactly 1, so the pixel verdict
+*is* the potential-based shaping term d - d'; turns and bumps clear the
+label and pay zero, so loops telescope to nothing and the shaping cannot be
+farmed.  ``coach=False`` restores the sparse solve-only reward.
+
 Two things about the task shape the wrapper. It is **turn-based**: nothing
 moves unless a key is pressed, so there is no clock to tick and ``clocked``
 is False. And a solved maze waits on a keypress before dealing the next one,
@@ -38,15 +46,18 @@ class YouAreHereEnv(TaskEnv):
 
     ports = 4
     clocked = False
+    dense = True
 
     def __init__(self, seed: Optional[int] = None,
                  rung: Optional[int] = None,
                  trials: Optional[int] = None,
                  marks: Optional[bool] = None,
+                 coach: bool = True,
                  **kwargs: Any) -> None:
         self._rung = rung
         self._trials = trials
         self._marks = marks
+        self._coach = bool(coach)
         self._solved_seen = False
         super().__init__(seed=seed, **kwargs)
 
@@ -61,6 +72,7 @@ class YouAreHereEnv(TaskEnv):
             task.total_trials = int(self._trials)
         if self._marks is not None:
             task.show_marks = bool(self._marks)
+        task.coach = self._coach
 
     def drive(self, task: Any, port: int) -> None:
         task.walk(WALKS[port])
@@ -88,7 +100,7 @@ class YouAreHereEnv(TaskEnv):
 
     def dials(self) -> Dict[str, Any]:
         return {'rung': self._rung, 'trials': self._trials,
-                'marks': self._marks}
+                'marks': self._marks, 'coach': self._coach}
 
 
 def make_youarehere_env(seed: int = 0,

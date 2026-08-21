@@ -118,6 +118,13 @@ class YouAreHere:
         self.started_at = 0.0
         self.phase = 'ready'
         self.message = _('Press Space to start')
+        #: Coach mode: paint a per-move consequence verdict (warmer/colder
+        #: by Manhattan distance to the way out).  Off for people -- it
+        #: changes the game -- and switched on by the agent boundary, where
+        #: it is potential-based reward shaping: a move to an adjacent cell
+        #: shifts the distance by exactly 1, so green(+1)/red(-1) *is* the
+        #: shaping term d - d', and any closed loop of moves sums to zero.
+        self.coach = False
         self._read_options()
         self.rung = self.clamped(self.start_rung)
         self.drawn: List[object] = []
@@ -285,18 +292,23 @@ class YouAreHere:
         """One action: turn, or try to walk."""
         if self.phase != 'walking':
             return
+        before = self._distance_out()
         went, got, moved = move(self.maze, self.pose, self.held, doing)
         if not moved and doing in (AHEAD, BACK):
             self.bumps += 1
             blocked = self._blocked(doing)
             self.message = (_('Locked — that door needs its key')
                             if blocked is not None else _('A wall'))
+            self._coach_verdict(None)
             self._update_status()
             return
         self.pose, self.held = went, got
         self.steps += costs(doing, moved)
         if self.pose.cell == self.maze.way_out:
             self._solved()
+        else:
+            self._coach_verdict(self._distance_out() - before
+                                if moved else None)
         self._redraw()
 
     def _blocked(self, doing: str) -> Optional[int]:
@@ -306,6 +318,33 @@ class YouAreHere:
                   else (self.pose.facing + 2) % 4)
         step = ahead_of(self.maze, self.pose.cell, facing)
         return None if step is None else locked(self.maze, step, self.held)
+
+    def _distance_out(self) -> int:
+        """Manhattan distance from here to the way out, in cells."""
+        w = self.maze.width
+        hx, hy = self.pose.cell % w, self.pose.cell // w
+        tx, ty = self.maze.way_out % w, self.maze.way_out // w
+        return abs(hx - tx) + abs(hy - ty)
+
+    def _coach_verdict(self, delta: Optional[int]) -> None:
+        """Paint what the move just taken did to the distance out.
+
+        Still a verdict, not a directive: it reports the consequence of the
+        action already committed, never which action to take next.  ``None``
+        (a turn, or a bump) clears the label -- turning is free of
+        consequence and must read as scalar zero, or the shaping stops
+        telescoping.
+        """
+        if not self.coach:
+            return
+        if delta is None:
+            self.verdict_shown = None
+            self.verdict.clear()
+            return
+        closer = delta < 0
+        self.verdict_shown = (closer,
+                              _('Warmer') if closer else _('Colder'))
+        self.verdict.show(*self.verdict_shown)
 
     def _solved(self) -> None:
         self.results.append((self.rung, self.steps, self.par))
@@ -323,8 +362,9 @@ class YouAreHere:
                 self.rung = self.clamped(self.rung - 1)
         self.phase = 'solved'
         # Only now: the way out is reached, the action window is shut, and
-        # nothing the learner does next can change what this says. Painted
-        # any earlier it would be an answer key rather than a verdict.
+        # nothing the learner does next can change what this says.  Coach
+        # mode paints earlier, but only ever about the move already taken --
+        # a running verdict of the past, not an answer key for the future.
         self.verdict_shown = (self.steps <= self.par, self.message)
         self.verdict.show(*self.verdict_shown)
 

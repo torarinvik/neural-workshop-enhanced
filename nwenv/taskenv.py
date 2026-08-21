@@ -325,6 +325,14 @@ class TaskEnv:
 
     #: Whether the task advances on its own clock. See :meth:`tick`.
     clocked: bool = True
+    #: Pay a fresh verdict once per *action* instead of once per trial.
+    #: For tasks that paint a consequence verdict after every move (dense
+    #: shaping).  Payment stays tied to the action's receipt through the
+    #: owed-outcome path, so a verdict lingering across ticks still cannot
+    #: multiply: with no action finalized, nothing is owed and nothing pays.
+    #: Only the neutral-outcomes accounting honours this; the sparse path
+    #: keeps its per-trial dedupe.
+    dense: bool = False
 
     #: The slowest a clocked task may be driven. Below this a task's own
     #: motion clamps start to bite and a tick stops meaning what it says.
@@ -575,7 +583,8 @@ class TaskEnv:
             # A verdict lingers on screen. Paying it on every tick it is up
             # would multiply one answer into many and drown the tally; it is
             # owed once, to the trial it answers.
-            fresh = settled and self._scored_trial != self._trial_seq
+            fresh = settled and (self.dense
+                                 or self._scored_trial != self._trial_seq)
             if self._outcome_owed:
                 self._outcome_owed = False
                 if fresh:
