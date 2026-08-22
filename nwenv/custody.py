@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """The stepped agent boundary for Chain of Custody.
 
-Five ports: two to slide the claw round the ring, one that picks up or
+Four ports: two to slide the claw round the ring, one that picks up or
 puts down, and one that does nothing at all.
 
 The waiting port is not padding. **A claw cannot chase a box** — both
@@ -54,19 +54,20 @@ from typing import Any, Optional
 
 from .taskenv import TaskEnv
 
-#: What the five ports do, in an order the learner has to discover.
+#: What the four ports do, in an order the learner has to discover.
 LEFT, RIGHT, TAKE, WAIT = 0, 1, 2, 3
-PORTS = 5
+PORTS = 4
 
 
 class CustodyEnv(TaskEnv):
     """Deterministic, stepped view of one Chain of Custody run."""
 
     task_class = ('neural_workshop.ui.custody', 'ChainOfCustody')
-    #: Five, not four: the fifth does nothing and is not a duplicate of
-    #: the fourth. Two ports that both do nothing are two ports the
+    #: Four: two to slide, one to take or place, and exactly one that
+    #: does nothing. Two ports that both did nothing would be two the
     #: learner must tell apart and cannot, which is noise rather than
-    #: difficulty — so there is exactly one, and waiting matters.
+    #: difficulty — and this said five for a while, which meant it had
+    #: two of them.
     ports = PORTS
     clocked = True
     dense = True
