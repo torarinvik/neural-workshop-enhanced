@@ -465,6 +465,62 @@ class TheGoldenOne(unittest.TestCase):
         self.assertFalse(self.thief.gold_on_offer)
 
 
+class TheGoldenOneIsATimingDecision(unittest.TestCase):
+    """Not a trap and not free money, which took measuring to find out.
+
+    Reaching for it is two beats he can neither grab nor leave in, and
+    three grabs' worth of noise goes into the door across them — one for
+    the press and one for each committed beat. So whether it is worth
+    taking is entirely a question of whether the door can absorb that,
+    and that is a sum a player can do off the screen.
+
+    Taken on sight it raises the haul and throws away a third of the
+    clean rounds doing it. Taken only when there is room it is the
+    biggest single gain in the game and costs nothing at all. A table of
+    hauls alone said it was free money, which is why the oracle's
+    ``--gold`` prints clean rounds beside them now.
+    """
+
+    def run_it(self, level, player, deals=50):
+        rng = random.Random(level)
+        clean = 0
+        total = 0
+        for _deal in range(deals):
+            thief, setup = O.play(level, seed=rng.randrange(1 << 30),
+                                  player=player)
+            clean += 1 if C.cleared(thief, setup) else 0
+            total += C.haul(thief)
+        return clean / float(deals), total / float(deals)
+
+    def golden_rungs(self):
+        return [level for level, grade in enumerate(C.GRADES, 1)
+                if grade.gold]
+
+    def test_there_are_some(self):
+        """Or the rest of this class is checking nothing."""
+        self.assertTrue(self.golden_rungs())
+
+    def test_reaching_on_sight_costs_clean_rounds(self):
+        for level in self.golden_rungs():
+            name = C.GRADES[level - 1].name
+            blind, _blind_haul = self.run_it(level, O.greedy)
+            self.assertLess(blind, 0.85, '%s: %.0f%% clean' % (name,
+                                                               100 * blind))
+
+    def test_reaching_with_room_costs_nothing_and_is_worth_the_most(self):
+        for level in self.golden_rungs():
+            name = C.GRADES[level - 1].name
+            timely, timely_haul = self.run_it(level, O.timely)
+            _left, left_haul = self.run_it(level, O.careful)
+            self.assertEqual(timely, 1.0, name)
+            self.assertGreater(timely_haul, left_haul + 3, name)
+
+    def test_the_rule_reads_only_what_is_drawn(self):
+        """Or it would not be a rule a player could follow."""
+        names = list(inspect.signature(O.room_for_the_reach).parameters)
+        self.assertEqual(names, ['thief', 'grade'])
+
+
 class TheCoachIsBlind(unittest.TestCase):
     """The one thing that could quietly gut the task.
 

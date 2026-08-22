@@ -1025,7 +1025,21 @@ Above it every step in is paid for, and the haul turns over — a little
 way in beats stopping at the line, and the whole way in is worth a third
 of it and loses every round.
 
-Setting that price took two goes and the failure is worth recording,
+The **golden cookie** is the other decision on the top three rungs, and
+it is neither a trap nor free money — which took measuring to establish,
+because a table of hauls alone said it was free money. It sits on the
+counter rather than in the jar, so it is worth six or eight cookies that
+never open the door on their own; reaching for it is two beats in which
+he can neither grab nor leave, and three grabs' worth of noise goes into
+the door across them. Taken **on sight** it raises the haul from 18 to
+18–22 and throws away a third to a half of the clean rounds doing it.
+Taken **only when the door can absorb the reach** — a sum a player can
+do off the screen — it is 100% clean and worth 24 to 26, the biggest
+single gain in the game. `oracle_cookie.py --gold` prints clean rounds
+beside the hauls now, for exactly that reason.
+
+Setting the price of greed took two goes and the failure is worth
+recording,
 because it is arithmetic rather than taste. A grab into the shaded range
 pays `+1` when it is safe and costs `CAUGHT_COST` when it is not, so it
 is worth taking exactly while the chance of it bringing her is under

@@ -15,6 +15,11 @@ zone he is willing to push the door. Zero is :func:`careful`. ``--haul``
 sweeps it and prints what each step of greed buys and what it costs,
 which is the only honest way to say where the marginal cookie turns.
 
+:func:`timely` is :func:`careful` plus the golden cookie, taken only
+while the door still has room for the whole reach. ``--gold`` puts it
+against a thief who reaches on sight, which is the measurement the
+mechanic exists for.
+
 :func:`impulsive` never looks at the door. He grabs every beat and
 leaves only once there is somebody visibly in the doorway, which makes
 him the reactive half of the task on its own — he clears exactly the
@@ -90,6 +95,31 @@ def greedy(thief, setup):
     return bold(0, gold=True)(thief, setup)
 
 
+def room_for_the_reach(thief, grade):
+    """Would the whole reach still leave the door under the safe line?
+
+    Three times :attr:`Grade.opening`, because the press itself is noisy
+    and so is each of the two beats he is committed for. Everything in
+    it is on the screen.
+    """
+    return C.door(thief, grade) + 3 * grade.opening < C.SAFE
+
+
+def timely(thief, setup):
+    """Takes the golden one, but only while there is room for the reach.
+
+    The difference between this and :func:`greedy` is the whole of what
+    the golden cookie is for. Taken on sight it is worth a point or two
+    of haul and about a third of the clean rounds; taken only when the
+    door can absorb three grabs' worth of noise it is worth six to eight
+    points and costs nothing at all.
+    """
+    if thief.gold_on_offer and not _her(thief) \
+            and room_for_the_reach(thief, setup.grade):
+        return C.LUNGE
+    return bold(0)(thief, setup)
+
+
 def impulsive(thief, setup):
     """Takes every grab short of a certainty; leaves only on sight.
 
@@ -114,7 +144,8 @@ def impulsive(thief, setup):
     return C.LEAVE
 
 
-PLAYERS = {'careful': careful, 'greedy': greedy, 'impulsive': impulsive,
+PLAYERS = {'careful': careful, 'greedy': greedy, 'timely': timely,
+           'impulsive': impulsive,
            'bold1': bold(1), 'bold5': bold(5), 'bold10': bold(10)}
 
 
@@ -195,18 +226,23 @@ def main(argv=None):
         return 0
 
     if args.gold:
-        print('%-22s %7s %8s %8s' % ('rung', 'fumble', 'no gold', 'gold'))
+        # Clean rounds as well as haul, because haul on its own said the
+        # golden one was free money: taken on sight it does raise the
+        # haul, and it does it while throwing away a third of the rounds
+        # it was raising. The third policy is the point of the mechanic.
+        print('%-22s %-15s %7s %7s %7s'
+              % ('rung', 'policy', 'clean', 'caught', 'haul'))
         for level, grade in enumerate(C.GRADES, 1):
             if not grade.gold:
                 continue
-            for fumble in (0.0, 0.05, 0.10, 0.20):
-                one = survey(deals=args.deals, player=bold(0),
-                             fumble=fumble)[level - 1]
-                two = survey(deals=args.deals, player=bold(0, gold=True),
-                             fumble=fumble)[level - 1]
-                print('%-22s %6.0f%% %7.1f  %7.1f'
-                      % (grade.name if not fumble else '', 100 * fumble,
-                         one[6], two[6]))
+            for name, who in (('leave it', careful),
+                              ('on sight', greedy),
+                              ('with room', timely)):
+                row = survey(deals=args.deals, player=who)[level - 1]
+                print('%-22s %-15s %6.0f%% %6.0f%% %7.1f'
+                      % (grade.name if name == 'leave it' else '', name,
+                         100.0 * row[2] / args.deals,
+                         100.0 * row[3] / args.deals, row[6]))
         return 0
 
     if args.floor:
