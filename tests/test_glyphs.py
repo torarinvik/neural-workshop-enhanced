@@ -59,8 +59,14 @@ def an_ell(size: int = 32) -> G.Coverage:
 
 
 def _pool():
-    """Latin-capable families here, split into train and held out."""
-    found = G.families(G.platform_dirs(), must_draw=LETTERS)
+    """Latin-capable families here, split into train and held out.
+
+    Through :func:`neural_workshop.fontlib.font_dirs`, so a machine
+    that has fetched the mirror measures against that wider pool and
+    one that has not still measures against its own typefaces.
+    """
+    from neural_workshop import fontlib
+    found = G.families(fontlib.font_dirs(), must_draw=LETTERS)
     names = [name for name in
              (UG.register(paths[0]) for paths in found.values()) if name]
     train, _val, test = G.split(names, seed=7)

@@ -8,10 +8,11 @@ The second is much easier, and nothing in the picture tells you which
 one happened.
 
 This module exists to close that gap. A letter is drawn in one of the
-several hundred typefaces already installed on the machine, and then
-put through a warp sampled from a rung of a ladder: stretched, sheared,
-turned, tilted in perspective, rippled, thickened or thinned, specked,
-partly covered, and faded toward its background. Every one of those is
+typefaces the machine can reach — the ones already installed on it,
+plus anything :mod:`neural_workshop.fontlib` has fetched from Google
+Fonts — and then put through a warp sampled from a rung: stretched,
+sheared, turned, tilted in perspective, rippled, thickened or
+thinned, specked, partly covered, faded toward its background. Each is
 a separate knob, sampled independently, so the space of appearances is
 not a set to memorise but a volume to sample from.
 
@@ -45,45 +46,46 @@ the *training* families and its questions asked in the *held-out* ones.
 It is a weak recogniser on purpose: it knows nothing but where the ink
 sits in an eight-by-eight grid over the letter's own ink box.
 
-Measured on this machine over the twenty-six capitals in the ten
-held-out families of a 41/8/10 split, templates from the forty-one
-training ones. 260 deals a rung, so a figure here is worth about three
-points either way; ``tests/bench_glyphs.py`` reruns the whole column.
+Measured over the twenty-six capitals in sixteen held-out families,
+templates from forty training ones, out of a pool of 366 Latin-capable
+families split 255/54/56 by family. 416 deals a rung, so a figure here
+is worth about two points either way; ``tests/bench_glyphs.py`` reruns
+the whole column.
 
-    rung  1  a clean page            0.89
-    rung  2  a hand that wavers      0.87
-    rung  3  a slight lean           0.78
-    rung  4  off the flat            0.59
-    rung  5  thick and thin          0.38
-    rung  6  a rippled page          0.27
-    rung  7  through the blinds      0.17
-    rung  8  a bad photocopy         0.15
-    rung  9  a dirty window          0.10
-    rung 10  most of it is gone      0.09
+    rung  1  a clean page            0.90
+    rung  2  a hand that wavers      0.90
+    rung  3  a slight lean           0.77
+    rung  4  off the flat            0.63
+    rung  5  thick and thin          0.45
+    rung  6  a rippled page          0.29
+    rung  7  through the blinds      0.22
+    rung  8  a bad photocopy         0.19
+    rung  9  a dirty window          0.15
+    rung 10  most of it is gone      0.11
 
 Four things in that column are worth saying out loud rather than
 leaving for someone to trip over.
 
 The first rung does not score 1.00, and it never will: the recogniser
 is looking at typefaces it has never seen, which is the whole point,
-and Chalkduster's capital G is not an eight-by-eight match for Big
-Caslon's. The 0.89 is the ceiling this measurement has, not a fault in
-rung one. What the column shows is the *fall* from it.
+and Ruge Boogie's capital G is not an eight-by-eight match for Times
+New Roman's. The 0.90 is the ceiling this measurement has, not a fault
+in rung one. What the column shows is the *fall* from it.
 
-The floor is 1/26 = 0.04, and rung ten sits at 0.09, which is to say
+The floor is 1/26 = 0.04, and rung ten sits at 0.11, which is to say
 rung ten is very nearly unanswerable *by this recogniser*. That is a
 statement about the recogniser, not about a reader or about a learner
 with convolutions; do not read the last two rungs as "impossible".
 
 The fall is not spread evenly across the knobs. Switching each off in
-turn at rung six, against 0.24 with all of them on:
+turn at rung six, against 0.26 with all of them on:
 
-    matrix off   0.45      speckle off      0.37
-    ripple off   0.29      occlusion off    0.30
-    thicken off  0.25      contrast off     0.23
-    all off      0.89
+    matrix off   0.48      speckle off      0.37
+    ripple off   0.30      occlusion off    0.34
+    thicken off  0.27      contrast off     0.27
+    all off      0.92
 
-Two readings. The knobs compound: the six gains add to 0.46 and
+Two readings. The knobs compound: the six gains add to 0.44 and
 turning all six off is worth 0.65, so a third of rung six's difficulty
 is in the combination rather than in any one of it. And thickening and
 contrast recover *nothing*, which is a fact about the measurement
@@ -95,20 +97,31 @@ blind to it by construction and cannot price it either way.
 
 The fourth is the reason the ripple has its own budget and its own
 check. It is the knob that most looks like difficulty and it is worth
-+0.05, less than the plain affine matrix underneath it: an eight-by-
++0.04, a fifth of the plain affine matrix underneath it: an eight-by-
 eight grid barely notices ink sliding a tenth of a letter sideways.
 It was worth a quarter of that before — the slope budget was split
 across both axes at once, which shrank the amplitude for no gain in
 safety — and finding either number took measuring it, not looking at
 a picture of it.
 
-One more thing about the pool, because it invalidated the first
-version of every number above. See :func:`covered`: of the 198 font
-families on this machine, only 59 actually contain Latin capitals, and
-asking one of the other 139 for a capital A gets a perfectly good
-letter drawn by the system's *fallback* font. A held-out family that
-is really the fallback is the training typeface being scored as
-unseen, and two thirds of the first pool were exactly that.
+Two more things about the pool.
+
+The first invalidated an earlier version of every number above. See
+:func:`covered`: of the 198 font families installed on this machine
+only 59 actually contain Latin capitals, and asking one of the other
+139 for a capital A gets a perfectly good letter drawn by the system's
+*fallback* font. A held-out family that is really the fallback is the
+training typeface being scored as unseen, and two thirds of that pool
+were exactly that.
+
+The second is that 59 families is not a sample of anything — the ten
+that came out held out were ten particular typefaces, and a Linux box
+would have had a different ten. :mod:`neural_workshop.fontlib` fetches
+Google Fonts from a mirror to widen it, and the column above was
+measured on 366 Latin-capable families rather than 59. Worth saying
+plainly: widening the pool six-fold barely moved the column, which is
+mild evidence that the ladder's shape was not an artefact of the
+handful of typefaces that happened to be installed here.
 
 SPDX-License-Identifier: GPL-2.0-or-later
 """

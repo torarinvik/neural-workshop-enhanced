@@ -176,28 +176,55 @@ other is a leak with a different filename. `families()` groups files by
 the family name in the font's own `name` table and `split()` divides
 those groups whole.
 
-**Ask the font what it can draw.** Of the 198 families on this Mac only
-59 contain Latin capitals — most of the rest are Noto faces for other
-scripts. Ask one of those 139 for a capital A and the platform quietly
-substitutes one, and pyglet hands back a perfectly good letter in a
-typeface nobody asked for. Every held-out family that is really the
-fallback is the *training* typeface being scored as unseen, which is
+**Ask the font what it can draw.** Of the 198 families installed on this
+Mac only 59 contain Latin capitals — most of the rest are Noto faces for
+other scripts. Ask one of those 139 for a capital A and the platform
+quietly substitutes one, and pyglet hands back a perfectly good letter
+in a typeface nobody asked for. Every held-out family that is really the
+fallback is the *training* typeface being scored as unseen, which was
 two thirds of the pool. `families(must_draw=...)` reads the font's own
 `cmap` and is not optional for anything being measured.
 
+**Widen the pool before believing a held-out number.** 59 families is
+not a sample of anything: the ten that came out held out were ten
+particular typefaces, and another machine would have had a different
+ten. `neural_workshop/fontlib.py` fetches Google Fonts from the
+`Felix92/docTR-resource-collection` mirror on Hugging Face — 6,899
+`.ttf` files across about 1,800 families, plus a 1,010-file subset the
+mirror marks as covering English. Standard library only, resumable and
+idempotent, and nothing downloads on its own: a caller asks, by number
+of families rather than of files, and one already on disk is skipped.
+
+```bash
+PYTHONPATH=. .venv/bin/python -m neural_workshop.fontlib google 300  # about 120 MB
+```
+
+The files land in the player's data directory, not in this repository.
+They are Google Fonts under the SIL Open Font License, Apache 2.0 or the
+Ubuntu Font Licence depending on the family; the mirror is tagged
+Apache 2.0. Two cautions carried in the module: the mirror's *filename*
+is used only to spread a fetch across families rather than pull nine
+weights of one face — the family a font is really in comes from its own
+`name` table — and the mirror's "english" folder is its word, not a
+measurement, so `covered()` still decides what can draw an alphabet.
+
 **The ladder is measured, not asserted.** A nearest-template classifier
-over an eight-by-eight ink grid, templates from the 41 training
-families and questions from the 10 held-out ones, falls 0.89, 0.87,
-0.78, 0.59, 0.38, 0.27, 0.17, 0.15, 0.10, 0.09 across the rungs against
-a floor of 0.04. The first rung is the ceiling of the measurement
-rather than a score — these are typefaces the templates have never seen
-— so what the column shows is the fall. Switching each knob off in turn
-at rung six puts most of the cost in the plain affine matrix (+0.21)
-and the speckle (+0.13), and finds that thickening and contrast recover
-nothing at all: a signature counts pixels above a fixed threshold, so
-it is blind to both by construction and cannot price them. The elastic
-ripple, which is the knob that most looks like difficulty, is worth
-+0.05.
+over an eight-by-eight ink grid, templates from 40 training families and
+questions from 16 held-out ones, out of 366 Latin-capable families split
+255/54/56, falls 0.90, 0.90, 0.77, 0.63, 0.45, 0.29, 0.22, 0.19, 0.15,
+0.11 across the rungs against a floor of 0.04. The first rung is the
+ceiling of the measurement rather than a score — these are typefaces the
+templates have never seen — so what the column shows is the fall.
+Switching each knob off in turn at rung six puts most of the cost in the
+plain affine matrix (+0.21) and the speckle (+0.11), and finds that
+thickening and contrast recover nothing at all: a signature counts
+pixels above a fixed threshold, so it is blind to both by construction
+and cannot price them. The elastic ripple, which is the knob that most
+looks like difficulty, is worth +0.04.
+
+Widening the pool six-fold, from 59 families to 366, barely moved that
+column — mild evidence that its shape was not an artefact of whichever
+typefaces happened to be installed.
 
 ```bash
 cd tests && PYTHONPATH=.. ../.venv/bin/python bench_glyphs.py   # about a minute

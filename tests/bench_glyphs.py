@@ -8,11 +8,17 @@ This is where the numbers in :mod:`neural_workshop.glyphs`' docstring
 come from, and rerunning it is the way to find out whether they still
 hold after a change to the ladder. It prints three things.
 
-**The pool.** How many typefaces this machine has, how many of them
+**The pool.** How many typefaces are reachable — this machine's, plus
+anything :mod:`neural_workshop.fontlib` has fetched — how many of them
 actually contain Latin capitals, and how the families were split. The
 gap between those first two is the whole reason :func:`covered` exists:
 ask a font with no Latin in it for a capital A and the platform hands
 back somebody else's A without saying so.
+
+Run it with only the machine's own fonts and the held-out set is ten
+particular typefaces rather than a sample of anything. To widen it:
+
+    python -m neural_workshop.fontlib google 300     # about 120 MB
 
 **The column.** A nearest-template letter classifier over held-out
 families, rung by rung. It is a weak recogniser and it is meant to be —
@@ -38,9 +44,17 @@ import time
 
 from uisupport import UI_IMPORT_ERROR
 
-from neural_workshop import glyphs as G
+from neural_workshop import fontlib, glyphs as G
 
 LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+#: Families the templates are built from, and families the questions
+#: come from. Both are capped rather than "all of them" because every
+#: query is compared against every template: the pool went from 59
+#: Latin families to 366 when the mirror was added, and uncapped that
+#: would be an hour rather than a minute for no more signal.
+TEMPLATE_FAMILIES = 40
+ASK_FAMILIES = 16
 
 #: The rung the knobs are switched off at. Middling on purpose: at the
 #: top every knob is saturated and at the bottom none of them is doing
@@ -51,16 +65,22 @@ ABLATE_AT = 6
 def pool(report=print):
     """Latin-capable families here, split by family and registered."""
     from neural_workshop.ui import glyphs as UG
-    every = G.families(G.platform_dirs())
-    latin = G.families(G.platform_dirs(), must_draw=LETTERS)
+    dirs = fontlib.font_dirs()
+    every = G.families(dirs)
+    latin = G.families(dirs, must_draw=LETTERS)
+    mine = G.families(G.platform_dirs(), must_draw=LETTERS)
     names = [name for name in
              (UG.register(paths[0]) for paths in latin.values()) if name]
     train, val, test = G.split(names, seed=7)
-    report('%d families here, %d of them draw Latin capitals'
-           % (len(every), len(latin)))
+    report('%d families, %d of them draw Latin capitals — %d from this '
+           'machine and %d fetched' % (len(every), len(latin), len(mine),
+                                       len(latin) - len(mine)))
     report('split %d / %d / %d  (train / validation / held out)'
            % (len(train), len(val), len(test)))
-    report('held out: %s' % ', '.join(sorted(test)))
+    train, test = train[:TEMPLATE_FAMILIES], test[:ASK_FAMILIES]
+    report('using %d for templates and %d to ask with' % (len(train),
+                                                          len(test)))
+    report('asked in: %s' % ', '.join(sorted(test)))
     return train, test
 
 
