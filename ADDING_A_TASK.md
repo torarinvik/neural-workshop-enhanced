@@ -1,6 +1,6 @@
 # Making a task reachable by the agent
 
-The Workshop ships twenty-five playable tasks and **all twenty-five are
+The Workshop ships twenty-six playable tasks and **all twenty-six are
 reachable by the learning agent**. Reachable means more than playable: the
 agent gets pixels and opaque ports, and every scalar it is paid must be
 re-derivable from the frames by someone who is not trusted with the game.
@@ -54,10 +54,12 @@ the programme has one pixel reader to get right rather than one per task.
 | `requires` | settings the boundary imposes whatever the player prefers. Almost always `{'feedback': True}`: a trial that resolves with no verdict painted resolves into nothing a third party can read. |
 
 The hooks are all still there — `build`, `drive`, `trial_open`, `tick`,
-`resolved`, `finished` — and an override wins over a declaration. Four tasks
+`resolved`, `finished` — and an override wins over a declaration. Five tasks
 need one. Count composes its answer out of digits, Sudoku steers a cursor,
 Moving Targets and Concentration name an object rather than an index, and
-Reflex has no phase for its trial window at all. Each is six lines.
+Reflex has no phase for its trial window at all. Each is six lines. Three
+more override `apply_dials` and `dials` only, which is the coach gate below
+rather than anything about their ports.
 
 ## The two things the UI must do
 
@@ -171,6 +173,20 @@ on a maze random play had not solved.
 Keep it off for people (`coach = False` in the task's `__init__`), so the
 human game stays pixel-identical and every number taken before still
 compares.
+
+**Shaping is not the only honest way to be dense**, and a task that is
+not doing it should not borrow the vocabulary. Cookie Thief pays per
+beat too, but there is no potential in it and nothing telescopes: the
+round asks for *n* cookies with none of them seen, so each cookie under
+the quota is a piece of the green and each cookie taken under Mother's
+eye is the whole of the red. That is the round's own verdict taken
+apart rather than a potential over it. It orders policies the way the
+round's single scalar does — which is what makes it safe — and it
+diverges in one way worth writing down: the scalar is all-or-nothing
+and the sum is graded, so a learner paid this way tolerates a little
+more risk than the verdict rewards. Say which of the two you built. The
+first two rules still apply to both; the telescoping one is specific to
+shaping.
 
 ## Read the clock the driver owns
 

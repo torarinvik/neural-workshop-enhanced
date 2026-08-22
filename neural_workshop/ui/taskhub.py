@@ -28,6 +28,7 @@ CATEGORIES: Sequence[Tuple[str, str]] = (
     ('perception', _('Perception')),
     ('reasoning', _('Reasoning')),
     ('planning', _('Planning')),
+    ('self_control', _('Self-control')),
 )
 
 #: Category id → list of (task id, label).
@@ -68,6 +69,13 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('sokoban', _('Sokoban')),
         ('maze', _('Maze')),
         ('you_are_here', _('You Are Here')),
+    ],
+    # Not attention, and the difference is the point. Everything under
+    # attention is about finding or following the right thing; this is
+    # about not doing a thing you are already doing and want to keep
+    # doing. Reflex would fail every rung of it by being fast.
+    'self_control': [
+        ('cookie_thief', _('Cookie Thief')),
     ],
 }
 
@@ -451,6 +459,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'maze':
         from .maze import MazeTask
         MazeTask()
+        return
+    if task_id == 'cookie_thief':
+        from .cookiethief import CookieThief
+        CookieThief()
         return
     # Unknown task: restore the hub rather than dropping the player.
     TaskHub(return_to_title=return_to_title, category=category)

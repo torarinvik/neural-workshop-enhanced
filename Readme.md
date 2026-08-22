@@ -963,6 +963,102 @@ open, but most of that is the 2D Maze's own generator hunting for a
 maze that meets the rung's floors: a wait this task inherits rather
 than adds.
 
+### Self-control
+
+A category of its own rather than a sixth attention task, and the
+difference is worth stating. Everything under **Attention** is about
+finding or following the right thing. This is about *not* doing a thing
+you are already doing and would rather keep doing. Reflex would lose
+every rung above the fifth by being fast.
+
+**Cookie Thief.** A boy, a jar and a doorway. Reaching makes him faster
+and he eats whatever fraction of a cookie his speed came to that beat,
+so the cookies come quicker the longer he keeps at it — and the same
+number that is earning them is the number of beats it will take him to
+stop. Take what the round asked for, and be still before Mother looks.
+
+The stop is the whole task, and the ladder is built on one measured
+break. Braking the instant she appears is enough on the first five
+rungs and on none of the five above them, because what catches him is
+taking another *cookie* rather than still drifting: `Grade.reflex_bites`
+simulates a flat-out thief who brakes on the warning and counts what he
+gets anyway once her eyes are on him. It runs 0, 0, 0, 0, 0, 1, 2, 2, 2,
+3, and the foil agrees exactly — a player who eats flat out and brakes
+only on the doorway clears every one of the first five rungs and none of
+the last five. Above the break the round has to be won before there is
+anything to react to.
+
+The first version of that property compared stopping distance against
+the warning and was wrong about rung five, which is a rung where he is
+still drifting when she looks and no longer eating.
+
+She comes for two reasons and only one of them is drawn. The jar shades
+the depth at which she starts noticing, as a **band and never a line**,
+so a thief can see he is into the range where she might arrive and not
+which cookie brings her; she also walks in on a beat nothing announces.
+Because the band always sits above the quota, stopping on the number
+you were asked for is always safe — the count can punish momentum and
+never the quota itself, which is what makes a perfect stop a perfect
+round. `oracle_cookie.py` is a thief who brakes when braking would land
+him on the quota, and he clears **300 of 300 at every rung** using at
+most 55% of the beats, so a round that was lost was lost on the stop
+rather than on the arithmetic. The suite runs him.
+
+**Stopping is committing.** Stand still for three beats with something
+already taken and he sneaks off, and the round is scored where he left
+it. Without that rule a round decided at beat fifteen ran on to the
+deadline anyway — eight seconds of a person watching a still kitchen —
+and, worse, halting was free. Now it is the move that ends the round,
+so a thief who stops one cookie short has chosen to.
+
+The golden cookie was a bad mechanic twice before it was a good one. It
+is worth several cookies and never comes out of the jar, so it buys
+quota without buying risk; the question is what the reach costs.
+Flinging him to full speed made it a button that was never worth
+pressing at any setting — steady beat greedy 100% to 49%, 100% to 3%,
+100% to 0%, and a patience sweep from 8 to 22 beats found no crossover
+anywhere. It locks the brake for two beats instead. That turns it into
+a question of *when*: taken flat out, two unbraked beats are two more
+cookies out of the jar; taken at a crawl it is nearly free, but the
+window may close first. Since a perfect controller clears every rung
+whatever it does with the gold, the three policies can only be told
+apart by a thief who fumbles, and that is how they are measured — at one
+press in ten pressed at random, banking the gold early and reaching for
+it late scores 98, 94 and 91 percent across the three gold rungs
+against 91, 87 and 94 for ignoring it and 97, 82 and 75 for grabbing it
+on sight.
+
+The guessing floor is measured rather than derived, because there is
+nothing here to derive: what a run of random presses scores is whatever
+a random walk in speed happens to eat before somebody walks in. It runs
+32% at the bottom of the ladder to 1% at the top, and the run reports
+it beside the score. It is deliberately not asserted rung by rung — the
+middle of the ladder is genuinely flat, and 3.5% against 5.5% is a tie
+read as an ordering.
+
+Coach mode here is **not** the potential-based shaping the maze and the
+belt got, and the wrapper says so rather than letting the resemblance
+stand. There is no potential and nothing telescopes. It is the round's
+own verdict taken apart: each cookie under the quota is a piece of the
+green and each cookie under her eye is the whole of the red, so the sum
+over a round orders policies the way the round's single scalar does
+without a learner having to reach the end of one. Where it diverges is
+that the scalar is all-or-nothing and the sum is graded, so a learner
+paid this way tolerates a little more risk than the verdict rewards.
+That is the price of paying anything before the end, and it is stated
+rather than hidden. What the coach cannot see is the trigger and the
+deadline — the two hidden things — and that is structural: the
+functions it reads take a thief and a rung, and neither of them can
+reach a `Setup`.
+
+`oracle_cookie.py --curve` sweeps the warning against a purely reactive
+thief and finds the beat at which he stops being able to stop: 4 at
+rung seven, 8 at rung ten. The curve comes out as a step rather than a
+slope, which is honest — the oracle's reaction is noiseless, so the
+physics is all that is left in it. Swept against a real learner the
+same tool measures the learner's own inhibition threshold, which is
+what it is for.
+
 ### Window size, full screen, and the two coordinate spaces
 
 The window is resizable, and **F11** switches to and from full screen
@@ -1177,7 +1273,7 @@ obs, events, done = env.step(2)         # one of three opaque ports
 env.close()
 ```
 
-Nineteen of the twenty-four are *declarations* rather than code — where
+Twenty-two of the twenty-six are *declarations* rather than code — where
 the task class lives, what one port calls, which phase takes input, which
 phase means the trial is over, and what the difficulty knobs are called:
 
@@ -1193,9 +1289,12 @@ class HanoiEnv(TaskEnv):
 ```
 
 They carry **no deriver and no verifier**, because they paint the shared
-verdict label and the boundary already knows how to read one. The four
-written before that existed still carry both, at about a hundred lines
-apiece. `ADDING_A_TASK.md` is the whole contract.
+verdict label and the boundary already knows how to read one. Eight of
+them add a short method or two — a port that names an object rather than
+an index, a trial window the task has no phase for, a coach gated on
+whether the boundary will actually pay it. The four written before that
+existed still carry both, at about a hundred lines apiece.
+`ADDING_A_TASK.md` is the whole contract.
 
 Two things had to change across the workshop to make this work, and both
 were latent defects rather than boundary plumbing:
@@ -1211,7 +1310,7 @@ were latent defects rather than boundary plumbing:
   is now where that line lives, and `tests/check_band.py` sweeps every
   task through its own wrapper on every rung.
 
-Random play is paid on eighteen of the twenty-three overlays. The other
+Random play is paid on twenty of the twenty-five overlays. The other
 five — Sudoku, Jigsaw, Concentration and the two mazes — have no
 accidental solutions, and are tested by driving them with a policy that
 knows the answer through the same ports a learner would use.

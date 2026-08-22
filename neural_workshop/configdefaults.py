@@ -878,6 +878,32 @@ CUSTODY_BELT_SECONDS = 0.40
 CUSTODY_MARK_SECONDS = 1.6
 CUSTODY_ADAPTIVE = True
 
+# Cookie Thief is one boy, one jar and one doorway. Reaching makes him
+# faster and he eats whatever his speed came to that beat, so the
+# cookies come quicker the longer he keeps at it - and the same number
+# that is earning them is the number of beats it takes him to stop.
+# What is scored is whether he got the number the round asked for with
+# none of them seen, so the whole task is the stop rather than the
+# theft. Mother comes when the jar is down far enough, and how far is
+# shaded on the jar as a band rather than marked as a line, so a thief
+# can see that he is in the range where she might arrive and not which
+# cookie brings her. Up to COOKIE_LEVEL five the warning is longer than
+# his stopping distance and the round can be played by watching the
+# door; from six it never is again, and the only defence left is not
+# having been going that fast. Standing still for three beats with
+# something already taken ends the round where he left it, so stopping
+# is a decision rather than a pause. From COOKIE_LEVEL eight a golden
+# cookie is worth several and never comes out of the jar, but reaching
+# for it costs two beats in which there is no brake at all - which
+# makes it a question of when rather than whether. COOKIE_BEAT_SECONDS
+# is how long a beat takes; lower is a faster kitchen and less time to
+# think between them.
+COOKIE_LEVEL = 4
+COOKIE_TRIALS = 5
+COOKIE_BEAT_SECONDS = 0.35
+COOKIE_SET_SECONDS = 0.9
+COOKIE_ADAPTIVE = True
+
 ######################################################################
 # This is the end of the configuration file.
 ######################################################################

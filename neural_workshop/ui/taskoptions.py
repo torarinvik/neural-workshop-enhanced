@@ -1121,6 +1121,54 @@ CUSTODY = TaskSpec(
     note=custody_note)
 
 
+def cookie_note(chosen: Dict[str, Any]) -> str:
+    """What the rung does to the boy, and what guessing is worth.
+
+    The floor is measured rather than derived, and it has to be: what a
+    run of random presses scores here is whatever a random walk in
+    speed happens to eat before somebody walks in, which is a
+    simulation question and not an arithmetic one.
+    """
+    from ..cookiethief import GRADES, rehearse
+    level = max(1, min(len(GRADES), int(chosen['COOKIE_LEVEL'])))
+    grade = GRADES[level - 1]
+    said = [_('Take %d, with none of them seen. Flat out he needs %d beats '
+              'to stop and she gives him %d.')
+            % (grade.quota, grade.stopping, grade.warn)]
+    said.append(_('Braking the moment she appears is enough at this rung.')
+                if grade.reactive else
+                _('Braking the moment she appears is not enough at this '
+                  'rung: he still gets %d out of the jar under her eye, so '
+                  'the round has to be won before there is anything to '
+                  'react to.') % grade.reflex_bites)
+    if grade.gold:
+        said.append(_('A golden cookie is worth %d and never comes out of '
+                      'the jar, but reaching for it costs two beats with no '
+                      'brake.') % grade.gold)
+    if grade.decoys:
+        said.append(_('Somebody who is not her turns up in the doorway too.'))
+    said.append(_('Guessing scores about %d%%.')
+                % int(round(100 * rehearse(level))))
+    return '  '.join(said)
+
+
+COOKIE_THIEF = TaskSpec(
+    title=_('Cookie Thief options'),
+    options=(
+        Option('COOKIE_LEVEL', _('Level'), 4,
+               values=tuple(range(1, 11))),
+        Option('COOKIE_TRIALS', _('Rounds per run'), 5,
+               values=(1, 2, 3, 5, 8, 10, 15, 20)),
+        Option('COOKIE_BEAT_SECONDS', _('Seconds a beat takes'),
+               0.35, values=(0.12, 0.20, 0.35, 0.50, 0.75, 1.2)),
+        Option('COOKIE_SET_SECONDS', _('Seconds before the first beat'),
+               0.9, values=(0.0, 0.4, 0.9, 1.5, 2.5)),
+        Option('COOKIE_ADAPTIVE', _('Climb a rung after a clean getaway'),
+               True),
+    ),
+    note=cookie_note)
+
+
 #: Task id → the settings screen it owns.
 TASK_SPECS: Dict[str, TaskSpec] = {
     'monkey_ladder': MONKEY_LADDER,
@@ -1147,6 +1195,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'sudoku': SUDOKU,
     'crossed_wires': CROSSED_WIRES,
     'chain_of_custody': CUSTODY,
+    'cookie_thief': COOKIE_THIEF,
 }
 
 

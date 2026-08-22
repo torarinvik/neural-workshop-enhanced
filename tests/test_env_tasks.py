@@ -88,6 +88,7 @@ BY_LUCK = {
     'salesman': (600, {}),
     'sokoban': (2500, {'rung': 1, 'trials': 3}),
     'chain_of_custody': (900, {'rung': 3, 'trials': 4}),
+    'cookie_thief': (900, {'rung': 4, 'trials': 4}),
 }
 
 
@@ -180,6 +181,9 @@ class RandomPlayIsPaid(unittest.TestCase):
 
     def test_chain_of_custody(self):
         self.check('chain_of_custody')
+
+    def test_cookie_thief(self):
+        self.check('cookie_thief')
 
 
 @needs_ui
@@ -335,7 +339,7 @@ class TheBoundaryKnowsWhichTasksHaveAClock(unittest.TestCase):
                         'moving_targets', 'lookout', 'pursuit', 'reflex',
                         'count', 'recognition', 'matrix_reasoning',
                         'graph_mapping', 'concentration',
-                        'chain_of_custody'):
+                        'chain_of_custody', 'cookie_thief'):
             self.assertTrue(self.clocked(task_id), task_id)
 
     def test_the_ports_are_the_ones_the_task_has(self):
@@ -378,6 +382,7 @@ class DenseShapingOnlyPaintsWhereItIsPaid(unittest.TestCase):
         """Or the rest of this class is checking nothing."""
         self.assertIn('you_are_here', self.dense_tasks())
         self.assertIn('chain_of_custody', self.dense_tasks())
+        self.assertIn('cookie_thief', self.dense_tasks())
 
     def test_the_plain_build_leaves_the_per_move_label_off(self):
         for task_id in self.dense_tasks():
