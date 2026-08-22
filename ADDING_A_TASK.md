@@ -1,6 +1,6 @@
 # Making a task reachable by the agent
 
-The Workshop ships twenty-seven playable tasks and **all twenty-seven are
+The Workshop ships twenty-eight playable tasks and **all twenty-eight are
 reachable by the learning agent**. Reachable means more than playable: the
 agent gets pixels and opaque ports, and every scalar it is paid must be
 re-derivable from the frames by someone who is not trusted with the game.

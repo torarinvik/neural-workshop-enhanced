@@ -410,6 +410,44 @@ fair one for anything carrying state, which is the whole point of it.
 The adaptive option asks you to hold one more dot after a round that
 comes back whole, and one fewer after any mistake.
 
+**Donkey** is the 1981 original, which was four hundred lines of BASIC
+and one idea: a car, a two-lane road, donkeys standing in it, and the
+space bar to put you in the other lane. Hit one and the road is over.
+
+The original's only difficulty was that the road got faster, and speed
+here is a **dial** rather than a rung. That is the one place this
+departs from it and it departs on purpose: one row is one step at the
+agent boundary, so a rung that ran the road faster would be a rung a
+person feels and a learner cannot, and the two would be playing
+different ladders while reporting the same number.
+
+What carries the ladder instead is **the swerve**. Crossing takes rows,
+it cannot be called off, and while the car is across the middle a donkey
+in *either* lane hits it — so the row a donkey arrives on is a row you
+have to be clear of already. Press when you see it and you swerve into
+it. Up to level five the crossing is one row wide and the press goes in
+on the row before; from six it is two rows and from ten it is three.
+That is the whole content: not *what* to do, which is obvious, but how
+far ahead of the donkey to have already done it. Measured over two
+hundred deals a rung, swerving on sight clears every road while the
+crossing is one row wide and 9%, 3%, 1%, 0% and 4% of them on levels six
+to ten.
+
+Two things about it are worth saying because they are the sort of thing
+a task description usually leaves flattering. First, it has **no
+planning depth**, and it was built expecting some: a road is laid one
+row at a time and a donkey goes down only where the set of surviving car
+states stays non-empty, which guarantees every road has a line through
+it and — measured — leaves nothing standing that a press aimed at the
+swerve cannot handle. `tests/test_donkey.py` asserts that finding
+rather than the hoped-for one, so a future generator that quietly
+flattened or deepened the ladder fails a test instead of leaving the
+prose lying. Second, random play clears about one road in eight on the
+first level and none at all above the second, so the guessing floor the
+options screen quotes is honestly close to zero.
+
+Nothing is downloaded for this one — the road is generated.
+
 ### Perception
 
 The *Perception* category holds **Count**: a tangle of overlapping
@@ -1399,7 +1437,7 @@ obs, events, done = env.step(2)         # one of three opaque ports
 env.close()
 ```
 
-Twenty-three of the twenty-seven are *declarations* rather than code — where
+Twenty-four of the twenty-eight are *declarations* rather than code — where
 the task class lives, what one port calls, which phase takes input, which
 phase means the trial is over, and what the difficulty knobs are called:
 
@@ -1415,7 +1453,7 @@ class HanoiEnv(TaskEnv):
 ```
 
 They carry **no deriver and no verifier**, because they paint the shared
-verdict label and the boundary already knows how to read one. Eight of
+verdict label and the boundary already knows how to read one. Nine of
 them add a short method or two — a port that names an object rather than
 an index, a trial window the task has no phase for, a coach gated on
 whether the boundary will actually pay it. The four written before that
@@ -1484,7 +1522,7 @@ were latent defects rather than boundary plumbing:
   five window shapes and holds the pips inside the view with the keys in
   hand.
 
-Random play is paid on twenty-one of the twenty-six overlays. The other
+Random play is paid on twenty-two of the twenty-seven overlays. The other
 five — Sudoku, Jigsaw, Concentration and the two mazes — have no
 accidental solutions, and are tested by driving them with a policy that
 knows the answer through the same ports a learner would use. 3D Sokoban

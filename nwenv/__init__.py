@@ -42,11 +42,11 @@ clock with the window hidden, so they prove stepped-versus-scheduled
 parity rather than literal visible-window execution.
 
 **Every task in the workshop is wrapped**, and ``catalog`` is the list.
-Twenty-three of them are declarations on :class:`TaskEnv` rather than
+Twenty-four of them are declarations on :class:`TaskEnv` rather than
 code — where the task class lives, what one port calls, which phase
 takes input, which phase means the trial is over — and they paint
 :class:`neural_workshop.ui.verdict.VerdictLabel` when a trial settles,
-so they carry neither a deriver nor a verifier. Eight of those add a
+so they carry neither a deriver nor a verifier. Nine of those add a
 short method or two on top. The four written before that existed still
 carry both.
 
@@ -112,6 +112,7 @@ from .sudoku import SudokuEnv  # noqa: E402
 from .tracking import MovingTargetsEnv  # noqa: E402
 from .cookiethief import CookieThiefEnv  # noqa: E402
 from .crossedwires import CrossedWiresEnv  # noqa: E402
+from .donkey import DonkeyEnv  # noqa: E402
 from .custody import CustodyEnv  # noqa: E402
 from .inthedark import InTheDarkEnv  # noqa: E402
 from .maze import MazeEnv  # noqa: E402
@@ -154,7 +155,7 @@ __all__ = [
     # tests/test_env_catalog.py fails the build if it falls behind.
     'catalog',
     'ConcentrationEnv', 'CookieThiefEnv', 'CountingEnv',
-    'CrossedWiresEnv', 'CustodyEnv',
+    'CrossedWiresEnv', 'CustodyEnv', 'DonkeyEnv',
     'GraphMappingEnv',
     'HanoiEnv', 'InTheDarkEnv', 'JigsawEnv', 'LookoutEnv',
     'MatrixReasoningEnv', 'MazeEnv', 'MovingTargetsEnv', 'NCupMonteEnv',

@@ -90,6 +90,12 @@ BY_LUCK = {
     'sokoban_3d': (1500, {'rung': 1, 'trials': 3}),
     'chain_of_custody': (900, {'rung': 3, 'trials': 4}),
     'cookie_thief': (900, {'rung': 4, 'trials': 4}),
+    # The first rung, because that is the only one a coin ever gets
+    # to the end of: a swerve started at random is a swerve across
+    # the middle, and above the first rung the road is full enough
+    # that random play is paid nothing but red. Both signs are worth
+    # having in the test.
+    'donkey': (900, {'rung': 1, 'trials': 4}),
 }
 
 
@@ -188,6 +194,9 @@ class RandomPlayIsPaid(unittest.TestCase):
 
     def test_cookie_thief(self):
         self.check('cookie_thief')
+
+    def test_donkey(self):
+        self.check('donkey')
 
 
 @needs_ui
@@ -343,7 +352,7 @@ class TheBoundaryKnowsWhichTasksHaveAClock(unittest.TestCase):
                         'moving_targets', 'lookout', 'pursuit', 'reflex',
                         'count', 'recognition', 'matrix_reasoning',
                         'graph_mapping', 'concentration',
-                        'chain_of_custody', 'cookie_thief'):
+                        'chain_of_custody', 'cookie_thief', 'donkey'):
             self.assertTrue(self.clocked(task_id), task_id)
 
     def test_the_ports_are_the_ones_the_task_has(self):
@@ -384,7 +393,8 @@ class DenseShapingOnlyPaintsWhereItIsPaid(unittest.TestCase):
 
     def test_there_are_some(self):
         """Or the rest of this class is checking nothing."""
-        for task_id in ('you_are_here', 'chain_of_custody', 'cookie_thief',
+        for task_id in ('you_are_here', 'chain_of_custody', 'donkey',
+                        'cookie_thief',
                         'maze', 'concentration'):
             self.assertIn(task_id, self.dense_tasks())
 

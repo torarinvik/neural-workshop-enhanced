@@ -52,6 +52,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('lookout', _('Lookout')),
         ('pursuit', _('Pursuit')),
         ('out_of_sight', _('Out of Sight')),
+        ('donkey', _('Donkey')),
     ],
     'perception': [
         ('count', _('Count')),
@@ -416,6 +417,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'reflex':
         from .reflex import Reflex
         Reflex()
+        return
+    if task_id == 'donkey':
+        from .donkey import Donkey
+        Donkey()
         return
     if task_id == 'moving_targets':
         from .tracking import MovingTargets

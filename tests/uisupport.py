@@ -44,6 +44,7 @@ try:
     from neural_workshop.ui import cursor, taskoptions
     from neural_workshop.ui.concentration import Concentration
     from neural_workshop.ui.counting import Counting
+    from neural_workshop.ui.donkey import Donkey
     from neural_workshop.ui.gameselect import GameSelect
     from neural_workshop.ui.graphmapping import GraphMapping
     from neural_workshop.ui.hanoi import TowerOfHanoi

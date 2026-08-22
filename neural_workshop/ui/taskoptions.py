@@ -1186,6 +1186,51 @@ CUSTODY = TaskSpec(
     note=custody_note)
 
 
+def donkey_note(chosen: Dict[str, Any]) -> str:
+    """What the rung asks, and what the two shallow policies are worth.
+
+    Both numbers are measured rather than derived. The floor is the
+    usual coin. The other one is the one worth reading: the share of
+    roads cleared by swerving the moment the donkey is on the row
+    ahead, which is what the game looks like it is asking for and is
+    perfect play while the crossing is one row wide.
+    """
+    from ..donkey import GRADES, rehearse
+    level = max(1, min(len(GRADES), int(chosen['DONKEY_LEVEL'])))
+    grade = GRADES[level - 1]
+    said = [_('%d rows of road, and about %d in ten of them carry a '
+              'donkey.') % (grade.rows, int(round(10 * grade.density)))]
+    said.append(_('The swerve takes one row, so the press goes in on the '
+                  'row before the donkey.') if grade.swerve == 1 else
+                _('The swerve takes %d rows and cannot be called off. While '
+                  'the car is across the middle a donkey in either lane '
+                  'hits it, so the press has to go in %d rows early and '
+                  'swerving on sight is already too late.')
+                % (grade.swerve, grade.swerve))
+    said.append(_('Swerving on sight clears about %d%% of these roads, and '
+                  'a coin about %d%%.')
+                % (int(round(100 * rehearse(level, policy='reactive'))),
+                   int(round(100 * rehearse(level)))))
+    return '  '.join(said)
+
+
+DONKEY = TaskSpec(
+    title=_('Donkey options'),
+    options=(
+        Option('DONKEY_LEVEL', _('Level'), 3,
+               values=tuple(range(1, 11))),
+        Option('DONKEY_TRIALS', _('Roads per run'), 5,
+               values=(1, 2, 3, 5, 8, 10, 15, 20)),
+        Option('DONKEY_BEAT_SECONDS', _('Seconds a row takes'),
+               0.18, values=(0.08, 0.12, 0.18, 0.25, 0.40, 0.60)),
+        Option('DONKEY_SET_SECONDS', _('Seconds before the road moves'),
+               0.8, values=(0.0, 0.4, 0.8, 1.5, 2.5)),
+        Option('DONKEY_ADAPTIVE', _('Climb a rung after a clean road'),
+               True),
+    ),
+    note=donkey_note)
+
+
 def cookie_note(chosen: Dict[str, Any]) -> str:
     """What the rung gives you, and what guessing is worth.
 
@@ -1249,6 +1294,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'lookout': LOOKOUT,
     'pursuit': PURSUIT,
     'out_of_sight': OUT_OF_SIGHT,
+    'donkey': DONKEY,
     'count': COUNTING,
     'graph_mapping': GRAPH_MAPPING,
     'matrix_reasoning': MATRIX_REASONING,
