@@ -79,19 +79,28 @@ class CoachPaintsConsequences(unittest.TestCase):
         self.assertTrue(moved, 'never moved; widen the walk')
 
     def test_a_refused_step_clears_the_verdict(self):
-        """Walls, edges and locked doors all read as nothing."""
-        for turn in range(60):
-            where = self.task.walker
-            self.task.step(*STEPS[turn % len(STEPS)])
-            if self.task.phase != 'walking':
-                self.skipTest('walked out before anything refused')
-            if self.task.walker != where:
-                self.assertIsNotNone(self.scalar(),
-                                     'a real move painted nothing')
-                continue
-            self.assertIsNone(self.scalar(),
-                              'a refused step left a verdict on screen')
-            return
+        """Walls, edges and locked doors all read as nothing.
+
+        One direction pressed over and over is what makes this
+        deterministic: the maze is bounded, so a straight line has to
+        run into something. Cycling the four steps does not -- two open
+        cells side by side shuttle a walker between them forever, and
+        the refusal never comes.
+        """
+        for step in STEPS:
+            reach = self.task.maze.width + self.task.maze.height
+            for _ in range(reach):
+                where = self.task.walker
+                self.task.step(*step)
+                if self.task.phase != 'walking':
+                    self.skipTest('walked out before anything refused')
+                if self.task.walker != where:
+                    self.assertIsNotNone(self.scalar(),
+                                         'a real move painted nothing')
+                    continue
+                self.assertIsNone(self.scalar(),
+                                  'a refused step left a verdict on screen')
+                return
         self.fail('nothing ever refused; widen the walk')
 
 
