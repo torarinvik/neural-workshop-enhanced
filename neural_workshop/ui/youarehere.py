@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""The You Are Here screen: a view you walk, and a map that never moves.
+"""The 3D Maze screen: a view you walk, and a map that never moves.
 
 The thinking lives in :mod:`neural_workshop.youarehere`; this module
 is the corridor drawn on screen, the map pinned beside it, and the
@@ -172,7 +172,7 @@ class YouAreHere:
         self.ink = (fg, fg, fg)
         self.batch = pyglet.graphics.Batch()
         self.title = pyglet.text.Label(
-            _('You Are Here'), font_size=calc_fontsize(22), weight='bold',
+            _('3D Maze'), font_size=calc_fontsize(22), weight='bold',
             color=self.textcolor, batch=self.batch,
             x=width_center(), y=from_top_edge(36),
             anchor_x='center', anchor_y='center', font_name=FONTLIST)

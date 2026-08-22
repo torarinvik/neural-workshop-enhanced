@@ -87,6 +87,7 @@ BY_LUCK = {
     'tower_of_hanoi': (2000, {'disks': 3}),
     'salesman': (600, {}),
     'sokoban': (2500, {'rung': 1, 'trials': 3}),
+    'sokoban_3d': (1500, {'rung': 1, 'trials': 3}),
     'chain_of_custody': (900, {'rung': 3, 'trials': 4}),
     'cookie_thief': (900, {'rung': 4, 'trials': 4}),
 }
@@ -154,6 +155,9 @@ class RandomPlayIsPaid(unittest.TestCase):
 
     def test_sokoban(self):
         self.check('sokoban')
+
+    def test_sokoban_3d(self):
+        self.check('sokoban_3d')
 
     def test_recognition(self):
         self.check('recognition')
@@ -331,7 +335,7 @@ class TheBoundaryKnowsWhichTasksHaveAClock(unittest.TestCase):
     def test_the_turn_based_ones_are_not_ticked(self):
         for task_id in ('crossed_wires', 'maze', 'sokoban', 'sudoku',
                         'tower_of_hanoi', 'salesman', 'jigsaw',
-                        'you_are_here'):
+                        'you_are_here', 'sokoban_3d'):
             self.assertFalse(self.clocked(task_id), task_id)
 
     def test_the_ones_that_move_on_their_own_are(self):
@@ -363,7 +367,7 @@ class DenseShapingOnlyPaintsWhereItIsPaid(unittest.TestCase):
 
     Measured before the gate existed: Chain of Custody scored 44%
     against a 38% guessing floor, all of it earned by claw moves that
-    happened to close a distance, and You Are Here was paid a +1 on a
+    happened to close a distance, and the 3D Maze was paid a +1 on a
     maze random play had not solved.
     """
 

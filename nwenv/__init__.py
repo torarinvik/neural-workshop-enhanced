@@ -42,7 +42,7 @@ clock with the window hidden, so they prove stepped-versus-scheduled
 parity rather than literal visible-window execution.
 
 **Every task in the workshop is wrapped**, and ``catalog`` is the list.
-Twenty-two of them are declarations on :class:`TaskEnv` rather than
+Twenty-three of them are declarations on :class:`TaskEnv` rather than
 code — where the task class lives, what one port calls, which phase
 takes input, which phase means the trial is over — and they paint
 :class:`neural_workshop.ui.verdict.VerdictLabel` when a trial settles,
@@ -117,6 +117,7 @@ from .inthedark import InTheDarkEnv  # noqa: E402
 from .maze import MazeEnv  # noqa: E402
 from .removals import RemovalsEnv  # noqa: E402
 from .sokoban import SokobanEnv  # noqa: E402
+from .sokoban3d import Sokoban3DEnv  # noqa: E402
 from .diagnostics import DiagnosticEnv, TestProbe  # noqa: E402
 from .env import NeuralWorkshopEnv, make_env  # noqa: E402
 from .export import FrameExport  # noqa: E402
@@ -158,5 +159,5 @@ __all__ = [
     'HanoiEnv', 'InTheDarkEnv', 'JigsawEnv', 'LookoutEnv',
     'MatrixReasoningEnv', 'MazeEnv', 'MovingTargetsEnv', 'NCupMonteEnv',
     'PursuitEnv', 'RecognitionEnv', 'ReflexEnv', 'RemovalsEnv',
-    'SalesmanEnv', 'SokobanEnv', 'SudokuEnv',
+    'SalesmanEnv', 'Sokoban3DEnv', 'SokobanEnv', 'SudokuEnv',
 ]

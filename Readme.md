@@ -904,7 +904,7 @@ An option marks where you have already been; turning it off makes the
 maze a memory task as well, since you then have to carry the map
 yourself.
 
-#### You Are Here
+#### 3D Maze
 
 The same maze, from inside it. The screen splits: a first-person view
 on the left, cast one ray to a screen column, and on the right a map
@@ -962,6 +962,102 @@ tests require of it. The largest rungs still take about a second to
 open, but most of that is the 2D Maze's own generator hunting for a
 maze that meets the rung's floors: a wait this task inherits rather
 than adds.
+
+#### 3D Sokoban
+
+The same warehouse, from inside it — the 2D game's own engine
+throughout. The generator, the ladder, the solver that certifies a
+level and the test that says a position is provably lost are all
+`neural_workshop.sokoban`; what is new is where you stand. On the left
+a first-person view, cast one ray to a screen column; on the right a
+plan of the whole warehouse — walls, goals, where you came in, and
+where every box stood at the moment the door shut behind you.
+
+The plan is **fixed**, and here that is a harder promise than the 3D
+Maze's, because in a warehouse the world moves too. It is drawn once
+when the level is dealt and never touched again: not when you move,
+not when you turn, and *not when a box moves*. It goes on showing the
+load where it started, however far you have shoved it. So what you have
+to carry in your head is not a position but a position **and a world**,
+and every push you make falsifies a little more of what is on the wall.
+The errors are yours: the plan was right, you are the one who moved the
+box, and if you cannot say where you put it then nothing on screen will
+tell you. The tests digest the pixels under the panel before a push and
+after it, with a box standing where the plan does not show one, and
+require the bytes to be identical.
+
+Sokoban is the right game to do this to, because Sokoban does not
+forgive. From above, a pocket is visible; from inside a corridor you
+can see the wall in front of the box and not the one behind it, and
+whether the push you are about to make is the one that loses the
+warehouse is a question about a model you are holding rather than about
+anything you can look at. A box is drawn as a wall in another colour,
+because that is what it is to the eye — the ray caster is not told
+which is which — and a box already home is drawn in the goal green,
+which is the one thing the room gives away for free.
+
+**Turning costs a step**, for the reason it does next door: with free
+turns a player spins on the spot at every cell, reads all four
+corridors and every box within sight of them for nothing, and the plan
+stops being the only account of where things are. So the par is in
+*steps* rather than in pushes, and it is an exact minimum over
+`(boxes, cell, facing)` — measured across the first nine rungs, a mean
+of **3.8 times** the flat game's push count and never below 2.2 or
+above 5.5. The exact minimum stays affordable further up than it has
+any right to because the walking contracts away: a run is a sequence of
+pushes, the pose after a push is decided by the push, and the cheapest
+walk between two poses is a small breadth-first sweep over
+`(cell, facing)` in the box-avoiding floor. What is left is Dijkstra
+over the same push-space the flat solver walks, with the walk priced
+into each edge instead of being free. It certifies a minimum on ten
+deals out of ten up to rung eight and two out of ten at rung nine;
+above that the par is the search's own frontier, a proven lower bound,
+which the screen says rather than hides. The contraction is checked
+against a plain breadth-first search over every reachable
+`(boxes, cell, facing)` on the small rungs, because a shortcut that
+gives a different answer is not a shortcut.
+
+Two foils say what the two halves of the state are worth, and they fail
+in different ways, which is the interesting part.
+
+`push_forgetful` never loses its own place. It tracks its position
+perfectly and it plans perfectly; what it drops is the load, and when
+it does it falls back on the plan pinned to the wall. Over thirty
+warehouses at "tight corners", forgetting after one push in ten it
+still finishes twenty of them, at 1.16 times the minimum; one push in
+four, eleven of them at 2.03 times; one in two, seven of them at 2.92
+times, with eight more wedged past saving. Forgetting the load costs
+**steps**, and then the warehouse.
+
+`push_slipping` is the 3D Maze's own foil brought over: it plans
+perfectly from where it *believes* it is and now and then fails to
+notice that it moved. In a maze that costs steps. Here it costs the
+warehouse, and the numbers say so flatly. At one dropped update in
+fifty it finishes eighteen of thirty; at one in twenty, twelve; at one
+in ten, **one**. Of the other twenty-nine, eighteen are positions
+`deadlocked` can prove are lost and eleven are a player standing among
+boxes still out, holding a model in which it has finished. And every
+single run it *did* finish took exactly the minimum — it never merely
+walks further. It gets away with the slip or it loses the warehouse.
+
+Undo and restart are kept for the person and withheld from the learner,
+as they are on the flat screen: undo is how a player explores a line
+the way a chess player takes moves back in analysis, and a learner
+handed the same key would be handed a way out of the one thing being
+measured.
+
+One thing this screen does that the 3D Maze does not is stop its view
+short of the bottom quarter of the frame. The 3D Maze paints only greys
+down there, and grey has its three channels equal, which is never a
+verdict and never fades into one. A box is Okabe-Ito sky blue,
+`(86, 180, 233)`, which is not a verdict colour either — but drawn
+against the dark room's near-black ceiling its anti-aliased edge runs
+through `(69, 140, 180)`, and that is the outcome reader's pattern for
+a scored trial exactly. `check_band.py` reports the task clean, and
+that is the useless kind of clean: whether a box is ever drawn that low
+depends on the deal. So the guard is the geometry —
+`verdict.above_the_band` — and the enumeration that found the offending
+blend is kept beside it as a test, so the layout keeps its reason.
 
 ### Self-control
 
@@ -1291,7 +1387,7 @@ obs, events, done = env.step(2)         # one of three opaque ports
 env.close()
 ```
 
-Twenty-two of the twenty-six are *declarations* rather than code — where
+Twenty-three of the twenty-seven are *declarations* rather than code — where
 the task class lives, what one port calls, which phase takes input, which
 phase means the trial is over, and what the difficulty knobs are called:
 
@@ -1341,10 +1437,14 @@ were latent defects rather than boundary plumbing:
   `tests/test_ui_attention.py` now holds every spawn's bottom edge above
   the band whatever picture is in it.
 
-Random play is paid on twenty of the twenty-five overlays. The other
+Random play is paid on twenty-one of the twenty-six overlays. The other
 five — Sudoku, Jigsaw, Concentration and the two mazes — have no
 accidental solutions, and are tested by driving them with a policy that
-knows the answer through the same ports a learner would use.
+knows the answer through the same ports a learner would use. 3D Sokoban
+is not among them, and the reason is worth knowing: random play never
+*finishes* a warehouse either, but it very readily shoves a box
+somewhere nothing brings it back from, and the screen calls that and
+pays it.
 
 ```
 cd tests && PYTHONPATH=.. ../.venv/bin/python drive_env.py --all 1500

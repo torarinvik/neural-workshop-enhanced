@@ -1,6 +1,6 @@
 # Making a task reachable by the agent
 
-The Workshop ships twenty-six playable tasks and **all twenty-six are
+The Workshop ships twenty-seven playable tasks and **all twenty-seven are
 reachable by the learning agent**. Reachable means more than playable: the
 agent gets pixels and opaque ports, and every scalar it is paid must be
 re-derivable from the frames by someone who is not trusted with the game.
@@ -177,7 +177,7 @@ environment. Built the plain way, the sparse path pays the first verdict
 it finds and calls it the trial's — so a warmer/colder label a few steps
 in scores the whole round. Measured before the gate existed: Chain of
 Custody scored 44% against a 38% guessing floor, all of it earned by claw
-moves that happened to close a distance, and You Are Here was paid a `+1`
+moves that happened to close a distance, and the 3D Maze was paid a `+1`
 on a maze random play had not solved.
 
 Keep it off for people (`coach = False` in the task's `__init__`), so the

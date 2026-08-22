@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""The stepped agent boundary for You Are Here.
+"""The stepped agent boundary for the 3D Maze.
 
 The first task wrapped on :class:`nwenv.taskenv.TaskEnv`, and the file is
 short because of it. The three written before it came to 628, 680 and 719
@@ -42,7 +42,7 @@ WALKS = ('ahead', 'back', 'left', 'right')
 
 
 class YouAreHereEnv(TaskEnv):
-    """Deterministic, stepped view of one You Are Here run."""
+    """Deterministic, stepped view of one 3D Maze run."""
 
     ports = 4
     clocked = False

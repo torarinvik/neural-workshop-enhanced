@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""You Are Here: the view, the par, and the map that must not move.
+"""The 3D Maze: the view, the par, and the map that must not move.
 
 Three things are worth testing hard and the rest follows from them.
 

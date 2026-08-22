@@ -286,7 +286,7 @@ class TaskEnv:
 
         A task like Out of Sight is a continuous animation and moves whether
         or not anyone acts, so one step is one tick of its clock. A task like
-        You Are Here only changes when a key is pressed, and ticking it would
+        The 3D Maze only changes when a key is pressed, and ticking it would
         be a no-op with a cost. :attr:`clocked` says which this is.
         """
         if self.clocked:
@@ -499,7 +499,7 @@ class TaskEnv:
 
         Measured on Chain of Custody before this existed: random play
         scored 44% against a guessing floor of 38%, all of it earned by
-        claw moves that happened to close a distance. On You Are Here
+        claw moves that happened to close a distance. On the 3D Maze
         it paid a single +1 on a maze that random play had not solved
         and could not have.
         """

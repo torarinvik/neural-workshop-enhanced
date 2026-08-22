@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""You Are Here paints a verdict the agent boundary can read.
+"""The 3D Maze paints a verdict the agent boundary can read.
 
 The task is the first to use the shared path: it paints
 :class:`neural_workshop.ui.verdict.VerdictLabel` when a maze is solved and

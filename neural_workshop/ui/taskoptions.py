@@ -921,7 +921,7 @@ def you_are_here_note(chosen: Dict[str, Any]) -> str:
 
 
 YOU_ARE_HERE = TaskSpec(
-    title=_('You Are Here options'),
+    title=_('3D Maze options'),
     options=(
         Option('HERE_LEVEL', _('Level'), 2, values=tuple(range(1, 16))),
         Option('HERE_TRIALS', _('Mazes per run'), 3,
@@ -932,6 +932,71 @@ YOU_ARE_HERE = TaskSpec(
                _('Show keys and the way out in the corridors'), True),
     ),
     note=you_are_here_note)
+
+
+def sokoban_3d_note(chosen: Dict[str, Any]) -> str:
+    """What the plan will and will not do, and what the par will mean.
+
+    Three things get spelled out because all three read as bugs
+    otherwise: that the plan genuinely never moves, that it goes on
+    showing the boxes where they *started* however far you have shoved
+    them, and that above the rung where the step search runs out the
+    par stops being a minimum and becomes a proven lower bound.
+    """
+    from ..sokoban import GRADES
+    rung = int(chosen['SOKO3D_LEVEL'])
+    grade = GRADES[max(0, min(len(GRADES) - 1, rung - 1))]
+    said = [_('Level %d, "%s": a %dx%d warehouse with %d %s — the very '
+              'same room the 2D Sokoban deals at this level, pushed '
+              'from inside it.')
+            % (rung, _(grade.name), grade.width, grade.height, grade.boxes,
+               _('box') if grade.boxes == 1 else _('boxes'))]
+    said.append(_('The plan beside the view shows all of it, including '
+                  'where you came in and where every box was standing '
+                  'then. It never moves, it never says where you are, '
+                  'and it never says where the boxes are now — your '
+                  'first push makes it out of date and nothing puts it '
+                  'right again.'))
+    said.append(_('Turning costs a step, so looking around is a decision '
+                  'rather than something free, and the par is in steps '
+                  'rather than pushes for that reason — about three and '
+                  'a half times the push count next door. Walking into '
+                  'rock, or shoving a box that will not go, costs '
+                  'nothing.'))
+    if rung >= 9:
+        said.append(_('Up here the exact step minimum outgrows the '
+                      'search; the par is a proven lower bound, never '
+                      'pretending to be a minimum. Dealing a level '
+                      'takes a second or two.'))
+    if grade.trap_share:
+        said.append(_('At least %d%% of the floor is a trap: one wrong '
+                      'push there and the box is lost for good, and '
+                      'from inside a corridor you cannot see the pocket '
+                      'coming.') % int(grade.trap_share * 100))
+    if not chosen['SOKO3D_MARKS']:
+        said.append(_('With the rings off there is nothing hanging in '
+                      'the corridors at all, so a count of corners is '
+                      'the only thing you will have.'))
+    if chosen['SOKO3D_ADAPTIVE']:
+        said.append(_('Finish near the minimum and the next warehouse '
+                      'is a level harder.'))
+    return '  '.join(said)
+
+
+SOKOBAN_3D = TaskSpec(
+    title=_('3D Sokoban options'),
+    options=(
+        Option('SOKO3D_LEVEL', _('Level'), 2, values=tuple(range(1, 13))),
+        Option('SOKO3D_TRIALS', _('Warehouses per run'), 3,
+               values=(1, 2, 3, 5, 8, 10)),
+        Option('SOKO3D_ADAPTIVE',
+               _('Climb a level when you finish near the minimum'), True),
+        Option('SOKO3D_MARKS',
+               _('Show the goals as rings in the corridors'), True),
+        Option('SOKO3D_TRAPS',
+               _('Mark the squares a box dies on, on the plan'), False),
+    ),
+    note=sokoban_3d_note)
 
 
 def crossed_wires_note(chosen: Dict[str, Any]) -> str:
@@ -1193,6 +1258,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'sokoban': SOKOBAN,
     'maze': MAZE,
     'you_are_here': YOU_ARE_HERE,
+    'sokoban_3d': SOKOBAN_3D,
     'in_the_dark': IN_THE_DARK,
     'fog_of_war': FOG_OF_WAR,
     'removals': REMOVALS,

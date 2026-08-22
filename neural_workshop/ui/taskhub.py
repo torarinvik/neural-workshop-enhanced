@@ -68,7 +68,8 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('salesman', _('Traveling Salesman')),
         ('sokoban', _('Sokoban')),
         ('maze', _('Maze')),
-        ('you_are_here', _('You Are Here')),
+        ('you_are_here', _('3D Maze')),
+        ('sokoban_3d', _('3D Sokoban')),
     ],
     # Not attention, and the difference is the point. Everything under
     # attention is about finding or following the right thing; this is
@@ -383,6 +384,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'you_are_here':
         from .youarehere import YouAreHere
         YouAreHere()
+        return
+    if task_id == 'sokoban_3d':
+        from .sokoban3d import Sokoban3D
+        Sokoban3D()
         return
     if task_id == 'chain_of_custody':
         from .custody import ChainOfCustody

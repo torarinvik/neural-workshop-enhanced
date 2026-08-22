@@ -790,7 +790,7 @@ FOG_MOVES = 400
 FOG_WORLDS = 3
 FOG_PERSIST = False
 
-# You Are Here is the maze from inside it. The same generator deals
+# The 3D Maze is the maze from inside it. The same generator deals
 # the same mazes at the same rungs as the 2D Maze, but the screen is
 # split: a first-person view cast one ray to a column on the left, and
 # on the right a map of the whole maze - corridors, start, way out,
@@ -814,6 +814,35 @@ HERE_LEVEL = 2
 HERE_TRIALS = 3
 HERE_ADAPTIVE = True
 HERE_MARKS = True
+
+# 3D Sokoban is the warehouse from inside it, and it is the 2D game's
+# own engine throughout: the same generator deals the same rooms at the
+# same rungs, the same solver certifies them, and the same test says
+# when a position is provably lost. What is new is where you stand.
+# The screen splits: a first-person view cast one ray to a column on
+# the left, and on the right a plan of the whole warehouse - walls,
+# goals, where you came in, and where every box stood when the door
+# shut behind you. The plan is drawn once when a level is dealt and
+# never touched again, and that is a harder promise than the 3D Maze's
+# because here the world moves too: every push you make leaves the plan
+# a little further out of date, and nothing on screen ever corrects it.
+# What you have to carry is not a position but a position and a world.
+# Turning costs a step, so the par is in steps rather than in pushes -
+# its own exact minimum over boxes, cell and facing, about three and a
+# half times the flat game's push count, measured across the ladder.
+# Past rung eight that search outgrows its budget and the par becomes a
+# proven lower bound, which the screen says rather than hides.
+# Walking into rock, or shoving a box that will not go, costs nothing.
+# SOKO3D_MARKS hangs a ring in the corridor where a goal still wants a
+# box; SOKO3D_TRAPS marks the squares a box dies on, on the plan, as
+# training wheels - and they are worth rather more here than on the
+# flat screen, since from inside a corridor a pocket is not something
+# you can look at.
+SOKO3D_LEVEL = 2
+SOKO3D_TRIALS = 3
+SOKO3D_ADAPTIVE = True
+SOKO3D_MARKS = True
+SOKO3D_TRAPS = False
 
 # Crossed Wires is the one task that hands the player nothing. A
 # marker on a grid that wraps round at every edge, a target to reach,
