@@ -42,7 +42,7 @@ TASK_DIR = os.path.join(ROOT, 'neural_workshop', 'ui')
 #: never stepped, so their deadlines are nobody's but the player's.
 NOT_TASKS = frozenset({
     '__init__.py', 'cursor.py', 'effects.py', 'field.py', 'gameselect.py',
-    'graph.py', 'hud.py', 'menu.py', 'message.py', 'readouts.py',
+    'glyphs.py', 'graph.py', 'hud.py', 'menu.py', 'message.py', 'readouts.py',
     'screens.py', 'taskhub.py', 'taskoptions.py', 'textinput.py',
     'trialui.py', 'verdict.py',
 })

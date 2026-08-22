@@ -60,7 +60,9 @@ it is now a thin facade over three packages:
 Inside `neural_workshop`, `ravens/` is the odd one out: it is the
 Matrix Reasoning puzzle generator, and it imports no pyglet and
 touches no singleton, so a puzzle can be built and checked without a
-window. Everything else on screen goes through `ui/`.
+window. `glyphs.py` is split the same way for the same reason, with
+its drawing half under `ui/`. Everything else on screen goes through
+`ui/`.
 
 Inside `neural_workshop`, the live singletons (`cfg`, `window`, `mode`,
 `field`, the labels) live in `state.py` and are reached as `state.mode`
@@ -138,6 +140,67 @@ image or audio library is involved either way.
 
 ```bash
 .venv/bin/python -m pip install pyarrow   # optional, for bulk fetches
+```
+
+### Procedurally distorted letters
+
+`neural_workshop/glyphs.py` and `neural_workshop/ui/glyphs.py` are a
+shared piece rather than a game: they turn a letter into a picture of a
+letter that has never been seen in that shape before. No task uses them
+yet.
+
+A task that draws a letter in one of a handful of typefaces cannot tell
+whether it is being read or remembered, and nothing in the picture says
+which happened. So a letter here is drawn in one of the typefaces
+already installed on the machine and then put through a warp sampled
+from a rung: stretched, sheared, turned, tilted in perspective,
+rippled, thickened or thinned, specked, partly hidden behind bars, and
+faded toward its background. Every knob is sampled independently, so
+the ten rungs are boxes to sample from rather than ten appearances.
+
+Two axes are kept apart on purpose — what the letter *is*, which is a
+task's own content, and what it *looks like*, which is this. They deal
+from different seeds and neither reads the other, so a rung of visual
+difficulty goes under any content difficulty a task already has and a
+result can say which of the two moved.
+
+The rules module imports no pyglet and touches no pixels, so a warp can
+be checked without a window; the `ui/` half is the part that reads a
+glyph's coverage off the card and hands back an `ImageData`.
+
+Three things are worth knowing before using it.
+
+**Split by family, not by file.** Georgia and Georgia Bold Italic are
+one typeface in two files, and holding one out while training on the
+other is a leak with a different filename. `families()` groups files by
+the family name in the font's own `name` table and `split()` divides
+those groups whole.
+
+**Ask the font what it can draw.** Of the 198 families on this Mac only
+59 contain Latin capitals — most of the rest are Noto faces for other
+scripts. Ask one of those 139 for a capital A and the platform quietly
+substitutes one, and pyglet hands back a perfectly good letter in a
+typeface nobody asked for. Every held-out family that is really the
+fallback is the *training* typeface being scored as unseen, which is
+two thirds of the pool. `families(must_draw=...)` reads the font's own
+`cmap` and is not optional for anything being measured.
+
+**The ladder is measured, not asserted.** A nearest-template classifier
+over an eight-by-eight ink grid, templates from the 41 training
+families and questions from the 10 held-out ones, falls 0.89, 0.87,
+0.78, 0.59, 0.38, 0.27, 0.17, 0.15, 0.10, 0.09 across the rungs against
+a floor of 0.04. The first rung is the ceiling of the measurement
+rather than a score — these are typefaces the templates have never seen
+— so what the column shows is the fall. Switching each knob off in turn
+at rung six puts most of the cost in the plain affine matrix (+0.21)
+and the speckle (+0.13), and finds that thickening and contrast recover
+nothing at all: a signature counts pixels above a fixed threshold, so
+it is blind to both by construction and cannot price them. The elastic
+ripple, which is the knob that most looks like difficulty, is worth
++0.05.
+
+```bash
+cd tests && PYTHONPATH=.. ../.venv/bin/python bench_glyphs.py   # about a minute
 ```
 
 ### Working memory
