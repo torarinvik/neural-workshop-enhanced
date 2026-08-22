@@ -2,11 +2,18 @@
 # -*- coding: utf-8 -*-
 """A thief who can count, used to check what Cookie Thief's rungs promise.
 
-Three players, and the difference between them is the point.
+Four players, and the difference between them is the point.
 
 :func:`steady` brakes when braking would land him on the quota, and
 ignores the golden cookie. He is the proof that every rung is winnable
 without gambling.
+
+:func:`bold` is steady with a number bolted on: how many cookies past
+the quota he is willing to carry. The quota is the bar and the haul is
+the margin, and those are two different questions — stopping dead on
+the bar is the safest round available and it is not the richest one.
+``--haul`` sweeps the greed from nothing to the width of the band and
+prints what each step of it buys and what it costs.
 
 :func:`greedy` is the same player with one change: he takes the golden
 cookie whenever it is offered. Whether that is worth doing is a
@@ -55,6 +62,24 @@ def steady(thief, setup):
     if C.landing(thief, setup.grade) >= setup.grade.quota:
         return C.FREEZE
     return C.REACH
+
+
+def bold(margin):
+    """A thief who carries *margin* cookies past the quota before stopping.
+
+    At zero he is :func:`steady`. Above it he is aiming at a number
+    inside the band she notices from, which is safe only while he is
+    already stopped when she gets there — so every extra cookie is
+    bought with a beat of the stop he still has to make.
+    """
+    def player(thief, setup):
+        if C.alarming(thief):
+            return C.FREEZE
+        if C.landing(thief, setup.grade) >= setup.grade.quota + margin:
+            return C.FREEZE
+        return C.REACH
+    player.__name__ = 'bold%d' % margin
+    return player
 
 
 def greedy(thief, setup):
@@ -172,6 +197,8 @@ def main(argv=None):
                     help='the three gold policies, at a range of fumble rates')
     ap.add_argument('--floor', action='store_true',
                     help='what random presses are worth, per rung')
+    ap.add_argument('--haul', action='store_true',
+                    help='what carrying past the quota buys, and costs')
     args = ap.parse_args(argv)
 
     if args.curve:
@@ -202,6 +229,29 @@ def main(argv=None):
                 print('%-22s %6.0f%% %7.0f%% %7.0f%% %7.0f%%'
                       % (grade.name if fumble == 0.0 else '', 100 * fumble,
                          got[0], got[1], got[2]))
+        return 0
+
+    if args.haul:
+        # The quota is the bar and the haul is the margin. Stopping dead
+        # on the bar is the safest round there is; whether it is the
+        # best one is a measurement, and this is it.
+        print('%-22s %7s %7s %7s %7s'
+              % ('rung', 'greed', 'clean', 'haul', 'caught'))
+        for level, grade in enumerate(C.GRADES, 1):
+            for margin in range(0, grade.spread + 2):
+                rng = random.Random(level * 100 + margin)
+                clean = caught = 0
+                total = 0
+                for _deal in range(args.deals):
+                    thief, setup = play(level, seed=rng.randrange(1 << 30),
+                                        player=bold(margin))
+                    total += C.haul(thief)
+                    clean += 1 if C.cleared(thief, setup) else 0
+                    caught += 1 if thief.caught else 0
+                print('%-22s %7d %6.0f%% %7.1f %6.0f%%'
+                      % (grade.name if not margin else '', margin,
+                         100.0 * clean / args.deals, total / float(args.deals),
+                         100.0 * caught / args.deals))
         return 0
 
     if args.floor:

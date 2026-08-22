@@ -37,6 +37,11 @@ os.environ.setdefault('NW_HEADLESS', '1')
 
 import oracle_cookie as O                              # noqa: E402
 from neural_workshop import cookiethief as C           # noqa: E402
+from uisupport import (UI_IMPORT_ERROR, close_overlays,  # noqa: E402
+                       needs_ui, reset_window)
+
+if UI_IMPORT_ERROR is None:
+    from nwenv import catalog                          # noqa: E402
 
 
 def dealt(level, seed=0):
@@ -103,6 +108,21 @@ class TheLadder(unittest.TestCase):
         bites = [grade.reflex_bites for grade in C.GRADES]
         self.assertEqual(bites, sorted(bites), bites)
 
+    def test_the_warning_only_ever_gets_shorter(self):
+        """It used to bounce — one beat, one, two, one — which reads as a
+        rung getting easier on the one axis the ladder is named for."""
+        warns = [grade.warn for grade in C.GRADES]
+        self.assertEqual(warns, sorted(warns, reverse=True), warns)
+        self.assertGreaterEqual(warns[0], 8)
+        self.assertEqual(warns[-1], 1)
+
+    def test_the_biggest_step_in_the_warning_is_where_reaction_dies(self):
+        """Which is what makes it one ladder rather than two axes."""
+        steps = [below.warn - above.warn
+                 for below, above in zip(C.GRADES, C.GRADES[1:])]
+        break_at = [grade.reactive for grade in C.GRADES].index(False)
+        self.assertEqual(steps.index(max(steps)), break_at - 1, steps)
+
     def test_the_band_is_always_above_the_quota(self):
         """Stop on the number you were asked for and the count is safe.
 
@@ -148,6 +168,45 @@ class TheLadder(unittest.TestCase):
         for above in range(1, len(floors)):
             self.assertLessEqual(floors[above],
                                  max(floors[:above]) + tolerance, floors)
+
+
+class TheHaul(unittest.TestCase):
+    """The bar and the margin, which are two different questions."""
+
+    def test_a_cookie_he_got_away_with_is_worth_one(self):
+        setup, thief = dealt(6, seed=2)
+        thief.eaten = 7
+        self.assertEqual(C.haul(thief), 7)
+
+    def test_a_cookie_she_saw_costs_more_than_it_was_worth(self):
+        """Or being caught would be a rounding error rather than a loss."""
+        setup, thief = dealt(6, seed=2)
+        thief.eaten, thief.caught = 7, 1
+        self.assertEqual(C.haul(thief), 7 - C.CAUGHT_COST)
+        self.assertLess(C.haul(thief), 6)
+
+    def test_enough_of_them_takes_it_negative(self):
+        setup, thief = dealt(6, seed=2)
+        thief.eaten, thief.caught = 8, 4
+        self.assertLess(C.haul(thief), 0)
+
+    def test_cookies_past_the_quota_still_count(self):
+        """The change that makes stopping a decision rather than a target.
+
+        With the haul capped at the quota there was nothing to weigh:
+        one more cookie was worth exactly zero and carried a risk, so
+        the answer was always to stop on the bar.
+        """
+        setup, thief = dealt(6, seed=2)
+        thief.eaten = setup.grade.quota + 3
+        self.assertEqual(C.haul(thief), setup.grade.quota + 3)
+
+    def test_the_bar_and_the_margin_disagree_and_that_is_the_point(self):
+        """A round can be worth more and still not be a clean getaway."""
+        setup, thief = dealt(6, seed=2)
+        thief.eaten, thief.caught = setup.grade.quota + 4, 1
+        self.assertGreater(C.haul(thief), setup.grade.quota)
+        self.assertFalse(C.cleared(thief, setup))
 
 
 class ThePhysics(unittest.TestCase):
@@ -472,6 +531,147 @@ class TheHubHasSomewhereToPutIt(unittest.TestCase):
             said = taskoptions.cookie_note({'COOKIE_LEVEL': level})
             self.assertIn('%d' % C.GRADES[level - 1].quota, said)
             self.assertIn('Guessing', said)
+
+
+class OneMoreThanTheQuotaIsFreeAndTwoIsNot(unittest.TestCase):
+    """What greed is worth, measured rather than argued.
+
+    A thief who aims one cookie past the quota is clean every time on
+    every rung, because the band starts at the quota plus one and he is
+    already stopped by the time she has been called. A thief who aims
+    two is caught about half the time from the seventh rung up, and his
+    average haul goes *down* — so the marginal cookie really does turn
+    negative somewhere, and where it turns is a property of the rung.
+    """
+
+    def carry(self, level, margin, deals=60):
+        rng = random.Random(level * 100 + margin)
+        clean = 0
+        total = 0
+        for _deal in range(deals):
+            thief, setup = O.play(level, seed=rng.randrange(1 << 30),
+                                  player=O.bold(margin))
+            clean += 1 if C.cleared(thief, setup) else 0
+            total += C.haul(thief)
+        return clean / float(deals), total / float(deals)
+
+    def test_one_past_the_quota_is_free_everywhere(self):
+        for level, grade in enumerate(C.GRADES, 1):
+            clean, got = self.carry(level, 1)
+            self.assertEqual(clean, 1.0, grade.name)
+            self.assertGreater(got, grade.quota, grade.name)
+
+    def test_the_marginal_cookie_turns_negative_up_top(self):
+        for level in (7, 8, 9, 10):
+            grade = C.GRADES[level - 1]
+            one_clean, one_haul = self.carry(level, 1)
+            two_clean, two_haul = self.carry(level, 2)
+            self.assertLess(two_clean, one_clean, grade.name)
+            self.assertLess(two_haul, one_haul, grade.name)
+
+
+@needs_ui
+class TheScreenAnswersTheKeyAtOnce(unittest.TestCase):
+    """Two things a person notices in the first ten seconds.
+
+    The stop key used to change nothing on screen until the next beat
+    came round, which at a third of a second a beat reads as a broken
+    key — and the arm it moves is drawn from the speed, so on the top
+    rungs one press moved it a tenth of its length and you could not
+    see that either. Now the press redraws, and the arm comes most of
+    the way out at once while the bar under him does not move. The gap
+    between those two is the task: taking your hand out of the jar is
+    not the same as having stopped.
+    """
+
+    def setUp(self):
+        close_overlays()
+        self.env = catalog.env_class('cookie_thief')(seed=0, rung=10,
+                                                     trials=2)
+        self.env.reset(0)
+        self.task = self.env.task
+
+    def tearDown(self):
+        self.env.close()
+        close_overlays()
+        reset_window()
+
+    def running(self):
+        for _step in range(20):
+            self.env.step(C.REACH)
+            if self.task.phase == 'running':
+                return
+        self.fail('the round never opened')
+
+    def test_a_freeze_yanks_the_arm_back_the_beat_it_is_pressed(self):
+        self.running()
+        for _step in range(6):
+            self.env.step(C.REACH)
+        self.assertGreater(self.task.thief.speed, 0.5)
+        self.task.act(C.FREEZE)
+        self.assertEqual(self.task.yank, 1)
+
+    def test_the_momentum_does_not_come_back_with_it(self):
+        """The whole point of drawing the hand and the speed apart."""
+        self.running()
+        for _step in range(6):
+            self.env.step(C.REACH)
+        speed = self.task.thief.speed
+        self.task.act(C.FREEZE)
+        self.assertGreater(self.task.thief.speed,
+                           speed - C.GRADES[9].brake - 1e-9)
+        self.assertGreater(self.task.thief.speed, 0.5)
+
+    def test_the_hand_goes_back_in(self):
+        """It is a yank, not a stop: two beats later he is eating again."""
+        self.running()
+        for _step in range(6):
+            self.env.step(C.REACH)
+        self.task.act(C.FREEZE)
+        for _step in range(3):
+            self.env.step(C.REACH)
+        self.assertEqual(self.task.yank, 0)
+
+    def test_a_freeze_that_does_nothing_does_not_yank(self):
+        """Standing still already, or locked out by a lunge."""
+        self.running()
+        self.task.thief.speed = 0.0
+        self.task.act(C.FREEZE)
+        self.assertEqual(self.task.yank, 0)
+
+
+@needs_ui
+class TheRunReportsBothScores(unittest.TestCase):
+    """The bar and the margin, out of the task rather than the model."""
+
+    def setUp(self):
+        close_overlays()
+
+    def tearDown(self):
+        close_overlays()
+        reset_window()
+
+    def test_a_run_totals_the_haul(self):
+        env = catalog.env_class('cookie_thief')(seed=0, rung=6, trials=3,
+                                                adaptive=False)
+        env.reset(0)
+        task = env.task
+        try:
+            for _step in range(4000):
+                port = C.WAIT
+                if task.phase == 'running' and task.thief is not None:
+                    port = O.steady(task.thief, task.setup)
+                _obs, _ev, done = env.step(port)
+                if done or task.phase == 'done':
+                    break
+            tally = task.score()
+            self.assertEqual(tally['rounds'], 3)
+            self.assertEqual(tally['clean'], 3)
+            self.assertEqual(tally['points'], tally['cookies'])
+            self.assertGreaterEqual(tally['points'],
+                                    3 * C.GRADES[5].quota)
+        finally:
+            env.close()
 
 
 if __name__ == '__main__':

@@ -40,7 +40,7 @@ from .. import display, state
 from ..constants import FONTLIST
 from ..cookiethief import (COMING, DOG, FREEZE, GOLD_BEATS, GRADES, LUNGE,
                            MOTHER, REACH, SISTER, WATCHING, Thief, beat,
-                           cleared, generate, over, press, rehearse,
+                           cleared, generate, haul, over, press, rehearse,
                            stopping_bites)
 from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
                         width_center)
@@ -83,6 +83,16 @@ VERDICT_SECONDS = 1.2
 #: fewer than this and it drops.
 CLIMB_AT, DROP_BELOW = 0.75, 0.4
 
+#: How much of the arm is left showing on the beat he yanks his hand back.
+#:
+#: The arm is the hand and the bar under him is the momentum, and they
+#: are drawn as two things because they are two things. Freezing pulls
+#: his hand most of the way out at once — which is what the key ought to
+#: feel like — and then the momentum drags it straight back in, because
+#: taking your hand out of the jar is not the same as having stopped.
+#: That is the lesson of the whole task in one picture.
+YANK_SHARE = 0.18
+
 
 class CookieThief:
     """The jar, the boy and the doorway. Esc returns to the hub."""
@@ -106,6 +116,9 @@ class CookieThief:
         self.trial = 0
         self.results: List[Tuple[int, bool]] = []       # (rung, cleared)
         self.cookies = 0
+        self.points = 0
+        #: Beats left showing the hand pulled back. Drawing only.
+        self.yank = 0
         self.until = 0.0
         self.beat_at = 0.0
         self.phase = 'ready'
@@ -213,6 +226,8 @@ class CookieThief:
         self.trial = 0
         self.results = []
         self.cookies = 0
+        self.points = 0
+        self.yank = 0
         self.rung = self.clamped(self.start_rung)
         self.phase = 'ready'
         self.message = _('Press Space to start')
@@ -231,6 +246,7 @@ class CookieThief:
         self.verdict.clear()
         self.setup = generate(self.rung, seed=self.rng.randrange(1 << 30))
         self.thief = Thief()
+        self.yank = 0
         self.phase = 'setting'
         self.until = self.clock() + self.set_seconds
         self.beat_at = self.clock() + self.set_seconds
@@ -257,10 +273,22 @@ class CookieThief:
     # --- what the player does --------------------------------------------
 
     def act(self, port: int) -> bool:
-        """One press. The beat that follows it is the clock's business."""
+        """One press. The beat that follows it is the clock's business.
+
+        It redraws on the spot, which the first version did not: a press
+        changed nothing on screen until the next beat came round, so at
+        a third of a second a beat the stop key looked broken. It takes
+        effect in the frame you pressed it in now, and the thing it
+        takes effect on most visibly is the arm.
+        """
         if self.phase != 'running' or self.thief is None:
             return False
-        return press(self.thief, port, self.setup)
+        did = press(self.thief, port, self.setup)
+        if port == FREEZE and did:
+            self.yank = 1
+        self._update_status()
+        self._redraw()
+        return did
 
     def reach(self) -> None:
         self.act(REACH)
@@ -296,17 +324,29 @@ class CookieThief:
                 return
             self._update_status()
             self._redraw()
+            # Spent after the drawing rather than before it, so the beat
+            # that follows a freeze still shows the hand coming out. The
+            # beat after that has it back in the jar, which is the point.
+            if self.yank:
+                self.yank -= 1
 
     def _coach_verdict(self, gained: int) -> None:
         """Paint what the beat just past did, one beat at a time.
 
         Not the shaping the maze and the belt got: there is no potential
-        here and nothing telescopes. It is the round's own verdict taken
-        apart — a cookie the round asked for is a piece of the green,
-        and a cookie taken under her eye is the whole of the red — so
-        the sum over a round orders policies the same way the round's
-        one scalar does, and it does it without a learner having to
-        reach the end of a round first.
+        here and nothing telescopes. It is the *haul* taken apart — a
+        cookie he got away with is a piece of the green, a beat under
+        her eye is the red — so the sum over a round tracks
+        :func:`~neural_workshop.cookiethief.haul` rather than the
+        round's one bit, and a learner does not have to reach the end of
+        a round to be told anything.
+
+        Every safe cookie pays, including the ones past the quota, and
+        that was not the first rule here. Capping the green at the quota
+        made a cookie past it worth exactly nothing, so the dense
+        channel argued for stopping dead on the bar while the score on
+        the screen argued for carrying more. Two objectives under one
+        game is worse than either of them.
 
         The beats she is looking pay red as soon as the outcome is
         settled rather than when it lands, because
@@ -327,7 +367,7 @@ class CookieThief:
                 thief.took or stopping_bites(thief.speed, thief.crumbs,
                                              grade, thief.locked)):
             self.verdict_shown = (False, _('She can see you'))
-        elif gained and thief.eaten <= grade.quota:
+        elif gained:
             self.verdict_shown = (True, _('Got one'))
         else:
             self.verdict_shown = None
@@ -341,14 +381,18 @@ class CookieThief:
         """Score the round: enough cookies, and not one of them seen."""
         thief, grade = self.thief, self.setup.grade
         right = cleared(thief, self.setup)
+        got = haul(thief)
         self.results.append((self.rung, right))
         self.cookies += thief.eaten
+        self.points += got
         if thief.caught:
-            self.message = _('Caught with %d') % thief.caught
+            self.message = _('Caught with %d of %d — %+d points'
+                             ) % (thief.caught, thief.eaten, got)
         elif thief.eaten < grade.quota:
-            self.message = _('Only %d of %d') % (thief.eaten, grade.quota)
+            self.message = _('Only %d of %d — %+d points'
+                             ) % (thief.eaten, grade.quota, got)
         else:
-            self.message = _('Away with %d') % thief.eaten
+            self.message = _('Away with %d — %+d points') % (thief.eaten, got)
         if self.adaptive:
             share = sum(1 for _r, ok in self.results[-4:] if ok) / float(
                 min(4, len(self.results)))
@@ -368,9 +412,10 @@ class CookieThief:
         tally = self.score()
         self.setup = None
         self.thief = None
-        self.message = _('%d of %d clean, %d cookies, highest rung %d — '
-                         'guessing would have scored about %d%%'
-                         ) % (tally['clean'], tally['rounds'],
+        self.message = _('%d of %d clean, %d points off %d cookies, highest '
+                         'rung %d — guessing gets away clean about %d%% of '
+                         'the time'
+                         ) % (tally['clean'], tally['rounds'], tally['points'],
                               tally['cookies'], tally['best_rung'],
                               tally['floor'])
         self.asked.text = ''
@@ -378,10 +423,16 @@ class CookieThief:
         self._redraw()
 
     def score(self) -> Dict[str, int]:
-        """How the run went, against what guessing would have paid.
+        """How the run went, on both counts, and what guessing was worth.
 
-        The floor is reported beside the score because the percentage
-        means very little without it, and it is *measured* rather than
+        ``clean`` is the bar: rounds that met the quota with nothing
+        seen. ``points`` is the haul, which is a different question — a
+        cookie he got away with is worth one and a cookie she saw costs
+        three, so a bad round takes the total *down* rather than merely
+        failing to add to it.
+
+        The floor is reported beside them because a percentage means
+        very little on its own, and it is *measured* rather than
         derived: there is nothing to derive here, since what a run of
         random presses is worth is whatever a random walk in speed
         happens to eat before somebody walks in.
@@ -394,6 +445,7 @@ class CookieThief:
             'rounds': rounds,
             'clean': clean,
             'cookies': self.cookies,
+            'points': self.points,
             'accuracy': int(round(100.0 * clean / rounds)) if rounds else 0,
             'best_rung': best,
             'floor': int(round(100.0 * sum(floors) / len(floors)))
@@ -488,8 +540,12 @@ class CookieThief:
         self._disc(x, base + body + wide * 0.5, wide * 0.5, self.ink,
                    opacity=180)
         # The arm reaches back towards the jar as he speeds up, so speed
-        # is legible from the figure as well as from the bar.
-        reach = (x - left - width * JAR_AT) * thief.speed
+        # is legible from the figure as well as from the bar — except on
+        # the beat he yanked it out, when it comes nearly all the way
+        # back whatever his momentum is. The bar below him does not move
+        # with it, and the gap between the two is the whole task.
+        deep = thief.speed * (YANK_SHARE if self.yank else 1.0)
+        reach = (x - left - width * JAR_AT) * deep
         self._rect(x - reach, base + body * 0.72, max(2.0, reach),
                    max(2.0, height * 0.022), self.ink, opacity=200)
         if thief.locked:

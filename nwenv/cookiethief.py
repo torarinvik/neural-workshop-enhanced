@@ -32,26 +32,34 @@ fifty-four ticks of nothing at the head of every round.
 Coach mode
 ----------
 
-``coach`` paints a verdict on the beat a cookie the round asked for
-lands, and on the beats her eyes are on a boy who has not stopped in
-time. The wrapper declares itself ``dense`` so each is paid against its
-own action's receipt.
+``coach`` paints a verdict on the beat a cookie lands and on the beats
+her eyes are on a boy who has not stopped in time. The wrapper declares
+itself ``dense`` so each is paid against its own action's receipt.
 
 This is **not** the potential-based shaping the maze and the belt got,
 and it should not be read as if it were. There is no potential here and
-nothing telescopes. What it is instead is the round's own verdict taken
-apart: the round asks for *n* cookies with none of them seen, so each
-cookie under the quota is a piece of the green and each cookie under
-her eye is the whole of the red. Summed over a round that orders
-policies the same way the round's single scalar does — perfect above
-caught above never-started — without a learner having to reach the end
-of a round to find out.
+nothing telescopes. What it is instead is the round's *haul* taken
+apart — see :func:`neural_workshop.cookiethief.haul`. A cookie he got
+away with is a piece of the green; a beat under her eye is the red.
+Summed over a round it tracks the haul, and a learner does not have to
+reach the end of a round to be told anything.
 
-Where it diverges is worth saying plainly, because it does. The round's
-scalar is all-or-nothing: caught once is caught. The dense sum is
-graded, so a learner paid this way will tolerate a little more risk
-than the verdict rewards. That is a real difference and it is the price
-of paying anything at all before the end.
+Every safe cookie pays, including the ones past the quota, and that was
+not the first rule here. Capped at the quota, a cookie past it was
+worth exactly nothing on this channel while the score on the screen
+still counted it, so the two halves of the same game wanted different
+things. They want the same thing now.
+
+Where it diverges from the *verdict* is worth saying plainly, because
+it does. The round's scalar is a bar — the quota, cleanly, all or
+nothing — and the dense sum is the margin. They agree on the ordering
+that matters (a clean rich round beats a clean thin one beats a caught
+one) and they disagree about how much a cookie past the quota is worth,
+because one bit cannot carry a margin. Measured: aiming one cookie past
+the quota is clean on every rung and worth a point; aiming two is
+caught about half the time from the seventh rung up and worth *less*.
+So the marginal cookie really does turn negative, and where it turns is
+a property of the rung rather than of the accounting.
 
 **The coach is blind to both hidden things.** It reads the jar, the
 pips, the boy's speed and the doorway — every one of them drawn — and

@@ -66,6 +66,14 @@ GOLD_BEATS = 6
 #: at the start it would not be a temptation. The window is the choice.
 GOLD_GAP = 4
 
+#: What a cookie she saw costs, counted in cookies she did not.
+#:
+#: A cookie you got away with is worth one. A cookie she saw is worth
+#: minus two — it was still a cookie, and then it cost you three. So a
+#: haul is ``eaten - 3 * caught``, it goes negative on a bad round, and
+#: greed pays for itself right up until it does not.
+CAUGHT_COST = 3
+
 #: Beats after a lunge in which freezing does nothing.
 #:
 #: This is the whole cost of the golden one, and the first design got it
@@ -159,21 +167,25 @@ class Grade(NamedTuple):
 
 #: Ten rungs. Each adds one thing, and the thing it adds is in the name.
 #:
-#: The first four can be played by watching the doorway. The fifth is
-#: where that stops working — the warning gets shorter than the stopping
-#: distance and stays shorter — and everything above it is about where
-#: you chose to be when she arrived.
+#: **The warning only ever gets shorter.** It runs nine beats down to
+#: one, a beat at a time, and takes its one double step between the
+#: fifth rung and the sixth — because that is where it crosses what his
+#: momentum still owes. Below that a thief can play by watching the
+#: doorway; above it he cannot, ever again. See
+#: :attr:`Grade.reflex_bites`, which is the crossing measured rather
+#: than asserted, and note that it is *bites* rather than beats: what
+#: catches him is taking another cookie, not still drifting.
 GRADES: Tuple[Grade, ...] = (
     #     name                 quota spr accel brake  drag warn vis pat sl gold dec
-    Grade('one cookie',            1,  3, 1.00, 1.00, 0.05,  10,  6, 14, 4,   0, 0),
+    Grade('one cookie',            1,  3, 1.00, 1.00, 0.05,   9,  6, 14, 4,   0, 0),
     Grade('a handful',             3,  3, 0.50, 0.50, 0.05,   8,  6, 16, 4,   0, 0),
-    Grade('he gets going',         5,  3, 0.34, 0.34, 0.04,   6,  6, 18, 5,   0, 0),
+    Grade('he gets going',         5,  3, 0.34, 0.34, 0.04,   7,  6, 18, 5,   0, 0),
     Grade('hard to stop',          6,  3, 0.34, 0.20, 0.04,   6,  6, 20, 5,   0, 0),
-    Grade('quieter feet',          7,  3, 0.34, 0.20, 0.04,   3,  6, 22, 5,   0, 0),
+    Grade('quieter feet',          7,  3, 0.34, 0.20, 0.04,   5,  6, 22, 5,   0, 0),
     Grade('the jar is watched',    8,  2, 0.25, 0.16, 0.03,   3,  7, 24, 6,   0, 0),
-    Grade('she is just there',     8,  2, 0.25, 0.16, 0.03,   1,  7, 24, 6,   0, 0),
-    Grade('the golden one',        9,  2, 0.25, 0.14, 0.03,   1,  7, 21, 5,   3, 0),
-    Grade('someone at the door',  10,  2, 0.22, 0.12, 0.03,   2,  8, 23, 5,   3, 1),
+    Grade('she is just there',     8,  2, 0.25, 0.16, 0.03,   2,  7, 24, 6,   0, 0),
+    Grade('the golden one',        9,  2, 0.25, 0.14, 0.03,   2,  7, 21, 5,   3, 0),
+    Grade('someone at the door',  10,  2, 0.22, 0.12, 0.03,   1,  8, 23, 5,   3, 1),
     Grade('the kitchen at night', 12,  2, 0.20, 0.10, 0.03,   1,  8, 26, 6,   4, 2),
 )
 
@@ -365,6 +377,24 @@ def cleared(thief: Thief, setup: Setup) -> bool:
     return thief.eaten >= setup.grade.quota and thief.caught == 0
 
 
+def haul(thief: Thief) -> int:
+    """What the round was worth, which is not the same as whether it was won.
+
+    The verdict is a bar — the quota, cleanly — and it is what the
+    agent boundary can pay, because a colour is one bit. The haul is the
+    margin, and it is what a person plays for: every cookie counts,
+    including the ones past the quota, and every cookie she saw costs
+    :data:`CAUGHT_COST`.
+
+    Having both is deliberate. With only the bar, a cookie past the
+    quota was worth exactly nothing and the game ended at the moment it
+    got interesting. With only the haul there is no such thing as
+    getting away with it. The bar says whether you got out; the haul
+    says what you got out with.
+    """
+    return thief.eaten - CAUGHT_COST * thief.caught
+
+
 # --- what a thief can work out from the screen ---------------------------
 
 def stopping_bites(speed: float, crumbs: float, grade: Grade,
@@ -451,8 +481,8 @@ def rehearse(level: int, deals: int = 400, seed: int = 0,
     return _FLOOR[key]
 
 
-__all__ = ['AWAY', 'COMING', 'DOG', 'FREEZE', 'WAIT', 'GOLD_BEATS', 'GOLD_GAP',
+__all__ = ['AWAY', 'CAUGHT_COST', 'COMING', 'DOG', 'FREEZE', 'WAIT', 'GOLD_BEATS', 'GOLD_GAP',
            'GONE', 'GRADES', 'LUNGE', 'MOTHER', 'REACH', 'SETTLE', 'SISTER',
            'GOLD_LOCK', 'Setup', 'Thief', 'WATCHING', 'alarming', 'beat',
-           'cleared', 'generate', 'jar_landing', 'landing', 'over', 'press',
-           'rehearse', 'stopping_bites']
+           'cleared', 'generate', 'haul', 'jar_landing', 'landing', 'over',
+           'press', 'rehearse', 'stopping_bites']

@@ -1147,8 +1147,9 @@ def cookie_note(chosen: Dict[str, Any]) -> str:
                       'brake.') % grade.gold)
     if grade.decoys:
         said.append(_('Somebody who is not her turns up in the doorway too.'))
-    said.append(_('Guessing scores about %d%%.')
-                % int(round(100 * rehearse(level))))
+    said.append(_('A cookie he got away with is worth a point and one she '
+                  'saw costs three. Guessing gets away clean about %d%% of '
+                  'the time.') % int(round(100 * rehearse(level))))
     return '  '.join(said)
 
 

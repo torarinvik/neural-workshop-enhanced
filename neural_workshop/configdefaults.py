@@ -882,9 +882,14 @@ CUSTODY_ADAPTIVE = True
 # faster and he eats whatever his speed came to that beat, so the
 # cookies come quicker the longer he keeps at it - and the same number
 # that is earning them is the number of beats it takes him to stop.
-# What is scored is whether he got the number the round asked for with
-# none of them seen, so the whole task is the stop rather than the
-# theft. Mother comes when the jar is down far enough, and how far is
+# A round is scored twice. Getting away with the number the round asked
+# for and none of them seen is the clean getaway, and that is the bar.
+# The points are the margin: every cookie counts, including the ones
+# past the quota, and every cookie she saw costs three of them, so a
+# bad round takes the total down rather than merely failing to add to
+# it. Measured, one cookie past the quota is free on every rung and two
+# is caught about half the time from COOKIE_LEVEL seven up. The whole
+# task is the stop rather than the theft. Mother comes when the jar is down far enough, and how far is
 # shaded on the jar as a band rather than marked as a line, so a thief
 # can see that he is in the range where she might arrive and not which
 # cookie brings her. Up to COOKIE_LEVEL five the warning is longer than
