@@ -479,15 +479,21 @@ class WhyTheStageStopsAboveTheBand(unittest.TestCase):
     in three while it was painting photographs into the band.
 
     So the palette is enumerated instead of sampled, and what the
-    enumeration found is the reason the stage on this screen stops
-    higher than the 3D Maze's does. A box is Okabe-Ito sky blue, which
-    is not a verdict colour; drawn against the dark room's near-black
-    ceiling its anti-aliased edge passes straight through the reader's
-    window on the way. The defence is geometry — see the two screen
-    tests below — and this class exists so that the geometry keeps its
-    reason. If a future palette made the finding below false, this
-    fails and says the reason has gone stale, rather than leaving a
-    layout nobody can account for.
+    enumeration found is the reason this stage stops where it does. A
+    box is Okabe-Ito sky blue, which is not a verdict colour; drawn
+    against the dark room's near-black ceiling its anti-aliased edge
+    passes straight through the reader's window on the way. The defence
+    is geometry — see the two screen tests below — and this class
+    exists so that the geometry keeps its reason. If a future palette
+    made the finding below false, this fails and says the reason has
+    gone stale, rather than leaving a layout nobody can account for.
+
+    Writing this down is what turned up the same fault, worse, in the
+    3D Maze next door, which had been shipping it: a map palette with
+    an outright verdict colour in it, over a stage that reached into
+    the band. That one hid from the sweep along a third axis again —
+    not content, but the *shape of the window* — and
+    :mod:`tests.test_youarehere` now carries the argument for it.
     """
 
     STEPS = 256

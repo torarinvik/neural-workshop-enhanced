@@ -186,21 +186,24 @@ class Sokoban3D:
     def _stage(self) -> Tuple[float, float, float, float]:
         """Where the whole screen lives, and it stops above the band.
 
-        The 3D Maze's stage runs sixty-six pixels from the bottom edge
-        and reaches into the strip the outcome reader scans; it gets
-        away with it because everything it paints down there is grey,
-        and grey has its three channels equal, which is never a verdict
-        and never blends into one.
+        A box is Okabe-Ito sky blue, ``(86, 180, 233)``, which is not a
+        verdict colour — but drawn against the dark room's near-black
+        ceiling its anti-aliased edge runs through ``(69, 140, 180)``,
+        and *that* is the outcome reader's pattern for a positive
+        verdict exactly. So the stage stops where the workshop's rule
+        says art stops, and a corridor a fifth taller is not worth a
+        screen that sometimes pays itself a trial it did not win.
 
-        This screen does not get away with it. A box is Okabe-Ito sky
-        blue, ``(86, 180, 233)``, which is not a verdict colour — but
-        drawn against the dark room's near-black ceiling its
-        anti-aliased edge runs through ``(69, 140, 180)``, and *that* is
-        the reader's pattern for a positive verdict exactly. So the
-        stage stops where the workshop's rule says art stops. The view
-        is shorter than the 3D Maze's for it, and that is the right
-        trade: a corridor a fifth taller is not worth a screen that
-        sometimes pays itself a trial it did not win.
+        The 3D Maze stops in the same place, and did not always: its
+        stage ran sixty-six pixels from the bottom edge and its map
+        painted door and key colours down there. That went unnoticed
+        for a while because a *sample* could not see it — the map
+        letterboxes its grid, so on the tall window the tests and
+        ``check_band.py`` run at, a big maze sits clear of the bottom,
+        and only a wider window drops its last row onto the panel's
+        floor. Which is the argument for enumerating a palette rather
+        than drawing some of it: see
+        :class:`tests.test_sokoban3d.WhyTheStageStopsAboveTheBand`.
         """
         window = state.window
         top = from_top_edge(96)

@@ -963,6 +963,15 @@ open, but most of that is the 2D Maze's own generator hunting for a
 maze that meets the rung's floors: a wait this task inherits rather
 than adds.
 
+The screen gives up about a fifth of its height to stop clear of the
+strip the agent outcome reader scans. The corridor could have kept it —
+it is painted in greys, and grey has its three channels equal, which is
+never a verdict and never fades into one — but the map beside it draws
+doors and keys in colours that are, and the two share a stage. What that
+costs is nothing where it would have mattered: at 37x37 the map's cell
+size is set by the panel's *width*, so the height it gave up buys the
+guard for free.
+
 #### 3D Sokoban
 
 The same warehouse, from inside it — the 2D game's own engine
@@ -1046,18 +1055,21 @@ the way a chess player takes moves back in analysis, and a learner
 handed the same key would be handed a way out of the one thing being
 measured.
 
-One thing this screen does that the 3D Maze does not is stop its view
-short of the bottom quarter of the frame. The 3D Maze paints only greys
-down there, and grey has its three channels equal, which is never a
-verdict and never fades into one. A box is Okabe-Ito sky blue,
-`(86, 180, 233)`, which is not a verdict colour either — but drawn
-against the dark room's near-black ceiling its anti-aliased edge runs
-through `(69, 140, 180)`, and that is the outcome reader's pattern for
-a scored trial exactly. `check_band.py` reports the task clean, and
-that is the useless kind of clean: whether a box is ever drawn that low
-depends on the deal. So the guard is the geometry —
-`verdict.above_the_band` — and the enumeration that found the offending
-blend is kept beside it as a test, so the layout keeps its reason.
+This screen stops its view short of the bottom quarter of the frame,
+where the outcome reader looks. A box is Okabe-Ito sky blue,
+`(86, 180, 233)`, which is not a verdict colour — but drawn against the
+dark room's near-black ceiling its anti-aliased edge runs through
+`(69, 140, 180)`, and that is the reader's pattern for a scored trial
+exactly. `check_band.py` reports the task clean, and that is the
+useless kind of clean: whether a box is ever drawn that low depends on
+the deal. So the guard is the geometry — `verdict.above_the_band` — and
+the enumeration that found the offending blend is kept beside it as a
+test, so the layout keeps its reason.
+
+Writing that argument down is what turned up the same fault, worse, in
+the 3D Maze next door, which had been shipping it: see **the agent
+environment** below for what a sweep of that one could and could not
+have seen.
 
 ### Self-control
 
@@ -1417,7 +1429,7 @@ were latent defects rather than boundary plumbing:
   never advanced past a feedback window or advanced at a rate set by how
   fast the machine was. They now read `self.clock()`, which the boundary
   swaps for a virtual one; `tests/test_ui_clock.py` keeps it that way.
-- **Seven tasks painted into the strip the outcome reader looks at.** Six
+- **Nine tasks painted into the strip the outcome reader looks at.** Six
   of them not by using a verdict colour — by using any colour with two
   channels far apart, whose *anti-aliased edge* passes through the
   reader's window on its way to the background.
@@ -1436,6 +1448,41 @@ were latent defects rather than boundary plumbing:
   rather than on layout, the guard has to be a test of the geometry, and
   `tests/test_ui_attention.py` now holds every spawn's bottom edge above
   the band whatever picture is in it.
+
+  The eighth and ninth are the two first-person screens, and between them
+  they say the last thing worth saying about sweeps. **3D Sokoban** paints
+  boxes in Okabe-Ito sky blue, `(86, 180, 233)`, which is not a verdict
+  colour — but against the dark room's near-black ceiling its
+  anti-aliased edge runs through `(69, 140, 180)`, which is the reader's
+  positive pattern exactly. That one was caught before it shipped, by
+  enumerating the palette instead of sampling it: what a first-person
+  view can paint is a small closed set, so it is cheaper to check all of
+  it than to draw some of it.
+
+  **The 3D Maze** is the interesting one. Its map draws doors and keys in
+  `KEY_COLORS`, one of which is vermillion `(213, 94, 0)` — the reader's
+  *negative* pattern outright, no edge required — and three more of which
+  fade through the window on their way to the background. Whether any of
+  it landed in the band turned on neither the deal nor the content but on
+  the **shape of the window**: the map letterboxes its grid inside its
+  panel, so on a tall window a 37-row maze is width-bound and sits well
+  clear of the bottom, while on a wide one it is height-bound and the last
+  row lands on the panel's floor. Measured with one seed throughout,
+  1824x1368 is clear at every rung — and that is the size the tests and
+  `check_band.py` run at. 1920x1080 puts a rung-fifteen door at y=533
+  against a ceiling of 540; 2560x1080 puts a rung-*eight* door 95 pixels
+  inside it. No number of extra deals would have found that.
+
+  The same screen carried a second one, which no sweep could have found
+  either. The pips showing which keys you are carrying are `KEY_COLORS`
+  too, and they hung a couple of pip-widths *below* the stage — around
+  y=143 on a 1920x1080 window, on every rung with a door. What hid it is
+  that the coloured half only shows for a key already *held*, and nothing
+  that swept it was carrying one. Both are fixed by `above_the_band` and
+  by not drawing outside your own rectangle, and
+  `tests/test_youarehere.py` now holds the stage above the band across
+  five window shapes and holds the pips inside the view with the keys in
+  hand.
 
 Random play is paid on twenty-one of the twenty-six overlays. The other
 five — Sudoku, Jigsaw, Concentration and the two mazes — have no
