@@ -58,6 +58,9 @@ class ConcentrationEnv(TaskEnv):
     #: more than elsewhere, because coach names a lapse and a run meant to
     #: measure memory rather than coached memory wants it off.
     requires = {'coach': True}
+    #: And off again in any build that will not pay per move, whatever
+    #: requires just said. See :attr:`TaskEnv.dense_only`.
+    dense_only = ('coach',)
 
     def drive(self, task: Any, port: int) -> None:
         """Turn over one card.

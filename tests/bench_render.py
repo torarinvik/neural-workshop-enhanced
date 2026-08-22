@@ -74,7 +74,7 @@ def main() -> None:
     _w, _h, rgba = capture_rgba(state.window)
 
     print()
-    print('You Are Here, rung %d — %dx%d maze, %d shapes, %dx%d frame'
+    print('3D Maze, rung %d — %dx%d maze, %d shapes, %dx%d frame'
           % (RUNG, task.maze.width, task.maze.height,
              len(task.drawn) + len(task.map_drawn) + len(task.strips),
              wide, tall))

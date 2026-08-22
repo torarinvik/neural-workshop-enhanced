@@ -28,6 +28,7 @@ CATEGORIES: Sequence[Tuple[str, str]] = (
     ('perception', _('Perception')),
     ('reasoning', _('Reasoning')),
     ('planning', _('Planning')),
+    ('self_control', _('Self-control')),
 )
 
 #: Category id → list of (task id, label).
@@ -38,6 +39,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('in_the_dark', _('In the Dark')),
         ('fog_of_war', _('Fog of War')),
         ('removals', _('Removals')),
+        ('chain_of_custody', _('Chain of Custody')),
     ],
     'long_term_memory': [
         ('concentration', _('Concentration')),
@@ -66,7 +68,15 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('salesman', _('Traveling Salesman')),
         ('sokoban', _('Sokoban')),
         ('maze', _('Maze')),
-        ('you_are_here', _('You Are Here')),
+        ('you_are_here', _('3D Maze')),
+        ('sokoban_3d', _('3D Sokoban')),
+    ],
+    # Not attention, and the difference is the point. Everything under
+    # attention is about finding or following the right thing; this is
+    # about not doing a thing you are already doing and want to keep
+    # doing. Reflex would fail every rung of it by being fast.
+    'self_control': [
+        ('cookie_thief', _('Cookie Thief')),
     ],
 }
 
@@ -375,6 +385,14 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
         from .youarehere import YouAreHere
         YouAreHere()
         return
+    if task_id == 'sokoban_3d':
+        from .sokoban3d import Sokoban3D
+        Sokoban3D()
+        return
+    if task_id == 'chain_of_custody':
+        from .custody import ChainOfCustody
+        ChainOfCustody()
+        return
     if task_id == 'sudoku':
         from .sudoku import Sudoku
         Sudoku()
@@ -446,6 +464,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'maze':
         from .maze import MazeTask
         MazeTask()
+        return
+    if task_id == 'cookie_thief':
+        from .cookiethief import CookieThief
+        CookieThief()
         return
     # Unknown task: restore the hub rather than dropping the player.
     TaskHub(return_to_title=return_to_title, category=category)

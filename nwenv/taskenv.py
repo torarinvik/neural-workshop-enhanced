@@ -286,7 +286,7 @@ class TaskEnv:
 
         A task like Out of Sight is a continuous animation and moves whether
         or not anyone acts, so one step is one tick of its clock. A task like
-        You Are Here only changes when a key is pressed, and ticking it would
+        The 3D Maze only changes when a key is pressed, and ticking it would
         be a no-op with a cost. :attr:`clocked` says which this is.
         """
         if self.clocked:
@@ -480,9 +480,38 @@ class TaskEnv:
     #: keeps its per-trial dedupe.
     dense: bool = False
 
+    #: Task attributes holding a per-move label, which stay off in any
+    #: build that will not pay per move. Named here rather than guarded
+    #: inside each wrapper, because getting it wrong is silent: the
+    #: sparse path reads the *first* verdict it finds as the trial's
+    #: own, so a warmer/colder label a few moves into a round scores
+    #: the round, and random play comes out looking skilled.
+    dense_only: Tuple[str, ...] = ()
+
     #: The slowest a clocked task may be driven. Below this a task's own
     #: motion clamps start to bite and a tick stops meaning what it says.
     slowest_frame_hz: float = 10.0
+
+    @property
+    def paying_densely(self) -> bool:
+        """Whether a per-action verdict would actually be paid per action.
+
+        :attr:`dense` is honoured only by the neutral-outcomes
+        accounting, so a task that paints a consequence after every
+        move must ask this before switching that painting on. Built the
+        plain way, the first such label is on screen the moment the
+        driver next looks, and the sparse path pays it as *the trial's*
+        verdict — the trial then scores "that move got warmer" instead
+        of "the run was won", and a run of random actions comes out
+        looking like a run of skilled ones.
+
+        Measured on Chain of Custody before this existed: random play
+        scored 44% against a guessing floor of 38%, all of it earned by
+        claw moves that happened to close a distance. On the 3D Maze
+        it paid a single +1 on a maze that random play had not solved
+        and could not have.
+        """
+        return bool(self.dense and self._neutral_outcomes)
 
     def __init__(self, seed: Optional[int] = None,
                  shm_name: Optional[str] = None,
@@ -590,6 +619,12 @@ class TaskEnv:
         if hasattr(task, 'rng'):
             task.rng = random.Random(seed)
         self.apply_dials(task)
+        # Whatever the wrapper just set, a per-move label stays off
+        # unless this build will pay per move. Here rather than in
+        # apply_dials so a hand-written override cannot skip it.
+        if not self.paying_densely:
+            for attr in self.dense_only:
+                setattr(task, attr, False)
         self.task = task
 
         self.accounting.reset()

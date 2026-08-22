@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""The stepped agent boundary for You Are Here.
+"""The stepped agent boundary for the 3D Maze.
 
 The first task wrapped on :class:`nwenv.taskenv.TaskEnv`, and the file is
 short because of it. The three written before it came to 628, 680 and 719
@@ -59,11 +59,16 @@ WALKS = ('ahead', 'back', 'left', 'right')
 
 
 class YouAreHereEnv(TaskEnv):
-    """Deterministic, stepped view of one You Are Here run."""
+    """Deterministic, stepped view of one 3D Maze run."""
 
     ports = 4
     clocked = False
     dense = True
+    #: The per-move label stays off in any build that will not pay per
+    #: move: the sparse path reads the first verdict it finds as the
+    #: trial's own, and a warmer/colder one there would score the maze
+    #: on a step rather than on the walk. See :attr:`TaskEnv.dense_only`.
+    dense_only = ('coach',)
 
     def __init__(self, seed: Optional[int] = None,
                  rung: Optional[int] = None,

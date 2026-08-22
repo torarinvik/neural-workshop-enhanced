@@ -263,6 +263,43 @@ which makes an unpinned answer a restricted draw rather than a uniform
 one and turns the floor from a proof into a bound. An exact floor is
 worth more than a richer verb.
 
+**Chain of Custody** asks Removals' question through motion instead of
+containment. A carousel of boxes runs round a belt; one is ringed for a
+moment at the start and then looks like all the rest. A claw slides
+round the ring, picks a box up and puts it down, and the round is
+scored on whether the box that reaches the bay is the box that was
+ringed — in the state the bay asked for.
+
+Everything on the belt is there because it affects that one box. The
+charger clears the charge mark in a single pass and leaves the box too
+hot, so the route is charger, then cooler, then bay, and cooling first
+is simply wasted. The painter is not a service anybody asks for: it is
+a hazard, and it moves the coat on of every box that rides past it, so
+following a colour loses the thread on its own. Charge bleeds away on
+the belt but not in the claw, which makes holding the box the safe
+place to keep it and the belt the price of reaching a machine.
+
+**A claw cannot chase a box.** Both move one slot a step, so a claw
+behind a box stays behind it forever, and the way to pick something up
+is to stand still and let the ring bring it to you. That is the first
+thing the task teaches and it is deliberately not signposted.
+
+The guessing floor is on the ladder rather than emergent, because
+deriving it made the rungs get *easier*: with one coat per two boxes
+the field is two boxes wide however many are on the belt, so a rung
+that added boxes added nothing on the axis the task is named for.
+Named instead, it climbs from one box in one at the bottom to one in
+six at the top, and the run reports it beside the score — a run at rung
+three is guessing one in two and a half and one at rung ten one in six,
+so the same percentage is a different achievement.
+
+The budget is a clock rather than an allowance: it is spent by the belt
+rather than by the action, so a person waiting by not pressing anything
+and an agent spending an action to let a beat pass are charged the same
+beat. Every rung is winnable — a player who already knows which box is
+the Core delivers it on 300 of 300 deals, using at most 28% of the
+budget, which `tests/oracle_custody.py` measures and the suite checks.
+
 ### Attention
 
 The *Attention* category holds **Reflex**: photographs appear at random
@@ -867,7 +904,7 @@ An option marks where you have already been; turning it off makes the
 maze a memory task as well, since you then have to carry the map
 yourself.
 
-#### You Are Here
+#### 3D Maze
 
 The same maze, from inside it. The screen splits: a first-person view
 on the left, cast one ray to a screen column, and on the right a map
@@ -925,6 +962,228 @@ tests require of it. The largest rungs still take about a second to
 open, but most of that is the 2D Maze's own generator hunting for a
 maze that meets the rung's floors: a wait this task inherits rather
 than adds.
+
+The screen gives up about a fifth of its height to stop clear of the
+strip the agent outcome reader scans. The corridor could have kept it —
+it is painted in greys, and grey has its three channels equal, which is
+never a verdict and never fades into one — but the map beside it draws
+doors and keys in colours that are, and the two share a stage. What that
+costs is nothing where it would have mattered: at 37x37 the map's cell
+size is set by the panel's *width*, so the height it gave up buys the
+guard for free.
+
+#### 3D Sokoban
+
+The same warehouse, from inside it — the 2D game's own engine
+throughout. The generator, the ladder, the solver that certifies a
+level and the test that says a position is provably lost are all
+`neural_workshop.sokoban`; what is new is where you stand. On the left
+a first-person view, cast one ray to a screen column; on the right a
+plan of the whole warehouse — walls, goals, where you came in, and
+where every box stood at the moment the door shut behind you.
+
+The plan is **fixed**, and here that is a harder promise than the 3D
+Maze's, because in a warehouse the world moves too. It is drawn once
+when the level is dealt and never touched again: not when you move,
+not when you turn, and *not when a box moves*. It goes on showing the
+load where it started, however far you have shoved it. So what you have
+to carry in your head is not a position but a position **and a world**,
+and every push you make falsifies a little more of what is on the wall.
+The errors are yours: the plan was right, you are the one who moved the
+box, and if you cannot say where you put it then nothing on screen will
+tell you. The tests digest the pixels under the panel before a push and
+after it, with a box standing where the plan does not show one, and
+require the bytes to be identical.
+
+Sokoban is the right game to do this to, because Sokoban does not
+forgive. From above, a pocket is visible; from inside a corridor you
+can see the wall in front of the box and not the one behind it, and
+whether the push you are about to make is the one that loses the
+warehouse is a question about a model you are holding rather than about
+anything you can look at. A box is drawn as a wall in another colour,
+because that is what it is to the eye — the ray caster is not told
+which is which — and a box already home is drawn in the goal green,
+which is the one thing the room gives away for free.
+
+**Turning costs a step**, for the reason it does next door: with free
+turns a player spins on the spot at every cell, reads all four
+corridors and every box within sight of them for nothing, and the plan
+stops being the only account of where things are. So the par is in
+*steps* rather than in pushes, and it is an exact minimum over
+`(boxes, cell, facing)` — measured across the first nine rungs, a mean
+of **3.8 times** the flat game's push count and never below 2.2 or
+above 5.5. The exact minimum stays affordable further up than it has
+any right to because the walking contracts away: a run is a sequence of
+pushes, the pose after a push is decided by the push, and the cheapest
+walk between two poses is a small breadth-first sweep over
+`(cell, facing)` in the box-avoiding floor. What is left is Dijkstra
+over the same push-space the flat solver walks, with the walk priced
+into each edge instead of being free. It certifies a minimum on ten
+deals out of ten up to rung eight and two out of ten at rung nine;
+above that the par is the search's own frontier, a proven lower bound,
+which the screen says rather than hides. The contraction is checked
+against a plain breadth-first search over every reachable
+`(boxes, cell, facing)` on the small rungs, because a shortcut that
+gives a different answer is not a shortcut.
+
+Two foils say what the two halves of the state are worth, and they fail
+in different ways, which is the interesting part.
+
+`push_forgetful` never loses its own place. It tracks its position
+perfectly and it plans perfectly; what it drops is the load, and when
+it does it falls back on the plan pinned to the wall. Over thirty
+warehouses at "tight corners", forgetting after one push in ten it
+still finishes twenty of them, at 1.16 times the minimum; one push in
+four, eleven of them at 2.03 times; one in two, seven of them at 2.92
+times, with eight more wedged past saving. Forgetting the load costs
+**steps**, and then the warehouse.
+
+`push_slipping` is the 3D Maze's own foil brought over: it plans
+perfectly from where it *believes* it is and now and then fails to
+notice that it moved. In a maze that costs steps. Here it costs the
+warehouse, and the numbers say so flatly. At one dropped update in
+fifty it finishes eighteen of thirty; at one in twenty, twelve; at one
+in ten, **one**. Of the other twenty-nine, eighteen are positions
+`deadlocked` can prove are lost and eleven are a player standing among
+boxes still out, holding a model in which it has finished. And every
+single run it *did* finish took exactly the minimum — it never merely
+walks further. It gets away with the slip or it loses the warehouse.
+
+Undo and restart are kept for the person and withheld from the learner,
+as they are on the flat screen: undo is how a player explores a line
+the way a chess player takes moves back in analysis, and a learner
+handed the same key would be handed a way out of the one thing being
+measured.
+
+This screen stops its view short of the bottom quarter of the frame,
+where the outcome reader looks. A box is Okabe-Ito sky blue,
+`(86, 180, 233)`, which is not a verdict colour — but drawn against the
+dark room's near-black ceiling its anti-aliased edge runs through
+`(69, 140, 180)`, and that is the reader's pattern for a scored trial
+exactly. `check_band.py` reports the task clean, and that is the
+useless kind of clean: whether a box is ever drawn that low depends on
+the deal. So the guard is the geometry — `verdict.above_the_band` — and
+the enumeration that found the offending blend is kept beside it as a
+test, so the layout keeps its reason.
+
+Writing that argument down is what turned up the same fault, worse, in
+the 3D Maze next door, which had been shipping it: see **the agent
+environment** below for what a sweep of that one could and could not
+have seen.
+
+### Self-control
+
+A category of its own rather than a sixth attention task, and the
+difference is worth stating. Everything under **Attention** is about
+finding or following the right thing. This is about *not* pressing a key
+you are already pressing and would rather keep pressing. Reflex would
+lose every rung above the fifth by being fast.
+
+**Cookie Thief.** A boy stands at a jar with his hand over it. One press
+is one cookie, taken on the beat you asked for it, and at a sixth of a
+second a beat that is as fast as you can press. There is no run-up and
+nothing in flight: the only thing a player can be wrong about is
+*whether* to press.
+
+What you watch instead is **the door**, and it only ever opens. Every
+cookie leaves a gap she would notice on its own and that part never
+closes again; taking them quickly is noisy on top of that, and that part
+dies away on a quiet beat. Both halves are drawn, in one colour at two
+strengths, because they are the same door opened further. She comes the
+first beat the door reaches a number nobody is told — the range is
+shaded on the frame, so you can see you are into the part where she
+might be and not which press is the one.
+
+Four things to do with a beat and every one of them worth doing. Grab.
+Wait, which lets the noise die down and so buys the grab after next.
+**Leave**, which banks the haul and ends the round: the only move that
+cannot go wrong and the only one that stops you earning. And reach for
+the golden one, which is two beats you cannot take back.
+
+The ladder turns on one measured break. Her warning only ever gets
+shorter, six beats down to none, and it runs out for good at the sixth
+rung. `oracle_cookie.py --player impulsive` is a thief who takes every
+grab short of a certainty and leaves only once somebody is visibly in
+the doorway: below the break he is caught in **0%** of rounds, because
+the warning is enough on its own; from the sixth rung up he is caught in
+**95–100%**, because the press that opens the door far enough is the one
+she is already looking at. There is nothing to react to, and stopping
+early is the only defence left.
+
+Every rung is winnable **without gambling at all**. `oracle_cookie.py`
+takes only grabs that cannot possibly bring her — it can compute that,
+because `after_a_grab` reads the jar and the rung and nothing else — and
+it clears 300 of 300 at every rung in 13 to 29 beats, two to five
+seconds of real time. So a round that was lost was lost on a decision
+rather than on the deal. The suite runs it.
+
+A round is scored twice, and the two scores are different questions.
+**Clean** is the bar: the quota met with no grab seen. **Points** are
+the margin — every cookie is worth one, including the ones past the
+quota, and every grab she saw costs two. Capping the haul at the quota
+made one more cookie worth exactly zero at a real risk, so the answer
+was always to leave on the bar and the round ended at the moment it got
+interesting.
+
+`--haul` prices the greed rather than arguing about it, and the price
+depends entirely on whether there is a warning. Below the break, pushing
+the door the *whole way* into the shaded range is caught **0%** of the
+time: you see her coming and leave, so the range is free to walk into.
+Above it every step in is paid for, and the haul turns over — a little
+way in beats stopping at the line, and the whole way in is worth a third
+of it and loses every round.
+
+The **golden cookie** is the other decision on the top three rungs, and
+it is neither a trap nor free money — which took measuring to establish,
+because a table of hauls alone said it was free money. It sits on the
+counter rather than in the jar, so it is worth six or eight cookies that
+never open the door on their own; reaching for it is two beats in which
+he can neither grab nor leave, and three grabs' worth of noise goes into
+the door across them. Taken **on sight** it raises the haul from 18 to
+18–22 and throws away a third to a half of the clean rounds doing it.
+Taken **only when the door can absorb the reach** — a sum a player can
+do off the screen — it is 100% clean and worth 24 to 26, the biggest
+single gain in the game. `oracle_cookie.py --gold` prints clean rounds
+beside the hauls now, for exactly that reason.
+
+Setting the price of greed took two goes and the failure is worth
+recording,
+because it is arithmetic rather than taste. A grab into the shaded range
+pays `+1` when it is safe and costs `CAUGHT_COST` when it is not, so it
+is worth taking exactly while the chance of it bringing her is under
+`1/(1 + cost)`. At a cost of three that line sits at one in four, which
+is finer than a grab can be aimed — one cookie moves the door about half
+a step into the range — so the greed dial had its best setting at zero
+and the shaded range was decoration. At two the line is one in three,
+which a grab can land inside, and the dial came alive. A test holds the
+inequality rather than the number.
+
+The guessing floor is measured rather than derived, because there is
+nothing here to derive: what a run of random presses is worth is
+whatever a random hand takes before the door is open far enough. It runs
+53% at the bottom rung — one cookie, six beats of warning, and *leave*
+is one key in four — to 0% from the fourth rung up.
+
+Coach mode is **not** the potential-based shaping the maze and the belt
+got, and the wrapper says so rather than letting the resemblance stand.
+There is no potential and nothing telescopes. It is the *haul* taken
+apart: a cookie he got away with is a piece of the green and a grab she
+had her eyes on is the red, so the sum over a round tracks the points
+without a learner having to reach the end of one. Where it still
+diverges is that the verdict is a bar and the sum is a margin; they
+agree on the ordering that matters and cannot agree on what a cookie
+past the quota is worth, because one bit cannot carry a margin. What the
+coach cannot see is the trigger and the deadline, and that is structural
+rather than careful: every function it reads takes a thief and a rung,
+and neither of those can reach a `Setup`.
+
+Three things about the feel were wrong before they were right, and all
+three came from the same mistake — modelling the boy's momentum as a
+*speed* he had to spend. Stopping meant waiting for a bar to fall, the
+arm lagged behind the key that moved it, and a press bought a fraction
+of a cookie rather than a cookie. The momentum is in the door now
+instead of in the boy: it is the room that fills up rather than the
+thief who has to slow down, and the thief himself is instantaneous.
 
 ### Window size, full screen, and the two coordinate spaces
 
@@ -1140,7 +1399,7 @@ obs, events, done = env.step(2)         # one of three opaque ports
 env.close()
 ```
 
-Nineteen of the twenty-four are *declarations* rather than code — where
+Twenty-three of the twenty-seven are *declarations* rather than code — where
 the task class lives, what one port calls, which phase takes input, which
 phase means the trial is over, and what the difficulty knobs are called:
 
@@ -1156,9 +1415,12 @@ class HanoiEnv(TaskEnv):
 ```
 
 They carry **no deriver and no verifier**, because they paint the shared
-verdict label and the boundary already knows how to read one. The four
-written before that existed still carry both, at about a hundred lines
-apiece. `ADDING_A_TASK.md` is the whole contract.
+verdict label and the boundary already knows how to read one. Eight of
+them add a short method or two — a port that names an object rather than
+an index, a trial window the task has no phase for, a coach gated on
+whether the boundary will actually pay it. The four written before that
+existed still carry both, at about a hundred lines apiece.
+`ADDING_A_TASK.md` is the whole contract.
 
 Two things had to change across the workshop to make this work, and both
 were latent defects rather than boundary plumbing:
@@ -1167,17 +1429,69 @@ were latent defects rather than boundary plumbing:
   never advanced past a feedback window or advanced at a rate set by how
   fast the machine was. They now read `self.clock()`, which the boundary
   swaps for a virtual one; `tests/test_ui_clock.py` keeps it that way.
-- **Six tasks painted into the strip the outcome reader looks at.** Not
-  by using a verdict colour — by using any colour with two channels far
-  apart, whose *anti-aliased edge* passes through the reader's window on
-  its way to the background. `neural_workshop.ui.verdict.above_the_band`
-  is now where that line lives, and `tests/check_band.py` sweeps every
-  task through its own wrapper on every rung.
+- **Nine tasks painted into the strip the outcome reader looks at.** Six
+  of them not by using a verdict colour — by using any colour with two
+  channels far apart, whose *anti-aliased edge* passes through the
+  reader's window on its way to the background.
+  `neural_workshop.ui.verdict.above_the_band` is now where that line
+  lives, and `tests/check_band.py` sweeps every task through its own
+  wrapper on every rung.
 
-Random play is paid on eighteen of the twenty-three overlays. The other
+  The seventh was found later and is a different animal, worth its own
+  sentence because it says something about the sweep. Reflex spawns its
+  targets from a tenth of the way up the screen, which is inside the
+  bottom quarter — and its targets are *photographs*, so whether a run
+  painted anything the reader counted depended on which pictures it
+  happened to draw. `check_band.py` reported it about one run in three
+  and came up clean the rest of the time. **A sampling check that comes
+  up clean is not evidence**; where the violation depends on content
+  rather than on layout, the guard has to be a test of the geometry, and
+  `tests/test_ui_attention.py` now holds every spawn's bottom edge above
+  the band whatever picture is in it.
+
+  The eighth and ninth are the two first-person screens, and between them
+  they say the last thing worth saying about sweeps. **3D Sokoban** paints
+  boxes in Okabe-Ito sky blue, `(86, 180, 233)`, which is not a verdict
+  colour — but against the dark room's near-black ceiling its
+  anti-aliased edge runs through `(69, 140, 180)`, which is the reader's
+  positive pattern exactly. That one was caught before it shipped, by
+  enumerating the palette instead of sampling it: what a first-person
+  view can paint is a small closed set, so it is cheaper to check all of
+  it than to draw some of it.
+
+  **The 3D Maze** is the interesting one. Its map draws doors and keys in
+  `KEY_COLORS`, one of which is vermillion `(213, 94, 0)` — the reader's
+  *negative* pattern outright, no edge required — and three more of which
+  fade through the window on their way to the background. Whether any of
+  it landed in the band turned on neither the deal nor the content but on
+  the **shape of the window**: the map letterboxes its grid inside its
+  panel, so on a tall window a 37-row maze is width-bound and sits well
+  clear of the bottom, while on a wide one it is height-bound and the last
+  row lands on the panel's floor. Measured with one seed throughout,
+  1824x1368 is clear at every rung — and that is the size the tests and
+  `check_band.py` run at. 1920x1080 puts a rung-fifteen door at y=533
+  against a ceiling of 540; 2560x1080 puts a rung-*eight* door 95 pixels
+  inside it. No number of extra deals would have found that.
+
+  The same screen carried a second one, which no sweep could have found
+  either. The pips showing which keys you are carrying are `KEY_COLORS`
+  too, and they hung a couple of pip-widths *below* the stage — around
+  y=143 on a 1920x1080 window, on every rung with a door. What hid it is
+  that the coloured half only shows for a key already *held*, and nothing
+  that swept it was carrying one. Both are fixed by `above_the_band` and
+  by not drawing outside your own rectangle, and
+  `tests/test_youarehere.py` now holds the stage above the band across
+  five window shapes and holds the pips inside the view with the keys in
+  hand.
+
+Random play is paid on twenty-one of the twenty-six overlays. The other
 five — Sudoku, Jigsaw, Concentration and the two mazes — have no
 accidental solutions, and are tested by driving them with a policy that
-knows the answer through the same ports a learner would use.
+knows the answer through the same ports a learner would use. 3D Sokoban
+is not among them, and the reason is worth knowing: random play never
+*finishes* a warehouse either, but it very readily shoves a box
+somewhere nothing brings it back from, and the screen calls that and
+pays it.
 
 ```
 cd tests && PYTHONPATH=.. ../.venv/bin/python drive_env.py --all 1500

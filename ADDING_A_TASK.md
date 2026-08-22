@@ -1,6 +1,6 @@
 # Making a task reachable by the agent
 
-The Workshop ships twenty-four playable tasks and **all twenty-four are
+The Workshop ships twenty-seven playable tasks and **all twenty-seven are
 reachable by the learning agent**. Reachable means more than playable: the
 agent gets pixels and opaque ports, and every scalar it is paid must be
 re-derivable from the frames by someone who is not trusted with the game.
@@ -54,10 +54,12 @@ the programme has one pixel reader to get right rather than one per task.
 | `requires` | settings the boundary imposes whatever the player prefers. Almost always `{'feedback': True}`: a trial that resolves with no verdict painted resolves into nothing a third party can read. |
 
 The hooks are all still there — `build`, `drive`, `trial_open`, `tick`,
-`resolved`, `finished` — and an override wins over a declaration. Four tasks
+`resolved`, `finished` — and an override wins over a declaration. Five tasks
 need one. Count composes its answer out of digits, Sudoku steers a cursor,
 Moving Targets and Concentration name an object rather than an index, and
-Reflex has no phase for its trial window at all. Each is six lines.
+Reflex has no phase for its trial window at all. Each is six lines. Three
+more override `apply_dials` and `dials` only, which is the coach gate below
+rather than anything about their ports.
 
 ## The two things the UI must do
 
@@ -106,7 +108,7 @@ or above 180 with the other two at or below 140. Anything there is read as a
 verdict.
 
 The rule is **not** "avoid three colours", and it is worth knowing why,
-because six tasks got this wrong. The Maze drew its doors in Okabe-Ito
+because seven tasks got this wrong. The Maze drew its doors in Okabe-Ito
 orange, `(230, 159, 0)`, which is not a verdict colour — green sits at 159,
 comfortably clear. But an orange square on a pale page is edged by every
 blend between the two, and part of that ramp has green already below 140
@@ -117,6 +119,83 @@ window on its way to the background, and no palette avoids that.
 So the rule is the simple one: the art stops above the band.
 `above_the_band` is where that line lives, and it works it out the same way
 `bwaccel.default_band` does, with a few pixels of slack for the edge.
+
+**If the art is content rather than layout, the sweep will lie to you.**
+Reflex spawns photographs at random places and used to spawn them from a
+tenth of the way up, which is inside the band. Whether a run painted
+anything the reader counted depended on which pictures were drawn, so
+`check_band.py` reported it about one run in three and came up clean
+otherwise. One clean sweep proves nothing there. Where a violation
+depends on content, write the guard against the *geometry* — assert that
+the spawn box clears `above_the_band()` — and let the sweep be the thing
+that finds it rather than the thing that certifies it.
+
+## If the task pays only at the end, shape it
+
+A task whose verdict arrives once a round is a task a learner starting
+from nothing is almost never paid on. The fix is not a new reward channel —
+it is the same `VerdictLabel`, painted after every action that changed how
+far the run has to go:
+
+```python
+class MyTaskEnv(TaskEnv):
+    dense = True                       # pay per action, not per trial
+
+    def apply_dials(self, task):
+        super().apply_dials(task)
+        task.coach = self._coach and self.paying_densely
+```
+
+and in the task, after an action:
+
+```python
+before = potential(...)
+...                                    # do the action
+delta = potential(...) - before
+self.verdict.show(delta < 0, _('Warmer') if delta < 0 else _('Colder'))
+```
+
+Three rules make it safe rather than merely dense.
+
+**One action must change the potential by at most one.** Then the sign of
+the change *is* the potential-based shaping term of Ng et al., every
+closed loop of actions telescopes to zero, and the optimal policy is
+unchanged. An action that changes nothing — a turn, a bump, a grab —
+clears the label and pays zero. If it paid, doing it on the spot would
+farm reward forever.
+
+**The potential must read only what is drawn.** Then the shaping tells a
+learner nothing a frame does not already carry, and it is pure
+acceleration. Chain of Custody's potential is deliberately blind to which
+box is the Core: had it read that, coach mode would have handed over the
+answer to the only question the task asks, and every number taken under
+it would have been about routing while claiming to be about identity.
+
+**Gate it on `paying_densely`.** `dense` is honoured only by the
+neutral-outcomes accounting, which is how a *runtime* builds an
+environment. Built the plain way, the sparse path pays the first verdict
+it finds and calls it the trial's — so a warmer/colder label a few steps
+in scores the whole round. Measured before the gate existed: Chain of
+Custody scored 44% against a 38% guessing floor, all of it earned by claw
+moves that happened to close a distance, and the 3D Maze was paid a `+1`
+on a maze random play had not solved.
+
+Keep it off for people (`coach = False` in the task's `__init__`), so the
+human game stays pixel-identical and every number taken before still
+compares.
+
+**Shaping is not the only honest way to be dense**, and a task that is
+not doing it should not borrow the vocabulary. Cookie Thief pays per
+beat too, but there is no potential in it and nothing telescopes: a
+cookie the boy got away with is a piece of the green and a grab Mother
+had her eyes on is the red. That is the round's own *haul* taken apart
+rather than a potential over it. It orders policies the way the
+round's single scalar does — which is what makes it safe — and it
+diverges in one way worth writing down: the scalar is all-or-nothing
+and the sum is graded, so a learner paid this way tolerates a little
+more risk than the verdict rewards. Say which of the two you built. The
+first two rules still apply to both; the telescoping one is specific to
+shaping.
 
 ## Read the clock the driver owns
 

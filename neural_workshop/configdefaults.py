@@ -790,7 +790,7 @@ FOG_MOVES = 400
 FOG_WORLDS = 3
 FOG_PERSIST = False
 
-# You Are Here is the maze from inside it. The same generator deals
+# The 3D Maze is the maze from inside it. The same generator deals
 # the same mazes at the same rungs as the 2D Maze, but the screen is
 # split: a first-person view cast one ray to a column on the left, and
 # on the right a map of the whole maze - corridors, start, way out,
@@ -814,6 +814,35 @@ HERE_LEVEL = 2
 HERE_TRIALS = 3
 HERE_ADAPTIVE = True
 HERE_MARKS = True
+
+# 3D Sokoban is the warehouse from inside it, and it is the 2D game's
+# own engine throughout: the same generator deals the same rooms at the
+# same rungs, the same solver certifies them, and the same test says
+# when a position is provably lost. What is new is where you stand.
+# The screen splits: a first-person view cast one ray to a column on
+# the left, and on the right a plan of the whole warehouse - walls,
+# goals, where you came in, and where every box stood when the door
+# shut behind you. The plan is drawn once when a level is dealt and
+# never touched again, and that is a harder promise than the 3D Maze's
+# because here the world moves too: every push you make leaves the plan
+# a little further out of date, and nothing on screen ever corrects it.
+# What you have to carry is not a position but a position and a world.
+# Turning costs a step, so the par is in steps rather than in pushes -
+# its own exact minimum over boxes, cell and facing, about three and a
+# half times the flat game's push count, measured across the ladder.
+# Past rung eight that search outgrows its budget and the par becomes a
+# proven lower bound, which the screen says rather than hides.
+# Walking into rock, or shoving a box that will not go, costs nothing.
+# SOKO3D_MARKS hangs a ring in the corridor where a goal still wants a
+# box; SOKO3D_TRAPS marks the squares a box dies on, on the plan, as
+# training wheels - and they are worth rather more here than on the
+# flat screen, since from inside a corridor a pocket is not something
+# you can look at.
+SOKO3D_LEVEL = 2
+SOKO3D_TRIALS = 3
+SOKO3D_ADAPTIVE = True
+SOKO3D_MARKS = True
+SOKO3D_TRAPS = False
 
 # Crossed Wires is the one task that hands the player nothing. A
 # marker on a grid that wraps round at every edge, a target to reach,
@@ -854,6 +883,51 @@ SUDOKU_LEVEL = 3
 SUDOKU_TRIALS = 3
 SUDOKU_SHOW_CLASHES = True
 SUDOKU_ADAPTIVE = True
+
+# Chain of Custody is one box among several and one bay to put it in.
+# The box is ringed for a moment at the start and then looks like the
+# rest of them, and the belt carries them all round a loop while the
+# claw picks up and puts down. What is scored is whether the box that
+# arrives is the box that was ringed - so the whole task is holding on
+# to an identity nothing on the screen carries. Every rung deals more
+# boxes than coats, so a colour narrows the field and never closes it,
+# and the painter moves a box's coat on as it rides past, so following
+# a colour loses the thread on its own. From CUSTODY_LEVEL four the
+# bay also asks for a state: the charger clears the charge mark in one
+# pass and leaves the box too hot, so the route is charger, then
+# cooler, then bay, and cooling first is wasted. A claw cannot chase a
+# box - both move a slot at a time - so picking one up means standing
+# still and letting the loop bring it round. CUSTODY_BELT_SECONDS is
+# how long a slot takes; lower is a faster belt and less time to think
+# between steps. CUSTODY_MARK_SECONDS is how long the ring is up at
+# the start, and is the one dial that makes the first look easier.
+CUSTODY_LEVEL = 3
+CUSTODY_TRIALS = 5
+CUSTODY_BELT_SECONDS = 0.40
+CUSTODY_MARK_SECONDS = 1.6
+CUSTODY_ADAPTIVE = True
+
+# Cookie Thief is one boy standing at a jar with his hand over it. One
+# press is one cookie, taken on the beat you asked for it, and at a
+# COOKIE_BEAT_SECONDS of a sixth of a second that is as fast as you can
+# press. What you are watching is the door, and it only ever opens.
+# Every cookie leaves a gap she would notice on its own and that part
+# never closes again; taking them quickly is noisy on top of that, and
+# that part dies away on a quiet beat. She comes the first beat the
+# door reaches a number nobody is told - the range is shaded on the
+# frame, so you can see you are into the part where she might be and
+# not which press is the one. Up to COOKIE_LEVEL five she stands in the
+# doorway for a beat or two first and leaving still saves you; from six
+# there is no warning at all. A round is scored twice: the number asked
+# for with no grab seen is the clean getaway and that is the bar, and
+# the points are the margin - every cookie is worth one, including the
+# ones past the quota, and every grab she saw costs two. Leaving is a
+# key rather than a pause, so stopping is a decision.
+COOKIE_LEVEL = 4
+COOKIE_TRIALS = 5
+COOKIE_BEAT_SECONDS = 0.16
+COOKIE_SET_SECONDS = 0.8
+COOKIE_ADAPTIVE = True
 
 ######################################################################
 # This is the end of the configuration file.

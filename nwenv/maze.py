@@ -57,6 +57,9 @@ class MazeEnv(TaskEnv):
     #: well lets a caller who *does* say something turn it off, which the
     #: unshaped control arm of any experiment about shaping needs to do.
     requires = {'coach': True}
+    #: And off again in any build that will not pay per move, whatever
+    #: requires just said. See :attr:`TaskEnv.dense_only`.
+    dense_only = ('coach',)
 
 
 def make_maze_env(seed: int = 0,

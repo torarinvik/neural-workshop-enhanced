@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""You Are Here: the view, the par, and the map that must not move.
+"""The 3D Maze: the view, the par, and the map that must not move.
 
 Three things are worth testing hard and the rest follows from them.
 
@@ -25,8 +25,11 @@ from __future__ import annotations
 import random
 import unittest
 
-from uisupport import (TASKS, YouAreHere, close_overlays, key, needs_ui,
-                       reset_window, state, taskoptions)
+import pyglet
+
+from uisupport import (TASKS, YouAreHere, close_overlays, display,
+                       geometry, key, needs_ui, reset_window, state,
+                       taskoptions)
 
 from neural_workshop import maze as M
 from neural_workshop import youarehere as Y
@@ -380,6 +383,69 @@ class WalkerTests(unittest.TestCase):
         self.assertGreater(steady, shaky)
 
 
+def blend(one, other, part):
+    """One colour *part* of the way to another, as a screen blends them."""
+    return tuple(int(round(a + (b - a) * part))
+                 for a, b in zip(one, other))
+
+
+def verdictish(pixel):
+    """Whether the outcome reader would count this pixel as a verdict."""
+    from neural_workshop.ui.verdict import BRIGHT, DIM
+    return any(pixel[one] >= BRIGHT
+               and all(pixel[other] <= DIM
+                       for other in range(3) if other != one)
+               for one in range(3))
+
+
+class WhyTheStageStopsAboveTheBand(unittest.TestCase):
+    """The reason for the layout, kept beside the layout.
+
+    ``tests/check_band.py`` sweeps this task and reports it clean, and
+    for a long time that was the only thing anybody had. It is not
+    evidence. The map draws its doors and keys in ``KEY_COLORS``, one
+    of which is the outcome reader's negative pattern outright and
+    three more of which fade through it — and whether any of them
+    landed in the band turned on the shape of the *window*, not on the
+    deal. The map letterboxes its grid, so on a tall window a
+    thirty-seven row maze is width-bound and sits clear of the bottom;
+    on a wide one it is height-bound and the last row lands on the
+    panel's floor. The tests and the sweep run at 1824x1368, which is
+    clear at every rung. 1920x1080 is not.
+
+    So the palette is enumerated rather than sampled, and the finding
+    is kept here so that the geometry below keeps its reason. If a
+    future palette made this false, it fails and says the reason has
+    gone stale rather than leaving a layout nobody can account for.
+    """
+
+    STEPS = 256
+
+    def test_the_reader_would_know_a_verdict_if_it_saw_one(self):
+        """Or everything else here is checking nothing at all."""
+        self.assertTrue(verdictish((213, 94, 0)))
+        self.assertFalse(verdictish((0, 158, 115)))
+        self.assertFalse(verdictish((170, 170, 170)))
+
+    def test_one_of_the_key_colours_is_a_verdict_on_its_own(self):
+        from neural_workshop.ui.maze import KEY_COLORS
+        self.assertIn((213, 94, 0), KEY_COLORS)
+        self.assertTrue(verdictish((213, 94, 0)))
+
+    def test_and_three_more_fade_through_one(self):
+        from neural_workshop.ui.maze import KEY_COLORS
+        caught = []
+        for shade in KEY_COLORS:
+            for ground in ((0, 0, 0), (255, 255, 255)):
+                if any(verdictish(blend(shade, ground,
+                                        part / float(self.STEPS)))
+                       for part in range(self.STEPS + 1)):
+                    caught.append(shade)
+                    break
+        self.assertGreaterEqual(len(caught), 4,
+                                'the reason for the layout has gone stale')
+
+
 @needs_ui
 class YouAreHereScreenTests(unittest.TestCase):
     """The screen: a corridor that moves, and a map that does not."""
@@ -506,6 +572,100 @@ class YouAreHereScreenTests(unittest.TestCase):
         self.task.show_marks = False
         self.task._redraw()
         self.task.on_draw()
+
+    def test_neither_panel_reaches_into_the_band(self):
+        """Both halves, by geometry, whatever the deal or the window.
+
+        Not a pixel sweep, and the reason is what a pixel sweep here
+        would be measuring. The map centres its grid inside its panel,
+        so whether anything is drawn along the panel's bottom edge
+        depends on the aspect of the window and on how big the maze
+        is — and the window the tests run in is a tall one, where a
+        thirty-seven row map letterboxes itself well clear. The bottom
+        edge of the stage is the thing that is actually true, so that
+        is what is held.
+        """
+        from neural_workshop.ui.verdict import band_rows
+        self.task.start_run()
+        first, _past = band_rows(state.window.height)
+        ceiling = state.window.height - first
+        for rect in (self.task._view_rect(), self.task._map_rect(),
+                     self.task._stage()):
+            self.assertGreaterEqual(rect[1], ceiling)
+
+    def test_the_stage_clears_the_band_at_every_window_shape(self):
+        """The axis that actually decides it, swept.
+
+        A wide window makes the map height-bound and drops its last row
+        onto the panel's floor; a tall one does not. Before the stage
+        was lifted, 1920x1080 put a rung-fifteen door at y=533 against
+        a ceiling of 540 and 2560x1080 put a rung-eight one 95 pixels
+        inside. The tests' own 1824x1368 was clear at every rung, which
+        is exactly why nothing caught it.
+        """
+        from neural_workshop.ui.verdict import band_rows
+        for wide, tall in ((1280, 720), (1600, 900), (1920, 1080),
+                           (2560, 1080), (1824, 1368)):
+            geometry.set_window_size(wide, tall)
+            display.relayout()
+            self.task.start_run()
+            first, _past = band_rows(state.window.height)
+            ceiling = state.window.height - first
+            for rect in (self.task._view_rect(), self.task._map_rect(),
+                         self.task._stage()):
+                self.assertGreaterEqual(rect[1], ceiling,
+                                        '%dx%d' % (wide, tall))
+
+    def test_the_keys_in_your_pocket_stay_inside_the_view(self):
+        """The second violation, which no deal sweep could have found.
+
+        These pips are ``KEY_COLORS`` as well, and they used to hang
+        below the stage rather than inside it — at about y=143 on a
+        1920x1080 window, against a band ceiling of 540, on every rung
+        with a door. What kept it out of every sweep is that the
+        coloured half only shows for a key already *held*, and nothing
+        that swept it was carrying one. So it is checked here with the
+        keys in hand.
+        """
+        from neural_workshop.ui.verdict import band_rows
+        self.task.start_rung = self.task.rung = 6
+        self.task.start_run()
+        self.assertTrue(self.task.maze.keys)
+        self.task.held = (1 << len(self.task.maze.keys)) - 1
+        # Marks off, so the only circles in `drawn` are the pips: a
+        # mark hanging in a corridor may legitimately overhang the
+        # view's side edges, and this test is not about those.
+        self.task.show_marks = False
+        self.task._redraw()
+        left, bottom, wide, tall = self.task._view_rect()
+        first, _past = band_rows(state.window.height)
+        ceiling = state.window.height - first
+        drawn = [shape for shape in self.task.drawn
+                 if isinstance(shape, pyglet.shapes.Circle)]
+        self.assertTrue(drawn)
+        for shape in drawn:
+            self.assertGreaterEqual(shape.y - shape.radius, ceiling)
+            self.assertGreaterEqual(shape.y - shape.radius, bottom - 1)
+            self.assertLessEqual(shape.y + shape.radius, bottom + tall + 1)
+            self.assertGreaterEqual(shape.x - shape.radius, left - 1)
+            self.assertLessEqual(shape.x + shape.radius, left + wide + 1)
+
+    def test_the_map_is_still_countable_at_the_biggest_maze(self):
+        """What the lift cost, checked rather than hoped.
+
+        The stage loses about a fifth of its height, and on a
+        thirty-seven cell grid that could have been the difference
+        between a map and a smudge. It is not: the map's cell size is
+        set by the panel's *width* at that size, so the height it gave
+        up costs nothing at all there.
+        """
+        self.task.start_rung = self.task.rung = 15
+        self.task.start_run()
+        _left, _bottom, wide, tall = self.task._map_rect()
+        across = self.task.maze.width
+        self.assertEqual(self.task._cell_rect(0)[2],
+                         min(wide / across, tall / across))
+        self.assertGreaterEqual(self.task._cell_rect(0)[2], 4.0)
 
     def test_the_view_and_the_map_do_not_overlap(self):
         self.task.start_run()

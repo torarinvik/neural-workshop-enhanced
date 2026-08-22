@@ -42,12 +42,13 @@ clock with the window hidden, so they prove stepped-versus-scheduled
 parity rather than literal visible-window execution.
 
 **Every task in the workshop is wrapped**, and ``catalog`` is the list.
-Nineteen of them are declarations on :class:`TaskEnv` rather than code
-— where the task class lives, what one port calls, which phase takes
-input, which phase means the trial is over — and they paint
+Twenty-three of them are declarations on :class:`TaskEnv` rather than
+code — where the task class lives, what one port calls, which phase
+takes input, which phase means the trial is over — and they paint
 :class:`neural_workshop.ui.verdict.VerdictLabel` when a trial settles,
-so they carry neither a deriver nor a verifier. The four written before
-that existed still carry both.
+so they carry neither a deriver nor a verifier. Eight of those add a
+short method or two on top. The four written before that existed still
+carry both.
 
 ``NeuralWorkshopEnv`` is the n-back workshop,
 where a trial is a stimulus and one action window per trial. ``sight``
@@ -109,11 +110,14 @@ from .reflex import ReflexEnv  # noqa: E402
 from .salesman import SalesmanEnv  # noqa: E402
 from .sudoku import SudokuEnv  # noqa: E402
 from .tracking import MovingTargetsEnv  # noqa: E402
+from .cookiethief import CookieThiefEnv  # noqa: E402
 from .crossedwires import CrossedWiresEnv  # noqa: E402
+from .custody import CustodyEnv  # noqa: E402
 from .inthedark import InTheDarkEnv  # noqa: E402
 from .maze import MazeEnv  # noqa: E402
 from .removals import RemovalsEnv  # noqa: E402
 from .sokoban import SokobanEnv  # noqa: E402
+from .sokoban3d import Sokoban3DEnv  # noqa: E402
 from .diagnostics import DiagnosticEnv, TestProbe  # noqa: E402
 from .env import NeuralWorkshopEnv, make_env  # noqa: E402
 from .export import FrameExport  # noqa: E402
@@ -149,9 +153,11 @@ __all__ = [
     # can play from the hub is here; nwenv.catalog is the list, and
     # tests/test_env_catalog.py fails the build if it falls behind.
     'catalog',
-    'ConcentrationEnv', 'CountingEnv', 'CrossedWiresEnv', 'GraphMappingEnv',
+    'ConcentrationEnv', 'CookieThiefEnv', 'CountingEnv',
+    'CrossedWiresEnv', 'CustodyEnv',
+    'GraphMappingEnv',
     'HanoiEnv', 'InTheDarkEnv', 'JigsawEnv', 'LookoutEnv',
     'MatrixReasoningEnv', 'MazeEnv', 'MovingTargetsEnv', 'NCupMonteEnv',
     'PursuitEnv', 'RecognitionEnv', 'ReflexEnv', 'RemovalsEnv',
-    'SalesmanEnv', 'SokobanEnv', 'SudokuEnv',
+    'SalesmanEnv', 'Sokoban3DEnv', 'SokobanEnv', 'SudokuEnv',
 ]

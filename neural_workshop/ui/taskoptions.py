@@ -921,7 +921,7 @@ def you_are_here_note(chosen: Dict[str, Any]) -> str:
 
 
 YOU_ARE_HERE = TaskSpec(
-    title=_('You Are Here options'),
+    title=_('3D Maze options'),
     options=(
         Option('HERE_LEVEL', _('Level'), 2, values=tuple(range(1, 16))),
         Option('HERE_TRIALS', _('Mazes per run'), 3,
@@ -932,6 +932,71 @@ YOU_ARE_HERE = TaskSpec(
                _('Show keys and the way out in the corridors'), True),
     ),
     note=you_are_here_note)
+
+
+def sokoban_3d_note(chosen: Dict[str, Any]) -> str:
+    """What the plan will and will not do, and what the par will mean.
+
+    Three things get spelled out because all three read as bugs
+    otherwise: that the plan genuinely never moves, that it goes on
+    showing the boxes where they *started* however far you have shoved
+    them, and that above the rung where the step search runs out the
+    par stops being a minimum and becomes a proven lower bound.
+    """
+    from ..sokoban import GRADES
+    rung = int(chosen['SOKO3D_LEVEL'])
+    grade = GRADES[max(0, min(len(GRADES) - 1, rung - 1))]
+    said = [_('Level %d, "%s": a %dx%d warehouse with %d %s — the very '
+              'same room the 2D Sokoban deals at this level, pushed '
+              'from inside it.')
+            % (rung, _(grade.name), grade.width, grade.height, grade.boxes,
+               _('box') if grade.boxes == 1 else _('boxes'))]
+    said.append(_('The plan beside the view shows all of it, including '
+                  'where you came in and where every box was standing '
+                  'then. It never moves, it never says where you are, '
+                  'and it never says where the boxes are now — your '
+                  'first push makes it out of date and nothing puts it '
+                  'right again.'))
+    said.append(_('Turning costs a step, so looking around is a decision '
+                  'rather than something free, and the par is in steps '
+                  'rather than pushes for that reason — about three and '
+                  'a half times the push count next door. Walking into '
+                  'rock, or shoving a box that will not go, costs '
+                  'nothing.'))
+    if rung >= 9:
+        said.append(_('Up here the exact step minimum outgrows the '
+                      'search; the par is a proven lower bound, never '
+                      'pretending to be a minimum. Dealing a level '
+                      'takes a second or two.'))
+    if grade.trap_share:
+        said.append(_('At least %d%% of the floor is a trap: one wrong '
+                      'push there and the box is lost for good, and '
+                      'from inside a corridor you cannot see the pocket '
+                      'coming.') % int(grade.trap_share * 100))
+    if not chosen['SOKO3D_MARKS']:
+        said.append(_('With the rings off there is nothing hanging in '
+                      'the corridors at all, so a count of corners is '
+                      'the only thing you will have.'))
+    if chosen['SOKO3D_ADAPTIVE']:
+        said.append(_('Finish near the minimum and the next warehouse '
+                      'is a level harder.'))
+    return '  '.join(said)
+
+
+SOKOBAN_3D = TaskSpec(
+    title=_('3D Sokoban options'),
+    options=(
+        Option('SOKO3D_LEVEL', _('Level'), 2, values=tuple(range(1, 13))),
+        Option('SOKO3D_TRIALS', _('Warehouses per run'), 3,
+               values=(1, 2, 3, 5, 8, 10)),
+        Option('SOKO3D_ADAPTIVE',
+               _('Climb a level when you finish near the minimum'), True),
+        Option('SOKO3D_MARKS',
+               _('Show the goals as rings in the corridors'), True),
+        Option('SOKO3D_TRAPS',
+               _('Mark the squares a box dies on, on the plan'), False),
+    ),
+    note=sokoban_3d_note)
 
 
 def crossed_wires_note(chosen: Dict[str, Any]) -> str:
@@ -1071,6 +1136,108 @@ SALESMAN = TaskSpec(
     note=salesman_note)
 
 
+def custody_note(chosen: Dict[str, Any]) -> str:
+    """What the rung puts on the belt, and what guessing is worth.
+
+    The floor is spelled out because the percentage means very little
+    without it: a run at rung three is guessing one in two and a half
+    and one at rung ten one in six, so the same score is a different
+    achievement. It is boxes divided by coats, which is exactly the
+    field a player who has lost the box is choosing from.
+    """
+    from ..custody import GRADES
+    grade = GRADES[max(0, min(len(GRADES) - 1,
+                              int(chosen['CUSTODY_LEVEL']) - 1))]
+    said = [_('%d boxes in %d coat(s): a colour leaves %.1f of them to '
+              'choose between, so guessing scores about %d%%.')
+            % (grade.boxes, grade.looks, grade.rivals,
+               int(round(100.0 / grade.rivals)))]
+    if not grade.moving:
+        said.append(_('The belt is still at this rung.'))
+    if grade.need_charge:
+        said.append(_('The bay wants %d charge and under %d heat. One pass '
+                      'through the charger clears the mark and leaves the '
+                      'box too hot, so the cooler comes after it.')
+                    % (grade.need_charge, grade.max_heat))
+    if grade.painters:
+        said.append(_('A painter moves the coat on of every box that rides '
+                      'past it.'))
+    if grade.decay:
+        said.append(_('Charge bleeds away on the belt, though not in the '
+                      'claw.'))
+    said.append(_('%d actions a round.') % grade.budget)
+    return '  '.join(said)
+
+
+CUSTODY = TaskSpec(
+    title=_('Chain of Custody options'),
+    options=(
+        Option('CUSTODY_LEVEL', _('Level'), 3,
+               values=tuple(range(1, 11))),
+        Option('CUSTODY_TRIALS', _('Rounds per run'), 5,
+               values=(1, 2, 3, 5, 8, 10, 15, 20)),
+        Option('CUSTODY_BELT_SECONDS', _('Seconds a slot of belt takes'),
+               0.40, values=(0.15, 0.25, 0.40, 0.60, 0.90, 1.5)),
+        Option('CUSTODY_MARK_SECONDS', _('Seconds the box is ringed for'),
+               1.6, values=(0.4, 0.8, 1.2, 1.6, 2.5, 4.0)),
+        Option('CUSTODY_ADAPTIVE',
+               _('Climb a rung after a clean delivery'), True),
+    ),
+    note=custody_note)
+
+
+def cookie_note(chosen: Dict[str, Any]) -> str:
+    """What the rung gives you, and what guessing is worth.
+
+    The floor is measured rather than derived, and it has to be: what a
+    run of random presses scores here is whatever a random hand happens
+    to take before the door is open far enough, which is a simulation
+    question and not an arithmetic one.
+    """
+    from ..cookiethief import GRADES, SAFE, rehearse
+    level = max(1, min(len(GRADES), int(chosen['COOKIE_LEVEL'])))
+    grade = GRADES[level - 1]
+    said = [_('Take %d and get out. One press is one cookie. Taken at a '
+              'walk you can have %d before the door is certainly too far '
+              'open, and hurrying costs you some of those.')
+            % (grade.quota, grade.room)]
+    said.append(_('She stands in the doorway for %d beats before she looks, '
+                  'so leaving still saves you.') % grade.warn
+                if grade.reactive else
+                _('No warning at all at this rung: the press that opens the '
+                  'door far enough is the one she sees, so the round has to '
+                  'be won before there is anything to react to.'))
+    said.append(_('She comes somewhere between %d and %d, and which is not '
+                  'shown.') % (SAFE, grade.limit))
+    if grade.gold:
+        said.append(_('A golden cookie is worth %d and never comes out of '
+                      'the jar, but reaching for it is two beats in which '
+                      'you can neither grab nor leave.') % grade.gold)
+    if grade.decoys:
+        said.append(_('Somebody who is not her turns up in the doorway too.'))
+    said.append(_('A cookie you got away with is worth a point and a grab '
+                  'she saw costs two. Guessing gets away clean about %d%% '
+                  'of the time.') % int(round(100 * rehearse(level))))
+    return '  '.join(said)
+
+
+COOKIE_THIEF = TaskSpec(
+    title=_('Cookie Thief options'),
+    options=(
+        Option('COOKIE_LEVEL', _('Level'), 4,
+               values=tuple(range(1, 11))),
+        Option('COOKIE_TRIALS', _('Rounds per run'), 5,
+               values=(1, 2, 3, 5, 8, 10, 15, 20)),
+        Option('COOKIE_BEAT_SECONDS', _('Seconds a beat takes'),
+               0.16, values=(0.08, 0.12, 0.16, 0.25, 0.40, 0.60)),
+        Option('COOKIE_SET_SECONDS', _('Seconds before the first beat'),
+               0.8, values=(0.0, 0.4, 0.8, 1.5, 2.5)),
+        Option('COOKIE_ADAPTIVE', _('Climb a rung after a clean getaway'),
+               True),
+    ),
+    note=cookie_note)
+
+
 #: Task id → the settings screen it owns.
 TASK_SPECS: Dict[str, TaskSpec] = {
     'monkey_ladder': MONKEY_LADDER,
@@ -1091,11 +1258,14 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'sokoban': SOKOBAN,
     'maze': MAZE,
     'you_are_here': YOU_ARE_HERE,
+    'sokoban_3d': SOKOBAN_3D,
     'in_the_dark': IN_THE_DARK,
     'fog_of_war': FOG_OF_WAR,
     'removals': REMOVALS,
     'sudoku': SUDOKU,
     'crossed_wires': CROSSED_WIRES,
+    'chain_of_custody': CUSTODY,
+    'cookie_thief': COOKIE_THIEF,
 }
 
 

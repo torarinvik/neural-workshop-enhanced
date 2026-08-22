@@ -55,6 +55,9 @@ CATALOG: Tuple[Wrapped, ...] = (
     Wrapped('removals', 'Removals',
             'nwenv.removals', 'RemovalsEnv',
             'neural_workshop.ui.removals', 'Removals'),
+    Wrapped('chain_of_custody', 'Chain of Custody',
+            'nwenv.custody', 'CustodyEnv',
+            'neural_workshop.ui.custody', 'ChainOfCustody'),
     Wrapped('concentration', 'Concentration',
             'nwenv.concentration', 'ConcentrationEnv',
             'neural_workshop.ui.concentration', 'Concentration'),
@@ -109,9 +112,15 @@ CATALOG: Tuple[Wrapped, ...] = (
     Wrapped('maze', 'Maze',
             'nwenv.maze', 'MazeEnv',
             'neural_workshop.ui.maze', 'MazeTask'),
-    Wrapped('you_are_here', 'You Are Here',
+    Wrapped('you_are_here', '3D Maze',
             'nwenv.youarehere', 'YouAreHereEnv',
             'neural_workshop.ui.youarehere', 'YouAreHere'),
+    Wrapped('sokoban_3d', '3D Sokoban',
+            'nwenv.sokoban3d', 'Sokoban3DEnv',
+            'neural_workshop.ui.sokoban3d', 'Sokoban3D'),
+    Wrapped('cookie_thief', 'Cookie Thief',
+            'nwenv.cookiethief', 'CookieThiefEnv',
+            'neural_workshop.ui.cookiethief', 'CookieThief'),
 )
 
 BY_ID: Dict[str, Wrapped] = {row.task_id: row for row in CATALOG}

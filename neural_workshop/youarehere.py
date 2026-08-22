@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""You Are Here: the same maze, from inside it, with a map that will not help.
+"""3D Maze: the same maze, from inside it, with a map that will not help.
 
 The map is pinned to the side of the screen. It shows the corridors,
 where you started, where the way out is, and every door and key in

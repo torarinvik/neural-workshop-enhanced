@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""The You Are Here screen: a view you walk, and a map that never moves.
+"""The 3D Maze screen: a view you walk, and a map that never moves.
 
 The thinking lives in :mod:`neural_workshop.youarehere`; this module
 is the corridor drawn on screen, the map pinned beside it, and the
@@ -56,7 +56,7 @@ from ..youarehere import (AHEAD, BACK, COLUMNS, FAR, LEFT, RIGHT, Pose,
                           picked_up)
 from . import cursor, taskoptions
 from .maze import KEY_COLORS, WALKER, WALL
-from .verdict import VerdictLabel
+from .verdict import VerdictLabel, above_the_band
 from ..i18n import _
 
 #: How much of the width the corridor gets, and how much the map. The
@@ -172,7 +172,7 @@ class YouAreHere:
         self.ink = (fg, fg, fg)
         self.batch = pyglet.graphics.Batch()
         self.title = pyglet.text.Label(
-            _('You Are Here'), font_size=calc_fontsize(22), weight='bold',
+            _('3D Maze'), font_size=calc_fontsize(22), weight='bold',
             color=self.textcolor, batch=self.batch,
             x=width_center(), y=from_top_edge(36),
             anchor_x='center', anchor_y='center', font_name=FONTLIST)
@@ -208,9 +208,41 @@ class YouAreHere:
         self._build_chrome()
 
     def _stage(self) -> Tuple[float, float, float, float]:
+        """Where the whole screen lives, and it stops above the band.
+
+        The corridor could have the extra fifth of the height — it is
+        painted in greys, and grey has its three channels equal, which
+        is never a verdict and never fades into one. The map beside it
+        could not. It draws doors and keys in ``KEY_COLORS``, and one
+        of those is vermillion, ``(213, 94, 0)``: red at or above 180
+        with the other two at or below 140, which *is* the outcome
+        reader's pattern for a lost trial, painted outright rather than
+        arrived at by an edge. Three more of them — ``(230, 159, 0)``,
+        ``(86, 180, 233)`` and ``(0, 114, 178)`` — fade through the
+        pattern on their way to the background, at ``(203, 140, 0)``,
+        ``(69, 140, 180)`` and ``(5, 117, 180)``.
+
+        Whether any of that landed in the band turned on the shape of
+        the window rather than on the deal, which is why nothing ever
+        caught it. The map letterboxes its grid inside the panel, so on
+        a tall window a thirty-seven row maze is width-bound and sits
+        well clear of the bottom; on a wide one it is height-bound and
+        the last row lands on the panel's floor. Measured, with the
+        same seed throughout: 1824x1368 is clear at every rung, which
+        is the size the tests and ``check_band.py`` happen to run;
+        1920x1080 puts a rung-fifteen door at y=533 against a ceiling
+        of 540; 2560x1080 puts a rung-*eight* door 95 pixels inside it.
+        A sweep that samples deals could run forever without seeing
+        any of it.
+
+        So both halves are lifted together. Keeping the view where it
+        was and moving only the map would leave the screen with two
+        floors and the next person to touch it with one more thing to
+        know.
+        """
         window = state.window
         top = from_top_edge(96)
-        bottom = from_bottom_edge(66)
+        bottom = above_the_band(from_bottom_edge(66))
         return (window.width * 0.03, bottom, window.width * 0.94,
                 max(60.0, top - bottom))
 
@@ -582,14 +614,27 @@ class YouAreHere:
                 batch=self.view_batch))
 
     def _draw_held(self) -> None:
-        """The keys in your pocket. Not the map — what you are carrying."""
+        """The keys in your pocket. Not the map — what you are carrying.
+
+        Drawn inside the view rather than on the margin below it, and
+        that is the fix to a second band violation rather than a change
+        of taste. These pips are ``KEY_COLORS`` too, they used to hang
+        a couple of pip-widths *under* the stage, and on a 1920x1080
+        window that put them around y=143 against a band ceiling of
+        540 — every time, on every rung with a door, from the moment
+        the first key was picked up. Nothing sampled it because nothing
+        that sampled it was carrying a key.
+
+        A thing that draws outside its own rectangle is how a layout
+        rule gets quietly escaped, so now it does not.
+        """
         left, bottom, width, _height = self._view_rect()
         if not self.maze.keys:
             return
         pip = max(5.0, width / 44.0)
         for colour in range(len(self.maze.keys)):
             at_x = left + pip * 2.2 * colour + pip
-            spot = bottom - pip * 1.9
+            spot = bottom + pip * 1.4
             self.drawn.append(pyglet.shapes.Circle(
                 at_x, spot, pip * 0.62, color=self.ink,
                 batch=self.view_batch))
