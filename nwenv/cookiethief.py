@@ -1,13 +1,21 @@
 # -*- coding: utf-8 -*-
 """The stepped agent boundary for Cookie Thief.
 
-Four ports: reach, freeze, lunge for the golden one, and wait.
+Four ports: grab, leave, reach for the golden one, and wait. Every one
+of them is worth pressing, which is not something this boundary can
+usually say about four ports.
 
-**Waiting is a real action here**, in a way it is on almost none of the
-rest of this boundary. Freezing takes ``brake`` off the boy's speed and
-waiting takes only ``drag``, so the three of them are three different
-accelerations — a learner that never waits cannot hold a speed, only
-climb to the top of one or fall off it.
+**A grab is instant.** The cookie is in the count on the beat it was
+asked for; nothing is queued and nothing is in flight. There is exactly
+one thing a learner can be wrong about and it is *whether* to press,
+never when the press will arrive.
+
+**Waiting and leaving are both real.** Waiting lets the noise a quick
+hand made die back down, so it is what buys the grab after next;
+leaving banks the haul and ends the round, and it is the only move that
+cannot go wrong and the only one that stops the count going up. A
+learner that never leaves is caught on every rung above the fifth, and
+one that never waits runs the door up on itself and comes home short.
 
 The task is **clocked**, and that is the whole of the difficulty rather
 than an implementation detail. The kitchen beats whether or not anyone
@@ -17,9 +25,9 @@ momentum you have already committed to, and momentum you can pause is
 not momentum.
 
 One step is one beat, which is why ``beat_seconds`` defaults to a
-frame. The task's own default is 0.35 seconds; at sixty frames a second
-that gives a person twenty-one presses a beat and a learner one, and
-then the same round would be two different games.
+frame. The task's own default is 0.16 seconds; at sixty frames a second
+that gives a person ten presses a beat and a learner one, and then the
+same round would be two different games.
 
 ``set_seconds`` is dropped to a frame for the same reason and a
 different one. It is a pause before the first beat so a person can read
@@ -32,17 +40,17 @@ fifty-four ticks of nothing at the head of every round.
 Coach mode
 ----------
 
-``coach`` paints a verdict on the beat a cookie lands and on the beats
-her eyes are on a boy who has not stopped in time. The wrapper declares
-itself ``dense`` so each is paid against its own action's receipt.
+``coach`` paints a verdict on the beat a cookie lands, and on the beat
+she has her eyes on a grab. The wrapper declares itself ``dense`` so
+each is paid against its own action's receipt.
 
 This is **not** the potential-based shaping the maze and the belt got,
 and it should not be read as if it were. There is no potential here and
 nothing telescopes. What it is instead is the round's *haul* taken
 apart — see :func:`neural_workshop.cookiethief.haul`. A cookie he got
-away with is a piece of the green; a beat under her eye is the red.
-Summed over a round it tracks the haul, and a learner does not have to
-reach the end of a round to be told anything.
+away with is a piece of the green; a grab she had her eyes on is the
+red. Summed over a round it tracks the haul, and a learner does not
+have to reach the end of a round to be told anything.
 
 Every safe cookie pays, including the ones past the quota, and that was
 not the first rule here. Capped at the quota, a cookie past it was
@@ -55,11 +63,12 @@ it does. The round's scalar is a bar — the quota, cleanly, all or
 nothing — and the dense sum is the margin. They agree on the ordering
 that matters (a clean rich round beats a clean thin one beats a caught
 one) and they disagree about how much a cookie past the quota is worth,
-because one bit cannot carry a margin. Measured: aiming one cookie past
-the quota is clean on every rung and worth a point; aiming two is
-caught about half the time from the seventh rung up and worth *less*.
-So the marginal cookie really does turn negative, and where it turns is
-a property of the rung rather than of the accounting.
+because one bit cannot carry a margin. Measured: pushing the door a
+little way into the shaded range is worth about a point of haul on
+every rung above the fifth and costs a few per cent of clean rounds;
+pushing it the whole way is worth a third of the haul and loses every
+round. So the marginal cookie turns negative somewhere in between, and
+where it turns is a property of the rung rather than of the accounting.
 
 **The coach is blind to both hidden things.** It reads the jar, the
 pips, the boy's speed and the doorway — every one of them drawn — and
@@ -80,8 +89,8 @@ from typing import Any, Optional
 from .taskenv import TaskEnv
 
 #: Straight off the model, so the two orders cannot drift apart.
-from neural_workshop.cookiethief import (FREEZE, LUNGE,  # noqa: E402
-                                         REACH, WAIT)
+from neural_workshop.cookiethief import (GRAB, LEAVE,  # noqa: E402
+                                         LUNGE, WAIT)
 
 PORTS = 4
 
@@ -90,7 +99,7 @@ class CookieThiefEnv(TaskEnv):
     """Deterministic, stepped view of one Cookie Thief run."""
 
     task_class = ('neural_workshop.ui.cookiethief', 'CookieThief')
-    #: Reach, freeze, lunge and wait. The lunge does nothing on the
+    #: Grab, leave, lunge and wait. The lunge does nothing on the
     #: seven rungs with no golden cookie, which is the task refusing it
     #: rather than the wrapper — the same way a rung with four choices
     #: out of eight leaves four ports idle.
@@ -117,8 +126,8 @@ class CookieThiefEnv(TaskEnv):
         super().apply_dials(task)
         # Only when the boundary will actually pay it per action. Built
         # the plain way the sparse path reads the first label it finds
-        # as the round's own verdict, and a "got one" a few beats in
-        # would score the round on a cookie rather than on the escape.
+        # as the round's own verdict, and a "got one" on the first beat
+        # would score the round on one cookie rather than on the escape.
         task.coach = self._coach and self.paying_densely
 
     def dials(self):
@@ -136,5 +145,5 @@ def make_cookiethief_env(seed: int = 0,
 #: The verifier, generated from the inherited deriver so the two cannot drift.
 verify_cookiethief_outcome = CookieThiefEnv.verifier()
 
-__all__ = ['FREEZE', 'LUNGE', 'PORTS', 'REACH', 'WAIT', 'CookieThiefEnv',
+__all__ = ['GRAB', 'LEAVE', 'LUNGE', 'PORTS', 'WAIT', 'CookieThiefEnv',
            'make_cookiethief_env', 'verify_cookiethief_outcome']

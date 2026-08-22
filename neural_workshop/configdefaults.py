@@ -878,35 +878,26 @@ CUSTODY_BELT_SECONDS = 0.40
 CUSTODY_MARK_SECONDS = 1.6
 CUSTODY_ADAPTIVE = True
 
-# Cookie Thief is one boy, one jar and one doorway. Reaching makes him
-# faster and he eats whatever his speed came to that beat, so the
-# cookies come quicker the longer he keeps at it - and the same number
-# that is earning them is the number of beats it takes him to stop.
-# A round is scored twice. Getting away with the number the round asked
-# for and none of them seen is the clean getaway, and that is the bar.
-# The points are the margin: every cookie counts, including the ones
-# past the quota, and every cookie she saw costs three of them, so a
-# bad round takes the total down rather than merely failing to add to
-# it. Measured, one cookie past the quota is free on every rung and two
-# is caught about half the time from COOKIE_LEVEL seven up. The whole
-# task is the stop rather than the theft. Mother comes when the jar is down far enough, and how far is
-# shaded on the jar as a band rather than marked as a line, so a thief
-# can see that he is in the range where she might arrive and not which
-# cookie brings her. Up to COOKIE_LEVEL five the warning is longer than
-# his stopping distance and the round can be played by watching the
-# door; from six it never is again, and the only defence left is not
-# having been going that fast. Standing still for three beats with
-# something already taken ends the round where he left it, so stopping
-# is a decision rather than a pause. From COOKIE_LEVEL eight a golden
-# cookie is worth several and never comes out of the jar, but reaching
-# for it costs two beats in which there is no brake at all - which
-# makes it a question of when rather than whether. COOKIE_BEAT_SECONDS
-# is how long a beat takes; lower is a faster kitchen and less time to
-# think between them.
+# Cookie Thief is one boy standing at a jar with his hand over it. One
+# press is one cookie, taken on the beat you asked for it, and at a
+# COOKIE_BEAT_SECONDS of a sixth of a second that is as fast as you can
+# press. What you are watching is the door, and it only ever opens.
+# Every cookie leaves a gap she would notice on its own and that part
+# never closes again; taking them quickly is noisy on top of that, and
+# that part dies away on a quiet beat. She comes the first beat the
+# door reaches a number nobody is told - the range is shaded on the
+# frame, so you can see you are into the part where she might be and
+# not which press is the one. Up to COOKIE_LEVEL five she stands in the
+# doorway for a beat or two first and leaving still saves you; from six
+# there is no warning at all. A round is scored twice: the number asked
+# for with no grab seen is the clean getaway and that is the bar, and
+# the points are the margin - every cookie is worth one, including the
+# ones past the quota, and every grab she saw costs two. Leaving is a
+# key rather than a pause, so stopping is a decision.
 COOKIE_LEVEL = 4
 COOKIE_TRIALS = 5
-COOKIE_BEAT_SECONDS = 0.35
-COOKIE_SET_SECONDS = 0.9
+COOKIE_BEAT_SECONDS = 0.16
+COOKIE_SET_SECONDS = 0.8
 COOKIE_ADAPTIVE = True
 
 ######################################################################

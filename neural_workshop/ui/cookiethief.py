@@ -1,29 +1,33 @@
 # -*- coding: utf-8 -*-
-"""Cookie Thief: take what the round asks for, and be still before she looks.
+"""Cookie Thief: one cookie a press, and stop before the door opens.
 
-A boy, a jar and a doorway. Reaching makes him faster and he eats
-whatever his speed came to that beat, so the cookies come quicker the
-longer he keeps at it — and the same number that is earning him cookies
-is the number of beats it will take him to stop.
+The boy stands **at** the jar with his hand over it. Press and he takes
+one, now — it is in the count on the beat you asked for and his hand is
+back at his side on the same beat. There is nothing to wind up and
+nothing to wait out, and at a sixth of a second a beat the whole round
+is over in three or four seconds.
 
-**The stop is the whole task.** Mother comes when the jar is down far
-enough, or when she was going to anyway, and there is a warning of a
-few beats before her eyes are actually on him. Up to the fifth rung
-that warning is longer than his stopping distance and the round can be
-played by watching the doorway. After it, never again: by the time
-there is anything to react to it is already too late, and the only
-defence left is not having been going that fast.
+What you are watching is **the door**, and it only ever opens. Every
+cookie leaves a gap she would notice on its own, and that part of the
+opening never closes again; taking them quickly is noisy on top of
+that, and that part dies away on a quiet beat. Both are drawn, in two
+shades, because they are two different things: one is what you have
+taken and one is how loudly you took it.
 
-**Stopping is committing.** Stand still for three beats with something
-already taken and he sneaks off, and the round is scored where he left
-it. That is what makes stopping a decision rather than a pause.
+She comes the first beat the door reaches a number nobody is told. The
+range it is in is shaded on the frame, so you can see that you are into
+the part where she might be and not which press is the one. On the
+first five rungs she stands in the doorway for a beat or two before her
+eyes are on the jar and *leave* still saves you. From the sixth there
+is no warning at all: the press that opens the door far enough is the
+press she walks in on.
 
-Everything the round turns on is drawn. The jar shows how far down it
-is and shades the depth at which she starts noticing; the bar under the
-boy is his speed; the row of pips is what he has got against what was
-asked. The two things that are not drawn are the two that are meant to
-be hidden: which cookie inside that shaded band is the one that brings
-her, and the beat she was going to come anyway.
+So there are four things to do with a beat and every one of them is
+worth doing. Grab. Wait, which lets the noise die down and buys the
+grab after next. **Leave**, which banks the haul and ends the round —
+the only move that cannot go wrong and the only one that stops you
+earning. And reach for the golden one, which is two beats you cannot
+take back.
 
 SPDX-License-Identifier: GPL-2.0-or-later
 """
@@ -38,10 +42,10 @@ from pyglet.window import key
 
 from .. import display, state
 from ..constants import FONTLIST
-from ..cookiethief import (COMING, DOG, FREEZE, GOLD_BEATS, GRADES, LUNGE,
-                           MOTHER, REACH, SISTER, WATCHING, Thief, beat,
-                           cleared, generate, haul, over, press, rehearse,
-                           stopping_bites)
+from ..cookiethief import (COMING, DOG, GOLD_BEATS, GRAB, GRADES, LEAVE,
+                           LUNGE, MOTHER, SAFE, SISTER, WATCHING, Thief,
+                           after_a_grab, beat, cleared, door, floor_of,
+                           generate, haul, over, press, rehearse)
 from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
                         width_center)
 from ..i18n import _
@@ -52,50 +56,51 @@ from .verdict import VerdictLabel, above_the_band
 #: are the two that read as the same object in different states.
 COOKIE = (230, 159, 0)
 GOLDEN = (240, 228, 66)
-SPEED_INK = (86, 180, 233)
 
-#: Who might be in the doorway, and how they are drawn. The height is
-#: what tells them apart at a glance, because on the top rungs there is
-#: exactly one beat to do it in and a colour read alone is a colour read
-#: too slowly.
+#: The door's opening. One colour in two weights rather than two
+#: colours: the solid part is the gap the missing cookies left and it
+#: never closes, the faint part on top of it is the noise a quick hand
+#: made and that does. They are the same door opened further, so they
+#: read better as one thing in two strengths than as two things — and
+#: the second colour it used to have was the golden cookie's yellow,
+#: which is a thing on the counter and must not turn up in the doorway.
+DOOR_INK = (213, 94, 0)
+FLOOR_ALPHA, NOISE_ALPHA = 120, 45
+
+#: Who might be in the doorway. The height is what tells them apart at a
+#: glance, because on the top rungs there is one beat to do it in and a
+#: colour read alone is a colour read too slowly.
 FIGURES: Dict[str, Tuple[Tuple[int, int, int], float, str]] = {
     MOTHER: ((204, 121, 167), 1.00, _('Mother')),
     SISTER: ((0, 114, 178), 0.62, _('your sister')),
     DOG: ((0, 158, 115), 0.28, _('the dog')),
 }
 
-#: Where the three things live across the canvas, as shares of its width.
-JAR_AT, BOY_AT, DOOR_AT = 0.14, 0.50, 0.85
+#: Where things sit across the canvas, as shares of its width. The boy
+#: is up against the jar rather than across the kitchen from it: his
+#: hand is already over the lid and a press is a press, not a journey.
+JAR_AT, BOY_AT, DOOR_AT = 0.16, 0.30, 0.78
 
-#: How long a beat takes. The same number serves a person at sixty
-#: frames a second and an agent stepping a virtual clock, so neither is
-#: playing a different game.
-BEAT_SECONDS = 0.35
+#: How long a beat takes. Short, because the whole point of one cookie a
+#: press is that presses come quickly. The same number serves a person
+#: at sixty frames a second and an agent stepping a virtual clock, so
+#: neither is playing a different game.
+BEAT_SECONDS = 0.16
 
 #: How long the round sits still before the first beat, so the quota can
 #: be read.
-SET_SECONDS = 0.9
+SET_SECONDS = 0.8
 
 #: How long a verdict stays up before the next round can be called.
-VERDICT_SECONDS = 1.2
+VERDICT_SECONDS = 1.0
 
 #: Clear this share of the last four rounds and an adaptive run climbs;
 #: fewer than this and it drops.
 CLIMB_AT, DROP_BELOW = 0.75, 0.4
 
-#: How much of the arm is left showing on the beat he yanks his hand back.
-#:
-#: The arm is the hand and the bar under him is the momentum, and they
-#: are drawn as two things because they are two things. Freezing pulls
-#: his hand most of the way out at once — which is what the key ought to
-#: feel like — and then the momentum drags it straight back in, because
-#: taking your hand out of the jar is not the same as having stopped.
-#: That is the lesson of the whole task in one picture.
-YANK_SHARE = 0.18
-
 
 class CookieThief:
-    """The jar, the boy and the doorway. Esc returns to the hub."""
+    """The jar, the boy and the door. Esc returns to the hub."""
 
     instance: Optional['CookieThief'] = None
 
@@ -106,10 +111,10 @@ class CookieThief:
         #: Swapped out by an agent environment for a virtual clock.
         self.clock = time.time
         #: Coach mode: paint a verdict on the beat a cookie lands and on
-        #: the beats her eyes are on a boy who has not stopped. Off for
-        #: people — it changes the game — and switched on by the agent
-        #: boundary. It is blind to the trigger and to the deadline: see
-        #: the wrapper's docstring for why that matters.
+        #: the beats she has her eyes on him. Off for people — it
+        #: changes the game — and switched on by the agent boundary. It
+        #: is blind to the trigger and to the deadline: see the
+        #: wrapper's docstring for why that matters.
         self.coach = False
         self.setup = None
         self.thief: Optional[Thief] = None
@@ -117,8 +122,11 @@ class CookieThief:
         self.results: List[Tuple[int, bool]] = []       # (rung, cleared)
         self.cookies = 0
         self.points = 0
-        #: Beats left showing the hand pulled back. Drawing only.
-        self.yank = 0
+        #: True on the frames his hand is in the jar. One beat, and it
+        #: is set the moment the key is pressed rather than on the next
+        #: beat: a press that does not show until the clock comes round
+        #: is a key that feels broken.
+        self.grabbing = False
         self.until = 0.0
         self.beat_at = 0.0
         self.phase = 'ready'
@@ -186,7 +194,7 @@ class CookieThief:
             align='center', anchor_x='center', anchor_y='top',
             font_name=FONTLIST)
         self.footnote = pyglet.text.Label(
-            _('Esc: menu   Space: start   X: reach   Z: stop'
+            _('Esc: menu   Space: start   X: take one   Z: leave'
               '   G: golden   C: options'),
             font_size=calc_fontsize(12), color=self.textcolor,
             batch=self.batch, x=width_center(), y=from_bottom_edge(26),
@@ -227,7 +235,7 @@ class CookieThief:
         self.results = []
         self.cookies = 0
         self.points = 0
-        self.yank = 0
+        self.grabbing = False
         self.rung = self.clamped(self.start_rung)
         self.phase = 'ready'
         self.message = _('Press Space to start')
@@ -246,7 +254,7 @@ class CookieThief:
         self.verdict.clear()
         self.setup = generate(self.rung, seed=self.rng.randrange(1 << 30))
         self.thief = Thief()
-        self.yank = 0
+        self.grabbing = False
         self.phase = 'setting'
         self.until = self.clock() + self.set_seconds
         self.beat_at = self.clock() + self.set_seconds
@@ -261,9 +269,11 @@ class CookieThief:
             return
         grade = self.setup.grade
         wants = [_('Rung %d, %s.') % (self.rung, _(grade.name)),
-                 _('Take %d, and be still before she looks.') % grade.quota]
-        if not grade.reactive:
-            wants.append(_('She is quicker than you can stop.'))
+                 _('Take %d and get out.') % grade.quota]
+        wants.append(_('She stands in the door for %d beats first.')
+                     % grade.warn if grade.reactive else
+                     _('No warning at all: the press that opens the door far '
+                       'enough is the one she sees.'))
         if grade.gold:
             wants.append(_('The golden one is worth %d.') % grade.gold)
         if grade.decoys:
@@ -273,28 +283,28 @@ class CookieThief:
     # --- what the player does --------------------------------------------
 
     def act(self, port: int) -> bool:
-        """One press. The beat that follows it is the clock's business.
+        """One press, and it happens now.
 
-        It redraws on the spot, which the first version did not: a press
-        changed nothing on screen until the next beat came round, so at
-        a third of a second a beat the stop key looked broken. It takes
-        effect in the frame you pressed it in now, and the thing it
-        takes effect on most visibly is the arm.
+        The screen is redrawn here rather than left to the next beat.
+        At a sixth of a second a beat that is the difference between a
+        key that answers and a key that looks broken, and the thing it
+        answers with is the hand: it goes into the jar on the frame you
+        pressed and is back at his side on the next one.
         """
         if self.phase != 'running' or self.thief is None:
             return False
         did = press(self.thief, port, self.setup)
-        if port == FREEZE and did:
-            self.yank = 1
+        if did and port == GRAB:
+            self.grabbing = True
         self._update_status()
         self._redraw()
         return did
 
-    def reach(self) -> None:
-        self.act(REACH)
+    def grab(self) -> None:
+        self.act(GRAB)
 
-    def freeze(self) -> None:
-        self.act(FREEZE)
+    def leave(self) -> None:
+        self.act(LEAVE)
 
     def lunge(self) -> None:
         self.act(LUNGE)
@@ -306,8 +316,8 @@ class CookieThief:
 
         The round runs whether or not anybody acts, which is the point:
         a thief who could freeze the world while he thought would be
-        answering a question nobody asked. Standing still is a real move
-        here and it costs the same beat it costs a person.
+        answering a question nobody asked. Waiting is a real move here
+        and it costs the same beat it costs a person.
         """
         now = self.clock()
         if self.phase == 'setting' and now >= self.until:
@@ -324,49 +334,38 @@ class CookieThief:
                 return
             self._update_status()
             self._redraw()
-            # Spent after the drawing rather than before it, so the beat
-            # that follows a freeze still shows the hand coming out. The
-            # beat after that has it back in the jar, which is the point.
-            if self.yank:
-                self.yank -= 1
+            # Cleared after the drawing rather than before it, so the
+            # frame the beat produced still has his hand in the jar. The
+            # next one does not, which is what makes it a snap.
+            self.grabbing = False
 
     def _coach_verdict(self, gained: int) -> None:
         """Paint what the beat just past did, one beat at a time.
 
         Not the shaping the maze and the belt got: there is no potential
         here and nothing telescopes. It is the *haul* taken apart — a
-        cookie he got away with is a piece of the green, a beat under
-        her eye is the red — so the sum over a round tracks
+        cookie he got away with is a piece of the green and a grab she
+        had her eyes on is the red — so the sum over a round tracks
         :func:`~neural_workshop.cookiethief.haul` rather than the
         round's one bit, and a learner does not have to reach the end of
         a round to be told anything.
 
-        Every safe cookie pays, including the ones past the quota, and
-        that was not the first rule here. Capping the green at the quota
-        made a cookie past it worth exactly nothing, so the dense
-        channel argued for stopping dead on the bar while the score on
-        the screen argued for carrying more. Two objectives under one
-        game is worse than either of them.
+        Every safe cookie pays, including the ones past the quota,
+        because that is the same rule the haul uses. Capped at the quota
+        it would argue for stopping dead on the bar while the score on
+        the screen argued for carrying more, and two objectives under
+        one game is worse than either.
 
-        The beats she is looking pay red as soon as the outcome is
-        settled rather than when it lands, because
-        :func:`~neural_workshop.cookiethief.stopping_bites` already
-        knows: a boy still carrying a cookie's worth of momentum with
-        her eyes on him has been caught, and saying so a beat early is
-        the same fact sooner.
-
-        It reads the jar, the pips, the boy's speed and the doorway.
-        Never :attr:`Setup.trigger` and never :attr:`Setup.deadline` —
-        those are the two hidden things, and a coach that knew them
-        would have answered the question the task asks.
+        It reads the jar, the pips, the door and the doorway. Never the
+        trigger and never the deadline — those two are the whole of what
+        the task hides, and a coach that knew when she was coming would
+        have answered the only question it asks.
         """
         if not self.coach or self.thief is None:
             return
-        thief, grade = self.thief, self.setup.grade
-        if thief.phase == WATCHING and (
-                thief.took or stopping_bites(thief.speed, thief.crumbs,
-                                             grade, thief.locked)):
-            self.verdict_shown = (False, _('She can see you'))
+        thief = self.thief
+        if thief.seen:
+            self.verdict_shown = (False, _('She saw that'))
         elif gained:
             self.verdict_shown = (True, _('Got one'))
         else:
@@ -378,7 +377,7 @@ class CookieThief:
     # --- how it ends ------------------------------------------------------
 
     def _settle(self) -> None:
-        """Score the round: enough cookies, and not one of them seen."""
+        """Score the round: enough cookies, and not one grab seen."""
         thief, grade = self.thief, self.setup.grade
         right = cleared(thief, self.setup)
         got = haul(thief)
@@ -386,7 +385,7 @@ class CookieThief:
         self.cookies += thief.eaten
         self.points += got
         if thief.caught:
-            self.message = _('Caught with %d of %d — %+d points'
+            self.message = _('Seen %d times, %d taken — %+d points'
                              ) % (thief.caught, thief.eaten, got)
         elif thief.eaten < grade.quota:
             self.message = _('Only %d of %d — %+d points'
@@ -427,15 +426,15 @@ class CookieThief:
 
         ``clean`` is the bar: rounds that met the quota with nothing
         seen. ``points`` is the haul, which is a different question — a
-        cookie he got away with is worth one and a cookie she saw costs
-        three, so a bad round takes the total *down* rather than merely
+        cookie he got away with is worth one and a grab she saw costs
+        two, so a bad round takes the total *down* rather than merely
         failing to add to it.
 
         The floor is reported beside them because a percentage means
         very little on its own, and it is *measured* rather than
         derived: there is nothing to derive here, since what a run of
-        random presses is worth is whatever a random walk in speed
-        happens to eat before somebody walks in.
+        random presses is worth is whatever a random hand happens to
+        take before the door is open far enough.
         """
         rounds = len(self.results)
         clean = sum(1 for _r, ok in self.results if ok)
@@ -476,6 +475,14 @@ class CookieThief:
         self.drawn.append(shape)
         return shape
 
+    def _label(self, text, x, y, size=11):
+        label = pyglet.text.Label(
+            text, font_size=calc_fontsize(size), color=self.textcolor,
+            batch=self.batch, x=x, y=y, anchor_x='center',
+            anchor_y='center', font_name=FONTLIST)
+        self.drawn.append(label)
+        return label
+
     def _redraw(self) -> None:
         self._clear_drawn()
         if self.setup is not None and self.phase in ('setting', 'running',
@@ -487,87 +494,58 @@ class CookieThief:
         self._update_status()
 
     def _draw_jar(self) -> None:
-        """The jar, what is gone from it, and the depth she notices at.
-
-        The band is a band and never a line, which is the whole of the
-        partial observability: a thief can see that he is into the
-        range where she might come and cannot see which cookie inside it
-        is the one that brings her.
-        """
+        """The jar and what is left in it."""
         left, bottom, width, height = self._canvas()
         grade = self.setup.grade
-        held = grade.quota + grade.spread + 3
-        wide = width * 0.16
+        held = grade.room + 4
+        wide = width * 0.13
         x = left + width * JAR_AT - wide / 2
-        tall = height * 0.66
-        base = bottom + height * 0.16
-        self._rect(x, base, wide, tall, self.ink, opacity=35)
-        step = tall / float(held)
-        # The band, drawn from the depth the count could first bring her
-        # to the depth it certainly does. Wider than the jar on purpose:
-        # drawn inside it the cookies still in the way cover the very
-        # thing a thief is trying to see the surface coming down to.
-        low = base + tall - step * (grade.quota + grade.spread)
-        self._rect(x - wide * 0.18, low, wide * 1.36, step * grade.spread,
-                   (213, 94, 0), opacity=70)
-        radius = min(step * 0.42, wide * 0.17)
-        for index in range(held - self.thief.jar):
+        tall = height * 0.52
+        base = bottom + height * 0.20
+        self._rect(x, base, wide, tall, self.ink, opacity=30)
+        for edge in ((x, base, max(2.0, wide * 0.06), tall),
+                     (x + wide - max(2.0, wide * 0.06), base,
+                      max(2.0, wide * 0.06), tall)):
+            self._rect(*edge, self.ink, opacity=70)
+        step = tall / float(max(1, held))
+        radius = min(step * 0.42, wide * 0.19)
+        for index in range(max(0, held - self.thief.jar)):
             row, column = divmod(index, 2)
             self._disc(x + wide * (0.3 + 0.4 * column),
-                       base + step * (row + 0.5), radius, COOKIE)
-        label = pyglet.text.Label(
-            _('%d gone') % self.thief.jar, font_size=calc_fontsize(11),
-            color=self.textcolor, batch=self.batch, x=x + wide / 2,
-            y=base - height * 0.07, anchor_x='center', anchor_y='center',
-            font_name=FONTLIST)
-        self.drawn.append(label)
+                       base + step * (row + 0.6), radius, COOKIE)
+        self._label(_('%d gone') % self.thief.jar, x + wide / 2,
+                    base - height * 0.07)
 
     def _draw_boy(self) -> None:
-        """The thief, his arm, and the speed the arm is going at.
+        """The thief, standing at the jar with his hand over it.
 
-        The bar is the one number a player has to read off him, so it is
-        a length rather than a figure: what matters is noticing the
-        momentum while there is still room to spend it, and that is not
-        something a digit gets across in time.
+        The arm is in the jar on the beat he took one and at his side on
+        every other beat. It is the whole of the animation and it is
+        deliberately the whole of it: there is no wind-up to watch and
+        nothing to wait for, which is what makes a press feel like a
+        press.
         """
         left, bottom, width, height = self._canvas()
-        thief, grade = self.thief, self.setup.grade
         x = left + width * BOY_AT
-        base = bottom + height * 0.20
+        base = bottom + height * 0.22
         body = height * 0.30
-        wide = width * 0.05
+        wide = width * 0.045
         self._rect(x - wide / 2, base, wide, body, self.ink, opacity=180)
-        self._disc(x, base + body + wide * 0.5, wide * 0.5, self.ink,
+        self._disc(x, base + body + wide * 0.55, wide * 0.55, self.ink,
                    opacity=180)
-        # The arm reaches back towards the jar as he speeds up, so speed
-        # is legible from the figure as well as from the bar — except on
-        # the beat he yanked it out, when it comes nearly all the way
-        # back whatever his momentum is. The bar below him does not move
-        # with it, and the gap between the two is the whole task.
-        deep = thief.speed * (YANK_SHARE if self.yank else 1.0)
-        reach = (x - left - width * JAR_AT) * deep
-        self._rect(x - reach, base + body * 0.72, max(2.0, reach),
-                   max(2.0, height * 0.022), self.ink, opacity=200)
-        if thief.locked:
-            # Both feet off the ground: there is no brake for a beat or
-            # two, and a player who cannot see that cannot plan round it.
-            self._rect(x - wide, base + body * 0.62, wide * 2,
-                       height * 0.05, GOLDEN, opacity=110)
-        bar_w = width * 0.20
-        bar_y = base - height * 0.10
-        tall = max(4.0, height * 0.035)
-        self._rect(x - bar_w / 2, bar_y, bar_w, tall, self.ink, opacity=40)
-        self._rect(x - bar_w / 2, bar_y, bar_w * thief.speed, tall, SPEED_INK)
-        # How far the momentum still has to run, in cookies, which is
-        # the number the stop has to be planned against.
-        left_to_go = stopping_bites(thief.speed, thief.crumbs, grade,
-                                    thief.locked)
-        label = pyglet.text.Label(
-            _('%d more if he stops now') % left_to_go,
-            font_size=calc_fontsize(11), color=self.textcolor,
-            batch=self.batch, x=x, y=bar_y - height * 0.07,
-            anchor_x='center', anchor_y='center', font_name=FONTLIST)
-        self.drawn.append(label)
+        jar_x = left + width * JAR_AT
+        arm = max(2.0, height * 0.022)
+        if self.grabbing or self.thief.committed:
+            # Straight into the jar, on the frame the key was pressed.
+            self._rect(jar_x, base + body * 0.80, x - jar_x, arm,
+                       self.ink, opacity=220)
+        else:
+            # At his side: a short stub, so the difference between the
+            # two reads at a glance rather than needing a comparison.
+            self._rect(x - wide * 0.9, base + body * 0.42, wide * 0.9, arm,
+                       self.ink, opacity=150)
+        if self.thief.committed:
+            self._label(_('reaching'), x, base + body + height * 0.10)
         if self.thief.gold_on_offer:
             self._draw_gold(x, base, height, width)
 
@@ -575,45 +553,69 @@ class CookieThief:
         """The golden one, on the counter, with the window running out."""
         gone = self.thief.beat - self.thief.gold_from
         share = max(0.0, 1.0 - gone / float(GOLD_BEATS))
-        cx = x + width * 0.11
-        cy = base + height * 0.44
-        self._disc(cx, cy, min(width * 0.022, height * 0.06), GOLDEN)
-        self._rect(cx - width * 0.03, cy - height * 0.10, width * 0.06,
-                   max(3.0, height * 0.022), self.ink, opacity=40)
-        self._rect(cx - width * 0.03, cy - height * 0.10, width * 0.06 * share,
-                   max(3.0, height * 0.022), GOLDEN)
+        cx = x + width * 0.10
+        cy = base + height * 0.30
+        self._disc(cx, cy, min(width * 0.020, height * 0.055), GOLDEN)
+        self._rect(cx - width * 0.03, cy - height * 0.09, width * 0.06,
+                   max(3.0, height * 0.020), self.ink, opacity=40)
+        self._rect(cx - width * 0.03, cy - height * 0.09, width * 0.06 * share,
+                   max(3.0, height * 0.020), GOLDEN)
 
     def _draw_door(self) -> None:
-        """The doorway, and whoever is standing in it.
+        """The doorway, how far it is open, and whoever is in it.
 
-        Height tells them apart, not colour. On the top rungs there is
-        one beat to read the figure in, and one beat is not long enough
-        to name a colour — but it is long enough to see that whatever is
-        in the door only comes up to your knee.
+        The opening is drawn in two weights. The solid part is the gap
+        the missing cookies left and it never closes again; the light
+        part on top of it is the noise a quick hand made, and that dies
+        away on a quiet beat. The shaded strip near the far edge is the
+        range she might be behind — a range and never a line, which is
+        the whole of what the task hides.
         """
         left, bottom, width, height = self._canvas()
-        thief = self.thief
-        wide = width * 0.15
+        thief, grade = self.thief, self.setup.grade
+        wide = width * 0.20
         x = left + width * DOOR_AT - wide / 2
         base = bottom + height * 0.20
-        tall = height * 0.62
-        self._rect(x, base, wide, tall, self.ink, opacity=30)
-        for edge in ((x, base, max(2.0, wide * 0.06), tall),
-                     (x + wide - max(2.0, wide * 0.06), base,
-                      max(2.0, wide * 0.06), tall),
-                     (x, base + tall - max(2.0, wide * 0.06), wide,
-                      max(2.0, wide * 0.06))):
+        tall = height * 0.58
+        self._rect(x, base, wide, tall, self.ink, opacity=25)
+        rail = max(2.0, wide * 0.05)
+        for edge in ((x, base, rail, tall), (x + wide - rail, base, rail, tall),
+                     (x, base + tall - rail, wide, rail)):
             self._rect(*edge, self.ink, opacity=90)
+        # The opening, from the hinge on the left.
+        limit = float(max(1, grade.limit))
+        span = wide - 2 * rail
+        low = floor_of(thief, grade)
+        opened = door(thief, grade)
+        self._rect(x + rail, base, span * min(1.0, low / limit), tall,
+                   DOOR_INK, opacity=FLOOR_ALPHA)
+        if opened > low:
+            self._rect(x + rail + span * min(1.0, low / limit), base,
+                       span * min(1.0, (opened - low) / limit), tall,
+                       DOOR_INK, opacity=NOISE_ALPHA)
+        # The range she might be in, marked on the frame above the door.
+        zone = base + tall + max(3.0, height * 0.02)
+        thick = max(3.0, height * 0.022)
+        self._rect(x + rail, zone, span, thick, self.ink, opacity=35)
+        self._rect(x + rail + span * (SAFE / limit), zone,
+                   span * (1.0 - SAFE / limit), thick, DOOR_INK, opacity=150)
+        nudge = span * min(1.0, opened / limit)
+        self._rect(x + rail + nudge - max(1.0, span * 0.006), zone - thick,
+                   max(2.0, span * 0.012), thick * 3, self.ink, opacity=220)
+        self._label(_('one more would open it to %d of %d')
+                    % (min(999, after_a_grab(thief, grade)), grade.limit),
+                    x + wide / 2, base - height * 0.07)
+        self._draw_figure(x, base, wide, tall, height)
+
+    def _draw_figure(self, x, base, wide, tall, height) -> None:
+        thief = self.thief
         if thief.phase not in (COMING, WATCHING) or thief.who is None:
             return
         colour, share, name = FIGURES[thief.who]
         looking = thief.phase == WATCHING
-        figure = tall * 0.66 * share
-        body = wide * 0.42
-        # She steps out of the doorway when she is actually looking, so
-        # "in the door" and "in the room" are different pictures rather
-        # than the same picture in two shades.
-        cx = x + wide / 2 - (wide * 0.5 if looking else 0.0)
+        figure = tall * 0.62 * share
+        body = wide * 0.30
+        cx = x + wide / 2 - (wide * 0.55 if looking else 0.0)
         self._rect(cx - body / 2, base, body, figure, colour,
                    opacity=255 if looking else 170)
         self._disc(cx, base + figure + body * 0.4, body * 0.4, colour,
@@ -623,43 +625,38 @@ class CookieThief:
                 self._disc(cx + side * body * 0.16,
                            base + figure + body * 0.45, body * 0.09,
                            self.background)
-        label = pyglet.text.Label(
-            name if not looking else _('%s is looking') % name,
-            font_size=calc_fontsize(11), color=self.textcolor,
-            batch=self.batch, x=x + wide / 2, y=base + tall + height * 0.06,
-            anchor_x='center', anchor_y='center', font_name=FONTLIST)
-        self.drawn.append(label)
+        self._label(_('%s is looking') % name if looking else name,
+                    x + wide / 2, base + tall + height * 0.10)
 
     def _draw_pips(self) -> None:
-        """What he has got, against what the round asked for."""
+        """What he has, against what the round asked for.
+
+        The ones past the quota are drawn too, and in the golden colour,
+        because they are worth the same point each and are the whole of
+        the reason to still be standing there.
+        """
         left, bottom, width, height = self._canvas()
         grade = self.setup.grade
         wanted = grade.quota
-        step = min(width * 0.035, width * 0.5 / max(1, wanted))
-        radius = step * 0.34
-        start = left + width * 0.30
-        y = bottom + height * 0.94
-        for index in range(wanted):
+        shown = max(wanted, min(self.thief.eaten, grade.room + 6))
+        step = min(width * 0.026, width * 0.62 / max(1, shown))
+        radius = step * 0.32
+        start = left + width * 0.20
+        y = bottom + height * 0.95
+        for index in range(shown):
             got = index < self.thief.eaten
+            spare = index >= wanted
             self._disc(start + step * index, y, radius,
-                       COOKIE if got else self.ink,
+                       (GOLDEN if spare else COOKIE) if got else self.ink,
                        opacity=255 if got else 45)
-        spare = self.thief.eaten - wanted
-        if spare > 0:
-            label = pyglet.text.Label(
-                _('+%d') % spare, font_size=calc_fontsize(11),
-                color=self.textcolor, batch=self.batch,
-                x=start + step * wanted + radius * 2, y=y,
-                anchor_x='left', anchor_y='center', font_name=FONTLIST)
-            self.drawn.append(label)
 
     def _update_status(self) -> None:
         if self.setup is None or self.thief is None:
             self.status.text = self.message
             return
-        self.status.text = _('Round %d of %d     beat %d     %s'
+        self.status.text = _('Round %d of %d     %d taken     %s'
                              ) % (self.trial, self.total_trials,
-                                  self.thief.beat, self.message)
+                                  self.thief.eaten, self.message)
 
     # --- housekeeping -----------------------------------------------------
 
@@ -693,9 +690,9 @@ class CookieThief:
         elif symbol == key.F11:
             display.toggle_fullscreen()
         elif symbol in (key.X, key.UP):
-            self.reach()
+            self.grab()
         elif symbol in (key.Z, key.DOWN):
-            self.freeze()
+            self.leave()
         elif symbol in (key.G, key.RIGHT):
             self.lunge()
         return pyglet.event.EVENT_HANDLED

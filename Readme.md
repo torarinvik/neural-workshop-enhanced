@@ -967,136 +967,101 @@ than adds.
 
 A category of its own rather than a sixth attention task, and the
 difference is worth stating. Everything under **Attention** is about
-finding or following the right thing. This is about *not* doing a thing
-you are already doing and would rather keep doing. Reflex would lose
-every rung above the fifth by being fast.
+finding or following the right thing. This is about *not* pressing a key
+you are already pressing and would rather keep pressing. Reflex would
+lose every rung above the fifth by being fast.
 
-**Cookie Thief.** A boy, a jar and a doorway. Reaching makes him faster
-and he eats whatever fraction of a cookie his speed came to that beat,
-so the cookies come quicker the longer he keeps at it — and the same
-number that is earning them is the number of beats it will take him to
-stop. Take what the round asked for, and be still before Mother looks.
+**Cookie Thief.** A boy stands at a jar with his hand over it. One press
+is one cookie, taken on the beat you asked for it, and at a sixth of a
+second a beat that is as fast as you can press. There is no run-up and
+nothing in flight: the only thing a player can be wrong about is
+*whether* to press.
 
-Two numbers come out of a round, and they are two different questions.
-**Clean** is the bar: the quota met with nothing seen. **Points** are
-the margin — a cookie he got away with is worth one and a cookie she
-saw costs three, so a bad round takes the total *down* rather than
-merely failing to add to it, and every cookie past the quota still
-counts. That last clause is what makes stopping a decision instead of a
-target: with the haul capped at the quota, one more cookie was worth
-exactly nothing and carried a risk, so the answer was always to stop on
-the bar and the game ended at the moment it got interesting.
+What you watch instead is **the door**, and it only ever opens. Every
+cookie leaves a gap she would notice on its own and that part never
+closes again; taking them quickly is noisy on top of that, and that part
+dies away on a quiet beat. Both halves are drawn, in one colour at two
+strengths, because they are the same door opened further. She comes the
+first beat the door reaches a number nobody is told — the range is
+shaded on the frame, so you can see you are into the part where she
+might be and not which press is the one.
 
-`oracle_cookie.py --haul` prices the greed rather than arguing about
-it. Aiming **one** cookie past the quota is free on every rung — 100%
-clean, one more point — because the band starts at the quota plus one
-and he is already stopped by the time she has been called. Aiming
-**two** is free up to the sixth rung and then turns: from the seventh
-up it is caught about half the time and the *average haul falls* (8.6
-against 9.0 at rung seven). So the marginal cookie really does go
-negative, and where it goes negative is a property of the rung.
+Four things to do with a beat and every one of them worth doing. Grab.
+Wait, which lets the noise die down and so buys the grab after next.
+**Leave**, which banks the haul and ends the round: the only move that
+cannot go wrong and the only one that stops you earning. And reach for
+the golden one, which is two beats you cannot take back.
 
-The stop is the whole task, and the ladder is built on one measured
-break. Her warning only ever gets shorter — nine beats down to one, a
-beat a rung — and it takes its one double step between the fifth rung
-and the sixth, because that is where it crosses what his momentum still
-owes. Braking the instant she appears is enough below that line and on
-none of the rungs above it, because what catches him is taking another
-*cookie* rather than still drifting: `Grade.reflex_bites` simulates a
-flat-out thief who brakes on the warning and counts what he gets anyway
-once her eyes are on him. It runs 0, 0, 0, 0, 0, 1, 1, 1, 3, 3, and the
-foil agrees exactly — a player who eats flat out and brakes only on the
-doorway clears every one of the first five rungs and none of the last
-five.
+The ladder turns on one measured break. Her warning only ever gets
+shorter, six beats down to none, and it runs out for good at the sixth
+rung. `oracle_cookie.py --player impulsive` is a thief who takes every
+grab short of a certainty and leaves only once somebody is visibly in
+the doorway: below the break he is caught in **0%** of rounds, because
+the warning is enough on its own; from the sixth rung up he is caught in
+**95–100%**, because the press that opens the door far enough is the one
+she is already looking at. There is nothing to react to, and stopping
+early is the only defence left.
 
-The first version of that property compared stopping distance against
-the warning and was wrong about rung five, which is a rung where he is
-still drifting when she looks and no longer eating. The warning also
-used to bounce — one beat, one, two, one across the top four rungs —
-which reads as a rung getting easier on the one axis the ladder is
-named for; a test now holds it non-increasing and holds its largest
-step at the break.
+Every rung is winnable **without gambling at all**. `oracle_cookie.py`
+takes only grabs that cannot possibly bring her — it can compute that,
+because `after_a_grab` reads the jar and the rung and nothing else — and
+it clears 300 of 300 at every rung in 13 to 29 beats, two to five
+seconds of real time. So a round that was lost was lost on a decision
+rather than on the deal. The suite runs it.
 
-**The hand and the momentum are drawn as two things**, because they are
-two things. Freezing pulls his arm most of the way out of the jar in
-the frame you press it in, and the bar under him does not move with it:
-the gap between the two is the lesson. Before that the stop key changed
-nothing on screen until the next beat came round, which at a third of a
-second a beat reads as a broken key — and the arm it moves is drawn
-from the speed, so on the top rungs one press shifted it a tenth of its
-length and you could not see that either.
+A round is scored twice, and the two scores are different questions.
+**Clean** is the bar: the quota met with no grab seen. **Points** are
+the margin — every cookie is worth one, including the ones past the
+quota, and every grab she saw costs two. Capping the haul at the quota
+made one more cookie worth exactly zero at a real risk, so the answer
+was always to leave on the bar and the round ended at the moment it got
+interesting.
 
-She comes for two reasons and only one of them is drawn. The jar shades
-the depth at which she starts noticing, as a **band and never a line**,
-so a thief can see he is into the range where she might arrive and not
-which cookie brings her; she also walks in on a beat nothing announces.
-Because the band always sits above the quota, stopping on the number
-you were asked for is always safe — the count can punish momentum and
-never the quota itself, which is what makes a perfect stop a perfect
-round. `oracle_cookie.py` is a thief who brakes when braking would land
-him on the quota, and he clears **300 of 300 at every rung** using at
-most 55% of the beats, so a round that was lost was lost on the stop
-rather than on the arithmetic. The suite runs him. He is the
-winnability proof rather than the best play — stopping dead on the bar
-is the safest round available and, since the points arrived, not the
-richest one.
+`--haul` prices the greed rather than arguing about it, and the price
+depends entirely on whether there is a warning. Below the break, pushing
+the door the *whole way* into the shaded range is caught **0%** of the
+time: you see her coming and leave, so the range is free to walk into.
+Above it every step in is paid for, and the haul turns over — a little
+way in beats stopping at the line, and the whole way in is worth a third
+of it and loses every round.
 
-**Stopping is committing.** Stand still for three beats with something
-already taken and he sneaks off, and the round is scored where he left
-it. Without that rule a round decided at beat fifteen ran on to the
-deadline anyway — eight seconds of a person watching a still kitchen —
-and, worse, halting was free. Now it is the move that ends the round,
-so a thief who stops one cookie short has chosen to.
-
-The golden cookie was a bad mechanic twice before it was a good one. It
-is worth several cookies and never comes out of the jar, so it buys
-quota without buying risk; the question is what the reach costs.
-Flinging him to full speed made it a button that was never worth
-pressing at any setting — steady beat greedy 100% to 49%, 100% to 3%,
-100% to 0%, and a patience sweep from 8 to 22 beats found no crossover
-anywhere. It locks the brake for two beats instead. That turns it into
-a question of *when*: taken flat out, two unbraked beats are two more
-cookies out of the jar; taken at a crawl it is nearly free, but the
-window may close first. Since a perfect controller clears every rung
-whatever it does with the gold, the three policies can only be told
-apart by a thief who fumbles, and that is how they are measured — at one
-press in ten pressed at random, banking the gold early and reaching for
-it late scores 98, 94 and 91 percent across the three gold rungs
-against 91, 87 and 94 for ignoring it and 97, 82 and 75 for grabbing it
-on sight.
+Setting that price took two goes and the failure is worth recording,
+because it is arithmetic rather than taste. A grab into the shaded range
+pays `+1` when it is safe and costs `CAUGHT_COST` when it is not, so it
+is worth taking exactly while the chance of it bringing her is under
+`1/(1 + cost)`. At a cost of three that line sits at one in four, which
+is finer than a grab can be aimed — one cookie moves the door about half
+a step into the range — so the greed dial had its best setting at zero
+and the shaded range was decoration. At two the line is one in three,
+which a grab can land inside, and the dial came alive. A test holds the
+inequality rather than the number.
 
 The guessing floor is measured rather than derived, because there is
-nothing here to derive: what a run of random presses scores is whatever
-a random walk in speed happens to eat before somebody walks in. It runs
-32% of rounds got away with at the bottom of the ladder to 1% at the
-top, and the run reports it beside the score. It is deliberately not asserted rung by rung — the
-middle of the ladder is genuinely flat, and 3.5% against 5.5% is a tie
-read as an ordering.
+nothing here to derive: what a run of random presses is worth is
+whatever a random hand takes before the door is open far enough. It runs
+53% at the bottom rung — one cookie, six beats of warning, and *leave*
+is one key in four — to 0% from the fourth rung up.
 
-Coach mode here is **not** the potential-based shaping the maze and the
-belt got, and the wrapper says so rather than letting the resemblance
-stand. There is no potential and nothing telescopes. It is the *haul*
-taken apart: a cookie he got away with is a piece of the green and a
-beat under her eye is the red, so the sum over a round tracks the
-points without a learner having to reach the end of one. Every safe
-cookie pays, including the ones past the quota — capped at the quota it
-argued for stopping dead on the bar while the score on the screen
-argued for carrying more, and two objectives under one game is worse
-than either. Where it still diverges is that the verdict is a bar and
-the sum is a margin: they agree on the ordering that matters and they
-cannot agree on what a cookie past the quota is worth, because one bit
-cannot carry a margin. That is stated rather than hidden. What the coach cannot see is the trigger and the
-deadline — the two hidden things — and that is structural: the
-functions it reads take a thief and a rung, and neither of them can
-reach a `Setup`.
+Coach mode is **not** the potential-based shaping the maze and the belt
+got, and the wrapper says so rather than letting the resemblance stand.
+There is no potential and nothing telescopes. It is the *haul* taken
+apart: a cookie he got away with is a piece of the green and a grab she
+had her eyes on is the red, so the sum over a round tracks the points
+without a learner having to reach the end of one. Where it still
+diverges is that the verdict is a bar and the sum is a margin; they
+agree on the ordering that matters and cannot agree on what a cookie
+past the quota is worth, because one bit cannot carry a margin. What the
+coach cannot see is the trigger and the deadline, and that is structural
+rather than careful: every function it reads takes a thief and a rung,
+and neither of those can reach a `Setup`.
 
-`oracle_cookie.py --curve` sweeps the warning against a purely reactive
-thief and finds the beat at which he stops being able to stop: 4 at
-rung seven, 8 at rung ten. The curve comes out as a step rather than a
-slope, which is honest — the oracle's reaction is noiseless, so the
-physics is all that is left in it. Swept against a real learner the
-same tool measures the learner's own inhibition threshold, which is
-what it is for.
+Three things about the feel were wrong before they were right, and all
+three came from the same mistake — modelling the boy's momentum as a
+*speed* he had to spend. Stopping meant waiting for a bar to fall, the
+arm lagged behind the key that moved it, and a press bought a fraction
+of a cookie rather than a cookie. The momentum is in the door now
+instead of in the boy: it is the room that fills up rather than the
+thief who has to slow down, and the thief himself is instantaneous.
 
 ### Window size, full screen, and the two coordinate spaces
 

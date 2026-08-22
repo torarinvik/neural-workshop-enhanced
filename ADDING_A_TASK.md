@@ -186,11 +186,10 @@ compares.
 
 **Shaping is not the only honest way to be dense**, and a task that is
 not doing it should not borrow the vocabulary. Cookie Thief pays per
-beat too, but there is no potential in it and nothing telescopes: the
-round asks for *n* cookies with none of them seen, so each cookie under
-the quota is a piece of the green and each cookie taken under Mother's
-eye is the whole of the red. That is the round's own verdict taken
-apart rather than a potential over it. It orders policies the way the
+beat too, but there is no potential in it and nothing telescopes: a
+cookie the boy got away with is a piece of the green and a grab Mother
+had her eyes on is the red. That is the round's own *haul* taken apart
+rather than a potential over it. It orders policies the way the
 round's single scalar does — which is what makes it safe — and it
 diverges in one way worth writing down: the scalar is all-or-nothing
 and the sum is graded, so a learner paid this way tolerates a little

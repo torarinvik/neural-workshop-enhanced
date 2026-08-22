@@ -1,23 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Cookie Thief's model: the momentum, the doorway, and the three promises.
+"""Cookie Thief's model: the door, the press, and the three promises.
 
 Nothing here draws anything. What is being checked is the part the
 screen only reports:
 
-* that the ladder is a ladder — that each rung adds one thing, that
-  reaction stops being enough exactly once and never starts again, and
-  that random presses are worth less the higher you go;
+* that the ladder is a ladder — that each rung adds one thing, that the
+  warning only ever gets shorter, that reaction stops being enough
+  exactly once and never starts again, and that random presses are
+  worth less the higher you go;
 
-* that every rung is winnable, by a thief who can count, well inside
-  its beats — so a round that was lost was lost on the stop and not on
-  the arithmetic;
+* that every rung is winnable **without gambling at all**, by a thief
+  who takes only the grabs that cannot possibly bring her, so a round
+  that was lost was lost on a decision and not on the deal;
 
 * that coach mode is **blind to both hidden things**. It reads the jar,
-  the pips, the boy's speed and the doorway, and it cannot read the
-  trigger or the deadline. Those two are the whole of what the task
-  hides, and a coach that knew them would have answered the only
-  question it asks.
+  the pips and the door, and it cannot read the trigger or the
+  deadline. Those two are the whole of what the task hides, and a coach
+  that knew them would have answered the only question it asks.
 
 SPDX-License-Identifier: GPL-2.0-or-later
 """
@@ -49,6 +49,13 @@ def dealt(level, seed=0):
     return C.generate(level, seed=seed), C.Thief()
 
 
+def alone(level, seed=0):
+    """The same, with nobody coming: for testing the door on its own."""
+    setup, thief = dealt(level, seed=seed)
+    return setup._replace(trigger=10 ** 6, deadline=10 ** 6,
+                          decoys=()), thief
+
+
 def run(setup, thief, ports):
     """Press *ports* in order, one a beat, and stop when the round does."""
     for port in ports:
@@ -66,7 +73,7 @@ class TheLadder(unittest.TestCase):
         """A ladder whose bottom rung needs a plan has no bottom."""
         first = C.GRADES[0]
         self.assertEqual(first.quota, 1)
-        self.assertEqual(first.stopping, 1)
+        self.assertEqual(first.opening, 0)
         self.assertTrue(first.reactive)
         self.assertEqual(first.gold, 0)
         self.assertEqual(first.decoys, 0)
@@ -75,67 +82,57 @@ class TheLadder(unittest.TestCase):
         quotas = [grade.quota for grade in C.GRADES]
         self.assertEqual(quotas, sorted(quotas), quotas)
 
-    def test_stopping_never_gets_easier(self):
-        stops = [grade.stopping for grade in C.GRADES]
-        self.assertEqual(stops, sorted(stops), stops)
+    def test_every_rung_has_room_for_what_it_asks_for(self):
+        """A quiet beat takes the noise back off but never the gap in
+        the jar, so ``room`` is the hard ceiling however patient anybody
+        is. A rung asking for more than that would be asking for
+        something it does not have."""
+        for grade in C.GRADES:
+            self.assertGreaterEqual(grade.room, grade.quota, grade.name)
 
     def test_each_rung_adds_something(self):
         for below, above in zip(C.GRADES, C.GRADES[1:]):
             harder = (
                 above.quota > below.quota
-                or above.stopping > below.stopping
                 or above.warn < below.warn
-                or above.reflex_bites > below.reflex_bites
                 or above.spread < below.spread
+                or above.opening > below.opening
+                or above.settling < below.settling
                 or above.gold > below.gold
                 or above.decoys > below.decoys)
             self.assertTrue(harder, '%s adds nothing to %s'
                                     % (above.name, below.name))
+
+    def test_the_warning_only_ever_gets_shorter(self):
+        warns = [grade.warn for grade in C.GRADES]
+        self.assertEqual(warns, sorted(warns, reverse=True), warns)
+        self.assertGreaterEqual(warns[0], 5)
+        self.assertEqual(warns[-1], 0)
 
     def test_reaction_stops_being_enough_once_and_stays_that_way(self):
         """The break in the ladder, and there is meant to be exactly one.
 
         Below it a thief can play by watching the doorway. Above it he
         cannot, ever again — a rung that handed reaction back would be
-        a rung on which everything learned above it was optional.
+        one on which everything learned above it was optional.
         """
         reactive = [grade.reactive for grade in C.GRADES]
         self.assertTrue(reactive[0])
         self.assertFalse(reactive[-1])
         self.assertEqual(reactive, sorted(reactive, reverse=True), reactive)
 
-    def test_what_reaction_alone_leaves_him_holding_never_falls(self):
-        bites = [grade.reflex_bites for grade in C.GRADES]
-        self.assertEqual(bites, sorted(bites), bites)
+    def test_she_never_comes_below_the_safe_line(self):
+        """Which is what makes leaving at the line a certainly clean round.
 
-    def test_the_warning_only_ever_gets_shorter(self):
-        """It used to bounce — one beat, one, two, one — which reads as a
-        rung getting easier on the one axis the ladder is named for."""
-        warns = [grade.warn for grade in C.GRADES]
-        self.assertEqual(warns, sorted(warns, reverse=True), warns)
-        self.assertGreaterEqual(warns[0], 8)
-        self.assertEqual(warns[-1], 1)
-
-    def test_the_biggest_step_in_the_warning_is_where_reaction_dies(self):
-        """Which is what makes it one ladder rather than two axes."""
-        steps = [below.warn - above.warn
-                 for below, above in zip(C.GRADES, C.GRADES[1:])]
-        break_at = [grade.reactive for grade in C.GRADES].index(False)
-        self.assertEqual(steps.index(max(steps)), break_at - 1, steps)
-
-    def test_the_band_is_always_above_the_quota(self):
-        """Stop on the number you were asked for and the count is safe.
-
-        Which is what makes a perfect stop a perfect round: the trigger
-        can only ever punish momentum, never the quota itself.
+        The trigger can only ever punish a grab taken past the point
+        where the door is known to be safe, never the quota itself.
         """
         for level in range(1, len(C.GRADES) + 1):
             grade = C.GRADES[level - 1]
             for seed in range(30):
                 setup = C.generate(level, seed=seed)
-                self.assertGreater(setup.trigger, grade.quota)
-                self.assertLessEqual(setup.trigger,
-                                     grade.quota + grade.spread)
+                self.assertGreaterEqual(setup.trigger, C.SAFE)
+                self.assertLess(setup.trigger, grade.limit)
 
     def test_the_extras_arrive_at_the_top(self):
         for grade in C.GRADES[:7]:
@@ -147,17 +144,11 @@ class TheLadder(unittest.TestCase):
     def test_guessing_is_worth_less_the_higher_you_go(self):
         """Measured, because there is nothing here to derive.
 
-        What a run of random presses scores is whatever a random walk in
-        speed happens to eat before somebody walks in, and that is a
-        simulation question.
-
-        Measured is also why this is not asserted rung by rung. Four
-        hundred deals at a floor near a twentieth carry about a point of
-        standard error, and the middle of the ladder really is flat —
-        3.5% against 5.5% at one point, which is a tie read as an
-        ordering. So what is checked is the shape: the floor falls by a
-        long way across the ladder, and no rung sits above the best of
-        the ones below it by more than the noise in the measurement.
+        What a run of random presses scores is whatever a random hand
+        happens to take before the door is open far enough. It is not
+        asserted rung by rung either: four hundred deals at a floor of a
+        few per cent carry about a point of standard error, and most of
+        the ladder is already at the bottom of the scale.
         """
         deals = 400
         tolerance = 0.03            # about two standard errors down here
@@ -170,133 +161,110 @@ class TheLadder(unittest.TestCase):
                                  max(floors[:above]) + tolerance, floors)
 
 
-class TheHaul(unittest.TestCase):
-    """The bar and the margin, which are two different questions."""
-
-    def test_a_cookie_he_got_away_with_is_worth_one(self):
-        setup, thief = dealt(6, seed=2)
-        thief.eaten = 7
-        self.assertEqual(C.haul(thief), 7)
-
-    def test_a_cookie_she_saw_costs_more_than_it_was_worth(self):
-        """Or being caught would be a rounding error rather than a loss."""
-        setup, thief = dealt(6, seed=2)
-        thief.eaten, thief.caught = 7, 1
-        self.assertEqual(C.haul(thief), 7 - C.CAUGHT_COST)
-        self.assertLess(C.haul(thief), 6)
-
-    def test_enough_of_them_takes_it_negative(self):
-        setup, thief = dealt(6, seed=2)
-        thief.eaten, thief.caught = 8, 4
-        self.assertLess(C.haul(thief), 0)
-
-    def test_cookies_past_the_quota_still_count(self):
-        """The change that makes stopping a decision rather than a target.
-
-        With the haul capped at the quota there was nothing to weigh:
-        one more cookie was worth exactly zero and carried a risk, so
-        the answer was always to stop on the bar.
-        """
-        setup, thief = dealt(6, seed=2)
-        thief.eaten = setup.grade.quota + 3
-        self.assertEqual(C.haul(thief), setup.grade.quota + 3)
-
-    def test_the_bar_and_the_margin_disagree_and_that_is_the_point(self):
-        """A round can be worth more and still not be a clean getaway."""
-        setup, thief = dealt(6, seed=2)
-        thief.eaten, thief.caught = setup.grade.quota + 4, 1
-        self.assertGreater(C.haul(thief), setup.grade.quota)
-        self.assertFalse(C.cleared(thief, setup))
-
-
-class ThePhysics(unittest.TestCase):
-    """Speed, and the three ways a beat can change it."""
+class ThePress(unittest.TestCase):
+    """One press, one cookie, on the beat it was asked for."""
 
     def setUp(self):
-        self.setup, self.thief = dealt(6, seed=1)
+        self.setup, self.thief = alone(7, seed=1)
         self.grade = self.setup.grade
 
-    def test_reaching_speeds_him_up_and_stops_at_one(self):
-        for _press in range(20):
-            C.press(self.thief, C.REACH, self.setup)
-        self.assertEqual(self.thief.speed, 1.0)
+    def test_a_grab_is_instant(self):
+        """Nothing queued and nothing in flight. The whole of the feel."""
+        self.assertTrue(C.press(self.thief, C.GRAB, self.setup))
+        self.assertEqual(self.thief.jar, 1)
+        self.assertEqual(self.thief.eaten, 1)
 
-    def test_freezing_slows_him_down_and_stops_at_nothing(self):
-        self.thief.speed = 0.5
-        C.press(self.thief, C.FREEZE, self.setup)
-        self.assertAlmostEqual(self.thief.speed, 0.5 - self.grade.brake)
-        for _press in range(20):
-            C.press(self.thief, C.FREEZE, self.setup)
-        self.assertEqual(self.thief.speed, 0.0)
+    def test_leaving_ends_the_round_there_and_then(self):
+        run(self.setup, self.thief, [C.GRAB] * 3)
+        self.assertFalse(C.over(self.thief, self.setup))
+        C.press(self.thief, C.LEAVE, self.setup)
+        self.assertTrue(C.over(self.thief, self.setup))
+        self.assertEqual(self.thief.eaten, 3)
 
-    def test_waiting_is_not_freezing(self):
-        """Or there would be no way to hold a speed, only two ways to lose one."""
-        one, other = C.Thief(), C.Thief()
-        one.speed = other.speed = 0.8
-        C.press(one, C.WAIT, self.setup)
-        C.press(other, C.FREEZE, self.setup)
-        self.assertEqual(one.speed, 0.8)
-        self.assertLess(other.speed, one.speed)
+    def test_waiting_takes_nothing_and_costs_a_beat(self):
+        run(self.setup, self.thief, [C.WAIT] * 3)
+        self.assertEqual(self.thief.jar, 0)
+        self.assertEqual(self.thief.beat, 3)
 
-    def test_every_beat_costs_drag_whatever_was_pressed(self):
-        self.thief.speed = 0.8
-        C.press(self.thief, C.WAIT, self.setup)
-        C.beat(self.thief, self.setup)
-        self.assertAlmostEqual(self.thief.speed, 0.8 - self.grade.drag)
-
-    def test_at_most_one_cookie_a_beat(self):
-        self.thief.speed = 1.0
-        for _beat in range(6):
-            self.thief.speed = 1.0
-            self.assertLessEqual(C.beat(self.thief, self.setup), 1)
-
-    def test_stopping_bites_agrees_with_actually_stopping(self):
-        """The number the screen shows has to be the number he gets.
-
-        Both are simulations of the same loop, which is the point: a
-        closed form would agree with the physics only until one of them
-        was edited.
-        """
-        for level in (3, 6, 10):
-            grade = C.GRADES[level - 1]
-            for speed in (0.2, 0.5, 0.75, 1.0):
-                for crumbs in (0.0, 0.4, 0.9):
-                    setup = C.generate(level, seed=7)
-                    # A round with nobody in it, so only the eating runs.
-                    setup = setup._replace(trigger=999, deadline=999,
-                                           decoys=())
-                    thief = C.Thief()
-                    thief.speed, thief.crumbs = speed, crumbs
-                    said = C.stopping_bites(speed, crumbs, grade)
-                    while thief.moving:
-                        C.press(thief, C.FREEZE, setup)
-                        C.beat(thief, setup)
-                    self.assertEqual(thief.jar, said,
-                                     '%s %s %s' % (grade.name, speed, crumbs))
+    def test_lunging_at_nothing_does_nothing(self):
+        self.assertFalse(C.press(self.thief, C.LUNGE, self.setup))
+        self.assertEqual(self.thief.eaten, 0)
 
 
-class TheDoorway(unittest.TestCase):
-    """Who arrives, when, and how long there is before it matters."""
+class TheDoor(unittest.TestCase):
+    """The two halves of the opening, and which of them comes back off."""
 
-    def test_the_count_brings_her(self):
-        setup, thief = dealt(6, seed=3)
-        setup = setup._replace(deadline=999, decoys=())
-        run(setup, thief, [C.REACH] * 60)
-        self.assertGreaterEqual(thief.jar, setup.trigger)
-        self.assertIsNotNone(thief.who)
+    def setUp(self):
+        self.setup, self.thief = alone(7, seed=1)
+        self.grade = self.setup.grade
+
+    def test_it_is_the_jar_plus_the_noise(self):
+        run(self.setup, self.thief, [C.GRAB, C.GRAB])
+        self.assertEqual(C.floor_of(self.thief, self.grade),
+                         2 * self.grade.notice)
+        self.assertEqual(C.door(self.thief, self.grade),
+                         C.floor_of(self.thief, self.grade) + self.thief.pace)
+        self.assertGreater(self.thief.pace, 0)
+
+    def test_a_quiet_beat_takes_the_noise_off_and_nothing_else(self):
+        run(self.setup, self.thief, [C.GRAB])
+        floor = C.floor_of(self.thief, self.grade)
+        opened = C.door(self.thief, self.grade)
+        run(self.setup, self.thief, [C.WAIT])
+        self.assertEqual(C.floor_of(self.thief, self.grade), floor)
+        self.assertLess(C.door(self.thief, self.grade), opened)
+
+    def test_the_floor_never_falls(self):
+        """However long he stands there. It is what caps a round."""
+        run(self.setup, self.thief, [C.GRAB] * 3 + [C.WAIT] * 30)
+        self.assertEqual(self.thief.pace, 0)
+        self.assertEqual(C.door(self.thief, self.grade),
+                         3 * self.grade.notice)
+
+    def test_after_a_grab_is_what_a_grab_actually_does(self):
+        """The number on the screen has to be the number he gets."""
+        for level in (3, 7, 10):
+            setup, thief = alone(level, seed=3)
+            grade = setup.grade
+            for _round in range(4):
+                said = C.after_a_grab(thief, grade)
+                C.press(thief, C.GRAB, setup)
+                self.assertEqual(C.door(thief, grade), said, grade.name)
+                C.beat(thief, setup)
+
+    def test_leaving_at_the_safe_line_is_certainly_clean(self):
+        for level in range(1, len(C.GRADES) + 1):
+            for seed in range(15):
+                setup, thief = dealt(level, seed=seed)
+                grade = setup.grade
+                while C.safe(thief, grade) and not C.over(thief, setup):
+                    C.press(thief, C.GRAB, setup)
+                    C.beat(thief, setup)
+                self.assertEqual(thief.caught, 0,
+                                 '%s seed %d' % (grade.name, seed))
+
+
+class SheComes(unittest.TestCase):
+    """When, with how much warning, and whether the grab was hers."""
+
+    def test_the_door_brings_her(self):
+        setup, thief = dealt(7, seed=3)
+        setup = setup._replace(deadline=10 ** 6, decoys=())
+        run(setup, thief, [C.GRAB] * 40)
+        self.assertGreaterEqual(C.door(thief, setup.grade), setup.trigger)
+        self.assertEqual(thief.who, C.MOTHER)
 
     def test_the_deadline_brings_her_even_if_he_took_nothing(self):
-        setup, thief = dealt(6, seed=3)
+        setup, thief = dealt(7, seed=3)
         setup = setup._replace(deadline=5, decoys=())
         run(setup, thief, [C.WAIT] * 40)
         self.assertEqual(thief.jar, 0)
         self.assertEqual(thief.who, C.MOTHER)
 
-    def test_the_warning_is_the_rung_s_warning(self):
-        setup, thief = dealt(4, seed=3)
+    def test_a_warning_is_the_rung_s_warning(self):
+        setup, thief = dealt(3, seed=3)
         setup = setup._replace(deadline=3, decoys=())
-        for _beat in range(3):
-            C.beat(thief, setup)
+        run(setup, thief, [C.WAIT] * 3)
         self.assertEqual(thief.phase, C.COMING)
         came = thief.beat
         while thief.phase == C.COMING:
@@ -304,10 +272,35 @@ class TheDoorway(unittest.TestCase):
         self.assertEqual(thief.beat - came, setup.grade.warn)
         self.assertEqual(thief.phase, C.WATCHING)
 
+    def test_with_no_warning_she_is_looking_the_beat_she_arrives(self):
+        """The grab that opens the door far enough is the one she sees.
+
+        This is the whole of what the top half of the ladder is: there
+        is nothing to react to, because by the time there is anything on
+        the screen the press has already happened.
+        """
+        setup, thief = dealt(10, seed=3)
+        setup = setup._replace(deadline=10 ** 6, decoys=())
+        self.assertEqual(setup.grade.warn, 0)
+        run(setup, thief, [C.GRAB] * 40)
+        self.assertGreater(thief.caught, 0)
+
+    def test_with_a_warning_leaving_still_saves_him(self):
+        setup, thief = dealt(3, seed=3)
+        setup = setup._replace(deadline=10 ** 6, decoys=())
+        for _beat in range(60):
+            if C.over(thief, setup):
+                break
+            port = C.LEAVE if thief.who == C.MOTHER else C.GRAB
+            C.press(thief, port, setup)
+            C.beat(thief, setup)
+        self.assertEqual(thief.caught, 0)
+
     def test_a_decoy_goes_away_again(self):
         setup, thief = dealt(9, seed=3)
-        setup = setup._replace(deadline=999, decoys=((4, C.DOG),))
-        run(setup, thief, [C.WAIT] * 30)
+        setup = setup._replace(trigger=10 ** 6, deadline=10 ** 6,
+                               decoys=((4, C.DOG),))
+        run(setup, thief, [C.WAIT] * 3 + [C.WAIT] * 12)
         self.assertEqual(thief.phase, C.AWAY)
         self.assertIsNone(thief.who)
 
@@ -323,33 +316,44 @@ class TheDoorway(unittest.TestCase):
 class TheRound(unittest.TestCase):
     """How it ends, and what it is worth when it does."""
 
-    def test_standing_still_ends_it(self):
-        setup, thief = dealt(2, seed=5)
-        setup = setup._replace(deadline=999, decoys=())
-        run(setup, thief, [C.REACH] * 3 + [C.FREEZE] * 20)
+    def test_letting_the_noise_die_down_is_not_doing_nothing(self):
+        """The rule that used to fight the game.
+
+        Waiting is how a quick hand buys its next grab, and the top
+        rungs need several quiet beats after a run of them. Counted as
+        idling, the thief walked off in the middle of the plan and came
+        home a cookie short on every rung above the sixth.
+        """
+        setup, thief = alone(10, seed=5)
+        run(setup, thief, [C.GRAB] * 4)
+        self.assertGreater(thief.pace, 0)
+        run(setup, thief, [C.WAIT] * 3)
+        self.assertEqual(thief.still, 0)
+        self.assertFalse(C.over(thief, setup))
+
+    def test_standing_there_doing_nothing_ends_it(self):
+        setup, thief = alone(10, seed=5)
+        run(setup, thief, [C.GRAB] + [C.WAIT] * 30)
+        self.assertEqual(thief.pace, 0)
         self.assertTrue(C.over(thief, setup))
-        self.assertLess(thief.beat, setup.grade.beats)
 
     def test_it_does_not_end_before_he_has_started(self):
-        """Or a round would be over before anybody had a chance at it."""
-        setup, thief = dealt(2, seed=5)
-        setup = setup._replace(deadline=999, decoys=())
+        setup, thief = alone(10, seed=5)
         run(setup, thief, [C.WAIT] * 10)
         self.assertEqual(thief.jar, 0)
         self.assertFalse(C.over(thief, setup))
 
-    def test_a_cookie_under_her_eye_is_caught(self):
+    def test_a_grab_under_her_eye_is_caught(self):
         setup, thief = dealt(7, seed=5)
         setup = setup._replace(deadline=1, decoys=())
-        run(setup, thief, [C.REACH] * 20)
+        run(setup, thief, [C.GRAB] * 20)
         self.assertGreater(thief.caught, 0)
         self.assertFalse(C.cleared(thief, setup))
 
     def test_stopping_short_is_a_loss_as_well(self):
-        """Or never stealing anything would be a winning policy."""
-        setup, thief = dealt(6, seed=5)
-        setup = setup._replace(deadline=999, decoys=())
-        run(setup, thief, [C.REACH] * 2 + [C.FREEZE] * 20)
+        """Or never taking anything would be a winning policy."""
+        setup, thief = alone(7, seed=5)
+        run(setup, thief, [C.GRAB, C.LEAVE])
         self.assertLess(thief.eaten, setup.grade.quota)
         self.assertEqual(thief.caught, 0)
         self.assertFalse(C.cleared(thief, setup))
@@ -358,48 +362,102 @@ class TheRound(unittest.TestCase):
         for level in range(1, len(C.GRADES) + 1):
             for seed in range(10):
                 setup, thief = dealt(level, seed=seed)
-                run(setup, thief, [C.REACH] * (setup.grade.beats + 5))
+                run(setup, thief, [C.GRAB] * (C.beats_of(setup.grade) + 5))
                 self.assertTrue(C.over(thief, setup),
                                 '%s seed %d' % (setup.grade.name, seed))
+
+
+class TheHaul(unittest.TestCase):
+    """The bar and the margin, which are two different questions."""
+
+    def test_a_cookie_he_got_away_with_is_worth_one(self):
+        _setup, thief = dealt(6, seed=2)
+        thief.eaten = 7
+        self.assertEqual(C.haul(thief), 7)
+
+    def test_a_grab_she_saw_costs_more_than_it_was_worth(self):
+        _setup, thief = dealt(6, seed=2)
+        thief.eaten, thief.caught = 7, 1
+        self.assertEqual(C.haul(thief), 7 - C.CAUGHT_COST)
+        self.assertLess(C.haul(thief), 6)
+
+    def test_enough_of_them_takes_it_negative(self):
+        _setup, thief = dealt(6, seed=2)
+        thief.eaten, thief.caught = 4, 4
+        self.assertLess(C.haul(thief), 0)
+
+    def test_cookies_past_the_quota_still_count(self):
+        """The clause that makes leaving a decision rather than a target.
+
+        With the haul capped at the quota, one more cookie was worth
+        exactly zero and carried a risk, so the answer was always to
+        leave on the bar.
+        """
+        setup, thief = dealt(6, seed=2)
+        thief.eaten = setup.grade.quota + 3
+        self.assertEqual(C.haul(thief), setup.grade.quota + 3)
+
+    def test_the_bar_and_the_margin_disagree_and_that_is_the_point(self):
+        setup, thief = dealt(6, seed=2)
+        thief.eaten, thief.caught = setup.grade.quota + 5, 1
+        self.assertGreater(C.haul(thief), setup.grade.quota)
+        self.assertFalse(C.cleared(thief, setup))
+
+    def test_a_grab_is_worth_taking_while_it_is_under_one_in_three(self):
+        """What :data:`CAUGHT_COST` is actually setting.
+
+        A grab into the shaded range pays ``+1`` when it is safe and
+        costs ``CAUGHT_COST`` when it is not, so it is worth taking
+        while the chance of it bringing her is under ``1/(1+cost)``. At
+        three that line is one in four, which is finer than a grab can
+        be aimed — the greed dial had its best setting at zero and the
+        shaded range was decoration. At two it is one in three, which a
+        grab can land inside.
+        """
+        self.assertEqual(C.CAUGHT_COST, 2)
+        worth_it = 1.0 / (1 + C.CAUGHT_COST)
+        self.assertGreater(worth_it, 0.3)
+        for grade in C.GRADES[5:]:
+            # The first grab past the safe line lands, on average, half
+            # a step into the range, so this is the chance it brings her.
+            step = grade.notice + grade.opening
+            self.assertLess(step / (2.0 * grade.spread), worth_it, grade.name)
 
 
 class TheGoldenOne(unittest.TestCase):
     """The temptation, and the two beats it costs to take it."""
 
     def setUp(self):
-        self.setup, self.thief = dealt(10, seed=11)
-        self.setup = self.setup._replace(trigger=999, deadline=999, decoys=())
+        self.setup, self.thief = alone(10, seed=11)
         self.grade = self.setup.grade
 
     def test_it_is_not_on_offer_until_he_is_near_the_quota(self):
         self.assertFalse(self.thief.gold_on_offer)
-        run(self.setup, self.thief, [C.REACH] * 40)
+        run(self.setup, self.thief, [C.GRAB] * (self.grade.quota - C.GOLD_GAP))
         self.assertGreaterEqual(self.thief.gold_from, 0)
-        self.assertGreaterEqual(self.thief.jar, self.grade.quota - C.GOLD_GAP)
+        self.assertGreaterEqual(self.thief.jar,
+                                self.grade.quota - C.GOLD_GAP)
 
-    def test_lunging_at_nothing_does_nothing(self):
-        self.assertFalse(C.press(self.thief, C.LUNGE, self.setup))
-        self.assertEqual(self.thief.eaten, 0)
-        self.assertEqual(self.thief.locked, 0)
-
-    def test_it_is_worth_its_cookies_and_none_of_them_come_from_the_jar(self):
+    def test_it_is_worth_its_cookies_and_none_come_from_the_jar(self):
         self.thief.gold_from, self.thief.beat = 0, 0
         jar, eaten = self.thief.jar, self.thief.eaten
         self.assertTrue(C.press(self.thief, C.LUNGE, self.setup))
+        run(self.setup, self.thief, [C.WAIT] * C.GOLD_REACH)
         self.assertEqual(self.thief.eaten, eaten + self.grade.gold)
         self.assertEqual(self.thief.jar, jar)
 
-    def test_it_takes_the_brake_away_for_two_beats(self):
+    def test_he_can_neither_grab_nor_leave_while_he_is_reaching(self):
+        """The whole cost of it, and the only lag left in the task."""
         self.thief.gold_from, self.thief.beat = 0, 0
-        self.thief.speed = 1.0
         C.press(self.thief, C.LUNGE, self.setup)
-        self.assertEqual(self.thief.locked, C.GOLD_LOCK)
-        for _beat in range(C.GOLD_LOCK):
-            self.assertFalse(C.press(self.thief, C.FREEZE, self.setup))
-            self.assertEqual(self.thief.speed, 1.0)
+        self.assertTrue(self.thief.committed)
+        for _beat in range(C.GOLD_REACH):
+            self.assertFalse(C.press(self.thief, C.GRAB, self.setup))
+            self.assertFalse(C.press(self.thief, C.LEAVE, self.setup))
+            self.assertFalse(self.thief.left)
             C.beat(self.thief, self.setup)
-            self.thief.speed = 1.0
-        self.assertTrue(C.press(self.thief, C.FREEZE, self.setup))
+        self.assertFalse(self.thief.committed)
+        self.assertTrue(C.press(self.thief, C.LEAVE, self.setup))
 
     def test_the_window_closes(self):
         self.thief.gold_from = 0
@@ -418,8 +476,8 @@ class TheCoachIsBlind(unittest.TestCase):
     """
 
     def test_what_the_screen_shows_cannot_reach_the_hidden_numbers(self):
-        """Structural, not incidental: neither takes a Setup at all."""
-        for func in (C.landing, C.jar_landing):
+        """Structural, not incidental: none of them takes a Setup."""
+        for func in (C.door, C.floor_of, C.after_a_grab, C.certain, C.safe):
             names = list(inspect.signature(func).parameters)
             self.assertEqual(names, ['thief', 'grade'], func.__name__)
         self.assertNotIn('trigger', C.Thief.__slots__)
@@ -432,87 +490,124 @@ class TheCoachIsBlind(unittest.TestCase):
         for hidden in ('trigger', 'deadline', 'decoys'):
             self.assertNotIn(hidden, body)
 
-    def test_the_same_boy_is_told_the_same_thing_whenever_she_is_coming(self):
-        """Two rounds that differ only in when she comes look identical
-        to the coach until she actually turns up."""
-        one = C.generate(6, seed=4)._replace(trigger=9, deadline=999,
-                                             decoys=())
-        other = one._replace(trigger=99)
+    def test_two_rounds_that_differ_only_in_her_look_the_same(self):
+        one = C.generate(7, seed=4)._replace(trigger=10 ** 6,
+                                             deadline=10 ** 6, decoys=())
+        other = one._replace(trigger=10 ** 5)
         boys = (C.Thief(), C.Thief())
         for _beat in range(6):
             for thief, setup in zip(boys, (one, other)):
-                C.press(thief, C.REACH, setup)
+                C.press(thief, C.GRAB, setup)
                 C.beat(thief, setup)
         for thief in boys:
             self.assertEqual(thief.phase, C.AWAY)
+        grade = one.grade
         self.assertEqual(
-            [(boy.jar, boy.eaten, round(boy.speed, 6)) for boy in boys[:1]],
-            [(boy.jar, boy.eaten, round(boy.speed, 6)) for boy in boys[1:]])
+            [(b.jar, b.eaten, C.door(b, grade)) for b in boys[:1]],
+            [(b.jar, b.eaten, C.door(b, grade)) for b in boys[1:]])
 
 
-class EveryRungIsWinnable(unittest.TestCase):
-    """A thief who can count clears every rung, every time.
+class EveryRungIsWinnableWithoutGambling(unittest.TestCase):
+    """A thief who never takes a grab that could bring her clears them all.
 
-    So a round that was lost was lost on the stop rather than on the
-    ladder being impossible. This is the same claim ``oracle_cookie.py``
-    prints, run small enough to belong in the suite.
+    So a round that was lost was lost on a decision rather than on the
+    deal. This is the same claim ``oracle_cookie.py`` prints, run small
+    enough to belong in the suite.
     """
 
-    def test_the_counting_thief_gets_away_with_it(self):
+    def test_the_careful_thief_gets_away_with_it(self):
         for level in range(1, len(C.GRADES) + 1):
             rng = random.Random(level)
             for _deal in range(40):
                 thief, setup = O.play(level, seed=rng.randrange(1 << 30),
-                                      player=O.steady)
+                                      player=O.careful)
                 self.assertTrue(C.cleared(thief, setup),
-                                '%s: %d eaten, %d caught'
+                                '%s: %d taken, %d seen'
                                 % (setup.grade.name, thief.eaten,
                                    thief.caught))
 
     def test_he_does_it_well_inside_the_beats(self):
         for level in range(1, len(C.GRADES) + 1):
-            thief, setup = O.play(level, seed=level, player=O.steady)
-            self.assertLess(thief.beat, setup.grade.beats * 0.8,
+            thief, setup = O.play(level, seed=level, player=O.careful)
+            self.assertLess(thief.beat, C.beats_of(setup.grade) * 0.8,
                             setup.grade.name)
 
 
 class ReactionIsNotEnoughUpTop(unittest.TestCase):
     """Measured, and it is the claim the ladder is built on.
 
-    A thief who eats flat out and brakes the instant she appears is the
-    reactive half of the task on its own. He clears the rungs whose
-    warning is longer than what his momentum still owes, and he cannot
-    clear one of the others however quick he is.
+    A thief who takes every grab short of a certainty and leaves only
+    once somebody is visibly in the doorway is the reactive half of the
+    task on its own. Below the break he is *never* seen, because the
+    warning is enough. Above it he is seen almost every round, because
+    the grab that brings her is one she is already looking at.
     """
 
-    def clean(self, level, deals=40):
+    def seen(self, level, deals=40):
         rng = random.Random(level)
-        won = 0
+        caught = 0
         for _deal in range(deals):
-            thief, setup = O.play(level, seed=rng.randrange(1 << 30),
-                                  player=O.impulsive)
-            won += 1 if C.cleared(thief, setup) else 0
-        return won / float(deals)
+            thief, _setup = O.play(level, seed=rng.randrange(1 << 30),
+                                   player=O.impulsive)
+            caught += 1 if thief.caught else 0
+        return caught / float(deals)
 
-    def test_he_clears_the_rungs_the_ladder_says_he_can(self):
+    def test_the_warning_is_what_saves_him_and_only_that(self):
         for level, grade in enumerate(C.GRADES, 1):
-            got = self.clean(level)
+            got = self.seen(level)
             if grade.reactive:
-                self.assertGreater(got, 0.9, '%s: %.0f%%'
-                                             % (grade.name, 100 * got))
+                self.assertEqual(got, 0.0, '%s: seen %.0f%%'
+                                           % (grade.name, 100 * got))
             else:
-                self.assertLess(got, 0.1, '%s: %.0f%%'
-                                          % (grade.name, 100 * got))
+                self.assertGreater(got, 0.8, '%s: seen %.0f%%'
+                                             % (grade.name, 100 * got))
+
+
+class GreedIsPricedOnlyWhereThereIsNoWarning(unittest.TestCase):
+    """What pushing into the shaded range costs, measured.
+
+    Below the break it costs nothing at all — you see her coming and
+    leave, so the range is free to walk into. Above it every step in is
+    paid for, and the haul turns over: a little way in is worth more
+    than stopping at the line, and the whole way in is worth a fraction
+    of it.
+    """
+
+    def carry(self, level, over, deals=40):
+        rng = random.Random(level * 100 + over)
+        caught = 0
+        total = 0
+        for _deal in range(deals):
+            thief, _setup = O.play(level, seed=rng.randrange(1 << 30),
+                                   player=O.bold(over))
+            caught += 1 if thief.caught else 0
+            total += C.haul(thief)
+        return caught / float(deals), total / float(deals)
+
+    def test_below_the_break_the_range_is_free(self):
+        for level, grade in enumerate(C.GRADES, 1):
+            if not grade.reactive:
+                continue
+            caught, _got = self.carry(level, grade.spread)
+            self.assertEqual(caught, 0.0, grade.name)
+
+    def test_above_it_the_whole_way_in_loses_every_round(self):
+        for level, grade in enumerate(C.GRADES, 1):
+            if grade.reactive:
+                continue
+            caught, deep = self.carry(level, grade.spread)
+            _safe_caught, edge = self.carry(level, 0)
+            self.assertGreater(caught, 0.8, grade.name)
+            self.assertLess(deep, edge, grade.name)
 
 
 class TheHubHasSomewhereToPutIt(unittest.TestCase):
     """A category of its own, and the reason it is not filed under attention.
 
     Everything under attention is about finding or following the right
-    thing. This is about *not* doing a thing you are already doing and
-    would rather keep doing, which is a different faculty and fails for
-    different reasons — Reflex would lose every rung above the fifth by
-    being fast.
+    thing. This is about *not* pressing a key you are already pressing
+    and would rather keep pressing, which is a different faculty and
+    fails for different reasons.
     """
 
     def test_self_control_is_a_category_and_holds_it(self):
@@ -533,55 +628,15 @@ class TheHubHasSomewhereToPutIt(unittest.TestCase):
             self.assertIn('Guessing', said)
 
 
-class OneMoreThanTheQuotaIsFreeAndTwoIsNot(unittest.TestCase):
-    """What greed is worth, measured rather than argued.
-
-    A thief who aims one cookie past the quota is clean every time on
-    every rung, because the band starts at the quota plus one and he is
-    already stopped by the time she has been called. A thief who aims
-    two is caught about half the time from the seventh rung up, and his
-    average haul goes *down* — so the marginal cookie really does turn
-    negative somewhere, and where it turns is a property of the rung.
-    """
-
-    def carry(self, level, margin, deals=60):
-        rng = random.Random(level * 100 + margin)
-        clean = 0
-        total = 0
-        for _deal in range(deals):
-            thief, setup = O.play(level, seed=rng.randrange(1 << 30),
-                                  player=O.bold(margin))
-            clean += 1 if C.cleared(thief, setup) else 0
-            total += C.haul(thief)
-        return clean / float(deals), total / float(deals)
-
-    def test_one_past_the_quota_is_free_everywhere(self):
-        for level, grade in enumerate(C.GRADES, 1):
-            clean, got = self.carry(level, 1)
-            self.assertEqual(clean, 1.0, grade.name)
-            self.assertGreater(got, grade.quota, grade.name)
-
-    def test_the_marginal_cookie_turns_negative_up_top(self):
-        for level in (7, 8, 9, 10):
-            grade = C.GRADES[level - 1]
-            one_clean, one_haul = self.carry(level, 1)
-            two_clean, two_haul = self.carry(level, 2)
-            self.assertLess(two_clean, one_clean, grade.name)
-            self.assertLess(two_haul, one_haul, grade.name)
-
-
 @needs_ui
-class TheScreenAnswersTheKeyAtOnce(unittest.TestCase):
-    """Two things a person notices in the first ten seconds.
+class TheHandAnswersTheKeyAtOnce(unittest.TestCase):
+    """The thing a person notices in the first two seconds.
 
-    The stop key used to change nothing on screen until the next beat
-    came round, which at a third of a second a beat reads as a broken
-    key — and the arm it moves is drawn from the speed, so on the top
-    rungs one press moved it a tenth of its length and you could not
-    see that either. Now the press redraws, and the arm comes most of
-    the way out at once while the bar under him does not move. The gap
-    between those two is the task: taking your hand out of the jar is
-    not the same as having stopped.
+    A press used to change nothing on screen until the next beat came
+    round, and what it changed then was a bar that took several beats to
+    catch up. Now the arm is in the jar on the frame the key was pressed
+    and out of it on the next one, and there is nothing else to wait
+    for.
     """
 
     def setUp(self):
@@ -598,46 +653,29 @@ class TheScreenAnswersTheKeyAtOnce(unittest.TestCase):
 
     def running(self):
         for _step in range(20):
-            self.env.step(C.REACH)
+            self.env.step(C.WAIT)
             if self.task.phase == 'running':
                 return
         self.fail('the round never opened')
 
-    def test_a_freeze_yanks_the_arm_back_the_beat_it_is_pressed(self):
+    def test_the_hand_goes_in_on_the_frame_the_key_was_pressed(self):
         self.running()
-        for _step in range(6):
-            self.env.step(C.REACH)
-        self.assertGreater(self.task.thief.speed, 0.5)
-        self.task.act(C.FREEZE)
-        self.assertEqual(self.task.yank, 1)
+        self.assertFalse(self.task.grabbing)
+        self.task.act(C.GRAB)
+        self.assertTrue(self.task.grabbing)
+        self.assertEqual(self.task.thief.jar, 1)
 
-    def test_the_momentum_does_not_come_back_with_it(self):
-        """The whole point of drawing the hand and the speed apart."""
+    def test_and_is_back_out_a_beat_later(self):
         self.running()
-        for _step in range(6):
-            self.env.step(C.REACH)
-        speed = self.task.thief.speed
-        self.task.act(C.FREEZE)
-        self.assertGreater(self.task.thief.speed,
-                           speed - C.GRADES[9].brake - 1e-9)
-        self.assertGreater(self.task.thief.speed, 0.5)
+        self.task.act(C.GRAB)
+        self.env.step(C.WAIT)
+        self.env.step(C.WAIT)
+        self.assertFalse(self.task.grabbing)
 
-    def test_the_hand_goes_back_in(self):
-        """It is a yank, not a stop: two beats later he is eating again."""
+    def test_a_press_that_does_nothing_does_not_move_it(self):
         self.running()
-        for _step in range(6):
-            self.env.step(C.REACH)
-        self.task.act(C.FREEZE)
-        for _step in range(3):
-            self.env.step(C.REACH)
-        self.assertEqual(self.task.yank, 0)
-
-    def test_a_freeze_that_does_nothing_does_not_yank(self):
-        """Standing still already, or locked out by a lunge."""
-        self.running()
-        self.task.thief.speed = 0.0
-        self.task.act(C.FREEZE)
-        self.assertEqual(self.task.yank, 0)
+        self.task.act(C.LUNGE)          # no golden one on offer yet
+        self.assertFalse(self.task.grabbing)
 
 
 @needs_ui
@@ -660,7 +698,7 @@ class TheRunReportsBothScores(unittest.TestCase):
             for _step in range(4000):
                 port = C.WAIT
                 if task.phase == 'running' and task.thief is not None:
-                    port = O.steady(task.thief, task.setup)
+                    port = O.careful(task.thief, task.setup)
                 _obs, _ev, done = env.step(port)
                 if done or task.phase == 'done':
                     break
@@ -668,8 +706,7 @@ class TheRunReportsBothScores(unittest.TestCase):
             self.assertEqual(tally['rounds'], 3)
             self.assertEqual(tally['clean'], 3)
             self.assertEqual(tally['points'], tally['cookies'])
-            self.assertGreaterEqual(tally['points'],
-                                    3 * C.GRADES[5].quota)
+            self.assertGreaterEqual(tally['points'], 3 * C.GRADES[5].quota)
         finally:
             env.close()
 

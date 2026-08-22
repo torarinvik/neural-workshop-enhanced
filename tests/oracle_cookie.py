@@ -1,40 +1,29 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""A thief who can count, used to check what Cookie Thief's rungs promise.
+"""A thief who can read the door, used to check what the rungs promise.
 
-Four players, and the difference between them is the point.
+Every player here reads the same three things a person reads: the jar,
+the door, and who is in the doorway. None of them can see
+:attr:`Setup.trigger`, :attr:`Setup.deadline` or the decoy roster.
 
-:func:`steady` brakes when braking would land him on the quota, and
-ignores the golden cookie. He is the proof that every rung is winnable
-without gambling.
+:func:`careful` never takes a grab that could possibly bring her — he
+stops at the edge of the shaded zone and leaves. He is the proof that
+every rung is winnable without gambling at all.
 
-:func:`bold` is steady with a number bolted on: how many cookies past
-the quota he is willing to carry. The quota is the bar and the haul is
-the margin, and those are two different questions — stopping dead on
-the bar is the safest round available and it is not the richest one.
-``--haul`` sweeps the greed from nothing to the width of the band and
-prints what each step of it buys and what it costs.
+:func:`bold` is the same player with one number: how far into the shaded
+zone he is willing to push the door. Zero is :func:`careful`. ``--haul``
+sweeps it and prints what each step of greed buys and what it costs,
+which is the only honest way to say where the marginal cookie turns.
 
-:func:`greedy` is the same player with one change: he takes the golden
-cookie whenever it is offered. Whether that is worth doing is a
-measurement rather than an opinion, and ``--gold`` is where it is taken.
-
-:func:`impulsive` never looks at the jar at all. He eats flat out and
-brakes only once she is in the doorway, which makes him the reactive
-half of the task on its own — and ``--curve`` sweeps the warning to
-find the beat at which he stops being able to stop. That number is the
-task's stop-signal threshold and it falls straight out of the physics:
-he can inhibit exactly while the warning is at least as long as his
-stopping distance.
-
-None of them can see :attr:`Setup.trigger`, :attr:`Setup.deadline` or
-the decoy roster. They read the jar, the boy's speed and the doorway,
-all of which the screen draws.
+:func:`impulsive` never looks at the door. He grabs every beat and
+leaves only once there is somebody visibly in the doorway, which makes
+him the reactive half of the task on its own — he clears exactly the
+rungs that still have a warning and none of the rungs that do not.
 
 Run it::
 
     cd tests && PYTHONPATH=.. ../.venv/bin/python oracle_cookie.py
-    cd tests && PYTHONPATH=.. ../.venv/bin/python oracle_cookie.py --curve 7
+    cd tests && PYTHONPATH=.. ../.venv/bin/python oracle_cookie.py --haul
     cd tests && PYTHONPATH=.. ../.venv/bin/python oracle_cookie.py --gold
 
 SPDX-License-Identifier: GPL-2.0-or-later
@@ -55,80 +44,87 @@ os.environ.setdefault('NW_HEADLESS', '1')
 from neural_workshop import cookiethief as C            # noqa: E402
 
 
-def steady(thief, setup):
-    """Brake once braking would land him on the quota. Ignores the gold."""
-    if C.alarming(thief):
-        return C.FREEZE
-    if C.landing(thief, setup.grade) >= setup.grade.quota:
-        return C.FREEZE
-    return C.REACH
+def _her(thief):
+    """Is the one who ends rounds actually there?"""
+    return thief.who == C.MOTHER and thief.phase in (C.COMING, C.WATCHING)
 
 
-def bold(margin):
-    """A thief who carries *margin* cookies past the quota before stopping.
+def bold(over=0, target=None, gold=False):
+    """A thief willing to push the door *over* points into the shaded zone.
 
-    At zero he is :func:`steady`. Above it he is aiming at a number
-    inside the band she notices from, which is safe only while he is
-    already stopped when she gets there — so every extra cookie is
-    bought with a beat of the stop he still has to make.
+    At ``over=0`` he never takes a grab that could bring her, which is
+    :func:`careful`. Every point above that is a step further into the
+    range she might be waiting in.
+
+    *target* caps how many he is willing to end up with; ``None`` means
+    he takes whatever the ceiling allows. *gold* is whether he reaches
+    for the golden one when it is offered.
     """
     def player(thief, setup):
-        if C.alarming(thief):
-            return C.FREEZE
-        if C.landing(thief, setup.grade) >= setup.grade.quota + margin:
-            return C.FREEZE
-        return C.REACH
-    player.__name__ = 'bold%d' % margin
+        grade = setup.grade
+        if _her(thief):
+            return C.LEAVE
+        if target is not None and thief.eaten >= target:
+            return C.LEAVE
+        if gold and thief.gold_on_offer:
+            return C.LUNGE
+        if C.after_a_grab(thief, grade) < C.SAFE + over:
+            return C.GRAB
+        # Waiting takes the noise back off but never the gap in the jar,
+        # so it is worth waiting only while the floor alone would leave
+        # room for another grab.
+        if C.floor_of(thief, grade) + grade.notice + grade.opening \
+                < C.SAFE + over:
+            return C.WAIT
+        return C.LEAVE
+    player.__name__ = 'bold%d%s' % (over, '+gold' if gold else '')
     return player
 
 
+careful = bold(0)
+careful.__name__ = 'careful'
+
+
 def greedy(thief, setup):
-    """The same, except that he grabs the golden one the moment he sees it."""
-    if thief.gold_on_offer and not C.alarming(thief):
-        return C.LUNGE
-    return steady(thief, setup)
-
-
-def timed(thief, setup):
-    """Banks the golden one before he has it, and takes it once slowed.
-
-    The lock is the cost and speed is what makes the lock expensive, so
-    the trick is to count the gold as already his the moment it is
-    offered — which lets him start braking four cookies early — and only
-    reach for it once braking has taken the sting out. If the window is
-    about to close he takes it anyway; short of the quota is a loss too.
-    """
-    grade = setup.grade
-    if C.alarming(thief):
-        return C.FREEZE
-    if thief.gold_on_offer:
-        closing = thief.beat >= thief.gold_from + C.GOLD_BEATS - 1
-        if closing or thief.speed <= grade.brake * 1.2:
-            return C.LUNGE
-    credit = grade.gold if thief.gold_on_offer else 0
-    if C.landing(thief, grade) + credit >= grade.quota:
-        return C.FREEZE
-    return C.REACH
+    """Careful about the door, and helpless about the golden one."""
+    return bold(0, gold=True)(thief, setup)
 
 
 def impulsive(thief, setup):
-    """Flat out until she is in the doorway. Reaction and nothing else."""
-    return C.FREEZE if C.alarming(thief) else C.REACH
+    """Takes every grab short of a certainty; leaves only on sight.
+
+    Reaction and nothing else, which is the whole point of him. He does
+    read the door — a thief who ignored it entirely would trip her
+    before he had the quota and come up short rather than caught, which
+    says nothing about reacting — but he reads it only to avoid the
+    grabs that are *bound* to bring her, and he stops for her only once
+    she is visibly there.
+
+    So he is what a rung with a warning can still be beaten by, and what
+    a rung without one cannot: on those, the grab that brings her is one
+    she is already looking at.
+    """
+    if _her(thief):
+        return C.LEAVE
+    grade = setup.grade
+    if C.after_a_grab(thief, grade) < grade.limit:
+        return C.GRAB
+    if C.floor_of(thief, grade) + grade.notice + grade.opening < grade.limit:
+        return C.WAIT
+    return C.LEAVE
 
 
-PLAYERS = {'steady': steady, 'greedy': greedy, 'timed': timed,
-           'impulsive': impulsive}
+PLAYERS = {'careful': careful, 'greedy': greedy, 'impulsive': impulsive,
+           'bold1': bold(1), 'bold5': bold(5), 'bold10': bold(10)}
 
 
-def play(level, seed=0, player=steady, warn=None, fumble=0.0, rng=None):
+def play(level, seed=0, player=careful, warn=None, fumble=0.0, rng=None):
     """One round.
 
     *warn* overrides the rung's warning, for the curve. *fumble* is the
     share of beats on which the player presses something at random
     instead of what it meant to, which is the only way to ask what a
-    rung costs somebody who has not got the control down yet — and the
-    only setting under which two policies that both clear every round
-    can be told apart at all.
+    rung costs somebody who has not got it down yet.
     """
     setup = C.generate(level, seed=seed)
     if warn is not None:
@@ -138,120 +134,79 @@ def play(level, seed=0, player=steady, warn=None, fumble=0.0, rng=None):
     while not C.over(thief, setup):
         port = player(thief, setup)
         if fumble and rng.random() < fumble:
-            port = rng.choice((C.REACH, C.FREEZE, C.LUNGE))
+            port = rng.choice((C.GRAB, C.LEAVE, C.LUNGE, C.WAIT))
         C.press(thief, port, setup)
         C.beat(thief, setup)
     return thief, setup
 
 
-def survey(deals=300, player=steady, seed=0, fumble=0.0):
-    """Every rung, played *deals* times, against what guessing pays."""
+def survey(deals=300, player=careful, seed=0, fumble=0.0):
+    """Every rung, played *deals* times."""
     rng = random.Random(seed)
     rows = []
     for level, grade in enumerate(C.GRADES, 1):
         won = caught = short = 0
-        beats = 0
+        beats = total = 0
         for _deal in range(deals):
             thief, setup = play(level, seed=rng.randrange(1 << 30),
                                 player=player, fumble=fumble, rng=rng)
             beats += thief.beat
+            total += C.haul(thief)
             if C.cleared(thief, setup):
                 won += 1
             elif thief.caught:
                 caught += 1
             else:
                 short += 1
-        rows.append((level, grade, won, caught, short, beats / float(deals)))
+        rows.append((level, grade, won, caught, short, beats / float(deals),
+                     total / float(deals)))
     return rows
-
-
-def curve(level, deals=300, seed=0, player=impulsive):
-    """How late she can arrive before he can no longer stop.
-
-    The measurement the design is named for. Everything but the warning
-    is held at the rung's own settings, so what moves is the one thing
-    being swept.
-    """
-    rng = random.Random(seed)
-    grade = C.GRADES[level - 1]
-    out = []
-    for warn in range(0, grade.stopping + 4):
-        clean = 0
-        for _deal in range(deals):
-            thief, setup = play(level, seed=rng.randrange(1 << 30),
-                                player=player, warn=warn)
-            clean += 1 if thief.caught == 0 else 0
-        out.append((warn, clean / float(deals)))
-    return out
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument('--deals', type=int, default=300)
-    ap.add_argument('--player', default='steady', choices=sorted(PLAYERS))
-    ap.add_argument('--curve', type=int, default=0,
-                    help='sweep the warning at this rung instead')
+    ap.add_argument('--player', default='careful', choices=sorted(PLAYERS))
     ap.add_argument('--fumble', type=float, default=0.0,
                     help='share of beats pressed at random')
+    ap.add_argument('--haul', action='store_true',
+                    help='what pushing into the shaded zone buys, and costs')
     ap.add_argument('--gold', action='store_true',
-                    help='the three gold policies, at a range of fumble rates')
+                    help='the golden one, at a range of fumble rates')
     ap.add_argument('--floor', action='store_true',
                     help='what random presses are worth, per rung')
-    ap.add_argument('--haul', action='store_true',
-                    help='what carrying past the quota buys, and costs')
     args = ap.parse_args(argv)
 
-    if args.curve:
-        grade = C.GRADES[args.curve - 1]
-        print('rung %d, %s: stopping distance %d beats, own warning %d'
-              % (args.curve, grade.name, grade.stopping, grade.warn))
-        print('%6s  %s' % ('warn', 'not caught'))
-        for warn, clean in curve(args.curve, deals=args.deals):
-            print('%6d  %6.0f%%  %s' % (warn, 100 * clean,
-                                        '#' * int(round(40 * clean))))
+    if args.haul:
+        # The quota is the bar and the haul is the margin. Leaving at
+        # the edge of the shaded zone is the safest round there is;
+        # whether it is the best one is a measurement, and this is it.
+        print('%-22s %7s %7s %7s %7s'
+              % ('rung', 'over', 'clean', 'haul', 'caught'))
+        for level, grade in enumerate(C.GRADES, 1):
+            steps = sorted({0, grade.notice // 2, grade.notice,
+                            grade.notice + grade.opening, grade.spread})
+            for over in steps:
+                row = survey(deals=args.deals, player=bold(over))[level - 1]
+                print('%-22s %7d %6.0f%% %7.1f %6.0f%%'
+                      % (grade.name if not over else '', over,
+                         100.0 * row[2] / args.deals, row[6],
+                         100.0 * row[3] / args.deals))
         return 0
 
     if args.gold:
-        # Every one of these clears every round when it is played
-        # perfectly, so a table of clean runs would say nothing. What
-        # separates them is what a slip costs, which is what fumble is.
-        print('%-22s %7s %8s %8s %8s'
-              % ('rung', 'fumble', 'no gold', 'on sight', 'timed'))
+        print('%-22s %7s %8s %8s' % ('rung', 'fumble', 'no gold', 'gold'))
         for level, grade in enumerate(C.GRADES, 1):
             if not grade.gold:
                 continue
             for fumble in (0.0, 0.05, 0.10, 0.20):
-                got = []
-                for who in (steady, greedy, timed):
-                    row = survey(deals=args.deals, player=who,
-                                 fumble=fumble)[level - 1]
-                    got.append(100.0 * row[2] / args.deals)
-                print('%-22s %6.0f%% %7.0f%% %7.0f%% %7.0f%%'
-                      % (grade.name if fumble == 0.0 else '', 100 * fumble,
-                         got[0], got[1], got[2]))
-        return 0
-
-    if args.haul:
-        # The quota is the bar and the haul is the margin. Stopping dead
-        # on the bar is the safest round there is; whether it is the
-        # best one is a measurement, and this is it.
-        print('%-22s %7s %7s %7s %7s'
-              % ('rung', 'greed', 'clean', 'haul', 'caught'))
-        for level, grade in enumerate(C.GRADES, 1):
-            for margin in range(0, grade.spread + 2):
-                rng = random.Random(level * 100 + margin)
-                clean = caught = 0
-                total = 0
-                for _deal in range(args.deals):
-                    thief, setup = play(level, seed=rng.randrange(1 << 30),
-                                        player=bold(margin))
-                    total += C.haul(thief)
-                    clean += 1 if C.cleared(thief, setup) else 0
-                    caught += 1 if thief.caught else 0
-                print('%-22s %7d %6.0f%% %7.1f %6.0f%%'
-                      % (grade.name if not margin else '', margin,
-                         100.0 * clean / args.deals, total / float(args.deals),
-                         100.0 * caught / args.deals))
+                one = survey(deals=args.deals, player=bold(0),
+                             fumble=fumble)[level - 1]
+                two = survey(deals=args.deals, player=bold(0, gold=True),
+                             fumble=fumble)[level - 1]
+                print('%-22s %6.0f%% %7.1f  %7.1f'
+                      % (grade.name if not fumble else '', 100 * fumble,
+                         one[6], two[6]))
         return 0
 
     if args.floor:
@@ -261,19 +216,19 @@ def main(argv=None):
                   % (grade.name, 100 * C.rehearse(level, deals=args.deals)))
         return 0
 
-    print('%-22s %5s %5s %5s %6s %6s %6s %7s'
-          % ('rung', 'quota', 'stop', 'warn', 'clear', 'caught', 'short',
-             'beats'))
+    print('%-22s %5s %5s %5s %6s %6s %6s %7s %6s'
+          % ('rung', 'quota', 'room', 'warn', 'clean', 'caught', 'short',
+             'beats', 'haul'))
     worst = 1.0
-    for level, grade, won, caught, short, beats in survey(
+    for level, grade, won, caught, short, beats, got in survey(
             deals=args.deals, player=PLAYERS[args.player],
             fumble=args.fumble):
         worst = min(worst, won / float(args.deals))
-        print('%-22s %5d %5d %5d %5.0f%% %5.0f%% %5.0f%% %7.1f'
-              % ('%d %s' % (level, grade.name), grade.quota, grade.stopping,
+        print('%-22s %5d %5d %5d %5.0f%% %5.0f%% %5.0f%% %7.1f %6.1f'
+              % ('%d %s' % (level, grade.name), grade.quota, grade.room,
                  grade.warn, 100.0 * won / args.deals,
                  100.0 * caught / args.deals, 100.0 * short / args.deals,
-                 beats))
+                 beats, got))
     print('\nworst rung: %.0f%%' % (100 * worst))
     return 0
 

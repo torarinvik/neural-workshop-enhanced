@@ -1122,34 +1122,37 @@ CUSTODY = TaskSpec(
 
 
 def cookie_note(chosen: Dict[str, Any]) -> str:
-    """What the rung does to the boy, and what guessing is worth.
+    """What the rung gives you, and what guessing is worth.
 
     The floor is measured rather than derived, and it has to be: what a
-    run of random presses scores here is whatever a random walk in
-    speed happens to eat before somebody walks in, which is a
-    simulation question and not an arithmetic one.
+    run of random presses scores here is whatever a random hand happens
+    to take before the door is open far enough, which is a simulation
+    question and not an arithmetic one.
     """
-    from ..cookiethief import GRADES, rehearse
+    from ..cookiethief import GRADES, SAFE, rehearse
     level = max(1, min(len(GRADES), int(chosen['COOKIE_LEVEL'])))
     grade = GRADES[level - 1]
-    said = [_('Take %d, with none of them seen. Flat out he needs %d beats '
-              'to stop and she gives him %d.')
-            % (grade.quota, grade.stopping, grade.warn)]
-    said.append(_('Braking the moment she appears is enough at this rung.')
+    said = [_('Take %d and get out. One press is one cookie. Taken at a '
+              'walk you can have %d before the door is certainly too far '
+              'open, and hurrying costs you some of those.')
+            % (grade.quota, grade.room)]
+    said.append(_('She stands in the doorway for %d beats before she looks, '
+                  'so leaving still saves you.') % grade.warn
                 if grade.reactive else
-                _('Braking the moment she appears is not enough at this '
-                  'rung: he still gets %d out of the jar under her eye, so '
-                  'the round has to be won before there is anything to '
-                  'react to.') % grade.reflex_bites)
+                _('No warning at all at this rung: the press that opens the '
+                  'door far enough is the one she sees, so the round has to '
+                  'be won before there is anything to react to.'))
+    said.append(_('She comes somewhere between %d and %d, and which is not '
+                  'shown.') % (SAFE, grade.limit))
     if grade.gold:
         said.append(_('A golden cookie is worth %d and never comes out of '
-                      'the jar, but reaching for it costs two beats with no '
-                      'brake.') % grade.gold)
+                      'the jar, but reaching for it is two beats in which '
+                      'you can neither grab nor leave.') % grade.gold)
     if grade.decoys:
         said.append(_('Somebody who is not her turns up in the doorway too.'))
-    said.append(_('A cookie he got away with is worth a point and one she '
-                  'saw costs three. Guessing gets away clean about %d%% of '
-                  'the time.') % int(round(100 * rehearse(level))))
+    said.append(_('A cookie you got away with is worth a point and a grab '
+                  'she saw costs two. Guessing gets away clean about %d%% '
+                  'of the time.') % int(round(100 * rehearse(level))))
     return '  '.join(said)
 
 
@@ -1161,9 +1164,9 @@ COOKIE_THIEF = TaskSpec(
         Option('COOKIE_TRIALS', _('Rounds per run'), 5,
                values=(1, 2, 3, 5, 8, 10, 15, 20)),
         Option('COOKIE_BEAT_SECONDS', _('Seconds a beat takes'),
-               0.35, values=(0.12, 0.20, 0.35, 0.50, 0.75, 1.2)),
+               0.16, values=(0.08, 0.12, 0.16, 0.25, 0.40, 0.60)),
         Option('COOKIE_SET_SECONDS', _('Seconds before the first beat'),
-               0.9, values=(0.0, 0.4, 0.9, 1.5, 2.5)),
+               0.8, values=(0.0, 0.4, 0.8, 1.5, 2.5)),
         Option('COOKIE_ADAPTIVE', _('Climb a rung after a clean getaway'),
                True),
     ),
