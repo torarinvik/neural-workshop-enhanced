@@ -49,16 +49,24 @@ MEASURE = 200
 SCREEN_RUNG = 3
 
 
-def road_of(blocked, swerve=1, start=0, rows=None):
+def road_of(rows, swerve=1, start=0):
     """A road written out rather than dealt.
 
-    *blocked* is one character a row: ``.`` clear, ``L`` a donkey in
-    lane 0, ``R`` a donkey in lane 1.
+    *rows* is one character a **drawn** row: ``.`` clear, ``L`` a donkey
+    in lane 0, ``R`` a donkey in lane 1. The animal's body is put on the
+    row it is written on; the sub-rows it *blocks* start a car's length
+    earlier, which is where the two would first overlap.
     """
-    lanes = {'.': None, 'L': 0, 'R': 1}
-    grade = D.Grade('by hand', rows or len(blocked), 0.0, swerve)
-    return D.Road(grade=grade, start=start,
-                  blocked=tuple(lanes[mark] for mark in blocked))
+    lanes = {'L': 0, 'R': 1}
+    grade = D.Grade('by hand', len(rows), 0.0, swerve)
+    beasts = [(row * D.SUB - D.CAR + 1, lanes[mark])
+              for row, mark in enumerate(rows) if mark != '.']
+    return D.build(grade, beasts, start=start)
+
+
+def hazard_of(road, which=0):
+    """The first blocked sub-row of donkey *which*."""
+    return road.beasts[which][0]
 
 
 def blend(front, back, part):
@@ -129,7 +137,7 @@ class EveryRoadHasALineThroughIt(unittest.TestCase):
         """A road nobody could drive, so ``line`` has to say so.
 
         Donkeys on adjacent rows in opposite lanes: the first pins the
-        car in the far lane and the second stands in it, and the one row
+        car in the far lane and the second stands in it, and what is
         between them is not enough to cross in. The generator will never
         lay this — that is what makes it the right thing to hand the
         solver by hand.
@@ -141,8 +149,30 @@ class EveryRoadHasALineThroughIt(unittest.TestCase):
     def test_the_first_rows_are_clear(self):
         for level in range(1, len(D.GRADES) + 1):
             road = D.generate(level, seed=level)
-            for row in range(D.RUN_IN):
-                self.assertIsNone(road.blocked[row])
+            for step in range(D.RUN_IN * D.SUB):
+                self.assertIsNone(road.blocked[step])
+
+    def test_a_donkey_blocks_both_bodies_worth_of_road(self):
+        """The blocked run is the two lengths added, less the shared one.
+
+        Which is the whole of why the collision can be finer than a
+        row: the solver's "is this sub-row free" and the screen's "do
+        these two boxes overlap" are then the same question.
+        """
+        self.assertEqual(D.SPAN, D.CAR + D.BEAST - 1)
+        road = D.generate(4, seed=7)
+        for at, lane in road.beasts:
+            self.assertEqual([road.blocked[at + step] for step in range(D.SPAN)],
+                             [lane] * D.SPAN)
+            if at + D.SPAN < road.length:
+                self.assertIsNone(road.blocked[at + D.SPAN])
+
+    def test_the_donkeys_are_countable(self):
+        """The screen says how many are in the road, so they must be apart."""
+        for level in range(1, len(D.GRADES) + 1):
+            road = D.generate(level, seed=level * 3)
+            for (one, _l), (two, _r) in zip(road.beasts, road.beasts[1:]):
+                self.assertGreaterEqual(two - one, D.SPAN + D.GAP)
 
     def test_a_road_is_never_empty(self):
         rng = random.Random(2)
@@ -159,55 +189,84 @@ class TheSwerve(unittest.TestCase):
     """Three rules, on roads written out rather than dealt."""
 
     def test_it_takes_the_rung_s_rows(self):
-        road = road_of('.........', swerve=2)
+        road = road_of('.' * 12, swerve=2)
         car = D.Car(road.start, 2)
         D.steer(car, D.SWITCH)
-        self.assertEqual(car.lane, 0)
-        D.beat(car, road)
-        self.assertEqual(car.lane, 0)      # still across the middle
-        self.assertTrue(car.across)
+        self.assertEqual(car.crossing, 2 * D.SUB)
+        for _tick in range(2 * D.SUB - 1):
+            D.beat(car, road)
+            self.assertEqual(car.lane, 0)  # still across the middle
+            self.assertTrue(car.across)
         D.beat(car, road)
         self.assertEqual(car.lane, 1)
         self.assertFalse(car.across)
 
+    def test_it_is_drawn_across_by_degrees_rather_than_in_one_go(self):
+        """The share is what the screen puts the car on, so it must move."""
+        road = road_of('.' * 12, swerve=2)
+        car = D.Car(road.start, 2)
+        self.assertEqual(car.share, 0.0)
+        D.steer(car, D.SWITCH)
+        seen = []
+        while car.across:
+            seen.append(car.share)
+            D.beat(car, road)
+        self.assertEqual(len(seen), 2 * D.SUB)
+        self.assertEqual(seen, sorted(seen))
+        self.assertEqual(len(set(seen)), len(seen))
+        self.assertLess(seen[0], 0.2)
+        self.assertGreater(seen[-1], 0.8)
+
     def test_a_second_press_cannot_call_it_off(self):
-        road = road_of('.........', swerve=2)
+        road = road_of('.' * 12, swerve=2)
         car = D.Car(road.start, 2)
         self.assertTrue(D.steer(car, D.SWITCH))
-        self.assertFalse(D.steer(car, D.SWITCH))
-        D.beat(car, road)
-        self.assertFalse(D.steer(car, D.SWITCH))
+        for _tick in range(2 * D.SUB - 1):
+            self.assertFalse(D.steer(car, D.SWITCH))
+            D.beat(car, road)
         D.beat(car, road)
         self.assertEqual(car.lane, 1)
+
+    def _press_at(self, tick):
+        """Drive to sub-row *tick*, swerve there, and run the road out."""
+        road = road_of('...R' + '.' * 8, swerve=1, start=1)
+        car = D.Car(road.start, 1)
+        while car.at < tick:
+            D.beat(car, road)
+        D.steer(car, D.SWITCH)
+        while not D.over(car, road):
+            D.beat(car, road)
+        return road, car
 
     def test_a_car_across_the_middle_is_in_both_lanes(self):
         """The rule that makes the dodge-on-sight a crash.
 
         The donkey is in the lane the car is *leaving*, and it still
         hits: while the crossing runs, both lanes are the car's lane.
+        The press here goes in one sub-row too late, so the last sub-row
+        of the crossing lands on the first sub-row the donkey blocks.
         """
-        road = road_of('...R.....', swerve=1, start=1)
-        car = D.Car(road.start, 1)
-        for _row in range(3):
-            D.beat(car, road)
-        D.steer(car, D.SWITCH)              # too late, and into it
-        D.beat(car, road)
+        road, _car = self._press_at(0)
+        late = hazard_of(road) - D.SUB + 1
+        _road, car = self._press_at(late)
         self.assertTrue(car.hit)
 
-    def test_the_same_press_one_row_earlier_gets_by(self):
-        road = road_of('...R.....', swerve=1, start=1)
-        car = D.Car(road.start, 1)
-        for _row in range(2):
-            D.beat(car, road)
-        D.steer(car, D.SWITCH)
-        D.beat(car, road)                   # crossing, over a clear row
-        self.assertFalse(car.hit)
-        D.beat(car, road)                   # the donkey, in the other lane
+    def test_the_same_press_one_sub_row_earlier_gets_by(self):
+        """A quarter of a drawn row is the whole difference.
+
+        This is what counting in sub-rows buys and it is the reason for
+        it: the line between getting through and not is a line the
+        rules can actually draw, rather than a row the car was either
+        in or not in.
+        """
+        road, _car = self._press_at(0)
+        intime = hazard_of(road) - D.SUB
+        _road, car = self._press_at(intime)
         self.assertFalse(car.hit)
         self.assertEqual(car.passed, 1)
 
     def test_holding_costs_nothing_and_changes_nothing(self):
-        road = road_of('.........')
+        road = road_of('.' * 12)
         car = D.Car(road.start, 1)
         self.assertFalse(D.steer(car, D.HOLD))
         D.beat(car, road)
@@ -215,12 +274,14 @@ class TheSwerve(unittest.TestCase):
         self.assertFalse(car.across)
 
     def test_a_hit_ends_the_road_there(self):
-        road = road_of('...L.....', swerve=1, start=0)
+        road = road_of('...L' + '.' * 8, swerve=1, start=0)
         car = D.drive(road, [D.HOLD] * road.length)
         self.assertTrue(car.hit)
         self.assertTrue(D.over(car, road))
         self.assertFalse(D.cleared(car, road))
-        self.assertEqual(car.row, 4)
+        # Stopped on the first sub-row the two bodies overlap, which is
+        # a car's length before the animal rather than a row before it.
+        self.assertEqual(car.at, hazard_of(road) + 1)
 
 
 class WhatTheTwoShallowPoliciesAreWorth(unittest.TestCase):
@@ -259,10 +320,39 @@ class WhatTheTwoShallowPoliciesAreWorth(unittest.TestCase):
             self.assertEqual(D.rehearse(level, MEASURE, policy='aimed'), 1.0,
                              'rung %d' % level)
 
-    def test_guessing_is_worth_much_less_than_either(self):
+    def test_a_coin_clears_nothing_at_all(self):
+        """A floor of zero, and it is a fact about the swerve.
+
+        A press starts a crossing it cannot call off, so a coin a tick
+        leaves the car across the middle most of the way — and across
+        the middle every donkey in either lane is a donkey in yours.
+
+        This got worse when the road was cut into sub-rows: a coin a
+        *row* still cleared about one road in eight on the first rung,
+        because most of its ticks were settled ones. Worth knowing when
+        reading any "better than chance" number off this task, because
+        chance here is not a bar.
+        """
         for level in range(1, len(D.GRADES) + 1):
-            self.assertLess(D.rehearse(level, MEASURE), 0.25,
-                            'rung %d' % level)
+            self.assertEqual(D.rehearse(level, MEASURE), 0.0,
+                             'rung %d' % level)
+
+    def test_and_the_reason_is_that_it_is_never_in_a_lane(self):
+        """Measured, so the explanation above is not just a story."""
+        rng = random.Random(0)
+        across = settled = 0
+        for _deal in range(20):
+            road = D.generate(7, seed=rng.randrange(1 << 30))
+            car = D.Car(road.start, road.grade.swerve)
+            for _tick in range(road.length):
+                D.steer(car, rng.choice((D.HOLD, D.SWITCH)))
+                if car.across:
+                    across += 1
+                else:
+                    settled += 1
+                car.hit = False          # keep driving; this is about pose
+                D.beat(car, road)
+        self.assertGreater(across, 3 * settled)
 
     def test_the_exact_line_is_the_ceiling_the_others_are_measured_against(self):
         for level in (1, 6, 10):
@@ -327,6 +417,12 @@ class DonkeyScreenTests(unittest.TestCase):
         self.now = 1000.0
         self.task = Donkey()
         self.task.clock = lambda: self.now
+        # Seeded, because a screen test that deals its own road is a
+        # screen test whose subject is up to the dice. Holding the wheel
+        # straight clears about one road in seventy at this rung, which
+        # is exactly often enough to fail a suite now and then and never
+        # when anybody is looking.
+        self.task.rng = random.Random(11)
 
     def tearDown(self):
         self.task.close()
@@ -334,11 +430,15 @@ class DonkeyScreenTests(unittest.TestCase):
         state.cfg.update(self.saved)
         reset_window()
 
-    def _rows(self, count=1):
-        """Let *count* rows of road arrive."""
-        for _row in range(count):
-            self.now += self.task.beat_seconds
+    def _ticks(self, count=1):
+        """Let *count* sub-rows of road arrive."""
+        for _tick in range(count):
+            self.now += self.task.tick_seconds()
             self.task.update(0.016)
+
+    def _rows(self, count=1):
+        """Let *count* drawn rows of road arrive."""
+        self._ticks(count * D.SUB)
 
     def _running(self):
         self.task.start_run()
@@ -359,7 +459,8 @@ class DonkeyScreenTests(unittest.TestCase):
         road = self._running()
         self.assertEqual(self.task.phase, 'running')
         self.assertEqual(self.task.car.lane, road.start)
-        self.assertEqual(self.task.car.row, 0)
+        self.assertEqual(self.task.car.at, 0)
+        self.assertEqual(road.length, road.rows * D.SUB)
         self.assertGreater(road.donkeys, 0)
         self.task.on_draw()
 
@@ -397,17 +498,20 @@ class DonkeyScreenTests(unittest.TestCase):
             if self.task.phase != 'running':
                 break
             self.task.act(port)
-            self._rows(1)
+            self._ticks(1)
         self.assertEqual(self.task.phase, 'scored')
         self.assertTrue(self.task.verdict_shown[0])
         self.assertEqual(self.task.results[-1][1], True)
 
     def test_holding_into_a_donkey_pays_red(self):
-        road = self._running()
-        for _row in range(road.length):
+        self._running()
+        road = road_of('.....L' + '.' * 8, start=0)
+        self.task.road = road
+        self.task.car = D.Car(0, 1)
+        for _tick in range(road.length):
             if self.task.phase != 'running':
                 break
-            self._rows(1)
+            self._ticks(1)
         self.assertEqual(self.task.phase, 'scored')
         self.assertFalse(self.task.verdict_shown[0])
         self.assertTrue(self.task.car.hit)
@@ -415,10 +519,10 @@ class DonkeyScreenTests(unittest.TestCase):
     def test_the_run_ends_after_the_roads_it_was_asked_for(self):
         self._running()
         for _trial in range(2):
-            for _row in range(self.task.road.length + 2):
+            for _tick in range(self.task.road.length + 2):
                 if self.task.phase != 'running':
                     break
-                self._rows(1)
+                self._ticks(1)
             self.assertEqual(self.task.phase, 'scored')
             self.now += 2.0
             self.task.on_key_press(key.SPACE, 0)   # deal the next road
@@ -517,28 +621,53 @@ class DonkeyScreenTests(unittest.TestCase):
                 and one[1] < two[3] and two[1] < one[3])
 
     def _hold_until_hit(self):
+        """Drive a road with a donkey dead ahead into it."""
         self._running()
+        self.task.road = road_of('.....L' + '.' * 8, start=0)
+        self.task.car = D.Car(0, 1)
         while self.task.phase == 'running':
-            self._rows(1)
+            self._ticks(1)
         self.assertTrue(self.task.car.hit)
-        return self.task.road.blocked[self.task.car.row - 1]
+        return self.task.road.blocked[self.task.car.at - 1]
 
-    def test_the_row_the_car_has_met_is_drawn_on_the_car(self):
+    def test_the_screen_and_the_rules_measure_from_the_same_origin(self):
         """The bug this is here for made every collision look like none.
 
-        :func:`~neural_workshop.donkey.beat` checks the arriving row
-        against the car, so once the beat has run the two are in the
-        same place. The first version of the screen drew only the road
-        *ahead* — so the donkey the car had just hit vanished from a
-        position a full row-height in front of the bumper, and the
-        round ended over a gap.
+        The car and the donkey are both drawn from the car's own tail,
+        each at the length the rules give it, so the frame a round ends
+        on is the frame the two boxes meet. The first version drew the
+        road only *ahead* of the bonnet and resolved it a whole row at a
+        time, so a donkey the car had hit vanished from a position a
+        full row-height in front of the bumper and the round ended over
+        a gap.
         """
         self._running()
         self._rows(2)
         _left, bottom, _wide, _tall = self.task._road_rect()
         step = self.task._row_height()
-        self.assertAlmostEqual(self.task._row_y(-1), bottom + step * 0.5)
-        self.assertAlmostEqual(self.task._row_y(0), bottom + step * 1.5)
+        self.assertAlmostEqual(self.task._row_y(0.0), bottom + step)
+        self.assertAlmostEqual(self.task._row_y(1.0), bottom + step * 2)
+        # A quarter of a row apart, which is what a sub-row is worth.
+        self.assertAlmostEqual(self.task._row_y(1.0 / D.SUB) -
+                               self.task._row_y(0.0), step / D.SUB)
+
+    def test_the_road_moves_a_quarter_of_a_row_at_a_time(self):
+        """Same playfield, four times the resolution — the whole change.
+
+        A tick moves the world by a sub-row, so the donkey ahead comes
+        down the screen in quarter-row steps rather than jumping a whole
+        row at a time. The screen is the same size it was; only the
+        arithmetic is finer.
+        """
+        road = self._running()
+        step = self.task._row_height()
+        at, _lane = road.beasts[0]
+        def offset():
+            return self.task._row_y(
+                self.task._rows_of(D.body_of(at) - self.task.car.at))
+        was = offset()
+        self._ticks(1)
+        self.assertAlmostEqual(was - offset(), step / D.SUB)
 
     def test_a_donkey_the_car_hit_is_drawn_over_the_bonnet(self):
         from neural_workshop.ui.donkey import CAR, DONKEY
@@ -551,40 +680,51 @@ class DonkeyScreenTests(unittest.TestCase):
                         'the car hit a donkey and nothing was drawn on it')
 
     def test_a_donkey_it_got_by_is_drawn_beside_the_bonnet_instead(self):
-        """The same row in the same place; only the lane is different.
+        """The same road in the same place; only the lane is different.
 
         Which is the whole of the rule, so it should be the whole of the
-        difference on the screen too. Driven on a road written out
-        rather than dealt, because whether a deal offers a donkey in the
-        far lane at a convenient moment is up to the dice, and a test
-        that skips itself when they go the other way is not a test.
+        difference on the screen too. The car is stopped where it is
+        *level* with the animal — the sub-rows where it would be a crash
+        if the two shared a lane — and the boxes have to be side by side
+        and clear of each other there.
+
+        Driven on a road written out rather than dealt, because whether
+        a deal offers a donkey in the far lane at a convenient moment is
+        up to the dice, and a test that skips itself when they go the
+        other way is not a test.
         """
         from neural_workshop.ui.donkey import CAR, DONKEY
         self._running()
-        self.task.road = road_of('....R' + '.' * 8, start=0)
+        road = road_of('....R' + '.' * 8, start=0)
+        self.task.road = road
         self.task.car = D.Car(0, 1)
-        self._rows(5)
-        self.assertEqual(self.task.car.passed, 1)
+        # Level with it: halfway through the sub-rows the two would
+        # overlap in, had they shared a lane.
+        self._ticks(hazard_of(road) + D.SPAN // 2)
         self.assertFalse(self.task.car.hit)
         cars = self._painted(CAR)
         self.assertEqual(len(cars), 1)
         level = [box for box in self._painted(DONKEY)
                  if box[1] < cars[0][3] and cars[0][1] < box[3]]
-        self.assertTrue(level, 'the donkey it passed was not drawn level')
+        self.assertTrue(level, 'the donkey it drew level with was not level')
         for box in level:
             self.assertFalse(self._overlap(box, cars[0]))
 
     def test_the_car_is_drawn_between_the_lanes_while_it_crosses(self):
         """The screen must not claim the car is somewhere it is not safe."""
         self._running()
-        settled = self.task._lane_x(float(self.task.car.lane))
+        car = self.task.car
+        settled = self.task._lane_x(float(car.lane))
         self.task.act(D.SWITCH)
-        crossing = self.task._lane_x(
-            self.task.car.lane
-            + (1 - 2 * self.task.car.lane)
-            * (self.task.car.swerve - self.task.car.crossing + 1)
-            / float(self.task.car.swerve + 1))
-        self.assertNotAlmostEqual(settled, crossing, places=1)
+        seen = []
+        while car.across:
+            seen.append(self.task._lane_x(
+                car.lane + (1 - 2 * car.lane) * car.share))
+            self._ticks(1)
+        self.assertEqual(len(seen), car.span)
+        for x in seen:
+            self.assertNotAlmostEqual(settled, x, places=1)
+        self.assertEqual(len(set(seen)), len(seen))
 
 
 if __name__ == '__main__':

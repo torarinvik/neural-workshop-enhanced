@@ -430,21 +430,34 @@ on the row before; from six it is two rows and from ten it is three.
 That is the whole content: not *what* to do, which is obvious, but how
 far ahead of the donkey to have already done it. Measured over two
 hundred deals a rung, swerving on sight clears every road while the
-crossing is one row wide and 9%, 3%, 1%, 0% and 4% of them on levels six
+crossing is one row wide and 6%, 3%, 3%, 1% and 6% of them on levels six
 to ten.
+
+**The road is finer than it looks.** A row is what the screen draws and
+not the unit the rules work in: the road is cut into four sub-rows a
+row, the car moves one of them a tick, and the car and the donkey each
+have a *length*, so a hit is the two bodies overlapping. Resolved a row
+at a time — which is how it shipped first — "did it hit" could only be
+answered to within a whole row, and a round ended on the tick the car
+entered the donkey's row rather than on the tick they touched, a car's
+length early. The playfield is the same size and shows the same amount
+of road; the whole of the cost is that the arrays are four times longer.
 
 Two things about it are worth saying because they are the sort of thing
 a task description usually leaves flattering. First, it has **no
-planning depth**, and it was built expecting some: a road is laid one
-row at a time and a donkey goes down only where the set of surviving car
-states stays non-empty, which guarantees every road has a line through
-it and — measured — leaves nothing standing that a press aimed at the
-swerve cannot handle. `tests/test_donkey.py` asserts that finding
+planning depth**, and it was built expecting some: a road is laid a
+sub-row at a time and a donkey goes down only where the set of surviving
+car states stays non-empty, which guarantees every road has a line
+through it and — measured — leaves nothing standing that a press aimed
+at the swerve cannot handle. `tests/test_donkey.py` asserts that finding
 rather than the hoped-for one, so a future generator that quietly
 flattened or deepened the ladder fails a test instead of leaving the
-prose lying. Second, random play clears about one road in eight on the
-first level and none at all above the second, so the guessing floor the
-options screen quotes is honestly close to zero.
+prose lying. Second, the guessing floor is **zero**, on every level: a
+press starts a crossing it cannot call off, so a coin a tick leaves the
+car across the middle most of the way, and across the middle every
+donkey in either lane is a donkey in yours. So "better than chance" is
+not a bar worth clearing here, and a number from this task should be
+read against the swerve-on-sight column instead.
 
 Nothing is downloaded for this one — the road is generated.
 

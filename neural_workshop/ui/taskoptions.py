@@ -1207,10 +1207,11 @@ def donkey_note(chosen: Dict[str, Any]) -> str:
                   'hits it, so the press has to go in %d rows early and '
                   'swerving on sight is already too late.')
                 % (grade.swerve, grade.swerve))
-    said.append(_('Swerving on sight clears about %d%% of these roads, and '
-                  'a coin about %d%%.')
-                % (int(round(100 * rehearse(level, policy='reactive'))),
-                   int(round(100 * rehearse(level)))))
+    said.append(_('Swerving on sight clears about %d%% of these roads. A '
+                  'coin clears none of them at all: a press starts a '
+                  'crossing it cannot call off, so pressing at random '
+                  'leaves you across the middle most of the way.')
+                % int(round(100 * rehearse(level, policy='reactive'))))
     return '  '.join(said)
 
 

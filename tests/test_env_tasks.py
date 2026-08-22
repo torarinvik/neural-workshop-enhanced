@@ -90,12 +90,14 @@ BY_LUCK = {
     'sokoban_3d': (1500, {'rung': 1, 'trials': 3}),
     'chain_of_custody': (900, {'rung': 3, 'trials': 4}),
     'cookie_thief': (900, {'rung': 4, 'trials': 4}),
-    # The first rung, because that is the only one a coin ever gets
-    # to the end of: a swerve started at random is a swerve across
-    # the middle, and above the first rung the road is full enough
-    # that random play is paid nothing but red. Both signs are worth
-    # having in the test.
-    'donkey': (900, {'rung': 1, 'trials': 4}),
+    # Paid on every road, and paid nothing but red on any of them: a
+    # press starts a crossing it cannot call off, so a coin a tick is a
+    # car across the middle most of the time and the first donkey in
+    # either lane ends the road. Zero is a real floor here rather than a
+    # gap in the test, and it is measured in tests/test_donkey.py. A
+    # longer budget than the other clocked tasks because a road is four
+    # ticks a drawn row.
+    'donkey': (1500, {'rung': 1, 'trials': 4}),
 }
 
 

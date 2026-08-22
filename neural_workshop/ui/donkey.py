@@ -12,9 +12,18 @@ into it. From the sixth rung the crossing is two rows wide and from the
 tenth it is three, and the press has to be thrown that far in front of
 what it is aimed at.
 
-The road marches a row at a time rather than sliding, which is what the
-original did — it redrew in text lines — and it is also what makes one
-beat one step at the agent boundary.
+A drawn row is not the unit the rules work in. The road is cut into
+:data:`neural_workshop.donkey.SUB` sub-rows a row, the car moves one of
+them a tick, and the car and the donkey are drawn from one origin at
+the lengths the rules give them — so the road slides in quarter-rows
+and the frame a round ends on is the frame the two boxes meet. That is
+worth the arithmetic: resolved a whole row at a time, which is how it
+shipped first, a round ended on the tick the car entered the donkey's
+row rather than on the tick they touched, a car's length early.
+
+The screen is not any bigger for it. Same playfield, same amount of
+road in it, four times the resolution underneath — and one tick is one
+step at the agent boundary.
 
 SPDX-License-Identifier: GPL-2.0-or-later
 """
@@ -29,8 +38,8 @@ from pyglet.window import key
 
 from .. import display, state
 from ..constants import FONTLIST
-from ..donkey import (GRADES, SWITCH, Car, beat, cleared, generate, over,
-                      rehearse, steer)
+from ..donkey import (BEAST, CAR as CAR_LONG, GRADES, SUB, SWITCH, Car,
+                      beat, body_of, cleared, generate, over, rehearse, steer)
 from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
                         width_center)
 from ..i18n import _
@@ -52,9 +61,18 @@ ROAD_ALPHA, MARK_ALPHA = 24, 90
 #: More than the widest swerve by a good margin, so the press is never
 #: aimed at something off the top of the screen: the task is how early
 #: you commit, not whether the road told you in time.
+#:
+#: A *drawn* row. The rules run on sub-rows — see
+#: :data:`neural_workshop.donkey.SUB` — and the whole point of that
+#: split is that making the collision finer costs nothing on screen:
+#: this is the same road at the same size, moved in quarters.
 SIGHT = 10
 
-#: How long a row takes, and how long the road sits still first.
+#: How long a drawn row takes, and how long the road sits still first.
+#:
+#: A row rather than a tick, because a row is what a person can see
+#: going by and a tick is not. The clock inside runs at
+#: ``beat_seconds / SUB``.
 BEAT_SECONDS = 0.18
 SET_SECONDS = 0.8
 
@@ -190,26 +208,29 @@ class Donkey:
         return (left + (width - wide) / 2.0, bottom, wide, height)
 
     def _row_height(self) -> float:
-        return self._road_rect()[3] / float(SIGHT + 1)
+        """A drawn row. Two spare slots: one behind the car, one over it."""
+        return self._road_rect()[3] / float(SIGHT + 2)
 
-    def _row_y(self, index: float) -> float:
-        """Where the row *index* rows in front of the bonnet is drawn.
+    def _row_y(self, offset: float) -> float:
+        """Where something *offset* rows in front of the car's tail is drawn.
 
-        Index ``0`` is the row that arrives on the next beat. Index
-        ``-1`` is the row the car has just met, and it is drawn on the
-        car's **own** slot rather than a row above it, because that is
-        where it is: :func:`~neural_workshop.donkey.beat` checks the
-        arriving row against the car, so once the beat has run the two
-        are in the same place and a hit has to look like one.
+        Offset ``0`` is the car's own tail, and everything on the road
+        is placed against it — the car's nose at :data:`CAR_LONG`
+        sub-rows up, a donkey's tail at wherever its body starts. So a
+        donkey and the car are drawn from one origin at their real
+        lengths, and the frame a round ends on is the frame their two
+        boxes meet. That is the whole reason the model counts in
+        sub-rows: resolved a row at a time the round ended a car's
+        length before anything touched, which is what it looked like.
 
-        Leaving that row out was the first version of this, and it made
-        the game feel wrong in exactly the way it was wrong: a donkey
-        the car had hit vanished from a position a full row-height
-        ahead of the bumper, so every collision looked like a
-        collision with nothing.
+        Offsets are fractions, so the road slides rather than marching.
         """
         _left, bottom, _wide, _tall = self._road_rect()
-        return bottom + self._row_height() * (index + 1.5)
+        return bottom + self._row_height() * (offset + 1.0)
+
+    def _rows_of(self, steps: float) -> float:
+        """Sub-rows as drawn rows, which is what the layout is in."""
+        return steps / float(SUB)
 
     def _lane_x(self, lane: float) -> float:
         """Centre of *lane*, which may be a half for a car mid-crossing."""
@@ -257,7 +278,7 @@ class Donkey:
         grade = self.road.grade
         said = [_('Rung %d, %s.') % (self.rung, _(grade.name)),
                 _('%d rows of road, %d donkeys in it.')
-                % (self.road.length, self.road.donkeys)]
+                % (self.road.rows, self.road.donkeys)]
         said.append(_('The swerve takes one row, so press on the row '
                       'before the donkey.') if grade.swerve == 1 else
                     _('The swerve takes %d rows and cannot be called off, '
@@ -286,8 +307,18 @@ class Donkey:
 
     # --- the clock --------------------------------------------------------
 
+    def tick_seconds(self) -> float:
+        """How long one sub-row takes: a drawn row's worth, cut :data:`SUB` ways.
+
+        The dial is in rows because a row is what a person can watch go
+        by. The clock is in sub-rows because that is what the rules are
+        in, and it is why a collision is a collision rather than a room
+        the car walked into.
+        """
+        return self.beat_seconds / float(SUB)
+
     def update(self, dt: float) -> None:
-        """One row of road, on the clock rather than on a press.
+        """One sub-row of road, on the clock rather than on a press.
 
         The road comes whether or not anybody steers, which is the
         point: a driver who could stop the road while he thought would
@@ -300,7 +331,7 @@ class Donkey:
             self.message = _('Go')
             self._redraw()
         elif self.phase == 'running' and now >= self.beat_at:
-            self.beat_at = now + self.beat_seconds
+            self.beat_at = now + self.tick_seconds()
             got = beat(self.car, self.road)
             self._coach_verdict(got)
             if over(self.car, self.road):
@@ -310,7 +341,7 @@ class Donkey:
             self._redraw()
 
     def _coach_verdict(self, got: int) -> None:
-        """Paint what the row just past did, a row at a time.
+        """Paint what the road just past did, a tick at a time.
 
         Not shaping: there is no potential here and nothing telescopes.
         It is the road's own count taken apart — a donkey the car got by
@@ -345,7 +376,7 @@ class Donkey:
             self.message = _('Home, %d donkeys behind you') % car.passed
         else:
             self.message = _('Hit one after %d rows, %d behind you'
-                             ) % (car.row, car.passed)
+                             ) % (car.rows_done, car.passed)
         if self.adaptive:
             share = sum(1 for _r, ok in self.results[-4:] if ok) / float(
                 min(4, len(self.results)))
@@ -367,10 +398,9 @@ class Donkey:
         self.car = None
         self.message = _('%d of %d roads cleared, %d donkeys behind you, '
                          'highest rung %d — swerving on sight clears about '
-                         '%d%% of these, and a coin about %d%%'
+                         '%d%% of these, and pressing at random none at all'
                          ) % (tally['clean'], tally['roads'], tally['passed'],
-                              tally['best_rung'], tally['on_sight'],
-                              tally['floor'])
+                              tally['best_rung'], tally['on_sight'])
         self.asked.text = ''
         self._update_status()
         self._redraw()
@@ -378,11 +408,16 @@ class Donkey:
     def score(self) -> Dict[str, int]:
         """How the run went, and what the two shallow policies were worth.
 
-        Both comparisons are measured rather than derived. The coin is
-        the usual floor. The other one is the interesting number: it is
-        the same run played by swerving the moment the donkey is on the
-        row ahead, which is what the game looks like it is asking for
-        and is a perfect policy for the first five rungs.
+        Both comparisons are measured rather than derived, and only one
+        of them is worth reading. ``floor`` is the coin, and it is zero
+        on every rung — a press starts a crossing it cannot call off, so
+        random play is across the middle most of the way and the first
+        donkey in either lane ends the road. Beating it is not a result.
+
+        ``on_sight`` is the number that says something: the same run
+        played by swerving the moment the donkey is on the row ahead,
+        which is what the game looks like it is asking for and is
+        perfect play for the first five rungs.
         """
         roads = len(self.results)
         clean = sum(1 for _r, ok in self.results if ok)
@@ -436,7 +471,7 @@ class Donkey:
             self._draw_car()
             # Last, and on top of the car, so a hit is a donkey over a
             # bonnet rather than a donkey that disappeared.
-            self._draw_met()
+            self._draw_over()
             self._draw_left()
         self._update_status()
 
@@ -448,63 +483,70 @@ class Donkey:
         self._rect(left, bottom, verge, tall, self.ink, opacity=MARK_ALPHA)
         self._rect(left + wide - verge, bottom, verge, tall, self.ink,
                    opacity=MARK_ALPHA)
-        # Dashes, one a row and offset by the row count, so the road is
-        # visibly moving even down a stretch with nothing standing in it.
+        # Dashes every other row of the *road*, not of the screen, so
+        # they slide down with everything else instead of blinking in
+        # place. Without that the only smooth thing on a clear stretch
+        # would be nothing at all, and the road would look stopped.
         step = self._row_height()
         thick = max(2.0, wide * 0.02)
-        for index in range(SIGHT + 1):
-            if (index + self.car.row) % 2:
+        first = self.car.at // SUB - 1
+        for row in range(first, first + SIGHT + 3):
+            if row < 0 or row % 2:
                 continue
-            self._rect(left + wide / 2 - thick / 2,
-                       bottom + step * (index + 0.25), thick, step * 0.5,
+            y = self._row_y(self._rows_of(row * SUB - self.car.at))
+            if y < bottom or y + step * 0.5 > bottom + tall:
+                continue
+            self._rect(left + wide / 2 - thick / 2, y, thick, step * 0.5,
                        self.ink, opacity=MARK_ALPHA)
 
+    def _in_view(self):
+        """``(offset in rows, lane)`` for each donkey near the window.
+
+        The offset is measured from the car's own tail in the same
+        sub-rows the rules use, so a donkey at offset zero is a donkey
+        the car is inside.
+        """
+        for at, lane in self.road.beasts:
+            offset = self._rows_of(body_of(at) - self.car.at)
+            if -1.0 <= offset <= SIGHT:
+                yield offset, lane
+
     def _draw_donkeys(self) -> None:
-        """Whatever is standing in the road ahead, out to :data:`SIGHT` rows.
+        """Every donkey in the window, at its own length and its own place."""
+        for offset, lane in self._in_view():
+            self._draw_donkey(offset, lane)
 
-        The road the car has not met yet, which is the road the press is
-        aimed at. The row it *has* met is :meth:`_draw_met`.
+    def _draw_over(self) -> None:
+        """The one the car is inside, again and on top of it.
+
+        This is the frame's whole account of the crash: the two bodies
+        overlap because the rules say they overlap, and the reason the
+        rules can say so to a quarter of a row is that they count in
+        sub-rows. Drawn last so the animal is over the bonnet rather
+        than under it — a car parked on top of a donkey reads as a car
+        that stopped, and it did not stop.
         """
-        _left, _bottom, wide, _tall = self._road_rect()
-        step = self._row_height()
-        for index in range(SIGHT):
-            row = self.car.row + index
-            if row >= self.road.length:
-                break
-            lane = self.road.blocked[row]
-            if lane is None:
-                continue
-            self._draw_donkey(self._lane_x(lane), self._row_y(index),
-                              wide, step)
+        for offset, lane in self._in_view():
+            if -self._rows_of(BEAST) < offset < self._rows_of(CAR_LONG):
+                self._draw_donkey(offset, lane)
 
-    def _draw_met(self) -> None:
-        """The row the car has just been through, drawn where the car is.
-
-        This is the frame's whole account of what the last beat did. A
-        donkey in the far lane slides past the window; a donkey in the
-        car's lane is drawn over the bonnet, which is the crash. Both
-        are the same row in the same place — the only difference is
-        which lane it was standing in, and that is the only difference
-        the rules make either.
-        """
-        row = self.car.row - 1
-        if row < 0 or row >= self.road.length:
-            return
-        lane = self.road.blocked[row]
-        if lane is None:
-            return
-        _left, _bottom, wide, _tall = self._road_rect()
-        self._draw_donkey(self._lane_x(lane), self._row_y(-1), wide,
-                          self._row_height())
-
-    def _draw_donkey(self, x, y, wide, step) -> None:
+    def _draw_donkey(self, offset: float, lane: float) -> None:
         """A body, a head and two ears. It is not much of a donkey.
+
+        Its length on the screen is :data:`~neural_workshop.donkey.BEAST`
+        sub-rows, which is its length in the rules, so what you can see
+        of it is what the collision uses.
 
         Drawn in vermillion, which is the workshop's colour for the
         thing you must not touch, and the reason :meth:`_stage` stops
         where it does.
         """
-        body = min(wide * 0.30, step * 0.62)
+        _left, _bottom, wide, _tall = self._road_rect()
+        step = self._row_height()
+        x = self._lane_x(lane)
+        tall = step * self._rows_of(BEAST)
+        y = self._row_y(offset) + tall / 2.0
+        body = min(wide * 0.30, tall)
         self._rect(x - body / 2, y - body * 0.32, body, body * 0.62, DONKEY)
         head = body * 0.34
         self._rect(x + body * 0.34, y + body * 0.10, head, head, DONKEY)
@@ -527,14 +569,11 @@ class Donkey:
         _left, _bottom, wide, _tall = self._road_rect()
         step = self._row_height()
         car = self.car
-        if car.crossing:
-            gone = (car.swerve - car.crossing + 1) / float(car.swerve + 1)
-            lane = car.lane + (1 - 2 * car.lane) * gone
-        else:
-            lane = float(car.lane)
+        lane = car.lane + (1 - 2 * car.lane) * car.share
         x = self._lane_x(lane)
-        body = min(wide * 0.28, step * 0.70)
-        y = self._row_y(-1)
+        tall = step * self._rows_of(CAR_LONG)
+        y = self._row_y(0.0) + tall / 2.0
+        body = min(wide * 0.28, tall)
         self._rect(x - body / 2, y - body * 0.42, body, body * 0.84, CAR)
         # A roof, so which way it is pointing is never in question.
         self._rect(x - body * 0.30, y - body * 0.10, body * 0.60,
@@ -555,10 +594,10 @@ class Donkey:
         span = width * 0.16
         thick = max(3.0, height * 0.020)
         y = bottom + height * 0.5
-        share = min(1.0, self.car.row / float(max(1, self.road.length)))
+        share = min(1.0, self.car.at / float(max(1, self.road.length)))
         self._rect(left, y, span, thick, self.ink, opacity=40)
         self._rect(left, y, span * share, thick, PASSED)
-        self._label(_('%d of %d rows') % (self.car.row, self.road.length),
+        self._label(_('%d of %d rows') % (self.car.rows_done, self.road.rows),
                     left + span / 2, y + height * 0.06)
         self._label(_('%d of %d donkeys') % (self.car.passed,
                                              self.road.donkeys),

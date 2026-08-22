@@ -933,15 +933,20 @@ COOKIE_ADAPTIVE = True
 # it, and one key that puts you in the other lane. Hit one and the
 # road is over. What the original had for difficulty was speed, and
 # speed here is DONKEY_BEAT_SECONDS - a dial rather than a rung, so
-# that a person and a learner stepping one row at a time are playing
-# the same ladder. What carries the ladder instead is the swerve:
-# crossing takes rows, it cannot be called off, and while the car is
-# across the middle a donkey in either lane hits it. So the row a
-# donkey arrives on is a row you have to be clear of already. Up to
+# that a person and a learner stepping the road a piece at a time are
+# playing the same ladder. What carries the ladder instead is the
+# swerve: crossing takes rows, it cannot be called off, and while the
+# car is across the middle a donkey in either lane hits it. So the row
+# a donkey arrives on is a row you have to be clear of already. Up to
 # DONKEY_LEVEL five the crossing is one row and swerving on sight of
 # the donkey is perfect play; from six it is two rows and from ten
 # three, and swerving on sight clears under a tenth of the roads.
 # Higher rungs also lay more donkeys and more road to hold on over.
+# DONKEY_BEAT_SECONDS is how long a drawn row takes. The rules run
+# four times finer than that - the car and the donkey both have a
+# length, and a hit is the two of them overlapping - so the road
+# actually moves in quarter-rows and a collision is a collision rather
+# than a row the car entered.
 DONKEY_LEVEL = 3
 DONKEY_TRIALS = 5
 DONKEY_BEAT_SECONDS = 0.18
