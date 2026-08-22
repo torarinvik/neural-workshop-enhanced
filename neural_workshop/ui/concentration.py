@@ -67,6 +67,12 @@ class Concentration:
         self.hide_at = 0.0
         self.peek_until = 0.0
         self.phase = 'ready'
+        #: Coach mode: paint what the turn just taken did to the board.
+        #: Off for people -- it changes the game -- and switched on by the
+        #: agent boundary, where one scalar per *board* is as sparse as
+        #: anything on this contract: eight pairs is at least sixteen
+        #: flips with nothing paid in between.
+        self.coach = False
         self.message = _('Press Space to deal')
         self.player: Optional[object] = None
         self._read_options()
@@ -271,6 +277,7 @@ class Concentration:
         self._play(card)
         self.seen.setdefault(card.index, set()).add(id(card))
         if len(self.flipped) == 1:
+            self._coach_verdict(None)   # half a turn decides nothing
             # Counted with this card, so it covers both of the cases a
             # player who forgot nothing would act on: a pair it can
             # already see the whole of somewhere else, and the partner
@@ -284,11 +291,53 @@ class Concentration:
                 self.flipped = []
                 self._check_finished()
                 self.owed = False
+                if self.phase == 'playing':
+                    self._coach_verdict(True)
             else:
-                if self.owed or seen_before:
+                lapsed = self.owed or seen_before
+                if lapsed:
                     self.lapses += 1
+                self._coach_verdict(False if lapsed else None)
                 self.hide_at = self.clock() + self.hide_ms / 1000.
         self._redraw()
+
+    def _coach_verdict(self, good: Optional[bool]) -> None:
+        """Paint what the turn just completed did to the board.
+
+        ``True`` is a pair matched, and it is the potential-based term
+        for the potential -(pairs left): a match moves it by exactly one
+        and nothing else moves it at all, so the shaping over a cleared
+        board telescopes to the number of pairs however they were found.
+        A match is already visible -- the two cards stay face up -- so
+        naming it tells a third party nothing the frame did not.
+
+        ``False`` is a lapse, which is the one thing this board is
+        scored on, so paying it per turn rather than once at the end
+        spreads the same signal over the run instead of changing it.
+
+        ``None`` -- half a turn, or an honest miss -- clears the label.
+        An unlucky miss is not a mistake but information, and paying it
+        would score the deal rather than the player. That is also what
+        keeps the shaping safe: a turn that neither matched nor forgot
+        is owed nothing, so there is no loop of flips with a positive
+        return.
+
+        The one thing to be uneasy about: a lapse is detected from what
+        the board has already shown, so red says "you had what you
+        needed and did not use it". It names no card and comes only
+        after the turn is spent, but it is closer to standing in for
+        memory than warmer/colder in a maze ever is, and a run that
+        wants to measure memory rather than coached memory should turn
+        coach off.
+        """
+        if not self.coach:
+            return
+        if good is None:
+            self.verdict_shown = None
+            self.verdict.clear()
+            return
+        self.verdict_shown = (good, _('Pair') if good else _('Forgotten'))
+        self.verdict.show(*self.verdict_shown)
 
     def _known_pair(self) -> bool:
         """Is a whole unmatched pair already turned over somewhere?
