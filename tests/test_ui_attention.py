@@ -129,6 +129,63 @@ class ReflexTests(unittest.TestCase):
             self.assertGreaterEqual(centre_y - half, 0)
             self.assertLessEqual(centre_y + half, state.window.height)
 
+    def test_no_target_reaches_into_the_verdict_band(self):
+        """The strip the agent boundary reads a scalar out of.
+
+        Targets are photographs, so a target low on the screen paints
+        whatever that picture happens to contain — and a saturated run
+        down there is read as a scored trial on a trial nobody scored.
+        It used to spawn from a tenth of the way up, which is inside the
+        bottom quarter, and ``check_band.py`` caught it about one run in
+        three because it depended on which pictures were drawn. That is
+        the worst way for an instrument defect to behave, so the guard
+        is here as well: this one does not sample.
+
+        The bottom edge **at full size** is what is checked, because a
+        target only shrinks towards its own centre — clear at spawn is
+        clear for the rest of its life.
+        """
+        from neural_workshop.ui.verdict import above_the_band
+        floor = above_the_band()
+        self.game.start_run()
+        low = []
+        for _round in range(40):
+            for target in self._spawn(1):
+                _centre_x, centre_y = target.centre()
+                low.append(centre_y - self.game.full_side() / 2)
+            for target in list(self.game.targets):
+                target.born = 0
+            self.game.update(0.016)
+        self.assertTrue(low)
+        self.assertGreaterEqual(min(low), floor,
+                                'lowest edge %.0f, band ceiling %d'
+                                % (min(low), floor))
+
+    def test_the_biggest_targets_still_have_somewhere_to_go(self):
+        """Raising the floor must not pin every target to one line.
+
+        At the largest size the sprite is most of the window's height,
+        and a floor that left no room would have turned a task about
+        finding them into a task about clicking the same spot.
+        """
+        from neural_workshop.ui.verdict import above_the_band
+        state.cfg.REFLEX_SIZE = 280
+        self.game.apply_options()
+        self.game.start_run()
+        floor = above_the_band()
+        half = self.game.full_side() / 2
+        seen = set()
+        for _round in range(30):
+            for target in self._spawn(1):
+                _centre_x, centre_y = target.centre()
+                self.assertGreaterEqual(centre_y - half, floor)
+                self.assertLessEqual(centre_y + half, state.window.height)
+                seen.add(round(target.y_frac, 2))
+            for target in list(self.game.targets):
+                target.born = 0
+            self.game.update(0.016)
+        self.assertGreater(len(seen), 3, sorted(seen))
+
     def test_targets_land_in_different_places(self):
         self.game.start_run()
         places = {(round(t.x_frac, 3), round(t.y_frac, 3))

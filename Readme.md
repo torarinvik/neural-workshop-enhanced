@@ -1342,12 +1342,25 @@ were latent defects rather than boundary plumbing:
   never advanced past a feedback window or advanced at a rate set by how
   fast the machine was. They now read `self.clock()`, which the boundary
   swaps for a virtual one; `tests/test_ui_clock.py` keeps it that way.
-- **Six tasks painted into the strip the outcome reader looks at.** Not
-  by using a verdict colour — by using any colour with two channels far
-  apart, whose *anti-aliased edge* passes through the reader's window on
-  its way to the background. `neural_workshop.ui.verdict.above_the_band`
-  is now where that line lives, and `tests/check_band.py` sweeps every
-  task through its own wrapper on every rung.
+- **Seven tasks painted into the strip the outcome reader looks at.** Six
+  of them not by using a verdict colour — by using any colour with two
+  channels far apart, whose *anti-aliased edge* passes through the
+  reader's window on its way to the background.
+  `neural_workshop.ui.verdict.above_the_band` is now where that line
+  lives, and `tests/check_band.py` sweeps every task through its own
+  wrapper on every rung.
+
+  The seventh was found later and is a different animal, worth its own
+  sentence because it says something about the sweep. Reflex spawns its
+  targets from a tenth of the way up the screen, which is inside the
+  bottom quarter — and its targets are *photographs*, so whether a run
+  painted anything the reader counted depended on which pictures it
+  happened to draw. `check_band.py` reported it about one run in three
+  and came up clean the rest of the time. **A sampling check that comes
+  up clean is not evidence**; where the violation depends on content
+  rather than on layout, the guard has to be a test of the geometry, and
+  `tests/test_ui_attention.py` now holds every spawn's bottom edge above
+  the band whatever picture is in it.
 
 Random play is paid on twenty of the twenty-five overlays. The other
 five — Sudoku, Jigsaw, Concentration and the two mazes — have no

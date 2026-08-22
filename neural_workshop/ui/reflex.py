@@ -14,7 +14,9 @@ keeps the motion smooth at sixty frames a second.
 
 Positions are held as fractions of the window rather than pixels, so a
 resize moves everything to the same relative place instead of leaving
-targets off the edge.
+targets off the edge. They are also held clear of the strip the agent
+boundary reads its verdict out of — see :func:`_spawn`, which is where
+a photograph low on the screen was being counted as a scored trial.
 
 SPDX-License-Identifier: GPL-2.0-or-later
 """
@@ -32,7 +34,7 @@ from ..constants import FONTLIST
 from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
                         scale_to_height, width_center)
 from . import cursor, taskoptions
-from .verdict import VerdictLabel
+from .verdict import VerdictLabel, above_the_band
 from ..i18n import _
 
 #: Smallest a target is drawn before it counts as gone. Below this it
@@ -224,11 +226,26 @@ class Reflex:
             path = self.pool.take()
             if path is None:
                 return
-        # Keep the whole target on screen, and clear of the labels.
+        # Keep the whole target on screen, clear of the labels, and —
+        # the one that matters — clear of the band the agent boundary
+        # reads a verdict out of.
+        #
+        # This used to be ``margin / height + 0.10``, which is a tenth
+        # of the way up the screen and therefore inside the bottom
+        # quarter. The targets are photographs, so whether a run painted
+        # something the reader counted as a scored trial depended on
+        # which pictures it happened to draw: check_band.py caught it
+        # about one run in three and came up clean the rest of the time,
+        # which is the worst way for a defect like this to behave.
+        #
+        # The floor is the target's *bottom edge at full size*, because
+        # a target only ever shrinks towards its centre — clear at spawn
+        # is clear for the rest of its life.
         margin = self.full_side() / 2
         window = state.window
         low_x = margin / window.width
-        low_y = margin / window.height + 0.10
+        floor = above_the_band(window.height * 0.10) + margin
+        low_y = floor / window.height
         high_y = 1.0 - margin / window.height - 0.14
         target = Target(
             path=path,

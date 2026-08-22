@@ -108,7 +108,7 @@ or above 180 with the other two at or below 140. Anything there is read as a
 verdict.
 
 The rule is **not** "avoid three colours", and it is worth knowing why,
-because six tasks got this wrong. The Maze drew its doors in Okabe-Ito
+because seven tasks got this wrong. The Maze drew its doors in Okabe-Ito
 orange, `(230, 159, 0)`, which is not a verdict colour — green sits at 159,
 comfortably clear. But an orange square on a pale page is edged by every
 blend between the two, and part of that ramp has green already below 140
@@ -119,6 +119,16 @@ window on its way to the background, and no palette avoids that.
 So the rule is the simple one: the art stops above the band.
 `above_the_band` is where that line lives, and it works it out the same way
 `bwaccel.default_band` does, with a few pixels of slack for the edge.
+
+**If the art is content rather than layout, the sweep will lie to you.**
+Reflex spawns photographs at random places and used to spawn them from a
+tenth of the way up, which is inside the band. Whether a run painted
+anything the reader counted depended on which pictures were drawn, so
+`check_band.py` reported it about one run in three and came up clean
+otherwise. One clean sweep proves nothing there. Where a violation
+depends on content, write the guard against the *geometry* — assert that
+the spawn box clears `above_the_band()` — and let the sweep be the thing
+that finds it rather than the thing that certifies it.
 
 ## If the task pays only at the end, shape it
 
