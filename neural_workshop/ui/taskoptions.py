@@ -1100,6 +1100,101 @@ SUDOKU = TaskSpec(
     note=sudoku_note)
 
 
+def crossword_note(chosen: Dict[str, Any]) -> str:
+    """What the grid will look like, and the two things people ask.
+
+    The word pool is named first when it is missing, because that is
+    the only setting on this screen that can stop the task from
+    dealing anything at all, and finding that out from a blank screen
+    is worse than reading it here.
+    """
+    from ..crossword import GRADES
+    from ..wordlist import CLUES, have, index_ready
+    rung = int(chosen['CROSSWORD_LEVEL'])
+    grade = GRADES[max(0, min(len(GRADES) - 1, rung - 1))]
+    said = []
+    if not (index_ready() and have(CLUES)):
+        said.append(_('No clues here yet: run '
+                      '"python -m neural_workshop.wordlist" once, which '
+                      'fetches about 100 MB into your data directory.'))
+    said.append(_('Level %d, "%s": a %d by %d grid, %s, drawn from %s.')
+                % (rung, _(grade.name), grade.size, grade.size,
+                   (_('every row and column a word')
+                    if grade.longest_entry >= grade.size
+                    else _('entries up to %d letters') % grade.longest_entry),
+                   (_('the whole word list') if grade.top_rank > 1 << 20
+                    else _('the %d commonest words') % grade.top_rank)))
+    if grade.given:
+        said.append(_('About %d letters in a hundred are written in for '
+                      'you.') % int(grade.given * 100))
+    if grade.withheld:
+        said.append(_('One entry in %d gets no clue at all and has to '
+                      'come from its crossings.')
+                    % max(2, int(round(1 / grade.withheld))))
+    if not chosen['CROSSWORD_SHOW_MISTAKES']:
+        said.append(_('With mistakes unmarked nothing is checked until '
+                      'the grid is full, which is a long way harder than '
+                      'any one level.'))
+    said.append(_('The clues are made from definitions a language model '
+                  'wrote, so one can be wrong.'))
+    return '  '.join(said)
+
+
+CROSSWORD = TaskSpec(
+    title=_('Crossword options'),
+    options=(
+        Option('CROSSWORD_LEVEL', _('Level'), 2, values=tuple(range(1, 11))),
+        Option('CROSSWORD_TRIALS', _('Grids per run'), 3,
+               values=(1, 2, 3, 5, 8, 10)),
+        Option('CROSSWORD_SHOW_MISTAKES', _('Mark a wrong letter'), True),
+        Option('CROSSWORD_ADAPTIVE',
+               _('Climb a level after a clean solve'), True),
+    ),
+    note=crossword_note)
+
+
+def scrabble_note(chosen: Dict[str, Any]) -> str:
+    """What the board will be, and what green will take.
+
+    The passing share is spelled out as a number because it is the
+    whole of what a level means here: everything else on the board is
+    the same game at every rung.
+    """
+    from ..scrabble import GRADES
+    rung = int(chosen['SCRABBLE_LEVEL'])
+    grade = GRADES[max(0, min(len(GRADES) - 1, rung - 1))]
+    said = [_('Level %d, "%s": a %d by %d board with %s already '
+              'on it, a rack of %d, and the best play drawn from %s.')
+            % (rung, _(grade.name), grade.size, grade.size,
+               _('one word') if grade.seeded == 1
+               else _('%d words') % grade.seeded,
+               grade.rack,
+               (_('the whole word list') if grade.top_rank > 1 << 20
+                else _('the %d commonest words') % grade.top_rank))]
+    said.append(_('Green takes %d%% of the best play there was.')
+                % int(round(grade.share * 100)))
+    if grade.share >= 1.0:
+        said.append(_('Which at this level means the best play and '
+                      'nothing else.'))
+    said.append(_('Standard letter values and distribution; no blanks '
+                  'are dealt.'))
+    return '  '.join(said)
+
+
+SCRABBLE = TaskSpec(
+    title=_('Scrabble options'),
+    options=(
+        Option('SCRABBLE_LEVEL', _('Level'), 3, values=tuple(range(1, 11))),
+        Option('SCRABBLE_TRIALS', _('Boards per run'), 5,
+               values=(1, 2, 3, 5, 8, 10, 15)),
+        Option('SCRABBLE_SHOW_PREMIUMS', _('Paint the premium squares'),
+               True),
+        Option('SCRABBLE_ADAPTIVE',
+               _('Climb a level after a green play'), True),
+    ),
+    note=scrabble_note)
+
+
 def salesman_note(chosen: Dict[str, Any]) -> str:
     """What the score means at this size, and that it is exact.
 
@@ -1311,6 +1406,8 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'removals': REMOVALS,
     'sudoku': SUDOKU,
     'crossed_wires': CROSSED_WIRES,
+    'crossword': CROSSWORD,
+    'scrabble': SCRABBLE,
     'chain_of_custody': CUSTODY,
     'cookie_thief': COOKIE_THIEF,
 }

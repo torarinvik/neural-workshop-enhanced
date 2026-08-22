@@ -953,6 +953,43 @@ DONKEY_BEAT_SECONDS = 0.18
 DONKEY_SET_SECONDS = 0.8
 DONKEY_ADAPTIVE = True
 
+# Crossword and Scrabble both run on a word list fetched from Hugging
+# Face rather than shipped: about 173,000 words ranked by how often
+# they turn up in Google's 1-grams, and a definition apiece from which
+# a clue is made. Run "python -m neural_workshop.wordlist" once to
+# fetch and distil them; without it Scrabble falls back to a short
+# built-in list of common words and Crossword says so rather than
+# dealing a puzzle with no clues on it.
+#
+# CROSSWORD_LEVEL sets both the shape and the vocabulary. Low rungs
+# are small grids of everyday words with letters given away; middle
+# rungs are ordinary nine-by-nines; the top is a five-by-five word
+# square - every row and every column a word - drawn from the whole
+# list with two clues in five simply not given, so those entries have
+# to come from their crossings. With CROSSWORD_SHOW_MISTAKES a letter
+# that is not the answer's is marked as it is written; with it off
+# nothing is checked until the grid is full.
+CROSSWORD_LEVEL = 2
+CROSSWORD_TRIALS = 3
+CROSSWORD_SHOW_MISTAKES = True
+CROSSWORD_ADAPTIVE = True
+
+# Scrabble here is one position rather than a game: a board with a few
+# words on it, a rack of seven, and one play. It is scored as a share
+# of the best play that existed, which is computed exactly, so a rung
+# cannot be passed by being told what good is. SCRABBLE_LEVEL moves
+# three things at once - how obscure the best play may be, how much
+# board there is to hook onto, and what share of the best pays. A
+# player who knows only the three thousand commonest words and always
+# finds the best play among them scores all of the optimum at level
+# one and about two fifths of it at level ten. SCRABBLE_SHOW_PREMIUMS
+# paints the double and triple squares; the standard letter values and
+# distribution are used, and no blank tiles are dealt.
+SCRABBLE_LEVEL = 3
+SCRABBLE_TRIALS = 5
+SCRABBLE_SHOW_PREMIUMS = True
+SCRABBLE_ADAPTIVE = True
+
 ######################################################################
 # This is the end of the configuration file.
 ######################################################################

@@ -112,6 +112,8 @@ from .sudoku import SudokuEnv  # noqa: E402
 from .tracking import MovingTargetsEnv  # noqa: E402
 from .cookiethief import CookieThiefEnv  # noqa: E402
 from .crossedwires import CrossedWiresEnv  # noqa: E402
+from .crossword import CrosswordEnv  # noqa: E402
+from .scrabble import ScrabbleEnv  # noqa: E402
 from .donkey import DonkeyEnv  # noqa: E402
 from .custody import CustodyEnv  # noqa: E402
 from .inthedark import InTheDarkEnv  # noqa: E402
@@ -155,10 +157,11 @@ __all__ = [
     # tests/test_env_catalog.py fails the build if it falls behind.
     'catalog',
     'ConcentrationEnv', 'CookieThiefEnv', 'CountingEnv',
-    'CrossedWiresEnv', 'CustodyEnv', 'DonkeyEnv',
+    'CrossedWiresEnv', 'CrosswordEnv', 'CustodyEnv', 'DonkeyEnv',
     'GraphMappingEnv',
     'HanoiEnv', 'InTheDarkEnv', 'JigsawEnv', 'LookoutEnv',
     'MatrixReasoningEnv', 'MazeEnv', 'MovingTargetsEnv', 'NCupMonteEnv',
     'PursuitEnv', 'RecognitionEnv', 'ReflexEnv', 'RemovalsEnv',
-    'SalesmanEnv', 'Sokoban3DEnv', 'SokobanEnv', 'SudokuEnv',
+    'SalesmanEnv', 'ScrabbleEnv', 'Sokoban3DEnv', 'SokobanEnv',
+    'SudokuEnv',
 ]

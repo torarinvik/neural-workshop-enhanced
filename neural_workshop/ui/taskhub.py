@@ -63,6 +63,8 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('jigsaw', _('Jigsaw Puzzle')),
         ('sudoku', _('Sudoku')),
         ('crossed_wires', _('Crossed Wires')),
+        ('crossword', _('Crossword')),
+        ('scrabble', _('Scrabble')),
     ],
     'planning': [
         ('tower_of_hanoi', _('Tower of Hanoi')),
@@ -401,6 +403,14 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'crossed_wires':
         from .crossedwires import CrossedWires
         CrossedWires()
+        return
+    if task_id == 'crossword':
+        from .crossword import Crossword
+        Crossword()
+        return
+    if task_id == 'scrabble':
+        from .scrabble import Scrabble
+        Scrabble()
         return
     if task_id == 'ncup_monte':
         from .ncupmonte import NCupMonte

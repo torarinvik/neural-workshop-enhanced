@@ -1,6 +1,6 @@
 # Making a task reachable by the agent
 
-The Workshop ships twenty-eight playable tasks and **all twenty-eight are
+The Workshop ships thirty playable tasks and **all thirty are
 reachable by the learning agent**. Reachable means more than playable: the
 agent gets pixels and opaque ports, and every scalar it is paid must be
 re-derivable from the frames by someone who is not trusted with the game.
@@ -54,8 +54,9 @@ the programme has one pixel reader to get right rather than one per task.
 | `requires` | settings the boundary imposes whatever the player prefers. Almost always `{'feedback': True}`: a trial that resolves with no verdict painted resolves into nothing a third party can read. |
 
 The hooks are all still there — `build`, `drive`, `trial_open`, `tick`,
-`resolved`, `finished` — and an override wins over a declaration. Five tasks
-need one. Count composes its answer out of digits, Sudoku steers a cursor,
+`resolved`, `finished` — and an override wins over a declaration. Seven tasks
+need one. Count composes its answer out of digits, Sudoku and the Crossword
+steer a cursor, Scrabble's ports are rack *positions* rather than letters,
 Moving Targets and Concentration name an object rather than an index, and
 Reflex has no phase for its trial window at all. Each is six lines. Three
 more override `apply_dials` and `dials` only, which is the coach gate below
@@ -242,9 +243,9 @@ cd tests && PYTHONPATH=.. ../.venv/bin/python check_band.py
 cd tests && PYTHONPATH=.. ../.venv/bin/python drive_env.py mytask 900
 ```
 
-Zero outcomes is not automatically a bug. Five tasks have no accidental
-solutions — a sudoku, a jigsaw, a memory board and the two mazes — and
-random play will never finish one. Those get a test in
+Zero outcomes is not automatically a bug. Seven tasks have no accidental
+solutions — a sudoku, a jigsaw, a memory board, the two mazes and the two
+word games — and random play will never finish one. Those get a test in
 `tests/test_env_tasks.py` that drives them with a policy that knows the
 answer, through the same ports, and still reads the verdict off the frame.
 

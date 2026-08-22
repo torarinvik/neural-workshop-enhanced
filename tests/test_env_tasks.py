@@ -16,9 +16,10 @@ that has understood nothing does on its first run: if the boundary
 only pays a task that is being played well, a learner starting from
 nothing is never paid at all and never starts.
 
-:class:`PlayedProperlyItIsPaid` is for the five where random play
-genuinely cannot finish — a sudoku, a jigsaw, a memory board, and the
-two mazes. Nothing is wrong with those wrappers; the tasks simply have
+:class:`PlayedProperlyItIsPaid` is for the ones where random play
+genuinely cannot finish — a sudoku, a jigsaw, a memory board, the two
+mazes, and the two word games, where random tiles spell nothing and
+random letters are not the answer. Nothing is wrong with those wrappers; the tasks simply have
 no accidental solutions. They are driven with a policy that knows the
 answer, through the same ports a learner would use, and the outcome is
 still read off the frame.
@@ -203,7 +204,7 @@ class RandomPlayIsPaid(unittest.TestCase):
 
 @needs_ui
 class PlayedProperlyItIsPaid(unittest.TestCase):
-    """The five with no accidental solutions, driven by one that knows.
+    """The ones with no accidental solutions, driven by one that knows.
 
     Every one of these goes in through the same ports a learner uses.
     The policy knows the answer; the boundary does not, and still reads
@@ -281,6 +282,63 @@ class PlayedProperlyItIsPaid(unittest.TestCase):
 
         self.assertEqual(driven(env, moves), [1.0])
 
+    def test_a_solved_crossword_is_paid(self):
+        """Steered to each blank and filled in with the right letter."""
+        from nwenv import crossword as crossword_env
+        env = catalog.env_class('crossword')(seed=0, rung=1, trials=2)
+
+        def moves(task):
+            size = task.size()
+            wanted = next((cell for cell, letter in enumerate(task.filled)
+                           if task.puzzle.solution[cell]
+                           and letter != task.puzzle.solution[cell]), None)
+            if wanted is None:
+                return 0
+            if task.at != wanted:
+                dx = wanted % size - task.at % size
+                dy = wanted // size - task.at // size
+                if dy:
+                    return crossword_env.STEPS.index((0, 1 if dy > 0 else -1))
+                return crossword_env.STEPS.index((1 if dx > 0 else -1, 0))
+            return (len(crossword_env.STEPS)
+                    + crossword_env.LETTERS.index(
+                        task.puzzle.solution[wanted]))
+
+        self.assertEqual(driven(env, moves), [1.0])
+
+    def test_the_best_scrabble_play_is_paid(self):
+        """Laid tile by tile, in the one order the ports allow.
+
+        The rack ports are positions rather than letters, so a policy
+        that knows the word still has to find which slot is holding
+        each of its letters — which is the whole reason those ports are
+        positions.
+        """
+        from nwenv import scrabble as scrabble_env
+        env = catalog.env_class('scrabble')(seed=0, rung=1, trials=2)
+
+        def moves(task):
+            best = task.deal.best
+            wanted = [(cell, letter) for cell, letter in best.laid
+                      if cell not in dict(task.laid)]
+            if not wanted:
+                if task.down != best.down:
+                    return scrabble_env.TURN
+                return scrabble_env.PLAY
+            cell, letter = wanted[0]
+            size = task.size()
+            if task.at != cell:
+                dx = cell % size - task.at % size
+                dy = cell // size - task.at // size
+                if dy:
+                    return scrabble_env.STEPS.index((0, 1 if dy > 0 else -1))
+                return scrabble_env.STEPS.index((1 if dx > 0 else -1, 0))
+            slot = next(at for at, held in enumerate(task.deal.rack)
+                        if held == letter and at not in task.spent)
+            return len(scrabble_env.STEPS) + slot
+
+        self.assertEqual(driven(env, moves), [1.0])
+
     def test_the_right_box_delivered_right_is_paid(self):
         """Driven by one that knows which box was ringed."""
         import oracle_custody as O
@@ -346,7 +404,8 @@ class TheBoundaryKnowsWhichTasksHaveAClock(unittest.TestCase):
     def test_the_turn_based_ones_are_not_ticked(self):
         for task_id in ('crossed_wires', 'maze', 'sokoban', 'sudoku',
                         'tower_of_hanoi', 'salesman', 'jigsaw',
-                        'you_are_here', 'sokoban_3d'):
+                        'you_are_here', 'sokoban_3d', 'crossword',
+                        'scrabble'):
             self.assertFalse(self.clocked(task_id), task_id)
 
     def test_the_ones_that_move_on_their_own_are(self):
@@ -363,6 +422,8 @@ class TheBoundaryKnowsWhichTasksHaveAClock(unittest.TestCase):
         self.assertEqual(RemovalsEnv.ports, 5)
         self.assertEqual(InTheDarkEnv.ports, 5)
         self.assertEqual(CrossedWiresEnv.ports, 8)
+        self.assertEqual(catalog.env_class('crossword').ports, 32)
+        self.assertEqual(catalog.env_class('scrabble').ports, 14)
 
 
 @needs_ui
