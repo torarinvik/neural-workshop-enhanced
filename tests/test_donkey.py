@@ -500,6 +500,80 @@ class DonkeyScreenTests(unittest.TestCase):
             self.assertGreater(self.task._lane_x(lane), left)
             self.assertLess(self.task._lane_x(lane), left + wide)
 
+    # --- the crash has to look like one -----------------------------------
+
+    def _painted(self, colour):
+        """The rectangles drawn in *colour*, as (left, bottom, right, top)."""
+        import pyglet
+        return [(shape.x, shape.y, shape.x + shape.width,
+                 shape.y + shape.height)
+                for shape in self.task.drawn
+                if isinstance(shape, pyglet.shapes.Rectangle)
+                and tuple(shape.color)[:3] == colour]
+
+    @staticmethod
+    def _overlap(one, two):
+        return (one[0] < two[2] and two[0] < one[2]
+                and one[1] < two[3] and two[1] < one[3])
+
+    def _hold_until_hit(self):
+        self._running()
+        while self.task.phase == 'running':
+            self._rows(1)
+        self.assertTrue(self.task.car.hit)
+        return self.task.road.blocked[self.task.car.row - 1]
+
+    def test_the_row_the_car_has_met_is_drawn_on_the_car(self):
+        """The bug this is here for made every collision look like none.
+
+        :func:`~neural_workshop.donkey.beat` checks the arriving row
+        against the car, so once the beat has run the two are in the
+        same place. The first version of the screen drew only the road
+        *ahead* — so the donkey the car had just hit vanished from a
+        position a full row-height in front of the bumper, and the
+        round ended over a gap.
+        """
+        self._running()
+        self._rows(2)
+        _left, bottom, _wide, _tall = self.task._road_rect()
+        step = self.task._row_height()
+        self.assertAlmostEqual(self.task._row_y(-1), bottom + step * 0.5)
+        self.assertAlmostEqual(self.task._row_y(0), bottom + step * 1.5)
+
+    def test_a_donkey_the_car_hit_is_drawn_over_the_bonnet(self):
+        from neural_workshop.ui.donkey import CAR, DONKEY
+        self._hold_until_hit()
+        cars = self._painted(CAR)
+        self.assertEqual(len(cars), 1)
+        touching = [box for box in self._painted(DONKEY)
+                    if self._overlap(box, cars[0])]
+        self.assertTrue(touching,
+                        'the car hit a donkey and nothing was drawn on it')
+
+    def test_a_donkey_it_got_by_is_drawn_beside_the_bonnet_instead(self):
+        """The same row in the same place; only the lane is different.
+
+        Which is the whole of the rule, so it should be the whole of the
+        difference on the screen too. Driven on a road written out
+        rather than dealt, because whether a deal offers a donkey in the
+        far lane at a convenient moment is up to the dice, and a test
+        that skips itself when they go the other way is not a test.
+        """
+        from neural_workshop.ui.donkey import CAR, DONKEY
+        self._running()
+        self.task.road = road_of('....R' + '.' * 8, start=0)
+        self.task.car = D.Car(0, 1)
+        self._rows(5)
+        self.assertEqual(self.task.car.passed, 1)
+        self.assertFalse(self.task.car.hit)
+        cars = self._painted(CAR)
+        self.assertEqual(len(cars), 1)
+        level = [box for box in self._painted(DONKEY)
+                 if box[1] < cars[0][3] and cars[0][1] < box[3]]
+        self.assertTrue(level, 'the donkey it passed was not drawn level')
+        for box in level:
+            self.assertFalse(self._overlap(box, cars[0]))
+
     def test_the_car_is_drawn_between_the_lanes_while_it_crosses(self):
         """The screen must not claim the car is somewhere it is not safe."""
         self._running()

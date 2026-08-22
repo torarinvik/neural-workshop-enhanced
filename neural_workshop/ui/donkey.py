@@ -192,6 +192,25 @@ class Donkey:
     def _row_height(self) -> float:
         return self._road_rect()[3] / float(SIGHT + 1)
 
+    def _row_y(self, index: float) -> float:
+        """Where the row *index* rows in front of the bonnet is drawn.
+
+        Index ``0`` is the row that arrives on the next beat. Index
+        ``-1`` is the row the car has just met, and it is drawn on the
+        car's **own** slot rather than a row above it, because that is
+        where it is: :func:`~neural_workshop.donkey.beat` checks the
+        arriving row against the car, so once the beat has run the two
+        are in the same place and a hit has to look like one.
+
+        Leaving that row out was the first version of this, and it made
+        the game feel wrong in exactly the way it was wrong: a donkey
+        the car had hit vanished from a position a full row-height
+        ahead of the bumper, so every collision looked like a
+        collision with nothing.
+        """
+        _left, bottom, _wide, _tall = self._road_rect()
+        return bottom + self._row_height() * (index + 1.5)
+
     def _lane_x(self, lane: float) -> float:
         """Centre of *lane*, which may be a half for a car mid-crossing."""
         left, _bottom, wide, _tall = self._road_rect()
@@ -415,6 +434,9 @@ class Donkey:
             self._draw_road()
             self._draw_donkeys()
             self._draw_car()
+            # Last, and on top of the car, so a hit is a donkey over a
+            # bonnet rather than a donkey that disappeared.
+            self._draw_met()
             self._draw_left()
         self._update_status()
 
@@ -438,16 +460,12 @@ class Donkey:
                        self.ink, opacity=MARK_ALPHA)
 
     def _draw_donkeys(self) -> None:
-        """Whatever is standing in the next :data:`SIGHT` rows.
+        """Whatever is standing in the road ahead, out to :data:`SIGHT` rows.
 
-        Row ``0`` is the row that arrives on the next beat, and it is
-        drawn a full row-height above the bonnet rather than touching
-        it. The gap is there because the press has to go in *before*
-        that row lands: a donkey drawn against the bumper reads as one
-        already too late to do anything about, which on the first five
-        rungs is exactly wrong.
+        The road the car has not met yet, which is the road the press is
+        aimed at. The row it *has* met is :meth:`_draw_met`.
         """
-        _left, bottom, wide, _tall = self._road_rect()
+        _left, _bottom, wide, _tall = self._road_rect()
         step = self._row_height()
         for index in range(SIGHT):
             row = self.car.row + index
@@ -456,8 +474,28 @@ class Donkey:
             lane = self.road.blocked[row]
             if lane is None:
                 continue
-            self._draw_donkey(self._lane_x(lane),
-                              bottom + step * (index + 1.5), wide, step)
+            self._draw_donkey(self._lane_x(lane), self._row_y(index),
+                              wide, step)
+
+    def _draw_met(self) -> None:
+        """The row the car has just been through, drawn where the car is.
+
+        This is the frame's whole account of what the last beat did. A
+        donkey in the far lane slides past the window; a donkey in the
+        car's lane is drawn over the bonnet, which is the crash. Both
+        are the same row in the same place — the only difference is
+        which lane it was standing in, and that is the only difference
+        the rules make either.
+        """
+        row = self.car.row - 1
+        if row < 0 or row >= self.road.length:
+            return
+        lane = self.road.blocked[row]
+        if lane is None:
+            return
+        _left, _bottom, wide, _tall = self._road_rect()
+        self._draw_donkey(self._lane_x(lane), self._row_y(-1), wide,
+                          self._row_height())
 
     def _draw_donkey(self, x, y, wide, step) -> None:
         """A body, a head and two ears. It is not much of a donkey.
@@ -486,7 +524,7 @@ class Donkey:
         a car drawn in a lane it is not safely in would be the screen
         telling a lie about the only rule in the game.
         """
-        _left, bottom, wide, _tall = self._road_rect()
+        _left, _bottom, wide, _tall = self._road_rect()
         step = self._row_height()
         car = self.car
         if car.crossing:
@@ -496,7 +534,7 @@ class Donkey:
             lane = float(car.lane)
         x = self._lane_x(lane)
         body = min(wide * 0.28, step * 0.70)
-        y = bottom + step * 0.5
+        y = self._row_y(-1)
         self._rect(x - body / 2, y - body * 0.42, body, body * 0.84, CAR)
         # A roof, so which way it is pointing is never in question.
         self._rect(x - body * 0.30, y - body * 0.10, body * 0.60,
