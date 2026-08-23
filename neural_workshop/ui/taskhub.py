@@ -53,6 +53,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('pursuit', _('Pursuit')),
         ('out_of_sight', _('Out of Sight')),
         ('donkey', _('Donkey')),
+        ('two_hands', _('Two Hands')),
     ],
     'perception': [
         ('count', _('Count')),
@@ -446,6 +447,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'donkey':
         from .donkey import Donkey
         Donkey()
+        return
+    if task_id == 'two_hands':
+        from .twohands import Twohands
+        Twohands()
         return
     if task_id == 'moving_targets':
         from .tracking import MovingTargets

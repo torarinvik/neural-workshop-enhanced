@@ -1473,6 +1473,62 @@ DONKEY = TaskSpec(
     note=donkey_note)
 
 
+def two_hands_note(chosen: Dict[str, Any]) -> str:
+    """What the rung deals, and what the two ways of taking the sky are worth.
+
+    The last pair is the one to read and it is the same driver twice:
+    shooting only on the ticks the wheel had no use for, against
+    shooting the moment anything is up there. Measured rather than
+    derived, and cached, so opening this screen is cheap after the
+    first time.
+    """
+    from ..twohands import GRADES, KINDS, rehearse, sky_toll
+    level = max(1, min(len(GRADES), int(chosen['TWOHANDS_LEVEL'])))
+    grade = GRADES[level - 1]
+    said = [_('%d rows of road and about %d in ten of them carry something.')
+            % (grade.rows, int(round(10 * grade.density)))]
+    said.append(_('The swerve takes %d ticks, cannot be called off and '
+                  'covers both lanes for all of them, so the faster you go '
+                  'the more road you are across the middle for. Top gear '
+                  'here is %d.') % (grade.swerve, grade.top))
+    if any(not KINDS[kind].tall for kind in grade.kinds):
+        said.append(_('The flat ones can be jumped instead, but only if the '
+                      'car is off the ground for the whole overlap — %d '
+                      'ticks of road at whatever speed you are doing, which '
+                      'is why a slow car cannot jump at all.') % grade.hang)
+    said.append(_('The clock allows %d%% of the best line there is, so the '
+                  'road has to be driven rather than crept along.')
+                % int(round(100 * grade.slack)))
+    spare, spare_shots = sky_toll(level, policy='gunner')
+    greedy, greedy_shots = sky_toll(level, policy='sniper')
+    said.append(_('Shooting only on the ticks the wheel had no use for '
+                  'clears about %d%% of these and takes %.1f out of the sky '
+                  'a road. Shooting the moment anything is up there clears '
+                  '%d%% and takes %.1f — fewer targets and far fewer roads.')
+                % (int(round(100 * spare)), spare_shots,
+                   int(round(100 * greedy)), greedy_shots))
+    said.append(_('Pressing at random clears about %d%%.')
+                % int(round(100 * rehearse(level, policy='random'))))
+    return '  '.join(said)
+
+
+TWO_HANDS = TaskSpec(
+    title=_('Two Hands options'),
+    options=(
+        Option('TWOHANDS_LEVEL', _('Level'), 3,
+               values=tuple(range(1, 11))),
+        Option('TWOHANDS_TRIALS', _('Roads per run'), 5,
+               values=(1, 2, 3, 5, 8, 10, 15, 20)),
+        Option('TWOHANDS_BEAT_SECONDS', _('Seconds a row takes in first gear'),
+               0.30, values=(0.12, 0.20, 0.30, 0.45, 0.70, 1.0)),
+        Option('TWOHANDS_SET_SECONDS', _('Seconds before the road moves'),
+               1.2, values=(0.0, 0.4, 0.8, 1.2, 2.0, 3.0)),
+        Option('TWOHANDS_ADAPTIVE', _('Climb a rung after a road driven'),
+               True),
+    ),
+    note=two_hands_note)
+
+
 def cookie_note(chosen: Dict[str, Any]) -> str:
     """What the rung gives you, and what guessing is worth.
 
@@ -1537,6 +1593,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'pursuit': PURSUIT,
     'out_of_sight': OUT_OF_SIGHT,
     'donkey': DONKEY,
+    'two_hands': TWO_HANDS,
     'count': COUNTING,
     'graph_mapping': GRAPH_MAPPING,
     'matrix_reasoning': MATRIX_REASONING,
