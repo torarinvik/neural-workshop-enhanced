@@ -985,15 +985,35 @@ def play(road: Road, want: int = TOP, look: float = 1.0,
 
 
 #: Measured shares, kept so a screen may quote them without paying for
-#: them twice. Keyed by everything that changes the answer.
-_SCORES: Dict[Tuple[int, int, str], Tuple[float, float]] = {}
+#: them twice. Keyed by everything that changes the answer, the seed
+#: included — a cache that ignores the seed hands the first sample back
+#: for every one asked for after it, and a sweep over seeds comes out
+#: looking suspiciously stable.
+_SCORES: Dict[Tuple[int, int, int, str], Tuple[float, float]] = {}
+
+#: The roads a measurement was taken on, kept so the *next* policy
+#: measured on the same rung does not deal them again. Dealing is the
+#: expensive half — every road is solved before it is handed out — and
+#: the policies are compared on identical roads anyway, which is what
+#: makes the comparison a comparison rather than two samples.
+_DEALT: Dict[Tuple[int, int, int], Tuple[Road, ...]] = {}
 
 #: The policies :func:`rehearse` knows, and what each one is.
 POLICIES = ('random', 'crawl', 'reactive', 'aimed', 'gunner', 'sniper',
             'exact')
 
 
-def rehearse(level: int, deals: int = 120, seed: int = 0,
+def dealt(level: int, deals: int, seed: int = 0) -> Tuple[Road, ...]:
+    """The roads a measurement at *level* is taken on, dealt once."""
+    key = (level, deals, seed)
+    if key not in _DEALT:
+        dice = random.Random(seed)
+        _DEALT[key] = tuple(generate(level, seed=dice.randrange(1 << 30))
+                            for _deal in range(deals))
+    return _DEALT[key]
+
+
+def rehearse(level: int, deals: int = 30, seed: int = 0,
              policy: str = 'aimed') -> float:
     """The share of roads *policy* gets to the far end of, measured.
 
@@ -1023,21 +1043,33 @@ def rehearse(level: int, deals: int = 120, seed: int = 0,
         :func:`line`, which is 1.0 by construction and is here so the
         others have something to be a share of.
 
+    Every policy is measured on the *same* roads, dealt once by
+    :func:`dealt` and kept, which is what makes the rows above a
+    comparison rather than four samples.
+
     Returns the share cleared. :func:`sky_toll` reports the rest of it.
     """
     return sky_toll(level, deals, seed, policy)[0]
 
 
-def sky_toll(level: int, deals: int = 120, seed: int = 0,
+def sky_toll(level: int, deals: int = 30, seed: int = 0,
              policy: str = 'aimed') -> Tuple[float, float]:
-    """``(share of roads cleared, targets shot a road)`` for *policy*."""
-    key = (level, deals, policy)
+    """``(share of roads cleared, targets shot a road)`` for *policy*.
+
+    Thirty deals by default, which is what a screen can afford to ask
+    for while somebody is waiting: every road is solved before it is
+    dealt, so a hundred of them at the top of the ladder is several
+    seconds of nothing happening. The numbers written down in the
+    documentation are taken over sixty, and the tests take their own
+    over forty — a default is a budget rather than a claim about how
+    many deals a claim needs.
+    """
+    key = (level, deals, seed, policy)
     if key in _SCORES:
         return _SCORES[key]
-    dice = random.Random(seed)
+    dice = random.Random(seed + 1)
     home, shot = 0, 0
-    for _deal in range(deals):
-        road = generate(level, seed=dice.randrange(1 << 30))
+    for road in dealt(level, deals, seed):
         if policy == 'exact':
             ride = drive(road, line(road) or [])
             home += 1 if cleared(ride, road) else 0
@@ -1067,6 +1099,7 @@ __all__ = ['AIM_DOWN', 'AIM_LEFT', 'AIM_RIGHT', 'AIM_UP', 'ALOFT', 'BARRIER',
            'POLICIES', 'PORTS', 'Play', 'RAMP', 'RETICLE', 'RIGHT', 'RUBBLE',
            'RUN_IN', 'Ride', 'Road', 'SIGHTS', 'SLOWER', 'SPAN', 'SUB', 'TOP',
            'TRUCK', 'Target', 'WHEEL', 'advance', 'aloft', 'build', 'cleared',
-           'drawn_lane', 'drivable', 'drive', 'generate', 'late', 'line',
+           'dealt', 'drawn_lane', 'drivable', 'drive', 'generate', 'late',
+           'line',
            'over', 'play', 'press', 'rehearse', 'roll', 'share', 'sighted',
            'sky_toll', 'start_ride', 'timed']

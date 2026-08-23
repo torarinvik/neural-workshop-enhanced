@@ -975,10 +975,13 @@ DONKEY_ADAPTIVE = True
 # gets more of the sky than taking it the moment anything is up there,
 # which loses most of the roads. TWOHANDS_BEAT_SECONDS is how long a
 # drawn row takes at one sub-row a tick; at the top gear the road
-# comes four times that fast.
+# comes four times that fast, which is why this default is more than
+# twice Donkey's: at the pace the middle rungs ask for, a target is
+# aloft for about two seconds and the mouse has to get there and back
+# inside that.
 TWOHANDS_LEVEL = 3
 TWOHANDS_TRIALS = 5
-TWOHANDS_BEAT_SECONDS = 0.30
+TWOHANDS_BEAT_SECONDS = 0.40
 TWOHANDS_SET_SECONDS = 1.2
 TWOHANDS_ADAPTIVE = True
 

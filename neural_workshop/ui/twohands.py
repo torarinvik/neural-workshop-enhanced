@@ -118,10 +118,14 @@ HORIZON = 0.58
 #:
 #: A row rather than a tick, because a row is what a person can see
 #: going by. The clock inside runs at ``beat_seconds / SUB``, and at
-#: speed four the road comes four times as fast as this says — which is
-#: the point of the throttle and the reason this default is nearly
-#: twice Donkey's.
-BEAT_SECONDS = 0.30
+#: top gear the road comes four times as fast as this says — which is
+#: the point of the throttle and most of the reason this default is
+#: more than twice Donkey's. The rest of the reason is the sky: a
+#: target is aloft for :data:`~neural_workshop.twohands.ALOFT` sub-rows
+#: of *road*, so at the pace the middle rungs ask for it is up for
+#: about two seconds, and a mouse has to get there and back inside
+#: that.
+BEAT_SECONDS = 0.40
 SET_SECONDS = 1.2
 
 #: How long a verdict stays up before the next road can be called.
@@ -552,10 +556,10 @@ class Twohands:
         self.road = None
         self.ride = None
         self.message = _('%d of %d roads driven, %d points, %d out of the '
-                         'sky, highest rung %d — the same dodge with the '
-                         'sights taken only on spare ticks clears about '
-                         '%d%% of these, and taken the moment anything is '
-                         'up there about %d%%'
+                         'sky, highest rung %d — where the same dodge '
+                         'shooting only on spare ticks clears about %d%% '
+                         'of the roads, and shooting the moment anything '
+                         'is up there about %d%%'
                          ) % (tally['clean'], tally['roads'], tally['points'],
                               tally['shot'], tally['best_rung'],
                               tally['spare'], tally['greedy'])
@@ -569,17 +573,22 @@ class Twohands:
         The two numbers worth reading are the last pair, and they are
         the same driver twice. ``spare`` shoots on the ticks the wheel
         had no use for; ``greedy`` shoots the moment a target is up.
-        Measured over sixty deals a rung, the first costs the road
-        nothing at all and gets *more* of the sky than the second does.
-        Which is the finding: the cost of a second channel is not the
-        channel, it is taking it at the wrong moment.
+        Measured rather than derived, and the first costs the road
+        nothing at all while getting *more* of the sky than the second
+        does. Which is the finding: the cost of a second channel is not
+        the channel, it is taking it at the wrong moment.
         """
         roads = len(self.results)
         clean = sum(1 for _r, ok in self.results if ok)
         best = max((rung for rung, _ok in self.results), default=0)
-        rungs = [rung for rung, _ok in self.results]
-        spare = [rehearse(rung, policy='gunner') for rung in rungs]
-        greedy = [rehearse(rung, policy='sniper') for rung in rungs]
+        # Both comparisons are taken at the highest rung reached rather
+        # than averaged over the run, and that is a cost rather than a
+        # preference: measuring a rung means dealing roads, and dealing
+        # a road here means solving it. Averaging over an adaptive run
+        # is three or four rungs' worth of solving between the last
+        # road and the screen that says how it went.
+        spare = rehearse(best, policy='gunner') if best else 0.0
+        greedy = rehearse(best, policy='sniper') if best else 0.0
         return {
             'roads': roads,
             'clean': clean,
@@ -587,10 +596,8 @@ class Twohands:
             'shot': self.taken,
             'accuracy': int(round(100.0 * clean / roads)) if roads else 0,
             'best_rung': best,
-            'spare': int(round(100.0 * sum(spare) / len(spare)))
-                     if spare else 0,
-            'greedy': int(round(100.0 * sum(greedy) / len(greedy)))
-                      if greedy else 0,
+            'spare': int(round(100.0 * spare)),
+            'greedy': int(round(100.0 * greedy)),
         }
 
     # --- drawing ----------------------------------------------------------

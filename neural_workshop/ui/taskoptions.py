@@ -1485,30 +1485,27 @@ def two_hands_note(chosen: Dict[str, Any]) -> str:
     from ..twohands import GRADES, KINDS, rehearse, sky_toll
     level = max(1, min(len(GRADES), int(chosen['TWOHANDS_LEVEL'])))
     grade = GRADES[level - 1]
-    said = [_('%d rows of road and about %d in ten of them carry something.')
-            % (grade.rows, int(round(10 * grade.density)))]
-    said.append(_('The swerve takes %d ticks, cannot be called off and '
-                  'covers both lanes for all of them, so the faster you go '
-                  'the more road you are across the middle for. Top gear '
-                  'here is %d.') % (grade.swerve, grade.top))
+    said = [_('%d rows, about %d in ten carrying something, top gear %d. '
+              'The swerve takes %d ticks and covers both lanes for all of '
+              'them, so the faster you go the more road you are across the '
+              'middle for.')
+            % (grade.rows, int(round(10 * grade.density)), grade.top,
+               grade.swerve)]
     if any(not KINDS[kind].tall for kind in grade.kinds):
-        said.append(_('The flat ones can be jumped instead, but only if the '
-                      'car is off the ground for the whole overlap — %d '
-                      'ticks of road at whatever speed you are doing, which '
-                      'is why a slow car cannot jump at all.') % grade.hang)
-    said.append(_('The clock allows %d%% of the best line there is, so the '
-                  'road has to be driven rather than crept along.')
+        said.append(_('A jump clears the flat ones, and only if the car is '
+                      'off the ground for the whole overlap: %d ticks of '
+                      'road at whatever gear you are in.') % grade.hang)
+    said.append(_('The clock allows %d%% of the best line there is.')
                 % int(round(100 * grade.slack)))
     spare, spare_shots = sky_toll(level, policy='gunner')
     greedy, greedy_shots = sky_toll(level, policy='sniper')
     said.append(_('Shooting only on the ticks the wheel had no use for '
-                  'clears about %d%% of these and takes %.1f out of the sky '
-                  'a road. Shooting the moment anything is up there clears '
-                  '%d%% and takes %.1f — fewer targets and far fewer roads.')
+                  'clears %d%% and takes %.1f out of the sky a road; '
+                  'shooting the moment anything is up there, %d%% and '
+                  '%.1f. Guessing clears %d%%.')
                 % (int(round(100 * spare)), spare_shots,
-                   int(round(100 * greedy)), greedy_shots))
-    said.append(_('Pressing at random clears about %d%%.')
-                % int(round(100 * rehearse(level, policy='random'))))
+                   int(round(100 * greedy)), greedy_shots,
+                   int(round(100 * rehearse(level, policy='random')))))
     return '  '.join(said)
 
 
@@ -1519,8 +1516,9 @@ TWO_HANDS = TaskSpec(
                values=tuple(range(1, 11))),
         Option('TWOHANDS_TRIALS', _('Roads per run'), 5,
                values=(1, 2, 3, 5, 8, 10, 15, 20)),
-        Option('TWOHANDS_BEAT_SECONDS', _('Seconds a row takes in first gear'),
-               0.30, values=(0.12, 0.20, 0.30, 0.45, 0.70, 1.0)),
+        Option('TWOHANDS_BEAT_SECONDS',
+               _('Seconds a row takes in first gear'),
+               0.40, values=(0.15, 0.25, 0.40, 0.60, 0.90, 1.4)),
         Option('TWOHANDS_SET_SECONDS', _('Seconds before the road moves'),
                1.2, values=(0.0, 0.4, 0.8, 1.2, 2.0, 3.0)),
         Option('TWOHANDS_ADAPTIVE', _('Climb a rung after a road driven'),
