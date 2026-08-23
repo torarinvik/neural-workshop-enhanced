@@ -269,6 +269,48 @@ COUNTING = TaskSpec(
                True),
     ))
 
+
+def mr_time_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung actually demands, in its own unit.
+
+    The rungs are shares of the interval rather than fixed windows, so
+    "centiseconds" says how the error will be written and not how close
+    you have to be. This is where the two are put side by side, against
+    the longest gap the other rows allow — which is the row that
+    decides what a share is worth.
+    """
+    from .mrtime import quantity, rung_at, tolerance
+    number = int(chosen['MRTIME_RUNG'])
+    rung = rung_at(number)
+    longest = (int(chosen['MRTIME_FLASH_MS'])
+               + int(chosen['MRTIME_MAX_GAP_MS'])) / 1000.
+    return _('Rung %d asks for %s: within %g%% of the interval, which is '
+             '%s on the longest gap these settings deal.') % (
+        number, rung.unit, 100. * rung.share,
+        quantity(tolerance(longest, number), number))
+
+
+MR_TIME = TaskSpec(
+    title=_('Mr. Time options'),
+    options=(
+        Option('MRTIME_MODE', _('Which half to play'), 'recall',
+               values=('recall', 'produce', 'both')),
+        Option('MRTIME_RUNG', _('Precision to start at'), 1,
+               values=(1, 2, 3, 4, 5, 6)),
+        Option('MRTIME_TRIALS', _('Trials per run'), 15,
+               values=(5, 10, 15, 20, 30, 50, 80)),
+        Option('MRTIME_MAX_GAP_MS', _('Longest gap before the question'),
+               3000, values=(500, 1000, 2000, 3000, 5000, 8000, 15000),
+               suffix=' ms'),
+        Option('MRTIME_FLASH_MS', _('How long the shape stays up'), 400,
+               values=(100, 200, 400, 800, 1500), suffix=' ms'),
+        Option('MRTIME_ADAPTIVE',
+               _('Ask for a finer unit when right, a coarser one when wrong'),
+               True),
+    ),
+    note=mr_time_note)
+
+
 def graph_mapping_note(chosen: Dict[str, Any]) -> str:
     """What this combination of rows will actually put on screen.
 
@@ -1538,6 +1580,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'out_of_sight': OUT_OF_SIGHT,
     'donkey': DONKEY,
     'count': COUNTING,
+    'mr_time': MR_TIME,
     'graph_mapping': GRAPH_MAPPING,
     'matrix_reasoning': MATRIX_REASONING,
     'jigsaw': JIGSAW,

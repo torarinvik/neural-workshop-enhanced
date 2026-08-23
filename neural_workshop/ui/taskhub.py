@@ -56,6 +56,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
     ],
     'perception': [
         ('count', _('Count')),
+        ('mr_time', _('Mr. Time')),
     ],
     'reasoning': [
         ('graph_mapping', _('Graph Mapping')),
@@ -466,6 +467,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'count':
         from .counting import Counting
         Counting()
+        return
+    if task_id == 'mr_time':
+        from .mrtime import MrTime
+        MrTime()
         return
     if task_id == 'graph_mapping':
         from .graphmapping import GraphMapping

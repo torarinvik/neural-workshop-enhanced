@@ -42,11 +42,11 @@ clock with the window hidden, so they prove stepped-versus-scheduled
 parity rather than literal visible-window execution.
 
 **Every task in the workshop is wrapped**, and ``catalog`` is the list.
-Twenty-four of them are declarations on :class:`TaskEnv` rather than
+Thirty of them are declarations on :class:`TaskEnv` rather than
 code — where the task class lives, what one port calls, which phase
 takes input, which phase means the trial is over — and they paint
 :class:`neural_workshop.ui.verdict.VerdictLabel` when a trial settles,
-so they carry neither a deriver nor a verifier. Nine of those add a
+so they carry neither a deriver nor a verifier. Fourteen of those add a
 short method or two on top. The four written before that existed still
 carry both.
 
@@ -99,6 +99,7 @@ from .accounting import Accounting, format_accounting  # noqa: E402
 from .concentration import ConcentrationEnv  # noqa: E402
 from .counting import CountingEnv  # noqa: E402
 from .graphmapping import GraphMappingEnv  # noqa: E402
+from .mrtime import MrTimeEnv  # noqa: E402
 from .hanoi import HanoiEnv  # noqa: E402
 from .jigsaw import JigsawEnv  # noqa: E402
 from .lookout import LookoutEnv  # noqa: E402
@@ -163,7 +164,8 @@ __all__ = [
     'CrossedWiresEnv', 'CrosswordEnv', 'CustodyEnv', 'DonkeyEnv',
     'GraphMappingEnv',
     'HanoiEnv', 'InTheDarkEnv', 'JigsawEnv', 'LookoutEnv',
-    'MatrixReasoningEnv', 'MazeEnv', 'MovingTargetsEnv', 'NCupMonteEnv',
+    'MatrixReasoningEnv', 'MazeEnv', 'MovingTargetsEnv', 'MrTimeEnv',
+    'NCupMonteEnv',
     'PursuitEnv', 'RecognitionEnv', 'ReflexEnv', 'RemovalsEnv',
     'SalesmanEnv', 'ScrabbleEnv',
     'AlgebraEnv', 'SyllogismEnv',

@@ -622,6 +622,22 @@ COUNT_EXPOSURE_MS = 0
 COUNT_ADAPTIVE = True
 COUNT_SHOW_ANSWER = True
 
+# Mr. Time: a shape appears, goes away, and some time later the
+# question is how long ago it appeared. MRTIME_MAX_GAP_MS is the "n"
+# in a gap drawn from nothing at all up to n; the flash in front of it
+# is fixed, so the interval asked about is the two together and only
+# one of them is hidden. MRTIME_MODE is 'recall' (say how long ago),
+# 'produce' (click the shape once a stated duration has gone by), or
+# 'both', which shuffles them rather than alternating. MRTIME_RUNG is
+# the precision: 1 seconds, 2 deciseconds, 3 centiseconds,
+# 4 milliseconds, 5 microseconds, 6 nanoseconds - each one a tighter
+# share of the interval, and the last two past what anybody reaches.
+MRTIME_MODE = 'recall'
+MRTIME_RUNG = 1
+MRTIME_TRIALS = 15
+MRTIME_MAX_GAP_MS = 3000
+MRTIME_FLASH_MS = 400
+MRTIME_ADAPTIVE = True
 
 # Graph Mapping: two networks side by side, and the question is
 # whether one is the other redrawn. GRAPH_MAP_DENSITY is 'sparse',
