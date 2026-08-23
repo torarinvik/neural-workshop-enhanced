@@ -39,7 +39,8 @@ class AttentionCategoryTests(unittest.TestCase):
     def test_the_roster_is_complete(self):
         self.assertEqual([task for task, _name in TASKS['attention']],
                          ['reflex', 'ncup_monte', 'moving_targets',
-                          'lookout', 'pursuit', 'out_of_sight', 'donkey'])
+                          'lookout', 'pursuit', 'out_of_sight', 'donkey',
+                          'two_hands'])
 
     def test_it_has_an_options_screen(self):
         from neural_workshop.ui import taskoptions

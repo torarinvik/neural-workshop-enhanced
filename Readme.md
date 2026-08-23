@@ -552,6 +552,84 @@ read against the swerve-on-sight column instead.
 
 Nothing is downloaded for this one — the road is generated.
 
+**Two Hands** is that road stood up into three dimensions, with
+everything the flat game left out and a sky over it. Three lanes rather
+than two, nine kinds of thing standing in them, a jump, a throttle, a
+deadline that makes the throttle matter, and targets drifting over the
+horizon that are shot with the mouse. The name is the task rather than
+the fiction: **one tick takes one action**, the wheel and the sights
+come out of that one budget, and what is measured is how a player
+splits an attention that cannot be divided.
+
+Every rule in it is Donkey's rule about committing early, with the
+distance you commit over now something you chose. The **swerve** takes
+a fixed number of *ticks* and covers both lanes for all of them, so at
+four sub-rows a tick you are across the middle for four times the road
+you were in first gear. The **jump** clears anything flat, and only if
+the car is off the ground for the whole overlap — which is `speed ×
+hang` against a hazard's five sub-rows, so a single jump at a crawl
+comes down inside a log. You can hop over one a piece at a time
+instead, and every hop is a tick. So the throttle pulls both ways at
+once: faster is worse for the swerve and better for the jump, and there
+is no setting to leave it at.
+
+The **deadline** is what stops the answer being "crawl". It is written
+as a multiple of the road's *own* best line rather than as a pace —
+1.70 of it at the bottom of the ladder down to 1.25 at the top — so
+every deal at a rung asks the same thing of you rather than the hardest
+deal setting the bar for all the others. Measured over forty deals a
+rung, the same aimed dodge held in first gear clears **nothing at all**
+on any rung, and it loses to the clock rather than to a truck: at the
+bottom of the ladder it runs out of time on forty deals out of forty.
+
+**The sky cannot touch the car**, and that is deliberate. It is a
+second *task* rather than a second hazard, so what it costs the road is
+attention and nothing else, and the cost comes out as one number. The
+number is this. The same driver, three ways, over sixty deals a rung:
+
+| | rung 1 | rung 5 | rung 10 |
+|---|---|---|---|
+| never looks up | 97% | 53% | 33% |
+| shoots on spare ticks | 97% | 53% | 33% |
+| shoots on sight | 90% | 7% | 0% |
+| targets a road, spare | 0.8 | 4.3 | 6.0 |
+| targets a road, on sight | 0.8 | 2.0 | 3.9 |
+
+Taking the sky **only on the ticks the wheel had no use for** costs the
+road nothing at all — not a little, nothing — and there are more such
+ticks than there look to be, because the wheel is deaf for the whole of
+a swerve or a jump and those ticks are the sights' for free. Taking it
+the moment anything is up there loses most of the roads *and gets fewer
+targets while it does it*, since the roads it is on end early. There is
+no reading of that pair in which the greedy policy bought anything,
+which is the finding: the cost of a second channel is not the channel,
+it is taking it at the wrong moment. `tests/test_twohands.py` asserts
+both halves, so a future generator that flattened the ladder or a
+policy change that made spare ticks scarce fails a test instead of
+leaving the prose lying.
+
+The guessing floor here is **not** zero, unlike Donkey's, and it is
+worth knowing the shape of it: five of the eleven ports do not touch
+the wheel at all, so a uniform port is a hold five times in eleven and
+the car spends most of a road going straight in first gear. That clears
+about a fifth of the roads on the bottom rung and none at all from the
+third. Anything read off the first two rungs is read against a fifth;
+anything from the fourth up is read against zero.
+
+Every road has a **clean line through it** — no crash, no clip, inside
+the clock — and the line is produced rather than assumed. Donkey could
+keep that true as it laid the road, because its car moved one sub-row a
+tick and what survived was a function of the sub-row alone. Neither
+holds here, so this one lays the road and then solves it with a forward
+dynamic program over `(sub-row, lane, commitment, speed)` — a DAG,
+because every tick moves the car — and a road the program cannot finish
+has a hazard taken out of it and is solved again. The transitions in
+that program are the game's own `roll`, not a copy of it, so the solver
+cannot come to believe in a rule the game does not have.
+
+Nothing is downloaded for this one either — the road and the sky are
+generated.
+
 ### Perception
 
 The *Perception* category holds two tasks. One asks about what is in
@@ -2149,7 +2227,7 @@ obs, events, done = env.step(2)         # one of three opaque ports
 env.close()
 ```
 
-Sixteen of the thirty-four are *declarations* rather than code — where
+Sixteen of the thirty-five are *declarations* rather than code — where
 the task class lives, what one port calls, which phase takes input, which
 phase means the trial is over, and what the difficulty knobs are called:
 
@@ -2165,12 +2243,12 @@ class HanoiEnv(TaskEnv):
 ```
 
 They carry **no deriver and no verifier**, because they paint the shared
-verdict label and the boundary already knows how to read one. Fourteen
+verdict label and the boundary already knows how to read one. Fifteen
 of them add a short method or two — a port that names an object rather than
 an index, a port that is a moment rather than a symbol, a trial window the
 task has no phase for, a coach gated on whether the boundary will actually
 pay it. The four written before that existed still carry both, at about a
-hundred lines apiece. Sixteen and fourteen and four is thirty-four, which
+hundred lines apiece. Sixteen and fifteen and four is thirty-five, which
 is the point of counting them.
 `ADDING_A_TASK.md` is the whole contract.
 

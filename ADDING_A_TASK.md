@@ -1,6 +1,6 @@
 # Making a task reachable by the agent
 
-The Workshop ships thirty-four playable tasks and **all thirty-four are
+The Workshop ships thirty-five playable tasks and **all thirty-five are
 reachable by the learning agent**. Reachable means more than playable: the
 agent gets pixels and opaque ports, and every scalar it is paid must be
 re-derivable from the frames by someone who is not trusted with the game.
@@ -55,15 +55,15 @@ the programme has one pixel reader to get right rather than one per task.
 
 The hooks are all still there — `build`, `drive`, `trial_open`, `tick`,
 `resolved`, `finished` — and an override wins over a declaration. Twelve of
-the thirty wrappers need one. Count composes its answer out of digits,
+the thirty-one wrappers need one. Count composes its answer out of digits,
 Sudoku and the Crossword steer a cursor, Scrabble's ports are rack
 *positions* rather than letters, Scramble's and Algebra's are a typewriter,
 Moving Targets and Concentration name an object rather than an index, Reflex
 has no phase for its trial window at all, Mr. Time's last port is a
 *moment* rather than a symbol, and Chain of Custody and the 3D
-Maze steer and gate both. Most are six lines. Two more — Donkey and Cookie Thief — override
-`apply_dials` and `dials` only, which is the coach gate below rather than
-anything about their ports. The remaining four tasks predate all of this and
+Maze steer and gate both. Most are six lines. Three more — Donkey, Two Hands
+and Cookie Thief — override `apply_dials` and `dials` only, which is the
+coach gate below rather than anything about their ports. The remaining four tasks predate all of this and
 are whole environments of their own, at about a hundred lines apiece.
 
 ## The two things the UI must do

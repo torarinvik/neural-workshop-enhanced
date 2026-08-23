@@ -969,6 +969,38 @@ DONKEY_BEAT_SECONDS = 0.18
 DONKEY_SET_SECONDS = 0.8
 DONKEY_ADAPTIVE = True
 
+# Two Hands is Donkey's road stood up into three dimensions, and the
+# name is the task rather than the fiction: one tick takes one action,
+# the wheel and the sights come out of that one budget, and what is
+# being measured is how a player splits it. The road has three lanes,
+# nine kinds of thing standing in them, a jump for the flat ones and a
+# throttle - and the throttle matters because the road has a clock on
+# it. TWOHANDS_LEVEL one and two are tall hazards only, three deals
+# them two abreast, four brings the log a swerve cannot answer, six
+# the two that cost without killing, seven the ramp, the pad and the
+# coin; from eight the swerve widens and the clock tightens. The clock
+# is set as a multiple of the road's own best line rather than as a
+# pace, so every deal at a rung asks the same thing of you. Faster is
+# worse for a swerve - it covers both lanes for a fixed number of
+# ticks, so speed is road you are exposed over - and better for a
+# jump, which has to be off the ground for the whole overlap. Targets
+# drift over the horizon and are shot with the mouse; nothing up there
+# can touch the car, so what the sky costs is attention and nothing
+# else. Measured over sixty deals a rung: taking the sky only on the
+# ticks the wheel had no use for costs the road nothing at all and
+# gets more of the sky than taking it the moment anything is up there,
+# which loses most of the roads. TWOHANDS_BEAT_SECONDS is how long a
+# drawn row takes at one sub-row a tick; at the top gear the road
+# comes four times that fast, which is why this default is more than
+# twice Donkey's: at the pace the middle rungs ask for, a target is
+# aloft for about two seconds and the mouse has to get there and back
+# inside that.
+TWOHANDS_LEVEL = 3
+TWOHANDS_TRIALS = 5
+TWOHANDS_BEAT_SECONDS = 0.40
+TWOHANDS_SET_SECONDS = 1.2
+TWOHANDS_ADAPTIVE = True
+
 # Crossword and Scrabble both run on a word list fetched from Hugging
 # Face rather than shipped: about 173,000 words ranked by how often
 # they turn up in Google's 1-grams, and a definition apiece from which

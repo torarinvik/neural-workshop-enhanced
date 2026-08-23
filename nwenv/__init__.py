@@ -119,6 +119,7 @@ from .scramble import ScrambleEnv  # noqa: E402
 from .algebra import AlgebraEnv  # noqa: E402
 from .syllogism import SyllogismEnv  # noqa: E402
 from .donkey import DonkeyEnv  # noqa: E402
+from .twohands import TwoHandsEnv  # noqa: E402
 from .custody import CustodyEnv  # noqa: E402
 from .inthedark import InTheDarkEnv  # noqa: E402
 from .maze import MazeEnv  # noqa: E402
@@ -169,6 +170,6 @@ __all__ = [
     'PursuitEnv', 'RecognitionEnv', 'ReflexEnv', 'RemovalsEnv',
     'SalesmanEnv', 'ScrabbleEnv',
     'AlgebraEnv', 'SyllogismEnv',
-    'ScrambleEnv', 'Sokoban3DEnv', 'SokobanEnv',
+    'ScrambleEnv', 'Sokoban3DEnv', 'SokobanEnv', 'TwoHandsEnv',
     'SudokuEnv',
 ]

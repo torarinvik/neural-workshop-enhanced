@@ -111,6 +111,15 @@ BY_LUCK = {
     # longer budget than the other clocked tasks because a road is four
     # ticks a drawn row.
     'donkey': (1500, {'rung': 1, 'trials': 4}),
+    # Paid on every road, and the floor here is not zero: five of the
+    # eleven ports do not touch the wheel at all, so a uniform port is
+    # a hold five times in eleven and the car spends most of a road
+    # going straight in first gear. That clears about a fifth of them
+    # on the bottom rung and none from the third, which is measured in
+    # tests/test_twohands.py. Driven at the easiest rung, so what this
+    # is checking is that the boundary pays rather than that it pays
+    # badly.
+    'two_hands': (1500, {'rung': 1, 'trials': 4}),
     # Paid on every line and paid nothing but red, for the plainest
     # reason on this list: one port is submit, and a line of gibberish
     # submitted is a line marked. What a learner gets for free here is
@@ -232,6 +241,9 @@ class RandomPlayIsPaid(unittest.TestCase):
 
     def test_donkey(self):
         self.check('donkey')
+
+    def test_two_hands(self):
+        self.check('two_hands')
 
     def test_scramble(self):
         self.check('scramble')
@@ -617,7 +629,8 @@ class TheBoundaryKnowsWhichTasksHaveAClock(unittest.TestCase):
                         'moving_targets', 'lookout', 'pursuit', 'reflex',
                         'count', 'recognition', 'matrix_reasoning',
                         'graph_mapping', 'concentration',
-                        'chain_of_custody', 'cookie_thief', 'donkey'):
+                        'chain_of_custody', 'cookie_thief', 'donkey',
+                        'two_hands'):
             self.assertTrue(self.clocked(task_id), task_id)
 
     def test_the_ports_are_the_ones_the_task_has(self):
@@ -630,6 +643,8 @@ class TheBoundaryKnowsWhichTasksHaveAClock(unittest.TestCase):
         self.assertEqual(catalog.env_class('scrabble').ports, 14)
         self.assertEqual(catalog.env_class('scramble').ports, 29)
         self.assertEqual(catalog.env_class('algebra').ports, 21)
+        # Six for the wheel and five for the sights, out of one budget.
+        self.assertEqual(catalog.env_class('two_hands').ports, 11)
 
 
 @needs_ui
@@ -663,7 +678,7 @@ class DenseShapingOnlyPaintsWhereItIsPaid(unittest.TestCase):
     def test_there_are_some(self):
         """Or the rest of this class is checking nothing."""
         for task_id in ('you_are_here', 'chain_of_custody', 'donkey',
-                        'cookie_thief',
+                        'cookie_thief', 'two_hands',
                         'maze', 'concentration'):
             self.assertIn(task_id, self.dense_tasks())
 
