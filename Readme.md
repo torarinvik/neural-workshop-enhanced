@@ -571,7 +571,7 @@ Nothing is downloaded for this one — the shapes are generated.
 
 ### Reasoning
 
-The *Reasoning* category holds seven tasks.
+The *Reasoning* category holds eight tasks.
 
 #### Graph Mapping
 
@@ -1092,6 +1092,118 @@ Both ladders are rerunnable:
 
 ```bash
 cd tests && PYTHONPATH=.. ../.venv/bin/python bench_words.py
+```
+
+#### Scramble
+
+A sentence is corrupted and you type it back.
+
+```
+the balck hrose wlaked alnog the raod to the twon
+```
+
+That is level one, and the trick is the famous one: swap two letters
+inside a word and people read straight through it. Level twelve is
+the same sentence with every letter of every word free to move, one
+letter of each thrown away, a stranger thrown in, one replaced by its
+neighbour on the keyboard, the spaces taken out and the words
+shuffled about.
+
+Eight dials do it, and they do not all take the same thing away —
+letters transposed, the middle of a word permuted, the whole word
+permuted, letters dropped, letters inserted, letters substituted,
+word boundaries moved or removed, words reordered inside a window.
+Nothing partial is marked: a reading that is one letter out is a
+different sentence.
+
+**A rung is defined by how much of the answer is left on the page,
+and that is counted rather than claimed.** For each corrupted word,
+the candidate set is every word in the vocabulary whose letters are
+within reach of the ones on show; the product of those set sizes is
+how many readings survive the letters alone. Against it runs a reader
+that knows no English at all — it answers each token with the
+commonest word that fits, and where the gaps have moved it picks the
+segmentation that makes the commonest words it can. What that reader
+gets back is what the page still says outright. Everything above it
+is what a reader has to bring.
+
+| rung | | ambiguity | read back |
+|---|---|---|---|
+| 1 | two letters out | 0.3 | 0.98 |
+| 4 | the ends move too | 1.0 | 0.98 |
+| 5 | the gaps move | 1.3 | 0.82 |
+| 7 | letters thrown in | 12.8 | 0.65 |
+| 9 | wrong letters | 22.5 | 0.23 |
+| 12 | everything at once | 27.3 | 0.04 |
+
+Ambiguity is a base-ten log, so rung 9 leaves 10^22 readings standing.
+Three things in that table were worth the measuring.
+
+**The famous trick removes almost nothing.** Rungs one to four are
+typoglycemia, and a reader that has never heard of English still
+gets 98 words in a hundred back off the letters. An anagram of an
+English word is nearly always an anagram of only that word, so
+`hrose` determines `horse` outright. The effect people find
+remarkable is about reading speed, not about information. Nothing is
+actually taken away until rung five.
+
+**Ambiguity and difficulty are not the same axis.** Rung 9 has the
+worst ambiguity on the ladder and rungs 8, 10 and 11 read back within
+a few points of it on a hundredth of that. Missing letters leave a huge candidate
+set that context collapses easily; moving the gaps leaves a small one
+that context cannot help with, because you cannot use a word's
+neighbours before you know where the word ends. The two columns
+disagree, and both are printed.
+
+**Rungs 8 to 11 are one shelf to that reader** — 0.27, 0.23, 0.25,
+0.23, which is noise. They are ordered by what is taken away, because
+what separates them is the spaces and the word order and the reader is
+blind to both by construction. The bench prints this rather than
+leaving it to be noticed.
+
+Unlike the crossword, this task cannot promise its sentence has one
+reading. What rules out the wrong ones is knowing English, and nothing
+here knows English. A generated sentence could carry that guarantee
+and the first version of this did — it was thrown away, because what
+a person brings to `the hrose is balck` is everything they know about
+horses, and a sentence built from a template tests how fast they learn
+the template.
+
+#### The text behind Scramble
+
+```bash
+python -m neural_workshop.sentences
+```
+
+`juno-labs/simple_wikipedia` (CC BY-SA 3.0) is a weekly snapshot of
+Simple English Wikipedia, 276,302 articles written under a house style
+of short sentences and a limited vocabulary. **It reads 46 MB of a
+439 MB file.** The dataset is one parquet file of nine row groups; one
+row group is 34,087 articles, four times more than this needs, so the
+fetch opens the file over HTTP range requests, reads the footer and
+pulls one column of one row group. Four seconds.
+
+The first version walked Hugging Face's rows endpoint instead — a
+hundred articles a request, no dependency beyond `urllib` — and got a
+sixth of what it needed in twelve minutes before the server began
+answering 429 to everything. A bulk read of a static file is what a
+CDN is for. Reading parquet needs `pyarrow`, which is not a
+requirement of the Workshop and is imported inside the fetch and
+nowhere else; the distilled bank is a plain text file and playing
+never reads parquet.
+
+A sentence is kept only if it is six to fourteen words, every word is
+alphabetic and in the frequency list, and every word after the first
+is lowercase in the original. That last filter throws away every
+sentence containing a proper noun: a scrambled `eostn` is solvable and
+a scrambled `ntsoe` that turns out to have been *Notestein* is not.
+402,602 sentences seen, 36,118 kept — and the thinnest rung of the
+ladder still has 3,900 to draw on. With nothing fetched there are
+seventy sentences in the repository, enough to play and not enough to
+stop repeating, and the screen says which it has.
+
+```bash
+cd tests && PYTHONPATH=.. ../.venv/bin/python bench_scramble.py
 ```
 
 ### Planning
@@ -1722,7 +1834,7 @@ obs, events, done = env.step(2)         # one of three opaque ports
 env.close()
 ```
 
-Twenty-four of the thirty are *declarations* rather than code — where
+Twenty-five of the thirty-one are *declarations* rather than code — where
 the task class lives, what one port calls, which phase takes input, which
 phase means the trial is over, and what the difficulty knobs are called:
 

@@ -17,9 +17,12 @@ only pays a task that is being played well, a learner starting from
 nothing is never paid at all and never starts.
 
 :class:`PlayedProperlyItIsPaid` is for the ones where random play
-genuinely cannot finish — a sudoku, a jigsaw, a memory board, the two
-mazes, and the two word games, where random tiles spell nothing and
-random letters are not the answer. Nothing is wrong with those wrappers; the tasks simply have
+never earns a green — a sudoku, a jigsaw, a memory board, the two
+mazes, and the three word games, where random tiles spell nothing and
+random letters are not the answer. Most of those are never paid at
+all. Scramble is the exception and is in both classes: one of its
+ports is submit, so random play is paid on every trial and every one
+of them is a red. Nothing is wrong with those wrappers; the tasks simply have
 no accidental solutions. They are driven with a policy that knows the
 answer, through the same ports a learner would use, and the outcome is
 still read off the frame.
@@ -99,6 +102,12 @@ BY_LUCK = {
     # longer budget than the other clocked tasks because a road is four
     # ticks a drawn row.
     'donkey': (1500, {'rung': 1, 'trials': 4}),
+    # Paid on every line and paid nothing but red, for the plainest
+    # reason on this list: one port is submit, and a line of gibberish
+    # submitted is a line marked. What a learner gets for free here is
+    # the cost of a wrong answer; the green is in
+    # PlayedProperlyItIsPaid because no walk types a sentence.
+    'scramble': (900, {'rung': 1, 'trials': 4}),
 }
 
 
@@ -200,6 +209,43 @@ class RandomPlayIsPaid(unittest.TestCase):
 
     def test_donkey(self):
         self.check('donkey')
+
+    def test_scramble(self):
+        self.check('scramble')
+
+    # These six were in BY_LUCK with a measured step budget apiece and
+    # no method beside them, so nothing ever played them. Found by the
+    # guard below, which is the whole reason it is here.
+    def test_monkey_ladder(self):
+        self.check('monkey_ladder')
+
+    def test_fog_of_war(self):
+        self.check('fog_of_war')
+
+    def test_moving_targets(self):
+        self.check('moving_targets')
+
+    def test_pursuit(self):
+        self.check('pursuit')
+
+    def test_out_of_sight(self):
+        self.check('out_of_sight')
+
+    def test_tower_of_hanoi(self):
+        self.check('tower_of_hanoi')
+
+    def test_every_task_in_by_luck_is_actually_played(self):
+        """The list and the methods are two lists, so they can drift.
+
+        They did: an entry added here without a method beside it was
+        carried in the table, printed in no report, and ran nothing.
+        This is the cheapest possible guard against the next one.
+        """
+        played_here = {name[len('test_'):] for name in dir(self)
+                       if name.startswith('test_')}
+        for task_id in BY_LUCK:
+            self.assertIn(task_id, played_here,
+                          '%s is in BY_LUCK with no test beside it' % task_id)
 
 
 @needs_ui
@@ -306,6 +352,30 @@ class PlayedProperlyItIsPaid(unittest.TestCase):
 
         self.assertEqual(driven(env, moves), [1.0])
 
+    def test_a_reconstructed_sentence_is_paid(self):
+        """Typed out one letter at a time, which is all the ports are.
+
+        There is no cursor here and nothing to steer, so a policy that
+        knows the sentence has only to spell it — and that is the
+        point of the test: twenty-nine ports, forty-odd of them in the
+        right order, and one verdict at the end of it.
+        """
+        from nwenv import scramble as scramble_env
+        env = catalog.env_class('scramble')(seed=0, rung=1, trials=2)
+
+        def moves(task):
+            wanted = task.deal.answer
+            if task.typed == wanted:
+                return scramble_env.SUBMIT
+            if not wanted.startswith(task.typed):
+                return scramble_env.BACK
+            following = wanted[len(task.typed)]
+            if following == ' ':
+                return scramble_env.SPACE
+            return scramble_env.LETTERS.index(following)
+
+        self.assertEqual(driven(env, moves), [1.0])
+
     def test_the_best_scrabble_play_is_paid(self):
         """Laid tile by tile, in the one order the ports allow.
 
@@ -405,7 +475,7 @@ class TheBoundaryKnowsWhichTasksHaveAClock(unittest.TestCase):
         for task_id in ('crossed_wires', 'maze', 'sokoban', 'sudoku',
                         'tower_of_hanoi', 'salesman', 'jigsaw',
                         'you_are_here', 'sokoban_3d', 'crossword',
-                        'scrabble'):
+                        'scrabble', 'scramble'):
             self.assertFalse(self.clocked(task_id), task_id)
 
     def test_the_ones_that_move_on_their_own_are(self):
@@ -424,6 +494,7 @@ class TheBoundaryKnowsWhichTasksHaveAClock(unittest.TestCase):
         self.assertEqual(CrossedWiresEnv.ports, 8)
         self.assertEqual(catalog.env_class('crossword').ports, 32)
         self.assertEqual(catalog.env_class('scrabble').ports, 14)
+        self.assertEqual(catalog.env_class('scramble').ports, 29)
 
 
 @needs_ui

@@ -1,6 +1,6 @@
 # Making a task reachable by the agent
 
-The Workshop ships thirty playable tasks and **all thirty are
+The Workshop ships thirty-one playable tasks and **all thirty-one are
 reachable by the learning agent**. Reachable means more than playable: the
 agent gets pixels and opaque ports, and every scalar it is paid must be
 re-derivable from the frames by someone who is not trusted with the game.
@@ -54,11 +54,12 @@ the programme has one pixel reader to get right rather than one per task.
 | `requires` | settings the boundary imposes whatever the player prefers. Almost always `{'feedback': True}`: a trial that resolves with no verdict painted resolves into nothing a third party can read. |
 
 The hooks are all still there — `build`, `drive`, `trial_open`, `tick`,
-`resolved`, `finished` — and an override wins over a declaration. Seven tasks
+`resolved`, `finished` — and an override wins over a declaration. Eight tasks
 need one. Count composes its answer out of digits, Sudoku and the Crossword
 steer a cursor, Scrabble's ports are rack *positions* rather than letters,
-Moving Targets and Concentration name an object rather than an index, and
-Reflex has no phase for its trial window at all. Each is six lines. Three
+Scramble's are a typewriter, Moving Targets and Concentration name an object
+rather than an index, and Reflex has no phase for its trial window at all.
+Each is six lines. Three
 more override `apply_dials` and `dials` only, which is the coach gate below
 rather than anything about their ports.
 
@@ -244,10 +245,19 @@ cd tests && PYTHONPATH=.. ../.venv/bin/python drive_env.py mytask 900
 ```
 
 Zero outcomes is not automatically a bug. Seven tasks have no accidental
-solutions — a sudoku, a jigsaw, a memory board, the two mazes and the two
-word games — and random play will never finish one. Those get a test in
+solutions — a sudoku, a jigsaw, a memory board, the two mazes and two of the
+three word games — and random play will never finish one. Those get a test in
 `tests/test_env_tasks.py` that drives them with a policy that knows the
 answer, through the same ports, and still reads the verdict off the frame.
+
+Being paid is not the same as being paid *anything good*, and the third word
+game is the case that separates them. Random play in Scramble reaches a
+verdict on every trial, because one of its ports is submit and a line of
+gibberish is a line — so it is paid, seven times in nine hundred steps, and
+every one of them is a red. That is the honest floor and not a gap: the
+signal a learner gets for free is *what a wrong answer costs*, and the green
+still needs the knowing-answer test. Donkey is the same shape for a different
+reason. A task like this belongs in both places.
 
 **Run the panel:**
 

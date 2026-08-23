@@ -1195,6 +1195,71 @@ SCRABBLE = TaskSpec(
     note=scrabble_note)
 
 
+def scramble_note(chosen: Dict[str, Any]) -> str:
+    """What will be done to the sentence, and how much of it survives.
+
+    The text being Wikipedia's, the attribution belongs on the screen
+    a player actually opens rather than only in a docstring, so it is
+    the last line here whether or not anything has been fetched.
+    """
+    from ..scramble import GRADES
+    from ..sentences import LICENCE, REPO, have, missing_message
+    rung = int(chosen['SCRAMBLE_LEVEL'])
+    grade = GRADES[max(0, min(len(GRADES) - 1, rung - 1))]
+    said = []
+    if not have():
+        said.append(missing_message())
+    done = []
+    if grade.swap:
+        done.append(_('two letters of each word swapped'))
+    elif grade.interior:
+        done.append(_('the middle of each word shuffled'))
+    elif grade.whole:
+        done.append(_('every letter of each word shuffled'))
+    if grade.drop:
+        done.append(_('a letter thrown away') if grade.drop == 1
+                    else _('%d letters thrown away') % grade.drop)
+    if grade.insert:
+        done.append(_('a letter thrown in'))
+    if grade.substitute:
+        done.append(_('a letter replaced by its neighbour on the keyboard'))
+    if grade.spaces == 1:
+        done.append(_('the gaps moved to the wrong places'))
+    elif grade.spaces >= 2:
+        done.append(_('the gaps taken out'))
+    if grade.order >= 2:
+        done.append(_('the words shuffled in threes') if grade.order >= 3
+                    else _('the words shuffled in pairs'))
+    said.append(_('Level %d, "%s": %d to %d words drawn from %s, with %s.')
+                % (rung, _(grade.name), grade.span[0], grade.span[1],
+                   (_('the whole word list') if grade.top_rank > 1 << 20
+                    else _('the %d commonest words') % grade.top_rank),
+                   ', '.join(str(one) for one in done) or _('nothing done')))
+    if grade.spaces == 1:
+        said.append(_('The gaps on screen are not where the words are, so '
+                      'the word count is worth turning on.'))
+    elif grade.spaces >= 2:
+        said.append(_('There are no gaps at all, so the word count is '
+                      'worth turning on.'))
+    said.append(_('Type the sentence back. Nothing partial counts: a '
+                  'reading that is one letter out is a different sentence.'))
+    said.append(_('Text from %s, %s.') % (REPO, LICENCE))
+    return '  '.join(said)
+
+
+SCRAMBLE = TaskSpec(
+    title=_('Scramble options'),
+    options=(
+        Option('SCRAMBLE_LEVEL', _('Level'), 3, values=tuple(range(1, 13))),
+        Option('SCRAMBLE_TRIALS', _('Lines per run'), 5,
+               values=(1, 2, 3, 5, 8, 10, 15)),
+        Option('SCRAMBLE_SHOW_COUNT', _('Say how many words'), True),
+        Option('SCRAMBLE_ADAPTIVE',
+               _('Climb a level after a right answer'), True),
+    ),
+    note=scramble_note)
+
+
 def salesman_note(chosen: Dict[str, Any]) -> str:
     """What the score means at this size, and that it is exact.
 
@@ -1408,6 +1473,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'crossed_wires': CROSSED_WIRES,
     'crossword': CROSSWORD,
     'scrabble': SCRABBLE,
+    'scramble': SCRAMBLE,
     'chain_of_custody': CUSTODY,
     'cookie_thief': COOKIE_THIEF,
 }

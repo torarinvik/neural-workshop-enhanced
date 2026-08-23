@@ -990,6 +990,30 @@ SCRABBLE_TRIALS = 5
 SCRABBLE_SHOW_PREMIUMS = True
 SCRABBLE_ADAPTIVE = True
 
+# Scramble corrupts a real sentence and asks for it back. The text is
+# Simple English Wikipedia, fetched rather than shipped: run
+# "python -m neural_workshop.sentences" once (it reads 46 MB of one
+# parquet file and needs pyarrow, which nothing else here uses).
+# Without it the task runs on about seventy sentences written into the
+# source, which is enough to play and not enough to stop repeating.
+#
+# SCRAMBLE_LEVEL turns eight dials at once, and they do not all take
+# the same thing away. The low rungs are the familiar jumbled-word
+# trick - "the hrose is balck" - which turns out to remove almost no
+# information at all: a reader that knows no English still gets 98
+# words in a hundred back off the letters alone. What actually removes
+# information is further up, where letters go missing, strangers are
+# thrown in, the spaces move to the wrong places or vanish, and the
+# words come out of order. At level twelve that same reader gets one
+# word in eleven, and the rest has to come from knowing what a
+# sentence is. SCRAMBLE_SHOW_COUNT prints how many words the answer
+# has, which above level five is real help, because that is where the
+# spaces stop telling you.
+SCRAMBLE_LEVEL = 3
+SCRAMBLE_TRIALS = 5
+SCRAMBLE_SHOW_COUNT = True
+SCRAMBLE_ADAPTIVE = True
+
 ######################################################################
 # This is the end of the configuration file.
 ######################################################################

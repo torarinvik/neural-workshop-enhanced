@@ -1,1 +1,6 @@
 pyglet>=2
+
+# Not required to play, and not imported by anything the game runs.
+# "python -m neural_workshop.sentences" reads one row group of a parquet
+# file to build Scramble's text; install it only if you want that.
+# pyarrow>=14
