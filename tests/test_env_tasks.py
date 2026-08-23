@@ -108,6 +108,10 @@ BY_LUCK = {
     # the cost of a wrong answer; the green is in
     # PlayedProperlyItIsPaid because no walk types a sentence.
     'scramble': (900, {'rung': 1, 'trials': 4}),
+    # Same shape as Scramble: one port is submit, so a random string
+    # submitted is a random string marked, and every one of them is a
+    # red. Arithmetic has no near misses.
+    'algebra': (900, {'rung': 1, 'trials': 4}),
 }
 
 
@@ -212,6 +216,9 @@ class RandomPlayIsPaid(unittest.TestCase):
 
     def test_scramble(self):
         self.check('scramble')
+
+    def test_algebra(self):
+        self.check('algebra')
 
     # These six were in BY_LUCK with a measured step budget apiece and
     # no method beside them, so nothing ever played them. Found by the
@@ -376,6 +383,28 @@ class PlayedProperlyItIsPaid(unittest.TestCase):
 
         self.assertEqual(driven(env, moves), [1.0])
 
+    def test_a_worked_out_answer_is_paid(self):
+        """Typed a character at a time, on a rung that wants a polynomial.
+
+        Rung seven rather than rung one on purpose: it puts the whole
+        marking chain through the ports — parse what was typed, compare
+        by canonical form, and check it was actually gathered up — where
+        rung one would only prove that two digits arrive.
+        """
+        from nwenv import algebra as algebra_env
+        env = catalog.env_class('algebra')(seed=0, rung=7, trials=2)
+
+        def moves(task):
+            # Spaces are not ports and the parser does not need them.
+            wanted = task.problem.shown_answer.replace(' ', '')
+            if task.typed == wanted:
+                return algebra_env.SUBMIT
+            if not wanted.startswith(task.typed):
+                return algebra_env.BACK
+            return algebra_env.KEYS.index(wanted[len(task.typed)])
+
+        self.assertEqual(driven(env, moves), [1.0])
+
     def test_the_best_scrabble_play_is_paid(self):
         """Laid tile by tile, in the one order the ports allow.
 
@@ -475,7 +504,7 @@ class TheBoundaryKnowsWhichTasksHaveAClock(unittest.TestCase):
         for task_id in ('crossed_wires', 'maze', 'sokoban', 'sudoku',
                         'tower_of_hanoi', 'salesman', 'jigsaw',
                         'you_are_here', 'sokoban_3d', 'crossword',
-                        'scrabble', 'scramble'):
+                        'scrabble', 'scramble', 'algebra'):
             self.assertFalse(self.clocked(task_id), task_id)
 
     def test_the_ones_that_move_on_their_own_are(self):
@@ -495,6 +524,7 @@ class TheBoundaryKnowsWhichTasksHaveAClock(unittest.TestCase):
         self.assertEqual(catalog.env_class('crossword').ports, 32)
         self.assertEqual(catalog.env_class('scrabble').ports, 14)
         self.assertEqual(catalog.env_class('scramble').ports, 29)
+        self.assertEqual(catalog.env_class('algebra').ports, 21)
 
 
 @needs_ui

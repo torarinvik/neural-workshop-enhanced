@@ -1260,6 +1260,45 @@ SCRAMBLE = TaskSpec(
     note=scramble_note)
 
 
+def algebra_note(chosen: Dict[str, Any]) -> str:
+    """What the level asks, and how big the search behind it is.
+
+    The search size is the honest description of a level here and it
+    is a measured number rather than a word, so it is quoted rather
+    than paraphrased into "hard".
+    """
+    from ..algebra import EXPRESSION, GRADES, deal_one
+    import random
+    rung = int(chosen['ALGEBRA_LEVEL'])
+    grade = GRADES[max(0, min(len(GRADES) - 1, rung - 1))]
+    said = [_('Level %d, "%s".') % (rung, _(grade.name))]
+    said.append(_('The answer is a polynomial, gathered up: no brackets '
+                  'left in it.') if grade.kind == EXPRESSION
+                else _('The answer is a number, exact: a fraction stays a '
+                       'fraction and a decimal is not an answer.'))
+    shown = deal_one(grade, random.Random(rung))
+    if shown is not None:
+        said.append(_('Like this one: %s') % shown.asked)
+        said.append(_('Before you do any of the work, the answer is one '
+                      'of about 10^%d.') % round(shown.candidates))
+    said.append(_('Nothing partial counts.'))
+    return '  '.join(said)
+
+
+ALGEBRA = TaskSpec(
+    title=_('Algebra options'),
+    options=(
+        Option('ALGEBRA_LEVEL', _('Level'), 3, values=tuple(range(1, 13))),
+        Option('ALGEBRA_TRIALS', _('Questions per run'), 6,
+               values=(1, 2, 3, 5, 6, 8, 10, 15)),
+        Option('ALGEBRA_SHOW_WORKING', _('Show the working afterwards'),
+               True),
+        Option('ALGEBRA_ADAPTIVE',
+               _('Climb a level after a right answer'), True),
+    ),
+    note=algebra_note)
+
+
 def salesman_note(chosen: Dict[str, Any]) -> str:
     """What the score means at this size, and that it is exact.
 
@@ -1474,6 +1513,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'crossword': CROSSWORD,
     'scrabble': SCRABBLE,
     'scramble': SCRAMBLE,
+    'algebra': ALGEBRA,
     'chain_of_custody': CUSTODY,
     'cookie_thief': COOKIE_THIEF,
 }

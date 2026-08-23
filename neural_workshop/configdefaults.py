@@ -1014,6 +1014,32 @@ SCRAMBLE_TRIALS = 5
 SCRAMBLE_SHOW_COUNT = True
 SCRAMBLE_ADAPTIVE = True
 
+# Algebra runs from 3 + 4 to one integer in a box of ten to the
+# twenty-eighth. What grows is not the size of the numbers - that is a
+# clerical ladder with a calculator at the top of it - but how big a
+# search the question hides its answer in. The coefficients stay small
+# at every level on purpose.
+#
+# Levels one to six are arithmetic: adding, order of operations, signs,
+# exact fractions, then a letter to find. From seven, two families
+# alternate, because they are hard in different ways. The odd ones are
+# symbolic: multiply out and gather up, ending in a cube in two
+# letters. The even ones are modular: solve a congruence, then two,
+# then six at once, where the remainder theorem says there is exactly
+# one answer below the product of the moduli and nothing on earth will
+# find it by looking.
+#
+# Answers are exact and marked exactly. 64/35 and 128/70 are the same
+# answer; 1.828 is not an answer. A symbolic answer must also be
+# gathered up - no brackets left - because the question and its own
+# answer are the same expression, so anything less would mark the
+# question copied back as right. ALGEBRA_SHOW_WORKING prints the
+# derivation after a wrong answer, which is where the learning is.
+ALGEBRA_LEVEL = 3
+ALGEBRA_TRIALS = 6
+ALGEBRA_SHOW_WORKING = True
+ALGEBRA_ADAPTIVE = True
+
 ######################################################################
 # This is the end of the configuration file.
 ######################################################################

@@ -63,6 +63,7 @@ try:
     from neural_workshop.ui.crossword import Crossword
     from neural_workshop.ui.scrabble import Scrabble
     from neural_workshop.ui.scramble import Scramble
+    from neural_workshop.ui.algebra import Algebra
     from neural_workshop.ui.youarehere import YouAreHere
     from neural_workshop.ui.menu import AllCycler, Cycler, Menu, PercentCycler
     from neural_workshop.ui.message import Message

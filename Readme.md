@@ -571,7 +571,7 @@ Nothing is downloaded for this one — the shapes are generated.
 
 ### Reasoning
 
-The *Reasoning* category holds eight tasks.
+The *Reasoning* category holds nine tasks.
 
 #### Graph Mapping
 
@@ -1206,6 +1206,85 @@ stop repeating, and the screen says which it has.
 cd tests && PYTHONPATH=.. ../.venv/bin/python bench_scramble.py
 ```
 
+#### Algebra
+
+```
+3 + 4
+n = 19394 (mod 87679),  n = 62006 (mod 71503),  n = 5611 (mod 76369), ...
+```
+
+Both of those are this task, at level one and level twelve. The second
+is one integer in a box of 10^28, and nothing will ever find it by
+looking.
+
+**What grows is not the size of the numbers.** That was the first
+ladder written here and it was thrown away: `48239 × 91827` is
+unbounded and it is clerical, and at the top of it sits a calculator
+rather than a mathematician. The printed numbers never exceed five
+digits at any level. What grows is how much has to be true at once.
+
+Levels one to six are arithmetic — adding, order of operations, signs,
+exact fractions, then a letter to find. From seven two families
+alternate, because they are hard in different ways: the symbolic ones
+multiply out and gather up, ending in a cube in two letters; the
+modular ones solve a congruence, then three at once, then six, where
+the remainder theorem guarantees exactly one answer below the product
+of the moduli.
+
+**A level means how big the naive search is, and it is counted.** Every
+level guarantees its answer lies in some space — an interval of
+integers, or polynomials with bounded degree and coefficients. Against
+that runs a solver that knows no mathematics at all: it can only
+*check* an answer, so it walks the space until something fits.
+
+| rung | | kind | candidates | cracked | steps |
+|---|---|---|---|---|---|
+| 1 | one and one | number | 1.6 | 1.00 | 1 |
+| 5 | exact halves | number | 5.1 | 1.00 | 2 |
+| 6 | find the letter | number | 1.3 | 1.00 | 3 |
+| 9 | collect the powers | expression | 5.4 | 1.00 | 3 |
+| 10 | three clocks at once | number | 5.1 | 0.67 | 3 |
+| 11 | two letters, cubed | expression | 24.6 | 0.00 | 4 |
+| 12 | six clocks at once | number | 27.9 | 0.00 | 6 |
+
+**Searching is not reasoning, and the two columns say so.** Level 5
+hides its answer among 10^5.1 values and takes two steps to get; level
+6 hides its among nineteen and takes three. The easier-looking level
+has a search six thousand times bigger. Ordering by candidates would
+put adding two fractions above solving an equation, which is wrong
+about people; ordering by steps would put it below adding two whole
+numbers, which is wrong about machines. The levels are ordered by what
+a person has to know, both columns are printed, and the bench prints
+the disagreement in words rather than leaving it to be noticed.
+
+**The superhuman end is a cliff, not a slope.** Everything to level 9
+falls to patience alone. Level 10 is at the edge, at two thirds. Then
+the space goes from 10^5 to 10^25 in one level and searching stops
+being a strategy — which is why the top moduli are five-digit primes
+and not the two-digit ones three levels below. Six two-digit primes
+put the answer in a box of 10^9, a long afternoon for a laptop; six
+five-digit primes put it in 10^28.
+
+**Everything is exact and marked exactly.** Every coefficient is a
+`Fraction`, so `64/35` and `128/70` are one answer and `1.828` is not
+an answer at all. There is no sympy in this environment — polynomials,
+a parser, a canonical form, modular inverses and the remainder theorem
+are all hand-rolled on `fractions` and `math`, which is more work and
+keeps every step auditable.
+
+Two hazards worth writing down, because both were live before they
+were caught. `-x^2` parsed as `(-x)^2` agrees with the truth at x = 0
+and nowhere else, so it would fail players who were right and read as
+a fault in the generator. And **a question and its own answer are the
+same polynomial**, so marking by canonical form alone accepts the
+question copied back — the crossword had this exact defect with its
+clues. A symbolic answer must therefore also be *gathered up*: no
+brackets, and no more written terms than the collected form has.
+
+```bash
+cd tests && PYTHONPATH=.. ../.venv/bin/python bench_algebra.py
+```
+
 ### Planning
 
 Every task in the *Planning* category is scored the same honest way:
@@ -1834,7 +1913,7 @@ obs, events, done = env.step(2)         # one of three opaque ports
 env.close()
 ```
 
-Fifteen of the thirty-one are *declarations* rather than code — where
+Fifteen of the thirty-two are *declarations* rather than code — where
 the task class lives, what one port calls, which phase takes input, which
 phase means the trial is over, and what the difficulty knobs are called:
 
@@ -1850,12 +1929,12 @@ class HanoiEnv(TaskEnv):
 ```
 
 They carry **no deriver and no verifier**, because they paint the shared
-verdict label and the boundary already knows how to read one. Twelve of
-them add a short method or two — a port that names an object rather than
+verdict label and the boundary already knows how to read one. Thirteen
+of them add a short method or two — a port that names an object rather than
 an index, a trial window the task has no phase for, a coach gated on
 whether the boundary will actually pay it. The four written before that
 existed still carry both, at about a hundred lines apiece. Fifteen and
-twelve and four is thirty-one, which is the point of counting them.
+thirteen and four is thirty-two, which is the point of counting them.
 `ADDING_A_TASK.md` is the whole contract.
 
 Two things had to change across the workshop to make this work, and both
