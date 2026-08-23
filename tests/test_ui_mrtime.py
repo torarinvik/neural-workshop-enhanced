@@ -175,7 +175,17 @@ class MrTimeRunTests(unittest.TestCase):
         self.assertEqual(self.game.trial, 1)
 
     def test_the_shape_goes_away_when_the_flash_is_over(self):
+        """Held open, because a short enough gap asks on the same tick.
+
+        `update` is deliberately not an `elif`, so a gap under one frame
+        takes the task from `showing` straight past `waiting` to `asking`
+        inside a single call and nothing sampling between calls can see
+        the phase at all. The gap is not what is under test here, so pin
+        it out of the way rather than draw for it.
+        """
         self.game.start_run()
+        self.game.ask_at = (self.game.appeared_at
+                            + self.game.flash_ms / 1000. + 1.0)
         self.assertTrue(self.run_to('waiting'))
         self.assertEqual(self.game.drawn, [])
         self.assertGreaterEqual(self.now, 0.4 - 1 / 60.)
