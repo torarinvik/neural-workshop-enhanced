@@ -272,7 +272,7 @@ class TheCrosswordScreen(unittest.TestCase):
         self.task.start_run()
         self.assertEqual(self.task.phase, 'solving')
 
-    def open_a_blocked_one(self):
+    def open_a_blocked_one(self, needing=None):
         """A rung whose grid has blocks in it, which rung one has not.
 
         Rung one is a four by four, and a four by four is a word
@@ -281,10 +281,19 @@ class TheCrosswordScreen(unittest.TestCase):
         about blocks open a six by six instead of skipping, which is
         the difference between checking the behaviour and reporting
         that it was not checked.
+
+        *needing* is asked of the grid, and a grid it turns down is
+        dealt again. Where the blocks land is a property of the draw,
+        and a test that skips itself when they land badly is a coin
+        toss over whether the behaviour is covered at all.
         """
         self.task.start_rung = self.task.rung = 2
-        self.open_one()
-        self.assertTrue(self.task.puzzle.blocks)
+        for _try in range(8):
+            self.open_one()
+            self.assertTrue(self.task.puzzle.blocks)
+            if needing is None or needing(self.task):
+                return
+        self.fail('no grid in eight was the shape this test needs')
 
     def blank(self):
         return next(cell for cell, letter in enumerate(self.task.filled)
@@ -300,11 +309,26 @@ class TheCrosswordScreen(unittest.TestCase):
         self.assertIn('crossword', [task for task, _n in TASKS['reasoning']])
 
     def test_with_no_clues_fetched_it_says_so_instead_of_dealing(self):
-        if self.stocked:
-            self.skipTest('the word list is here, so it deals')
-        self.task.start_run()
-        self.assertEqual(self.task.phase, 'ready')
-        self.assertIn('wordlist', self.task.message)
+        """The index is hidden rather than waited for.
+
+        This used to skip wherever the word list had been fetched,
+        which is every machine that plays the game — so the one screen
+        a new player actually meets was the one screen nothing
+        checked. The task asks :func:`index_ready` and nothing else,
+        so that is what is taken away.
+        """
+        from neural_workshop.ui import crossword as screen
+        self.task.close()
+        saved = screen.index_ready
+        screen.index_ready = lambda: False
+        try:
+            self.task = Crossword()
+            self.assertFalse(self.task.stocked())
+            self.task.start_run()
+            self.assertEqual(self.task.phase, 'ready')
+            self.assertIn('wordlist', self.task.message)
+        finally:
+            screen.index_ready = saved
 
     def test_a_trial_opens_on_a_blank(self):
         self.open_one()
@@ -312,14 +336,17 @@ class TheCrosswordScreen(unittest.TestCase):
         self.task.on_draw()
 
     def test_the_cursor_steps_over_a_block(self):
-        self.open_a_blocked_one()
+        # Any block with something to its left, rather than the
+        # lowest-numbered one and a skip when that turned out to be
+        # against the left edge.
+        def sideways(task):
+            return any(cell % task.size() for cell in task.puzzle.blocks)
+
+        self.open_a_blocked_one(needing=sideways)
         size = self.task.size()
         blocks = self.task.puzzle.blocks
-        cell = min(blocks)
-        row, col = divmod(cell, size)
-        if col == 0:
-            self.skipTest('nothing to the left of it')
-        self.task.at = row * size + col - 1
+        cell = next(one for one in sorted(blocks) if one % size)
+        self.task.at = cell - 1
         self.task.move(1, 0)
         self.assertNotIn(self.task.at, blocks)
 
@@ -347,9 +374,11 @@ class TheCrosswordScreen(unittest.TestCase):
         self.assertEqual(self.task.filled[cell], 'q')
 
     def test_a_given_refuses_the_key(self):
+        # Asserted rather than skipped around: rung one hands over
+        # half its letters by declaration, so a grid with none is a
+        # fault in the deal and not a reason to test nothing.
         self.open_one()
-        if not self.task.puzzle.givens:
-            self.skipTest('this rung gives nothing away')
+        self.assertTrue(self.task.puzzle.givens)
         cell = min(self.task.puzzle.givens)
         self.task.at = cell
         was = self.task.filled[cell]
@@ -475,12 +504,15 @@ class TheCrosswordScreen(unittest.TestCase):
     def test_the_mouse_and_the_keyboard_reach_the_same_place(self):
         self.open_one()
         size = self.task.size()
-        start = self.task.at
-        wanted = next((cell for cell in range(start + 1, size * size)
-                       if not self.task.blocked(cell)
-                       and cell // size == start // size), None)
-        if wanted is None:
-            self.skipTest('nothing to the right of the opening cell')
+        # Put the cursor somewhere with a cell to its right rather
+        # than taking wherever the grid opened it and skipping when
+        # that was the right-hand edge.
+        start = next((cell for cell in range(size * size)
+                      if not self.task.blocked(cell)
+                      and (cell + 1) % size
+                      and not self.task.blocked(cell + 1)), None)
+        self.assertIsNotNone(start, 'no two open cells side by side')
+        self.task.at = start
         self.task.move(1, 0)
         by_key = self.task.at
         self.task.at = start

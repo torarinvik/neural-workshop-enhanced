@@ -535,12 +535,18 @@ class TheScrambleScreen(unittest.TestCase):
         self.assertIn(answer, self.task.message)
 
     def test_nothing_is_typed_once_the_answer_is_in(self):
+        # Compared against what was typed rather than looked for by
+        # letter: the sentence is dealt unseeded, and "x unexpectedly
+        # found" is what this said the day it drew one about an
+        # explanation. It also catches the rub-out, which looking for
+        # a letter never did.
         self.open_one()
         self.type_out(self.task.deal.answer)
         self.task.submit()
+        settled = self.task.typed
         self.task.write('x')
         self.task.erase()
-        self.assertNotIn('x', self.task.typed)
+        self.assertEqual(self.task.typed, settled)
 
     def test_no_verdict_is_up_while_the_line_can_still_be_answered(self):
         self.open_one()
