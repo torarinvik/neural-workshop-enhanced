@@ -1,6 +1,6 @@
 # Making a task reachable by the agent
 
-The Workshop ships thirty-five playable tasks and **all thirty-five are
+The Workshop ships thirty-six playable tasks and **all thirty-six are
 reachable by the learning agent**. Reachable means more than playable: the
 agent gets pixels and opaque ports, and every scalar it is paid must be
 re-derivable from the frames by someone who is not trusted with the game.
@@ -55,7 +55,7 @@ the programme has one pixel reader to get right rather than one per task.
 
 The hooks are all still there — `build`, `drive`, `trial_open`, `tick`,
 `resolved`, `finished` — and an override wins over a declaration. Twelve of
-the thirty-one wrappers need one. Count composes its answer out of digits,
+the thirty-two wrappers need one. Count composes its answer out of digits,
 Sudoku and the Crossword steer a cursor, Scrabble's ports are rack
 *positions* rather than letters, Scramble's and Algebra's are a typewriter,
 Moving Targets and Concentration name an object rather than an index, Reflex

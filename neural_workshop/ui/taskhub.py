@@ -78,6 +78,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('maze', _('Maze')),
         ('you_are_here', _('3D Maze')),
         ('sokoban_3d', _('3D Sokoban')),
+        ('tetris', _('Freeform Tetris')),
     ],
     # Not attention, and the difference is the point. Everything under
     # attention is about finding or following the right thing; this is
@@ -504,6 +505,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'maze':
         from .maze import MazeTask
         MazeTask()
+        return
+    if task_id == 'tetris':
+        from .tetris import FreeformTetris
+        FreeformTetris()
         return
     if task_id == 'cookie_thief':
         from .cookiethief import CookieThief

@@ -61,9 +61,11 @@ Inside `neural_workshop`, `ravens/` is the odd one out: it is the
 Matrix Reasoning puzzle generator, and it imports no pyglet and
 touches no singleton, so a puzzle can be built and checked without a
 window. `glyphs.py` is split the same way for the same reason, with
-its drawing half under `ui/`, and so are `crossword.py`, `scrabble.py`
-and the `wordlist.py` they and `syllogism.py` draw their words from.
-Everything else on screen goes through `ui/`.
+its drawing half under `ui/`, and so are `crossword.py`, `scrabble.py`,
+the `wordlist.py` they and `syllogism.py` draw their words from, and
+`tetris.py`, whose whole promise is a property of a generator that can
+be run without a screen and is. Everything else on screen goes through
+`ui/`.
 
 Inside `neural_workshop`, the live singletons (`cfg`, `window`, `mode`,
 `field`, the labels) live in `state.py` and are reached as `state.mode`
@@ -1899,6 +1901,92 @@ the 3D Maze next door, which had been shipping it: see **the agent
 environment** below for what a sweep of that one could and could not
 have seen.
 
+**Freeform Tetris.** A well seventy-two columns wide and thirty-two
+deep — a tetris well is ten by twenty — with cells about a third the
+size, so that where a piece goes is a search rather than a choice
+between ten slots. Two things about it are not tetris, and both exist
+to move the difficulty off the clock.
+
+*Nothing is dealt at you.* Five pieces sit in a tray and you click the
+one that comes next while the current one is still falling, or press
+its number. The question the game asks is *which of these, and where*,
+and both halves are yours.
+
+*Rotation is continuous.* Hold **Up** or **Down** and the piece winds
+round through the whole circle at a steady rate rather than clacking
+through four poses. Within seven degrees of a quarter turn it is held
+square to the grid — a detent, wide enough to catch by hand — and
+everywhere else it is held exactly where you wound it. **S** squares
+it up in one go. The detent costs about a sixth of the circle, and the
+options screen will give it back: set it to nothing and all 360
+degrees are held exactly as wound, with **S** the only way to square
+up. Nothing else changes, and in particular a drop no longer quietly
+straightens a piece that was meant to be crooked — deciding a piece is
+close enough to square is the screen's job, never the engine's.
+
+**The promise, and what it costs.** Every piece in the tray has
+somewhere to go that buries nothing, and the count of how many such
+places it has is printed under it. That is not a claim about the
+generator alone. Pieces are cut out of the board's own skyline —
+`carve` takes a window of columns, reads the height of each, and fills
+that notch to a level top — so a piece dropped back where it came from
+rests on solid cells all along its underside. But *you* choose the
+order, so a hand cut against one skyline is a hand about a board that
+may not exist by the time you use it. After every placement the whole
+tray is re-checked by enumeration, and any piece the last move
+stranded is cut again and says so. The promise is therefore *is true
+now* rather than *was true when dealt*.
+
+The free spin is where it can be given away, and the game is explicit
+about that rather than quietly forgiving it. What lands is what the
+grid sees: every cell whose centre falls inside the turned piece. At a
+quarter turn that is the polyomino exactly, from any offset. At
+thirty-four degrees it is a ragged blob that is a different shape, and
+the ghost draws it — hollow teal outlines when the drop would bury
+nothing, hollow red-orange when it would, with the count on the status
+line. So a gapless run always exists, at lattice angles, and the spin
+is a risk you may take on top of it rather than a way the promise can
+be lost.
+
+**Difficulty is shape, and only shape.** Gravity is a setting you
+choose once and no rung ever touches it; there is not a field on a
+rung that could. The ladder climbs by cutting more awkward pieces: the
+first rung cuts from level ground and gives level tops, which makes
+every piece it can produce a rectangle, and by the seventh it is
+cutting dented combs across six columns from skyline that varies by
+three. `tests/test_tetris.py` plays a full run at every one of the
+eight rungs through the game's own controls — wind, steer, drop — and
+holds the hole count at zero throughout.
+
+**Measured.** A reference player that always takes a gapless drop and
+takes the tray slots at random ran 28,800 placements across the eight
+rungs without burying a single cell. Cutting from the *lowest* of
+several candidate windows rather than the first acceptable one is
+worth more than it sounds: at the seventh rung it holds the mean pile
+height at 9.3 rather than 16.6 and drops the re-cuts from 130 to 49
+per 750 placements, because a level board has more stretches of
+skyline that match any given piece. Nine hundred steps of uniform
+random play through the agent boundary reach 25 verdicts at the first
+rung, 12 green and 13 red — a high floor, and the reason is worth
+knowing before reading a curve drawn on it: the first rung cuts
+rectangles, and a rectangle that falls on its own onto level ground
+lands flush wherever it is. The same sweep reads 8 green to 19 red at
+the fourth rung and 3 to 15 at the seventh. The floor is a property of
+the rung, not of the boundary.
+
+One bug is worth recording because only a test could have found it.
+Python's `round` breaks ties to even and the rasteriser floors, so a
+piece whose centre sat exactly on a half cell was reckoned to be in
+one column by the falling piece and the next column by the hard drop —
+about one pose in a hundred, showing up as a piece that jumped a
+column the instant it was let go. `snapped` now reads the offset back
+off the same scan the collision uses, which cannot drift from it.
+
+Like the other screens here, the well stops above the bottom quarter
+of the frame where the outcome reader looks, and the guard is against
+the geometry rather than a sweep of pixels — where the pieces land is
+content, so a clean sweep of one run says nothing about the next.
+
 ### Self-control
 
 A category of its own rather than a sixth attention task, and the
@@ -2227,7 +2315,7 @@ obs, events, done = env.step(2)         # one of three opaque ports
 env.close()
 ```
 
-Sixteen of the thirty-five are *declarations* rather than code — where
+Seventeen of the thirty-six are *declarations* rather than code — where
 the task class lives, what one port calls, which phase takes input, which
 phase means the trial is over, and what the difficulty knobs are called:
 
@@ -2248,7 +2336,7 @@ of them add a short method or two — a port that names an object rather than
 an index, a port that is a moment rather than a symbol, a trial window the
 task has no phase for, a coach gated on whether the boundary will actually
 pay it. The four written before that existed still carry both, at about a
-hundred lines apiece. Sixteen and fifteen and four is thirty-five, which
+hundred lines apiece. Seventeen and fifteen and four is thirty-six, which
 is the point of counting them.
 `ADDING_A_TASK.md` is the whole contract.
 
