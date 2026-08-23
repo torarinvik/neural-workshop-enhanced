@@ -35,7 +35,8 @@ if ROOT not in sys.path:
 os.environ.setdefault('NW_HEADLESS', '1')
 
 from uisupport import (Scrabble, TASKS, close_overlays,        # noqa: E402
-                       geometry, needs_ui, reset_window)
+                       geometry, needs_ui, reset_window, state)
+from pyglet.window import mouse                                # noqa: E402
 
 from neural_workshop import scrabble as S                     # noqa: E402
 from neural_workshop import wordlist as W                     # noqa: E402
@@ -528,6 +529,187 @@ class TheScrabbleScreen(unittest.TestCase):
         self.play_the_best()
         self.task.relayout()
         self.assertTrue(self.task.verdict.label.text)
+
+    # --- the mouse -------------------------------------------------------
+
+    def middle_of(self, cell):
+        x, y, step = self.task._cell_rect(cell)
+        return int(x + step / 2), int(y + step / 2)
+
+    def middle_of_tile(self, slot):
+        x, y, width, height = self.task._tile_rect(slot)
+        return int(x + width / 2), int(y + height / 2)
+
+    def middle_of_play(self):
+        left, bottom, width, height = self.task.play_rect()
+        return int(left + width / 2), int(bottom + height / 2)
+
+    def free_square(self):
+        """A square with nothing on it — including nothing laid this turn.
+
+        A tile laid this turn is not on the board yet, so
+        ``board.empty`` still says yes about the square under it; a
+        helper that trusted that walked the cursor onto its own tiles
+        and the lays after the first were refused.
+        """
+        mine = {cell for cell, _letter in self.task.laid}
+        return next(cell for cell in range(self.task.size() ** 2)
+                    if self.task.deal.board.empty(cell)
+                    and cell not in mine and cell != self.task.at)
+
+    def play_the_best_by_mouse(self):
+        best = self.task.deal.best
+        for cell, letter in best.laid:
+            self.task.on_mouse_press(*self.middle_of(cell), mouse.LEFT, 0)
+            slot = next(at for at, held in enumerate(self.task.deal.rack)
+                        if held == letter and at not in self.task.spent)
+            self.task.on_mouse_press(*self.middle_of_tile(slot), mouse.LEFT, 0)
+        self.task.down = best.down
+        self.task.on_mouse_press(*self.middle_of_play(), mouse.LEFT, 0)
+
+    def test_every_square_is_found_under_its_own_middle(self):
+        self.open_one()
+        for cell in range(self.task.size() ** 2):
+            self.assertEqual(self.task.cell_at(*self.middle_of(cell)), cell)
+
+    def test_a_click_goes_to_the_square_under_it(self):
+        self.open_one()
+        wanted = self.free_square()
+        self.task.on_mouse_press(*self.middle_of(wanted), mouse.LEFT, 0)
+        self.assertEqual(self.task.at, wanted)
+
+    def test_clicking_the_square_you_are_on_turns(self):
+        self.open_one()
+        was, facing = self.task.at, self.task.down
+        self.task.on_mouse_press(*self.middle_of(was), mouse.LEFT, 0)
+        self.assertEqual(self.task.at, was)
+        self.assertNotEqual(self.task.down, facing)
+
+    def test_a_right_click_turns_without_moving(self):
+        self.open_one()
+        was, facing = self.task.at, self.task.down
+        self.task.on_mouse_press(0, 0, mouse.RIGHT, 0)
+        self.assertEqual(self.task.at, was)
+        self.assertNotEqual(self.task.down, facing)
+
+    def test_a_click_on_a_square_already_taken_lays_nothing(self):
+        self.open_one()
+        taken = next(cell for cell in range(self.task.size() ** 2)
+                     if not self.task.deal.board.empty(cell))
+        was = self.task.at
+        self.task.on_mouse_press(*self.middle_of(taken), mouse.LEFT, 0)
+        self.assertEqual(self.task.at, was)
+        self.assertEqual(self.task.laid, [])
+
+    def test_a_click_on_a_rack_tile_lays_it_where_the_cursor_is(self):
+        self.open_one()
+        where = self.task.at
+        self.task.on_mouse_press(*self.middle_of_tile(0), mouse.LEFT, 0)
+        self.assertEqual(self.task.laid, [(where, self.task.deal.rack[0])])
+
+    def test_a_tile_already_played_is_not_there_to_click(self):
+        self.open_one()
+        where = self.middle_of_tile(0)
+        self.task.on_mouse_press(*where, mouse.LEFT, 0)
+        self.assertIsNone(self.task.tile_at(*where))
+        self.task.on_mouse_press(*where, mouse.LEFT, 0)
+        self.assertEqual(len(self.task.laid), 1)
+
+    def test_clicking_a_tile_you_laid_lifts_that_one(self):
+        self.open_one()
+        for slot in (0, 1, 2):
+            self.task.at = self.free_square()
+            self.task.on_mouse_press(*self.middle_of_tile(slot), mouse.LEFT, 0)
+        self.assertEqual(len(self.task.laid), 3)
+        first, letter = self.task.laid[0]
+        self.task.on_mouse_press(*self.middle_of(first), mouse.LEFT, 0)
+        self.assertEqual(len(self.task.laid), 2)
+        self.assertNotIn(first, [cell for cell, _l in self.task.laid])
+        self.assertEqual(self.task.rack_left().count(letter),
+                         self.task.deal.rack.count(letter)
+                         - [held for _c, held in self.task.laid].count(letter))
+
+    def test_lifting_out_of_order_puts_back_the_right_tile(self):
+        # The slot lifted has to be the slot that tile came from, or a
+        # rack of two Es lifts one and returns the other, and the tile
+        # values quietly stop adding up.
+        self.open_one()
+        for slot in (0, 1, 2):
+            self.task.at = self.free_square()
+            self.task.on_mouse_press(*self.middle_of_tile(slot), mouse.LEFT, 0)
+        middle_cell = self.task.laid[1][0]
+        self.task.lift(middle_cell)
+        self.assertEqual(self.task.spent, [0, 2])
+        self.assertIsNotNone(self.task.tile_at(*self.middle_of_tile(1)))
+
+    def test_the_play_button_plays(self):
+        self.open_one()
+        self.play_the_best_by_mouse()
+        self.assertEqual(self.task.phase, 'scored')
+        self.assertTrue(self.task.verdict_shown[0])
+
+    def test_the_play_button_with_nothing_laid_is_refused(self):
+        self.open_one()
+        self.task.on_mouse_press(*self.middle_of_play(), mouse.LEFT, 0)
+        self.assertEqual(self.task.phase, 'playing')
+        self.assertIsNone(self.task.verdict_shown)
+
+    def test_the_mouse_and_the_keyboard_lay_the_same_tiles(self):
+        self.open_one()
+        cell = self.free_square()
+        self.task.at = cell
+        self.task.on_mouse_press(*self.middle_of_tile(0), mouse.LEFT, 0)
+        by_mouse = list(self.task.laid)
+        self.task.take_back()
+        self.task.at = cell
+        self.task.lay(0)
+        self.assertEqual(self.task.laid, by_mouse)
+
+    def test_a_click_starts_a_run_and_takes_the_next_board(self):
+        self.assertEqual(self.task.phase, 'ready')
+        self.task.on_mouse_press(1, 1, mouse.LEFT, 0)
+        self.assertEqual(self.task.phase, 'playing')
+        self.play_the_best_by_mouse()
+        self.task.on_mouse_press(1, 1, mouse.LEFT, 0)
+        self.assertIn(self.task.phase, ('playing', 'done'))
+
+    def test_hovering_is_not_choosing(self):
+        self.open_one()
+        was = self.task.at
+        wanted = self.free_square()
+        self.task.on_mouse_motion(*self.middle_of(wanted), 0, 0)
+        self.assertEqual(self.task.hovered, wanted)
+        self.assertEqual(self.task.at, was)
+        self.task.on_mouse_motion(*self.middle_of_tile(0), 0, 0)
+        self.assertEqual(self.task.hovered_tile, 0)
+        self.assertEqual(self.task.laid, [])
+        self.task.on_mouse_motion(*self.middle_of_play(), 0, 0)
+        self.assertTrue(self.task.hovered_play)
+        self.assertIsNone(self.task.hovered)
+
+    def test_the_rack_and_the_button_sit_on_one_centred_row(self):
+        # Centring the rack alone and hanging the button off its end
+        # put the row off centre by half a button.
+        self.open_one()
+        left = self.task._tile_rect(0)[0]
+        right = self.task.play_rect()[0] + self.task.play_rect()[2]
+        self.assertAlmostEqual((left + right) / 2,
+                               state.window.width / 2.0, delta=2.0)
+        self.assertGreater(self.task.play_rect()[0],
+                           self.task._tile_rect(
+                               len(self.task.deal.rack) - 1)[0])
+
+    def test_the_play_button_clears_the_verdict_band(self):
+        self.open_one()
+        for width, height in ((1024, 768), (912, 684), (800, 600)):
+            geometry.set_window_size(width, height)
+            self.task.relayout()
+            self.assertGreaterEqual(self.task.play_rect()[1],
+                                    above_the_band(0.0) - 1.0,
+                                    (width, height))
+            self.assertLessEqual(self.task.play_rect()[0]
+                                 + self.task.play_rect()[2],
+                                 state.window.width, (width, height))
 
     def test_the_rack_clears_the_verdict_band(self):
         # The rack is drawn below the board, so the board's own

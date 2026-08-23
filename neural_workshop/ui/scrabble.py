@@ -24,8 +24,19 @@ put one on the other. Four decisions matter here:
   which is not what any rung here is about.
 
 * **Only the tiles you laid this turn can be taken back.** Backspace
-  lifts the last one. What was on the board when the trial opened is
-  the position and is not editable.
+  lifts the last one and a click lifts the one you clicked. What was
+  on the board when the trial opened is the position and is not
+  editable.
+
+* **The mouse plays the whole turn.** Click a square to go to it,
+  click it again to turn between across and down, click a tile in the
+  rack to lay it, click a tile you laid to take it back, and click
+  Play. Every one of those is something a key already does, which is
+  the rule: the pointer is a second way to reach the same actions and
+  never a way to reach a different set. The one exception is lifting a
+  particular tile rather than the last one, and it is not really an
+  exception — lifting the last one repeatedly reaches the same board,
+  which is what the agent's port does.
 
 SPDX-License-Identifier: GPL-2.0-or-later
 """
@@ -36,7 +47,7 @@ import time
 from typing import Dict, List, Optional, Tuple
 
 import pyglet
-from pyglet.window import key
+from pyglet.window import key, mouse
 
 from .. import display, state
 from ..constants import FONTLIST
@@ -54,6 +65,8 @@ RULE = (120, 120, 120)
 HERE = (86, 180, 233)          # sky blue
 #: A tile laid this turn, as against one that was already there.
 MINE = (0, 114, 178)           # blue
+#: The square or tile under the pointer, which is not a choice yet.
+NEAR = (86, 180, 233, 40)
 
 #: What each premium square is painted. Kept pale: a board is mostly
 #: premiums and a saturated one would be unreadable under the tiles.
@@ -90,6 +103,12 @@ class Scrabble:
         self.spent: List[int] = []
         self.at = 0
         self.down = False
+        #: What the pointer is over: a board cell, a rack slot, or the
+        #: Play button. Separate from anything chosen, because hovering
+        #: is not choosing.
+        self.hovered: Optional[int] = None
+        self.hovered_tile: Optional[int] = None
+        self.hovered_play = False
         self.started_at = 0.0
         self.trial = 0
         self.results: List[Tuple[int, int, int, float]] = []
@@ -100,7 +119,8 @@ class Scrabble:
         self.message = _('Press Space to start')
         self.drawn: List[object] = []
         self._build_chrome()
-        state.window.push_handlers(self.on_key_press, self.on_draw)
+        state.window.push_handlers(self.on_key_press, self.on_mouse_press,
+                                   self.on_mouse_motion, self.on_draw)
         cursor.acquire()
         display.register_overlay(self)
         Scrabble.instance = self
@@ -146,8 +166,8 @@ class Scrabble:
             batch=self.batch, x=width_center(), y=from_top_edge(64),
             anchor_x='center', anchor_y='center', font_name=FONTLIST)
         self.footnote = pyglet.text.Label(
-            _('Esc: menu   Space: start   arrows: move   1-7: lay'
-              '   Bksp: undo   Tab: turn   Enter: play   O: options'),
+            _('Esc: menu   Space: start   click or arrows: move'
+              '   click a tile to lay   Tab: turn   Enter: play'),
             font_size=calc_fontsize(11), color=self.textcolor,
             batch=self.batch, x=width_center(), y=from_bottom_edge(24),
             anchor_x='center', anchor_y='center', font_name=FONTLIST)
@@ -237,6 +257,8 @@ class Scrabble:
         self.at = self._nearest_empty(made.board.size // 2 * made.board.size
                                       + made.board.size // 2)
         self.down = False
+        self.hovered = self.hovered_tile = None
+        self.hovered_play = False
         self.verdict_shown = None
         self.verdict.clear()
         self.started_at = self.clock()
@@ -309,6 +331,26 @@ class Scrabble:
             return
         cell, _letter = self.laid.pop()
         self.spent.pop()
+        self.at = cell
+        self._redraw()
+
+    def lift(self, cell: int) -> None:
+        """Lift the tile laid on *cell* this turn, wherever in the order.
+
+        The keyboard and the agent's port lift the last one instead,
+        and that is not a smaller set of reachable boards: lifting the
+        last one repeatedly and laying the keepers again gets to the
+        same place. It is a smaller number of actions to get there,
+        which is a convenience for the hand and not a capability.
+        """
+        if self.phase != 'playing':
+            return
+        where = next((at for at, (one, _letter) in enumerate(self.laid)
+                      if one == cell), None)
+        if where is None:
+            return
+        self.laid.pop(where)
+        self.spent.pop(where)
         self.at = cell
         self._redraw()
 
@@ -420,6 +462,10 @@ class Scrabble:
                     color=(MINE if cell in mine else self.ink) + (255,),
                     batch=self.batch, x=x + step / 2, y=y + step * 0.46,
                     anchor_x='center', anchor_y='center', font_name=FONTLIST))
+        if self.hovered is not None and self.hovered != self.at:
+            x, y, _s = self._cell_rect(self.hovered)
+            self.drawn.append(pyglet.shapes.Rectangle(
+                x, y, step, step, color=NEAR, batch=self.batch))
         self._draw_rules(left, bottom, side, size, step)
         x, y, _s = self._cell_rect(self.at)
         self.drawn.append(pyglet.shapes.BorderedRectangle(
@@ -444,19 +490,62 @@ class Scrabble:
         top = self._board()[1] - step * 0.3
         return (top - step * 1.3, top)
 
+    def _strip_width(self) -> Tuple[float, float, float]:
+        """Rack width, the gap after it, and the Play button's width."""
+        step = self._rack_step()
+        return (step * (len(self.deal.rack) if self.deal else 1),
+                step * 0.5, step * 2.6)
+
+    def _rack_left(self) -> float:
+        """Where the first rack tile starts.
+
+        The rack and the button are centred *together*. Centring the
+        rack alone and hanging the button off its right end put the
+        whole row off centre by half a button, which looks like a
+        layout bug because it is one.
+        """
+        rack, gap, button = self._strip_width()
+        return (state.window.width - (rack + gap + button)) / 2
+
+    def _tile_rect(self, slot: int) -> Tuple[float, float, float, float]:
+        step = self._rack_step()
+        top = self.rack_box()[1]
+        return (self._rack_left() + slot * step, top - step,
+                step * 0.9, step)
+
+    def play_rect(self) -> Tuple[float, float, float, float]:
+        """The Play button: left, bottom, width, height.
+
+        In the rack strip rather than under it, because the strip's
+        floor is already the lowest this task may draw — the verdict
+        reader owns everything below it, and a button down there would
+        be a shape in the band whose colour nobody is checking.
+        """
+        step = self._rack_step()
+        top = self.rack_box()[1]
+        rack, gap, width = self._strip_width()
+        left = self._rack_left() + rack + gap
+        # Never off the right edge, however narrow the window is.
+        left = min(left, state.window.width - width - step * 0.2)
+        return (left, top - step, width, step)
+
+    def _in(self, rect: Tuple[float, float, float, float],
+            x: float, y: float) -> bool:
+        left, bottom, width, height = rect
+        return left <= x < left + width and bottom <= y < bottom + height
+
     def _draw_rack(self) -> None:
         """The tiles still in hand, numbered by the key that lays them."""
         step = self._rack_step()
-        wide = step * len(self.deal.rack)
-        start = (state.window.width - wide) / 2
         top = self.rack_box()[1]
         for position, letter in enumerate(self.deal.rack):
             if position in self.spent:
                 continue
-            x = start + position * step
+            x, y, width, height = self._tile_rect(position)
             self.drawn.append(pyglet.shapes.BorderedRectangle(
-                x, top - step, step * 0.9, step, border=1.0,
-                color=self.background, border_color=RULE, batch=self.batch))
+                x, y, width, height, border=1.0, color=self.background,
+                border_color=HERE if position == self.hovered_tile else RULE,
+                batch=self.batch))
             self.drawn.append(pyglet.text.Label(
                 letter.upper(), font_size=fit(step, 0.42),
                 color=self.textcolor, batch=self.batch,
@@ -467,6 +556,21 @@ class Scrabble:
                 font_size=fit(step, 0.2), color=self.ink + (190,),
                 batch=self.batch, x=x + step * 0.45, y=top - step * 0.9,
                 anchor_x='center', anchor_y='center', font_name=FONTLIST))
+        self._draw_play_button(step)
+
+    def _draw_play_button(self, step: float) -> None:
+        """The one action the keyboard has that a square does not."""
+        left, bottom, width, height = self.play_rect()
+        live = bool(self.laid)
+        self.drawn.append(pyglet.shapes.BorderedRectangle(
+            left, bottom, width, height, border=1.0, color=self.background,
+            border_color=HERE if (self.hovered_play and live) else RULE,
+            batch=self.batch))
+        self.drawn.append(pyglet.text.Label(
+            _('Play'), font_size=fit(step, 0.32),
+            color=self.ink + (255 if live else 110,), batch=self.batch,
+            x=left + width / 2, y=bottom + height / 2,
+            anchor_x='center', anchor_y='center', font_name=FONTLIST))
 
     def _update_status(self) -> None:
         parts = [self.message]
@@ -485,7 +589,8 @@ class Scrabble:
         self._clear_drawn()
         cursor.release()
         display.unregister_overlay(self)
-        state.window.remove_handlers(self.on_key_press, self.on_draw)
+        state.window.remove_handlers(self.on_key_press, self.on_mouse_press,
+                                     self.on_mouse_motion, self.on_draw)
         Scrabble.instance = None
 
     def return_to_hub(self) -> None:
@@ -533,6 +638,85 @@ class Scrabble:
             self.take_back()
         elif symbol in self._RACK_KEYS:
             self.lay(self._RACK_KEYS[symbol])
+        return pyglet.event.EVENT_HANDLED
+
+    def cell_at(self, x: float, y: float) -> Optional[int]:
+        """The board square under (*x*, *y*), or ``None`` off the board."""
+        if self.deal is None:
+            return None
+        left, bottom, side = self._board()
+        if not (left <= x < left + side and bottom <= y < bottom + side):
+            return None
+        size = self.size()
+        step = side / size
+        col = int((x - left) / step)
+        row = size - 1 - int((y - bottom) / step)
+        if not (0 <= col < size and 0 <= row < size):
+            return None
+        return row * size + col
+
+    def tile_at(self, x: float, y: float) -> Optional[int]:
+        """The rack slot under (*x*, *y*), skipping ones already played."""
+        if self.deal is None:
+            return None
+        for slot in range(len(self.deal.rack)):
+            if slot in self.spent:
+                continue
+            if self._in(self._tile_rect(slot), x, y):
+                return slot
+        return None
+
+    def click(self, cell: int) -> None:
+        """Go to *cell*, turn if already there, or lift what is on it."""
+        if self.phase != 'playing':
+            return
+        if any(one == cell for one, _letter in self.laid):
+            self.lift(cell)
+            return
+        if not self.deal.board.empty(cell):
+            self.message = _('That square is taken')
+            self._update_status()
+            return
+        if cell == self.at:
+            self.turn()
+            return
+        self.at = cell
+        self._redraw()
+
+    def on_mouse_press(self, x: int, y: int, button: int,
+                       modifiers: int) -> bool:
+        if button == mouse.RIGHT:
+            self.turn()
+            return pyglet.event.EVENT_HANDLED
+        if self.phase in ('ready', 'done'):
+            self.start_run()
+            return pyglet.event.EVENT_HANDLED
+        if self.phase == 'scored':
+            self._next_trial()
+            return pyglet.event.EVENT_HANDLED
+        if self.phase == 'playing':
+            if self._in(self.play_rect(), x, y):
+                self.submit()
+                return pyglet.event.EVENT_HANDLED
+            slot = self.tile_at(x, y)
+            if slot is not None:
+                self.lay(slot)
+                return pyglet.event.EVENT_HANDLED
+            found = self.cell_at(x, y)
+            if found is not None:
+                self.click(found)
+        return pyglet.event.EVENT_HANDLED
+
+    def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> bool:
+        playing = self.phase == 'playing'
+        cell = self.cell_at(x, y) if playing else None
+        slot = self.tile_at(x, y) if playing else None
+        over = playing and self._in(self.play_rect(), x, y)
+        if (cell, slot, over) != (self.hovered, self.hovered_tile,
+                                  self.hovered_play):
+            self.hovered, self.hovered_tile, self.hovered_play = (cell, slot,
+                                                                  over)
+            self._redraw()
         return pyglet.event.EVENT_HANDLED
 
     def on_draw(self) -> bool:

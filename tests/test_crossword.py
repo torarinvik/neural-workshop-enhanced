@@ -31,6 +31,7 @@ os.environ.setdefault('NW_HEADLESS', '1')
 
 from uisupport import (Crossword, TASKS, close_overlays,       # noqa: E402
                        needs_ui, reset_window)
+from pyglet.window import mouse                               # noqa: E402
 
 from neural_workshop import crossword as C                    # noqa: E402
 from neural_workshop import wordlist as W                     # noqa: E402
@@ -271,6 +272,20 @@ class TheCrosswordScreen(unittest.TestCase):
         self.task.start_run()
         self.assertEqual(self.task.phase, 'solving')
 
+    def open_a_blocked_one(self):
+        """A rung whose grid has blocks in it, which rung one has not.
+
+        Rung one is a four by four, and a four by four is a word
+        square whatever is asked of it — there is nowhere to put a
+        block that does not leave a run of one or two. So the tests
+        about blocks open a six by six instead of skipping, which is
+        the difference between checking the behaviour and reporting
+        that it was not checked.
+        """
+        self.task.start_rung = self.task.rung = 2
+        self.open_one()
+        self.assertTrue(self.task.puzzle.blocks)
+
     def blank(self):
         return next(cell for cell, letter in enumerate(self.task.filled)
                     if self.task.puzzle.solution[cell] and not letter)
@@ -297,11 +312,9 @@ class TheCrosswordScreen(unittest.TestCase):
         self.task.on_draw()
 
     def test_the_cursor_steps_over_a_block(self):
-        self.open_one()
+        self.open_a_blocked_one()
         size = self.task.size()
         blocks = self.task.puzzle.blocks
-        if not blocks:
-            self.skipTest('this rung has no blocks in it')
         cell = min(blocks)
         row, col = divmod(cell, size)
         if col == 0:
@@ -380,6 +393,99 @@ class TheCrosswordScreen(unittest.TestCase):
         self.solve()
         self.task.relayout()
         self.assertTrue(self.task.verdict.label.text)
+
+    # --- the mouse -------------------------------------------------------
+
+    def middle_of(self, cell):
+        x, y, step = self.task._cell_rect(cell)
+        return int(x + step / 2), int(y + step / 2)
+
+    def some_open_cell(self):
+        return next(cell for cell in range(self.task.size() ** 2)
+                    if not self.task.blocked(cell) and cell != self.task.at)
+
+    def test_a_click_goes_to_the_cell_under_it(self):
+        self.open_one()
+        wanted = self.some_open_cell()
+        self.task.on_mouse_press(*self.middle_of(wanted), mouse.LEFT, 0)
+        self.assertEqual(self.task.at, wanted)
+
+    def test_every_cell_is_found_under_its_own_middle(self):
+        # One off-by-one in the row flip and the top half of the grid
+        # answers for the bottom half, which is the sort of thing that
+        # is only ever noticed by whoever is trying to play it.
+        self.open_one()
+        for cell in range(self.task.size() ** 2):
+            self.assertEqual(self.task.cell_at(*self.middle_of(cell)), cell)
+
+    def test_clicking_the_cell_you_are_on_turns_the_cursor(self):
+        # What every crossword on a screen has done for thirty years.
+        self.open_one()
+        was, facing = self.task.at, self.task.down
+        self.task.on_mouse_press(*self.middle_of(was), mouse.LEFT, 0)
+        self.assertEqual(self.task.at, was)
+        self.assertNotEqual(self.task.down, facing)
+
+    def test_a_click_on_a_block_leaves_the_cursor_alone(self):
+        self.open_a_blocked_one()
+        was = self.task.at
+        self.task.on_mouse_press(*self.middle_of(min(self.task.puzzle.blocks)),
+                                 mouse.LEFT, 0)
+        self.assertEqual(self.task.at, was)
+
+    def test_a_click_off_the_grid_is_not_a_cell(self):
+        self.open_one()
+        left, bottom, side = self.task._board()
+        for x, y in ((left - 20, bottom + 10), (left + side + 20, bottom + 10),
+                     (left + 10, bottom - 20), (left + 10, bottom + side + 20)):
+            self.assertIsNone(self.task.cell_at(x, y), (x, y))
+
+    def test_a_right_click_turns_without_moving(self):
+        self.open_one()
+        was, facing = self.task.at, self.task.down
+        self.task.on_mouse_press(0, 0, mouse.RIGHT, 0)
+        self.assertEqual(self.task.at, was)
+        self.assertNotEqual(self.task.down, facing)
+
+    def test_a_click_starts_a_run_and_takes_the_next_grid(self):
+        if not self.stocked:
+            self.skipTest('the word list has not been fetched')
+        self.assertEqual(self.task.phase, 'ready')
+        self.task.on_mouse_press(1, 1, mouse.LEFT, 0)
+        self.assertEqual(self.task.phase, 'solving')
+        self.solve()
+        self.assertEqual(self.task.phase, 'solved')
+        self.task.on_mouse_press(1, 1, mouse.LEFT, 0)
+        self.assertIn(self.task.phase, ('solving', 'done'))
+
+    def test_hovering_is_not_choosing(self):
+        self.open_one()
+        was = self.task.at
+        wanted = self.some_open_cell()
+        self.task.on_mouse_motion(*self.middle_of(wanted), 0, 0)
+        self.assertEqual(self.task.hovered, wanted)
+        self.assertEqual(self.task.at, was)
+
+    def test_the_pointer_over_a_block_hovers_nothing(self):
+        self.open_a_blocked_one()
+        self.task.on_mouse_motion(*self.middle_of(min(self.task.puzzle.blocks)),
+                                  0, 0)
+        self.assertIsNone(self.task.hovered)
+
+    def test_the_mouse_and_the_keyboard_reach_the_same_place(self):
+        self.open_one()
+        size = self.task.size()
+        start = self.task.at
+        wanted = next((cell for cell in range(start + 1, size * size)
+                       if not self.task.blocked(cell)
+                       and cell // size == start // size), None)
+        if wanted is None:
+            self.skipTest('nothing to the right of the opening cell')
+        self.task.move(1, 0)
+        by_key = self.task.at
+        self.task.at = start
+        self.task.on_mouse_press(*self.middle_of(by_key), mouse.LEFT, 0)
+        self.assertEqual(self.task.at, by_key)
 
     def test_the_grid_clears_the_verdict_band(self):
         self.open_one()

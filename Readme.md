@@ -922,6 +922,14 @@ across and down. One clue is shown at a time — the clue for the entry
 the cursor is facing — because a screen this size cannot hold a list
 down the side and a clue you cannot read is not a clue.
 
+The mouse does what the mouse does in every crossword: click a cell to
+go to it, and click the cell you are already on to turn between across
+and down. That second one is the convention every crossword on a
+screen has used for thirty years, and a task that invented its own
+would be teaching its own controls rather than testing anything.
+Right-click turns from anywhere. The letters stay on the keyboard,
+because they are letters.
+
 Every grid is **fully checked**: each cell belongs to an across entry
 and a down entry, both at least three letters, so every letter can be
 reached two ways. That is the American convention and it is not a
@@ -973,6 +981,17 @@ bag to draw from: a trial hands over a position and scores what you
 lay against **the best play that existed**, worked out exactly. The
 Traveling Salesman screen is scored the same way and for the same
 reason — a rung cannot be passed by being told what good is.
+
+The mouse plays the whole turn: click a square to go to it, click it
+again to turn, click a tile in the rack to lay it, click a tile you
+laid to take it back, and click **Play**. Arrows, `1`-`7`, `Tab`,
+Backspace and Enter do the same things, which is the rule — the
+pointer is a second way to reach the same actions and never a way to
+reach a different set. The one exception is lifting a *particular*
+tile rather than the last one, and it is not really an exception:
+lifting the last one repeatedly and re-laying the keepers reaches the
+same board, so it is a convenience for the hand and not a capability
+the keyboard or the agent's ports lack.
 
 The scoring is the real one, because a made-up one would be a
 different puzzle: standard letter values and distribution, double and

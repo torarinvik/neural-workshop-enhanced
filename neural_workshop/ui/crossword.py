@@ -13,6 +13,13 @@ clue read out, and the keys that fill it. Four decisions matter here:
   know; the gain is that a clue is always legible, and the ladder is
   about crossings rather than about reading.
 
+* **The mouse does what the mouse does in every crossword.** Click a
+  cell to go to it; click the cell you are already on to turn between
+  across and down. That second one is the convention every crossword
+  on a screen has used for thirty years, and a task that invented its
+  own would be teaching its own controls rather than testing anything.
+  The letters stay on the keyboard, because they are letters.
+
 * **A withheld clue says so.** At the top of the ladder some entries
   have no clue at all and must come from their crossings. The screen
   prints a dash rather than nothing, because an empty line reads as a
@@ -37,7 +44,7 @@ import time
 from typing import Dict, List, Optional, Set, Tuple
 
 import pyglet
-from pyglet.window import key
+from pyglet.window import key, mouse
 
 from .. import display, state
 from ..constants import FONTLIST
@@ -54,6 +61,8 @@ RULE = (120, 120, 120)
 #: The cell the cursor is on, and the rest of its entry.
 HERE = (86, 180, 233)          # sky blue
 LIT = (86, 180, 233, 50)
+#: The cell under the pointer, which is not where the cursor is.
+NEAR = (86, 180, 233, 22)
 #: A letter that contradicts the answer, when mistakes are shown.
 WRONG = (213, 94, 0)           # vermilion
 #: What the player wrote, as against what came with the puzzle.
@@ -82,6 +91,9 @@ class Crossword:
         self.filled: List[str] = []
         self.at = 0
         self.down = False
+        #: The cell the pointer is over, for a hint of a highlight. Kept
+        #: separate from :attr:`at` because hovering is not choosing.
+        self.hovered: Optional[int] = None
         self.mistakes = 0
         self.started_at = 0.0
         self.trial = 0
@@ -94,7 +106,8 @@ class Crossword:
                         else missing_message(CLUES))
         self.drawn: List[object] = []
         self._build_chrome()
-        state.window.push_handlers(self.on_key_press, self.on_draw)
+        state.window.push_handlers(self.on_key_press, self.on_mouse_press,
+                                   self.on_mouse_motion, self.on_draw)
         cursor.acquire()
         display.register_overlay(self)
         Crossword.instance = self
@@ -151,8 +164,8 @@ class Crossword:
             anchor_x='center', anchor_y='center', font_name=FONTLIST,
             multiline=True, width=state.window.width * 0.9, align='center')
         self.footnote = pyglet.text.Label(
-            _('Esc: task menu     Space: start     arrows: move'
-              '     letters: write     Tab: turn     O: options'),
+            _('Esc: menu   Space: start   click or arrows: move'
+              '   letters: write   Tab: turn   O: options'),
             font_size=calc_fontsize(11), color=self.textcolor,
             batch=self.batch, x=width_center(), y=from_bottom_edge(24),
             anchor_x='center', anchor_y='center', font_name=FONTLIST)
@@ -224,6 +237,7 @@ class Crossword:
         self.at = next((cell for cell in range(made.size * made.size)
                         if made.solution[cell] and not self.filled[cell]), 0)
         self.down = False
+        self.hovered = None
         self.mistakes = 0
         self.verdict_shown = None
         self.verdict.clear()
@@ -431,6 +445,10 @@ class Crossword:
             x, y, _s = self._cell_rect(cell)
             self.drawn.append(pyglet.shapes.Rectangle(
                 x, y, step, step, color=LIT, batch=self.batch))
+        if self.hovered is not None and self.hovered != self.at:
+            x, y, _s = self._cell_rect(self.hovered)
+            self.drawn.append(pyglet.shapes.Rectangle(
+                x, y, step, step, color=NEAR, batch=self.batch))
         x, y, _s = self._cell_rect(self.at)
         self.drawn.append(pyglet.shapes.BorderedRectangle(
             x, y, step, step, border=max(2.0, step * 0.08),
@@ -465,7 +483,8 @@ class Crossword:
         self._clear_drawn()
         cursor.release()
         display.unregister_overlay(self)
-        state.window.remove_handlers(self.on_key_press, self.on_draw)
+        state.window.remove_handlers(self.on_key_press, self.on_mouse_press,
+                                     self.on_mouse_motion, self.on_draw)
         Crossword.instance = None
 
     def return_to_hub(self) -> None:
@@ -507,6 +526,61 @@ class Crossword:
             self.erase()
         elif key.A <= symbol <= key.Z:
             self.write(LETTERS[symbol - key.A])
+        return pyglet.event.EVENT_HANDLED
+
+    def cell_at(self, x: float, y: float) -> Optional[int]:
+        """The cell under (*x*, *y*), or ``None`` off the grid."""
+        if self.puzzle is None:
+            return None
+        left, bottom, side = self._board()
+        if not (left <= x < left + side and bottom <= y < bottom + side):
+            return None
+        size = self.size()
+        step = side / size
+        col = int((x - left) / step)
+        row = size - 1 - int((y - bottom) / step)
+        if not (0 <= col < size and 0 <= row < size):
+            return None
+        return row * size + col
+
+    def click(self, cell: int) -> None:
+        """Go to *cell*, or turn if that is where the cursor already is.
+
+        Clicking the cell you are on to switch between across and down
+        is what every crossword on a screen has done for thirty years.
+        Inventing something else here would teach this task's controls
+        rather than test anything.
+        """
+        if self.phase != 'solving' or self.blocked(cell):
+            return
+        if cell == self.at:
+            self.turn()
+            return
+        self.at = cell
+        self._redraw()
+
+    def on_mouse_press(self, x: int, y: int, button: int,
+                       modifiers: int) -> bool:
+        if button == mouse.RIGHT:
+            self.turn()
+            return pyglet.event.EVENT_HANDLED
+        if self.phase in ('ready', 'done'):
+            self.start_run()
+        elif self.phase == 'solved':
+            self._next_trial()
+        elif self.phase == 'solving':
+            found = self.cell_at(x, y)
+            if found is not None:
+                self.click(found)
+        return pyglet.event.EVENT_HANDLED
+
+    def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> bool:
+        found = self.cell_at(x, y) if self.phase == 'solving' else None
+        if found is not None and self.blocked(found):
+            found = None
+        if found != self.hovered:
+            self.hovered = found
+            self._redraw()
         return pyglet.event.EVENT_HANDLED
 
     def on_draw(self) -> bool:
