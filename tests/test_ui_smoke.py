@@ -5,7 +5,8 @@
 The tests themselves live in ``test_ui_menus``, ``test_ui_screens``,
 ``test_ui_tasks``, ``test_ui_display``, ``test_ui_longterm``,
 ``test_ui_matrices``, ``test_ui_reasoning``, ``test_ui_jigsaw``,
-``test_tetris``, ``test_ninarow`` and ``test_ui_units``; this module gathers them so
+``test_tetris``, ``test_ninarow``, ``test_trivia`` and ``test_ui_units``;
+this module gathers them so
 that ``python tests/test_ui_smoke.py`` still runs everything.
 
 SPDX-License-Identifier: GPL-2.0-or-later
@@ -28,6 +29,7 @@ from test_ui_perception import *  # noqa: F401,F403,E402
 from test_sokoban import *        # noqa: F401,F403,E402
 from test_tetris import *         # noqa: F401,F403,E402
 from test_ninarow import *        # noqa: F401,F403,E402
+from test_trivia import *         # noqa: F401,F403,E402
 from test_ui_planning import *    # noqa: F401,F403,E402
 from test_ui_reasoning import *   # noqa: F401,F403,E402
 from test_ui_screens import *     # noqa: F401,F403,E402

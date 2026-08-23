@@ -151,6 +151,13 @@ BY_LUCK = {
     # the reason the ports are a ceiling: twenty-four of the
     # twenty-seven do nothing here.
     'syllogism': (900, {'rung': 1, 'trials': 4}),
+    # Every port is an answer here too, and at rung one there are two
+    # of them, so random play is a coin and about half its outcomes
+    # are green. That is the highest free floor on this list and it is
+    # the reason the number is worth writing down: a learning curve
+    # drawn on rung-one trivia starts at 50%, and the questions are
+    # not answerable from the frame in any case.
+    'trivia': (900, {'rung': 1, 'trials': 4}),
 }
 
 
@@ -273,6 +280,9 @@ class RandomPlayIsPaid(unittest.TestCase):
 
     def test_n_in_a_row(self):
         self.check('n_in_a_row')
+
+    def test_trivia(self):
+        self.check('trivia')
 
     # These six were in BY_LUCK with a measured step budget apiece and
     # no method beside them, so nothing ever played them. Found by the
@@ -499,6 +509,17 @@ class PlayedProperlyItIsPaid(unittest.TestCase):
         env = catalog.env_class('syllogism')(seed=0, rung=6, trials=2)
         self.assertEqual(driven(env, lambda task: task.question.answer),
                          [1.0])
+
+    def test_the_answer_the_dataset_gives_is_paid(self):
+        """Answered through the ports, on a rung with eight of them live.
+
+        Rung seven rather than rung one on purpose: two options would
+        be passed half the time by a policy that always presses zero,
+        and this one has to find the right index among eight that
+        change place with every deal.
+        """
+        env = catalog.env_class('trivia')(seed=0, rung=7, trials=2)
+        self.assertEqual(driven(env, lambda task: task.round.answer), [1.0])
 
     def test_the_naming_is_a_knob_like_the_others(self):
         """An environment that wants the same task without the belief."""

@@ -1610,6 +1610,57 @@ SYLLOGISM = TaskSpec(
     note=syllogism_note)
 
 
+def trivia_note(chosen: Dict[str, Any]) -> str:
+    """What the rung offers, and which pool it will come out of.
+
+    The pool is the line worth printing here rather than only in the
+    game. A player dealing from the built-in questions will meet them
+    all inside a few runs, and the difference between *this task is
+    repetitive* and *this task has not been fetched* is one command.
+    """
+    from .. import trivia
+    rung = int(chosen['TRIVIA_LEVEL'])
+    grade = trivia.grade_at(rung)
+    pool = trivia.bank()
+    said = [_('Level %d, "%s": %d options.')
+            % (rung, _(grade.name), grade.options)]
+    said.append(_('The wrong answers are other questions\' right ones, '
+                  'drawn from answers of the same shape — a year against '
+                  'years, a name against names — so that what an option '
+                  'looks like says nothing about whether it is right.')
+                if grade.matched else
+                _('The wrong answers are other questions\' right ones, '
+                  'drawn from anywhere, so a year is often the only date '
+                  'on the screen. From level %d they are matched by '
+                  'shape.') % (1 + sum(1 for one in trivia.GRADES
+                                       if not one.matched)))
+    said.append(_('%d questions in the pool.') % len(pool))
+    if not trivia.fetched():
+        said.append(_('They are the ones written into the game, and there '
+                      'are not many. Run "python -m neural_workshop.trivia" '
+                      'once to fetch %d of %s\'s own (%s).')
+                    % (trivia.DEFAULT_FETCH, trivia.REPO, trivia.LICENCE))
+    elif pool.narrowest() < grade.options - 1 and grade.matched:
+        said.append(_('One of the shapes holds only %d answers, so a '
+                      'question with that shape of answer will be filled '
+                      'out with others.') % pool.narrowest())
+    return '  '.join(said)
+
+
+TRIVIA = TaskSpec(
+    title=_('Trivia options'),
+    options=(
+        Option('TRIVIA_LEVEL', _('Level'), 3, values=tuple(range(1, 8))),
+        Option('TRIVIA_TRIALS', _('Questions per run'), 10,
+               values=(1, 2, 3, 5, 10, 15, 25, 50)),
+        Option('TRIVIA_SHOW_ANSWER', _('Mark the right answer afterwards'),
+               True),
+        Option('TRIVIA_ADAPTIVE',
+               _('Climb a level after a right answer'), True),
+    ),
+    note=trivia_note)
+
+
 def salesman_note(chosen: Dict[str, Any]) -> str:
     """What the score means at this size, and that it is exact.
 
@@ -1902,6 +1953,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'algebra': ALGEBRA,
     'numberology': NUMBEROLOGY,
     'syllogism': SYLLOGISM,
+    'trivia': TRIVIA,
     'chain_of_custody': CUSTODY,
     'cookie_thief': COOKIE_THIEF,
     'chess': CHESS,

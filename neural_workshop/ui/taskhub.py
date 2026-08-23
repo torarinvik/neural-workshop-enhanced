@@ -44,6 +44,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
     'long_term_memory': [
         ('concentration', _('Concentration')),
         ('recognition', _('Seen It Before?')),
+        ('trivia', _('Trivia')),
     ],
     'attention': [
         ('reflex', _('Reflex')),
@@ -457,6 +458,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'recognition':
         from .recognition import Recognition
         Recognition()
+        return
+    if task_id == 'trivia':
+        from .trivia import Trivia
+        Trivia()
         return
     if task_id == 'reflex':
         from .reflex import Reflex

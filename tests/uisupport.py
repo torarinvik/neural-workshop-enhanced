@@ -70,6 +70,7 @@ try:
     from neural_workshop.ui.ninarow import NInARow
     from neural_workshop.ui.algebra import Algebra
     from neural_workshop.ui.syllogism import Syllogism
+    from neural_workshop.ui.trivia import Trivia
     from neural_workshop.ui.youarehere import YouAreHere
     from neural_workshop.ui.menu import AllCycler, Cycler, Menu, PercentCycler
     from neural_workshop.ui.message import Message

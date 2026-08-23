@@ -131,6 +131,7 @@ from .sokoban import SokobanEnv  # noqa: E402
 from .sokoban3d import Sokoban3DEnv  # noqa: E402
 from .tetris import FreeformTetrisEnv  # noqa: E402
 from .ninarow import NInARowEnv  # noqa: E402
+from .trivia import TriviaEnv  # noqa: E402
 from .diagnostics import DiagnosticEnv, TestProbe  # noqa: E402
 from .env import NeuralWorkshopEnv, make_env  # noqa: E402
 from .export import FrameExport  # noqa: E402
@@ -176,6 +177,7 @@ __all__ = [
     'SalesmanEnv', 'ScrabbleEnv',
     'AlgebraEnv', 'SyllogismEnv',
     'FreeformTetrisEnv', 'NInARowEnv', 'NumberologyEnv', 'OverrunEnv',
+    'TriviaEnv',
     'ScrambleEnv', 'Sokoban3DEnv', 'SokobanEnv', 'TwoHandsEnv',
     'SudokuEnv',
 ]

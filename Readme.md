@@ -75,7 +75,7 @@ the one order that works; nothing else touches a singleton before it has.
 
 ### Long-term memory games and their media libraries
 
-The task hub's *Long-term memory* category holds two games that work
+The task hub's *Long-term memory* category holds three games that work
 on material you have not seen a hundred times already, so the material
 is downloaded rather than shipped:
 
@@ -89,6 +89,11 @@ is downloaded rather than shipped:
   that rehearsal is no help. Scored on both halves — catching repeats
   and not claiming the new ones — so a single constant answer scores
   the repeat rate, never 100%.
+- **Trivia** — a general-knowledge question and a list of answers, from
+  TriviaQA. The other two ask what you saw a minute ago; this one asks
+  what you knew before you sat down. Its material is fetched by a
+  command of its own, `python -m neural_workshop.trivia`, and it has a
+  section [below](#trivia).
 
 Fetch the libraries once:
 
@@ -144,6 +149,88 @@ image or audio library is involved either way.
 ```bash
 .venv/bin/python -m pip install pyarrow   # optional, for bulk fetches
 ```
+
+### Trivia
+
+```
+      Which American-born Sinclair won the Nobel Prize
+                for Literature in 1930?
+
+                 1. Julie Andrews
+                 2. Nathanial Hawthorne
+                 3. Sinclair Lewis
+                 4. William Howard Taft
+```
+
+That is a rung-four deal as the game actually made it, and it shows
+what the shape rule does and does not buy: four names, so being a name
+says nothing, and three of them people rather than the only person on
+a list of dates — but *Julie Andrews* is there because she is a name in
+the pool, not because she is a plausible novelist.
+
+The questions are [TriviaQA](https://huggingface.co/datasets/mandarjoshi/trivia_qa)'s
+— 138,384 of them in the `rc` training split, written by trivia
+enthusiasts. Only the question and its answer are wanted, so the fetch
+takes the `rc.nocontext` configuration, which is the same rows with the
+evidence documents left off:
+
+```bash
+.venv/bin/python -m neural_workshop.trivia          # 10,000 questions
+.venv/bin/python -m neural_workshop.trivia 50000    # or more
+```
+
+It pages the datasets-server a hundred rows at a time into
+`<data dir>/trivia/` and distils them into one tab-separated index.
+Standard library only, resumable, and a page already on disk is skipped.
+Until it is run the game deals from 120 questions written into
+`neural_workshop/trivia.py`, which is enough to play and not enough to
+stay fresh — the options screen says which pool you are on rather than
+letting you wonder why a question came round again.
+
+**TriviaQA is not multiple choice, and this is.** The dataset gives a
+free-text answer with its aliases; the screen has to offer something to
+pick between, so the wrong answers are other questions' right ones.
+That choice is the whole of the difficulty, and it has two rules.
+
+**A wrong answer has to be wrong.** *Chicago* and *Chicago, Illinois*
+are the same answer twice, and a question with two right options on it
+is marked wrong half the time while looking like a hard question. So
+the alias lists are kept — that is what they are for — and a candidate
+is refused if either answer is in the other's aliases, in both
+directions.
+
+**A wrong answer has to be the same shape.** `1969` against `Portugal`
+is not a question about the moon landing, it is a question about which
+option is a year. So the upper rungs draw only from answers of the same
+shape: a year against years, a name against names, a number against
+numbers. The shapes are read off capitalisation and digits and are
+nothing more than that — the claim is only that the options look alike
+enough that their looks are not the answer. A real category would need
+a knowledge base, and one wrong a twentieth of the time would be worse
+than this, because its failures would land on the interesting questions
+rather than on random ones.
+
+The seven-rung ladder is those two dials and nothing else: rungs one to
+three widen from two options to four with the wrong ones drawn from
+anywhere, rung four keeps four options and matches them by shape, and
+rungs five to seven widen again to eight. **It is deliberately not a
+ladder over the questions.** TriviaQA does not say which of its
+questions are hard, and a measure of that read off an answer's length
+or its frequency would be invented rather than measured. Measured on
+the built-in pool: on rung one the right answer is the only one of its
+shape more than 40% of the time, and on every matched rung under 5%.
+
+**As an agent environment it is the one task that is not solvable from
+its own frames**, and that is worth saying plainly. Everywhere else in
+the workshop the premises, the board or the thing to remember are on
+the page. *Which American-born Sinclair won the Nobel Prize for
+Literature in 1930?* is not answerable from the pixels of that sentence
+by anything that does not already know. It is a probe of what a learner
+brought with it rather than of what it can work out, and a learning
+curve drawn on it is a curve about a prior. Random play is paid, and at
+rung one it is a coin: the free floor there is 50%, which is the
+highest in the workshop and worth knowing before reading anything off
+such a curve.
 
 ### Procedurally distorted letters
 
@@ -2447,7 +2534,7 @@ obs, events, done = env.step(2)         # one of three opaque ports
 env.close()
 ```
 
-Eighteen of the thirty-eight are *declarations* rather than code — where
+Nineteen of the forty-one are *declarations* rather than code — where
 the task class lives, what one port calls, which phase takes input, which
 phase means the trial is over, and what the difficulty knobs are called:
 
@@ -2468,7 +2555,7 @@ of them add a short method or two — a port that names an object rather than
 an index, a port that is a moment rather than a symbol, a trial window the
 task has no phase for, a coach gated on whether the boundary will actually
 pay it. The four written before that existed still carry both, at about a
-hundred lines apiece. Eighteen and sixteen and four is thirty-eight, which
+hundred lines apiece. Nineteen and eighteen and four is forty-one, which
 is the point of counting them.
 `ADDING_A_TASK.md` is the whole contract.
 

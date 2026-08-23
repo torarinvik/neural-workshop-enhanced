@@ -43,7 +43,7 @@ class MenuTests(unittest.TestCase):
                               'chain_of_custody'])
             self.assertEqual(
                 [task for task, _name in TASKS['long_term_memory']],
-                ['concentration', 'recognition'])
+                ['concentration', 'recognition', 'trivia'])
             self.assertEqual([task[0] for task in tasks_for('attention')],
                              ['reflex', 'ncup_monte', 'moving_targets',
                               'lookout', 'pursuit', 'out_of_sight', 'donkey',
@@ -53,7 +53,7 @@ class MenuTests(unittest.TestCase):
             self.assertEqual(len(hub.task_rects), 9)
             hub.set_category('long_term_memory')
             self.assertEqual(hub.category, 'long_term_memory')
-            self.assertEqual(len(hub.task_rects), 2)
+            self.assertEqual(len(hub.task_rects), 3)
             self.assertEqual(hub.empty.text, '')
             hub.on_draw()
         finally:

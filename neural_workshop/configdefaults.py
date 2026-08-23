@@ -1205,6 +1205,35 @@ SYLLOGISM_SHOW_WORKING = True
 SYLLOGISM_ADAPTIVE = True
 SYLLOGISM_REAL_WORDS = True
 
+# Trivia asks a general-knowledge question off TriviaQA and offers
+# other questions' answers as the wrong ones. TRIVIA_LEVEL is the rung
+# of a seven-rung ladder that turns two dials and nothing else: how
+# many options there are, and whether the wrong ones have to be the
+# same shape as the right one. Rungs one to three widen from two
+# options to four with the wrong answers drawn from anywhere, which
+# means a year is often the only date on the screen; from rung four
+# they are drawn from answers of the same shape - years against years,
+# names against names - so that what an option looks like stops
+# saying anything about whether it is right. Rungs four to seven then
+# widen again, to eight.
+#
+# The ladder is not over the questions. TriviaQA does not say which of
+# its questions are hard and neither does this, so a rung says how
+# much help the screen gives and nothing about what is being asked.
+#
+# TRIVIA_SHOW_ANSWER marks the right option afterwards, which is the
+# only working there is here: the dataset gives an answer, not a
+# derivation.
+#
+# With nothing fetched the game deals from the hundred and twenty
+# questions written into neural_workshop/trivia.py, which will come
+# round quickly. python -m neural_workshop.trivia fetches ten thousand
+# of the dataset's own.
+TRIVIA_LEVEL = 3
+TRIVIA_TRIALS = 10
+TRIVIA_SHOW_ANSWER = True
+TRIVIA_ADAPTIVE = True
+
 ######################################################################
 # This is the end of the configuration file.
 ######################################################################
