@@ -100,6 +100,64 @@ class ADefinitionIsNotAClue(unittest.TestCase):
         self.assertEqual(W.stem_of('runs'), 'runs'[:4])
 
 
+class AWordThatCanNameAThing(unittest.TestCase):
+    """Read off the gloss, because nothing here carries a POS tag.
+
+    What this has to keep out is what "every X is a Y" cannot survive:
+    a verb, an adjective, a plural, and a person.
+    """
+
+    #: Enough of a dictionary for the inflection test to have an
+    #: opinion. The real one is the whole frequency list.
+    KNOWN = frozenset(('crop', 'kidney', 'net', 'beauty', 'run', 'use',
+                       'possess', 'process', 'individual', 'press'))
+
+    def noun(self, word, clue):
+        return W.noun_like(W.Entry(word, 1, clue), self.KNOWN)
+
+    def test_a_thing_is_a_thing(self):
+        for word, clue in (('camel', 'large humped mammal of the desert'),
+                           ('shrine', 'place regarded as holy'),
+                           ('bus', 'large motor vehicle carrying passengers')):
+            self.assertTrue(self.noun(word, clue), word)
+
+    def test_a_verb_is_glossed_as_one(self):
+        for clue in ('to move quickly on foot',
+                     "past tense of the verb 'take'",
+                     'third-person singular of a thing'):
+            self.assertFalse(self.noun('walk', clue), clue)
+
+    def test_an_adjective_is_glossed_as_one(self):
+        for clue in ('having the quality of being warm',
+                     'comparative adjective meaning greater',
+                     'kidneys or kidney function'):
+            self.assertFalse(self.noun('renal', clue), clue)
+
+    def test_a_capital_letter_means_a_place_or_a_person(self):
+        """The cheapest screen there is for what PROPER leaves behind."""
+        self.assertFalse(self.noun('bologna',
+                                   'city in Emilia-Romagna, in Italy'))
+        self.assertTrue(self.noun('city', 'large town where people live'))
+
+    def test_a_form_of_another_word_is_not_a_second_thing(self):
+        for word in ('nets', 'crops', 'cropping', 'beauties', 'kidneys',
+                     'processes', 'individuals', 'quickly'):
+            self.assertTrue(W.a_form_of(word, self.KNOWN), word)
+
+    def test_a_word_that_merely_ends_that_way_is_not(self):
+        for word in ('bus', 'gas', 'ring', 'red'):
+            self.assertFalse(W.a_form_of(word, self.KNOWN), word)
+
+    def test_the_endings_that_are_adjectives_are_refused(self):
+        for word in ('vigorous', 'skillful', 'washable'):
+            self.assertFalse(self.noun(word, 'a perfectly nouny gloss'), word)
+
+    def test_ic_and_al_are_not_among_them(self):
+        """Music, logic, animal and capital are all nouns."""
+        for word in ('music', 'animal'):
+            self.assertTrue(self.noun(word, 'a perfectly nouny gloss'), word)
+
+
 class TheSeedIsEnoughToPlayWith(unittest.TestCase):
     """What a machine that has fetched nothing still has."""
 

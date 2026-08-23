@@ -25,11 +25,23 @@ instead — negative premise, negative conclusion; particular premise,
 particular conclusion — which is a real thing people do and, on a
 two-premise syllogism, is not even wrong.
 
+A fourth reader is measured below the table rather than in it,
+because it exists only because the words are real ones: **believing**
+answers *none* on the categorical rungs, which is what two nouns
+picked at random are to each other in the world. It is at or under
+the guessing floor, so a player who reads the premises as claims
+about the world rather than as premises does worse than a coin.
+
 Against those sit two columns about the work: **steps**, how many
 premises have to be composed, and **decoys**, how many are printed
 that the answer does not need. Proving that nothing links two things
 takes every line, so an unsettled answer counts every premise as a
 step and none as a decoy.
+
+Every column is a proportion over 400 deals, which is about ±0.03,
+and the last section deals each rung twice — once named after real
+words and once after made-up ones — because that is the only place
+the choice of words could show up at all.
 
 About a minute.
 
@@ -50,7 +62,7 @@ from neural_workshop import syllogism as S            # noqa: E402
 
 #: Questions dealt a rung. Cheap everywhere but the categorical rungs,
 #: which enumerate every way their premises could have been written.
-DEALS = 150
+DEALS = 400
 
 
 def deal(rung: int, count: int = DEALS):
@@ -86,7 +98,7 @@ def unsettled() -> None:
     print()
     print('how often "cannot be told" (or "nothing follows") is the answer:')
     for rung in range(1, len(S.GRADES) + 1):
-        made = deal(rung, 80)
+        made = deal(rung)
         if not made:
             continue
         options = made[0].options
@@ -106,7 +118,7 @@ def faking() -> None:
     print()
     worst = None
     for rung in range(1, len(S.GRADES) + 1):
-        made = deal(rung, 80)
+        made = deal(rung)
         if not made:
             continue
         got = sum(1 for one in made if one.surface == one.answer) / len(made)
@@ -121,9 +133,13 @@ def faking() -> None:
     print('  guessing floor of %.2f. Everything above that floor is a rung'
           % floor)
     print('  that can be answered without reasoning, and it is printed')
-    print('  rather than trusted to be small. Deals are chosen so that reader lands at')
-    print('  chance and no better — and no worse either, because a reader')
-    print('  that is always wrong is a way round the rung backwards.')
+    print('  rather than trusted to be small. On the chain and direction')
+    print('  rungs it sits at the floor, which is what the deal is chosen')
+    print('  for — and not under it either, because a reader that is')
+    print('  always wrong is a way round the rung backwards. It sits a')
+    print('  few points over on the two categorical rungs, where the next')
+    print('  section shows that is a theorem rather than a leak, and on')
+    print('  rung eleven, where a connective can absorb a misread half.')
 
 
 def atmosphere() -> None:
@@ -139,7 +155,7 @@ def atmosphere() -> None:
     """
     print()
     for rung in (5, 8):
-        made = deal(rung, 120)
+        made = deal(rung)
         follows = [one for one in made if one.answer < len(S.FORMS)]
         if not follows:
             continue
@@ -154,6 +170,74 @@ def atmosphere() -> None:
     print('  the atmosphere reader sit at one half. That is the honest floor')
     print('  for a rung like that, and the reason there are two of these on')
     print('  the ladder rather than six.')
+
+
+def believing() -> None:
+    """The one reader that exists only because the words are real.
+
+    The things are named after ordinary nouns, and between two nouns
+    picked at random "no X is a Y" is how the world usually is: no
+    beetle is a harbour. So a player who answers from what is
+    plausible rather than from what is printed answers *none* on the
+    categorical rungs, every time. That reader is the whole cost of
+    not making the words up, so it gets measured rather than argued
+    about.
+    """
+    print()
+    where = S.FORMS.index(S.NONE)
+    for rung in (5, 8):
+        made = deal(rung)
+        if not made:
+            continue
+        # The options are sentences about this deal's two terms, but
+        # they are offered in the order the forms are declared in.
+        share = sum(1 for one in made if one.answer == where) / len(made)
+        print('rung %-2d %-32s answering "none" always: %.2f  (guessing '
+              'is %.2f)' % (rung, S.grade_of(rung).name, share,
+                            1.0 / len(made[0].options)))
+    print('  At or under the guessing floor, so believing the premises')
+    print('  is not a way round these rungs — it is a way of doing worse')
+    print('  than a coin. Rung five is low because it is dealt as a coin')
+    print('  between "something follows" and "nothing does", which puts')
+    print('  each of the four forms at an eighth.')
+
+
+def either_way() -> None:
+    """Whether a deal is any different when the names are made up.
+
+    It cannot be, and the reason is worth stating before the numbers:
+    the names are labels the logic never reads. The one channel by
+    which they could matter is the read-back — a deal whose printed
+    lines do not parse is thrown away and dealt again, and if real
+    words parsed less often the survivors would be a biased sample.
+    So that is what the first column measures, and it is the column
+    that would show a fault.
+
+    The rest is two independent draws of the same quantity. Two
+    columns of 400 deals sit about 0.03 apart from sampling alone and
+    the difference of two of them about 0.05, so a gap under a tenth
+    says nothing at all.
+    """
+    print()
+    print('%-4s %-32s %6s %6s %8s %8s'
+          % ('rung', 'name', 'dealt', '(made)', 'surface', '(made)'))
+    for rung in range(1, len(S.GRADES) + 1):
+        got = []
+        for made_up in (False, True):
+            S.forget()
+            if made_up:
+                S._POOL = ()                     # names made up instead
+            rng = random.Random(11 + rung)
+            dealt = [S.deal_one(S.grade_of(rung), rng)
+                     for _each in range(400)]
+            made = [one for one in dealt if one]
+            got.append((len(made) / len(dealt),
+                        sum(1 for one in made if one.surface == one.answer)
+                        / len(made) if made else 0.0))
+        S.forget()
+        print('%-4d %-32s %6.2f %6.2f %8.2f %8.2f'
+              % (rung, S.grade_of(rung).name,
+                 got[0][0], got[1][0], got[0][1], got[1][1]))
 
 
 def timing() -> None:
@@ -172,6 +256,8 @@ def main() -> int:
     unsettled()
     faking()
     atmosphere()
+    believing()
+    either_way()
     timing()
     return 0
 

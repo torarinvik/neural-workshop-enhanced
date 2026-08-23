@@ -28,6 +28,7 @@ from __future__ import annotations
 import collections
 import os
 import random
+import re
 import sys
 import unittest
 
@@ -51,6 +52,13 @@ from neural_workshop.ui.verdict import above_the_band          # noqa: E402
 
 #: Deals a rung, where a test wants a rung's worth rather than one.
 MANY = 40
+
+#: Words as the page has them: lower case, letters only.
+WORD = re.compile(r"[A-Za-z']+")
+
+
+def _tokens(text):
+    return set(one.lower() for one in WORD.findall(text))
 
 
 def dealt(rung, count=MANY, seed=11):
@@ -391,15 +399,104 @@ class TheThreeValuedLogicIsKleene(unittest.TestCase):
         self.assertIs(S._kleene('exactly one of', True, True), False)
 
 
-class TheWordsAreMadeUp(unittest.TestCase):
-    """A real word carries a belief, and a belief is not reading."""
+class TheThingsAreNamedAfterWords(unittest.TestCase):
+    """Real nouns where the machine has them, and made up where not."""
 
-    def test_they_are_distinct_and_open_differently(self):
-        got = nonsense(random.Random(2), 14)
+    def setUp(self):
+        self.addCleanup(S.forget)
+
+    def spy(self, made_up):
+        """Deal every rung, keeping what each deal named its things."""
+        S.forget()
+        if made_up:
+            S._POOL = ()
+        called = set()
+        real = S.things
+
+        def watch(rng, count):
+            got = real(rng, count)
+            called.update(got)
+            return got
+
+        S.things = watch
+        try:
+            printed = set()
+            for rung in range(1, len(GRADES) + 1):
+                for one in dealt(rung, 12):
+                    printed.update(_tokens(
+                        ' '.join(one.lines + one.options + one.working
+                                 + (one.asked,))))
+        finally:
+            S.things = real
+        return called, printed
+
+    def test_they_are_words_where_the_index_has_been_fetched(self):
+        if not S._pool():
+            self.skipTest('no word index on this machine')
+        got = S.things(random.Random(3), 14)
+        for word in got:
+            self.assertIn(word, S._pool())
+
+    def test_they_are_made_up_where_it_has_not(self):
+        S._POOL = ()
+        got = S.things(random.Random(3), 14)
         self.assertEqual(len(set(got)), 14)
-        self.assertEqual(len(set(one[:2] for one in got)), 14)
+        for word in got:
+            self.assertTrue(4 <= len(word) <= 8, word)
 
-    def test_none_of_them_is_a_common_english_word(self):
+    def test_they_are_distinct_and_open_differently_either_way(self):
+        for empty in (True, False):
+            S.forget()
+            if empty:
+                S._POOL = ()
+            got = S.things(random.Random(2), 14)
+            self.assertEqual(len(set(got)), 14)
+            self.assertEqual(len(set(one[:2] for one in got)), 14)
+
+    def test_nothing_is_named_after_a_word_the_task_prints(self):
+        """"north is north of south" is a line that reads as grammar."""
+        for word in S.things(random.Random(5), 18):
+            self.assertNotIn(word, S.GRAMMAR)
+            self.assertNotIn(word, S.NEARLY)
+
+    def test_the_grammar_is_the_whole_page_less_the_names(self):
+        """The guard on :data:`GRAMMAR`, so a new frame cannot drift.
+
+        Every word printed anywhere — premises, question, options,
+        working — is either the name of a thing or one of the words
+        the task says things in, and the second set is declared.
+
+        Dealt both ways, because a machine with no word index deals a
+        different stream and this has to be the same set on both —
+        less one word. Invented names all open with a consonant, so
+        "an" is a word only real ones ever call for.
+        """
+        for made_up in (False, True):
+            called, printed = self.spy(made_up)
+            self.assertEqual(printed - called,
+                             S.GRAMMAR - ({'an'} if made_up else set()),
+                             made_up)
+
+    def test_a_or_an_by_how_the_name_sounds(self):
+        """A question nobody had to ask while the words were invented."""
+        for word, want in (('idiot', 'an'), ('bank', 'a'), ('egg', 'an'),
+                           ('hour', 'an'), ('union', 'a'), ('use', 'a'),
+                           ('umbrella', 'an')):
+            self.assertEqual(S.article(word), want, word)
+
+    def test_every_printed_article_agrees_with_its_name(self):
+        """The renderer has to ask, not assume: "a idiot" is how it read."""
+        said = re.compile(r'\b(an?) ([a-z]+)')
+        seen = 0
+        for rung in (5, 8):
+            for one in dealt(rung, 20):
+                for text in one.lines + one.options + one.working:
+                    for article, name in said.findall(text):
+                        self.assertEqual(article, S.article(name), text)
+                        seen += 1
+        self.assertGreater(seen, 100)
+
+    def test_a_made_up_word_is_never_a_common_english_word(self):
         common = S._real_words()
         self.assertIn('water', common)
         for seed in range(8):

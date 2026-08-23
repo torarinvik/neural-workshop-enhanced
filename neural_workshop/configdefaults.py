@@ -1042,9 +1042,16 @@ ALGEBRA_ADAPTIVE = True
 
 # Syllogisms runs from "is this the same as that, or the opposite"
 # to three claims joined by connectives over thirteen lines of
-# premises about made-up words. Twelve levels, and the words are
-# made up on purpose: a real one carries a belief, and a belief is a
-# way of answering that is not reading.
+# premises. Twelve levels. The things reasoned about are named after
+# ordinary English nouns, taken from the same word list the crossword
+# and the Scrabble rack use - run "python -m neural_workshop.wordlist"
+# once to fetch it, and until then they are named with made-up words
+# instead. A real word does carry a belief, and the place that could
+# be spent is the two categorical levels, where "no X is a Y" is how
+# the world usually is; answering that way every time is measured at
+# 0.11 and 0.17 against a guessing floor of 0.20, so believing the
+# premises is a way of doing worse than a coin rather than a way
+# round the level.
 #
 # Every level offers the same answers its family has, and *cannot be
 # told* is one of them roughly as often as any other - premises that

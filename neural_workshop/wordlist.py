@@ -7,6 +7,12 @@ needs are the same need — *how well known is this word* — and neither
 is answerable from a word list alone. A dictionary says ``sourish`` is
 a word. It does not say that nobody has met it.
 
+A third caller needs neither. Syllogisms wants words to *name things
+with*, which asks something the files never say outright: whether a
+word is a singular common noun. :func:`nouns` reads that off the
+definition, because a definition gives the part of speech away by its
+shape even when it does not name it.
+
 So the pool is two files from Hugging Face, and neither is here:
 
 ``Maximax67/English-Valid-Words`` (Unlicense) carries about 173,000
@@ -183,6 +189,91 @@ def clue_from(word: str, definition: str) -> Optional[str]:
     if not CLUE_WORDS[0] <= len(body.split()) <= CLUE_WORDS[1]:
         return None
     return body
+
+
+# --- words that can name a thing ------------------------------------------
+#
+# What Syllogisms wants is a word to *label* something with — "every X
+# is a Y" — and for that it has to be a singular common noun. "every
+# products is a similar" is not a premise, and "every peggy is a
+# namibia" is a premise about two people who might be anybody.
+#
+# There is no part-of-speech tag anywhere in either file. What there
+# is, is a definition, and a definition gives the part of speech away
+# by its shape: a verb is glossed "to run", an adjective "having the
+# quality of", an adverb "in a manner that", and a good half of the
+# non-nouns simply say which they are. That is what these read.
+
+
+#: What a clue says when the word it defines is not a singular common
+#: noun. Two halves: an opening whose shape names the part of speech,
+#: and a phrase anywhere that names it outright.
+NOT_A_NOUN = re.compile(
+    r"^(?:to|having|used|being|characterized|relating|pertaining|marked|"
+    r"capable|able|expressing|denoting|indicating|describing|in|at|on|by|"
+    r"with|of|for|from|very|extremely|capital|largest|official|plural|"
+    r"something|someone|character|responsible|known|one|first|second|third|"
+    r"ordinal|cardinal)\b|"
+    r"\b(?:verb|adjective|adverb|preposition|conjunction|pronoun|determiner|"
+    r"article|interjection|prefix|suffix|acronym|abbreviation|initialism|"
+    r"contraction|past tense|past participle|present participle|"
+    r"third-person|infinitive|imperative|comparative|superlative|"
+    r"plural of|plural form|symbol for|variant spelling|"
+    r"alternative spelling)\b", re.IGNORECASE)
+
+#: Endings a word wears when it is a form of another word, and the
+#: stem each one is worn over.
+ENDINGS = (('ies', 'y'), ('es', ''), ('s', ''), ('est', ''), ('est', 'e'),
+           ('ed', ''), ('ed', 'e'), ('ing', ''), ('ing', 'e'))
+
+#: Endings that are an adjective far oftener than they are a noun.
+#: ``-ic`` and ``-al`` are not here on purpose: music, logic, animal
+#: and capital are all nouns and there are hundreds more of them.
+ADJECTIVE = ('ous', 'ful', 'ish', 'able', 'ible', 'less')
+
+
+def a_form_of(word: str, known: frozenset) -> bool:
+    """Whether *word* is an inflection of some other word in *known*.
+
+    Blunt on purpose, the same way :func:`stem_of` is: doubling is
+    undone ("cropping" is "crop") and nothing else is. Throwing away
+    a good noun costs one word out of thousands; keeping ``beauties``
+    costs a premise that reads as two things at once.
+    """
+    if word.endswith('ly'):
+        return True
+    for tail, back in ENDINGS:
+        if not word.endswith(tail) or len(word) - len(tail) < 3:
+            continue
+        stem = word[:-len(tail)] + back
+        if stem in known:
+            return True
+        if len(stem) > 3 and stem[-1] == stem[-2] and stem[:-1] in known:
+            return True
+    return False
+
+
+def noun_like(entry: Entry, known: frozenset) -> bool:
+    """Whether *entry* can stand as the name of a thing.
+
+    The clue is read three ways. Any capital letter in it and the word
+    is a place, a person or a brand — that is the cheapest screen there
+    is for the proper nouns :data:`PROPER` and :data:`NAMED` leave
+    behind, and it is affordable because a name only has to be *a*
+    noun, not any particular one. Then the part of speech, as far as
+    the gloss admits it. Then the head of the gloss: a clue that opens
+    with a plural ("kidneys or kidney function") or with a participle
+    ("possessing skill") is describing a quality rather than a thing,
+    whatever the word looks like.
+    """
+    if not entry.clue or any(one.isupper() for one in entry.clue):
+        return False
+    if NOT_A_NOUN.search(entry.clue):
+        return False
+    if entry.word.endswith(ADJECTIVE) or a_form_of(entry.word, known):
+        return False
+    head = re.match(r'[a-z]+', entry.clue)
+    return head is not None and not a_form_of(head.group(), known)
 
 
 # --- where the files live -------------------------------------------------
@@ -590,9 +681,58 @@ def pool(max_rank: int = 1 << 30, max_length: int = 15) -> Lexicon:
     return made
 
 
+#: The default band for :func:`nouns`. Common enough that the word is
+#: read rather than deciphered, which is the whole point of using real
+#: ones: the difficulty is meant to be in the premises.
+NOUN_RANK = 20000
+
+_NOUNS: Dict[Tuple, Lexicon] = {}
+
+
+def nouns(max_rank: int = NOUN_RANK,
+          lengths: Tuple[int, int] = (3, 8)) -> Lexicon:
+    """Words that can name a thing, drawn from the fetched index.
+
+    Empty when nothing has been fetched — the seed list is function
+    words and carries no clues, so there is nothing here to read. A
+    caller that needs names either has this or makes them up.
+
+    3,874 words come through at the default band, and they are not all
+    nouns. Sampled sixty at a time, seven or eight are not: adjectives
+    whose gloss is itself a noun phrase ("coastal — interface between
+    land and sea"), a Latin plural the endings above do not cover
+    ("formulae"), the occasional proper noun that never once takes a
+    capital ("bauer — manufacturer of ice hockey equipment"). Call it
+    one in eight, reported rather than chased: a name here is a label,
+    and an adjective standing in for a noun reads oddly and means
+    nothing else.
+    """
+    key = (int(max_rank), tuple(lengths))
+    if key in _NOUNS:
+        return _NOUNS[key]
+    base = pool()
+    # The widest list of English words on the machine, which is the
+    # frequency file rather than the index: the index only holds words
+    # that kept a clue, and it has ``nets`` in it but not ``net``, so
+    # asked what ``nets`` is the plural of it would answer nothing.
+    known = frozenset(ranks()) | base.words
+    low, high = lengths
+    seen: Dict[str, Entry] = {}
+    for one in base.entries:
+        if one.rank >= max_rank or not low <= len(one.word) <= high:
+            continue
+        if one.word in seen or not noun_like(one, known):
+            continue
+        seen[one.word] = one
+    made = Lexicon(seen.values())
+    _NOUNS[key] = made
+    return made
+
+
 def forget() -> None:
     """Drop the cached pools, for a test that changes what is on disk."""
     _POOLS.clear()
+    _NOUNS.clear()
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
@@ -630,11 +770,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     return 0
 
 
-__all__ = ['BANDS', 'CLUES', 'CLUE_WORDS', 'Entry', 'Lexicon', 'NAMED',
+__all__ = ['ADJECTIVE', 'BANDS', 'CLUES', 'CLUE_WORDS', 'ENDINGS', 'Entry',
+           'Lexicon', 'NAMED', 'NOT_A_NOUN', 'NOUN_RANK',
            'PROPER', 'Progress',
-           'SEED', 'SOURCES', 'Source', 'WORDS', 'build_index', 'clue_from',
+           'SEED', 'SOURCES', 'Source', 'WORDS', 'a_form_of', 'build_index',
+           'clue_from',
            'fetch', 'forget', 'have', 'index_path', 'index_ready',
-           'local_path', 'main', 'missing_message', 'pool', 'ranks',
+           'local_path', 'main', 'missing_message', 'noun_like', 'nouns',
+           'pool', 'ranks',
            'stem_of', 'words_dir']
 
 

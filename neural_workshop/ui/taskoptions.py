@@ -1307,7 +1307,7 @@ def syllogism_note(chosen: Dict[str, Any]) -> str:
     than" and nothing else, and a player who guessed otherwise would
     be wrong about the task rather than about the premises.
     """
-    from ..syllogism import GRADES, NOTHING, UNTOLD, deal_one
+    from ..syllogism import GRADES, NOTHING, UNTOLD, deal_one, real_names
     import random
     rung = int(chosen['SYLLOGISM_LEVEL'])
     grade = GRADES[max(0, min(len(GRADES) - 1, rung - 1))]
@@ -1324,6 +1324,10 @@ def syllogism_note(chosen: Dict[str, Any]) -> str:
             said.append(_('This level always settles the question, so it '
                           'does not offer "cannot be told".'))
     said.append(_('One answer, and nothing partial counts.'))
+    if not real_names():
+        said.append(_('The things are named with made-up words here. Run '
+                      '"python -m neural_workshop.wordlist" once and they '
+                      'are named after ordinary ones instead.'))
     return '  '.join(said)
 
 

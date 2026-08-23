@@ -62,8 +62,8 @@ Matrix Reasoning puzzle generator, and it imports no pyglet and
 touches no singleton, so a puzzle can be built and checked without a
 window. `glyphs.py` is split the same way for the same reason, with
 its drawing half under `ui/`, and so are `crossword.py`, `scrabble.py`
-and the `wordlist.py` they both draw their words from. Everything else
-on screen goes through `ui/`.
+and the `wordlist.py` they and `syllogism.py` draw their words from.
+Everything else on screen goes through `ui/`.
 
 Inside `neural_workshop`, the live singletons (`cfg`, `window`, `mode`,
 `field`, the labels) live in `state.py` and are reached as `state.mode`
@@ -1082,11 +1082,28 @@ in twelve above rank 30,000 and rarer below it. A crossword with the
 occasional proper noun in it is a normal crossword, so that is
 reported rather than chased.
 
+**A third caller wants something neither file says.** Syllogisms
+names the things it reasons about after words, and for "every X is a
+Y" to be a premise rather than a typo the word has to be a singular
+common noun. There is no part-of-speech tag anywhere in either file —
+but there is a definition, and a definition gives the part of speech
+away by its shape: a verb is glossed "to run", an adjective "having
+the quality of", and a good half of the rest simply say which they
+are. Reading that, plus refusing any clue with a capital letter in it
+(the cheapest screen there is for the proper nouns that leak above)
+and any word that is an inflection of another, leaves 3,874 usable
+names. Seven or eight in sixty are not really nouns — an adjective
+whose gloss is itself a noun phrase, a Latin plural — which is
+reported rather than chased, because a name here is a label and an
+adjective in the place of a noun reads oddly and means nothing else.
+
 With nothing fetched there is still a 669-word seed list of common
 short words in the repository, which is enough for Scrabble to be
 played and for the tests to run, and is *not* enough for a crossword,
-because it carries no clues. The crossword says so on its own screen
-rather than dealing something thin and pretending.
+because it carries no clues, nor for Syllogisms, because they are
+function words. The crossword says so on its own screen rather than
+dealing something thin and pretending, and Syllogisms falls back to
+made-up words.
 
 Both ladders are rerunnable:
 
@@ -1288,15 +1305,16 @@ cd tests && PYTHONPATH=.. ../.venv/bin/python bench_algebra.py
 #### Syllogisms
 
 ```
-kust is more than foosk        vutfaim is less than misoosk
-sasvil is less than vutfaim    sasvil is more than kust
-Is vutfaim more than kust, or less?     more / less / cannot be told
+volatile is less than purple   numeric is less than pain
+envoy is more than purple      envoy is more than hug
+hug is less than volatile
+Is purple more than hug, or less?     more / less / cannot be told
 ```
 
-Lines about made-up words, and one question about two of them. Twelve
-levels, from a chain of *same* and *opposite* to three claims joined
-by connectives over thirteen lines of premises. The shape — a mixed
-relational drill that climbs — is the one
+Lines about a handful of named things, and one question about two of
+them. Twelve levels, from a chain of *same* and *opposite* to three
+claims joined by connectives over thirteen lines of premises. The
+shape — a mixed relational drill that climbs — is the one
 [Syllogimous v3](https://4skinskywalker.github.io/Syllogimous-v3/)
 popularised; none of its code or wording is here and none could be, as
 that is CC BY-NC and this is GPL. What is here are the paradigms
@@ -1304,8 +1322,28 @@ themselves, which belong to nobody: transitive inference, parity over
 a same/opposite chain, vector composition on a grid, categorical
 syllogisms, and three-valued composition over the lot.
 
-**The words are made up on purpose.** A real word carries a belief,
-and a belief is a way of answering that is not reading.
+**The things are named after ordinary nouns**, drawn from the same
+word list the crossword and the Scrabble rack use — which asks
+something that list never says outright, whether a word is a singular
+common noun, and it is read off the definition: a verb is glossed "to
+run" and an adjective "having the quality of", so the shape of the
+gloss gives the part of speech away even when the words do not. Run
+`python -m neural_workshop.wordlist` once to fetch it; until then the
+things are named with made-up words instead.
+
+**A real word carries a belief, and that is priced rather than waved
+away.** The place it could be spent is the two categorical levels,
+where two nouns picked at random are strangers in the world as well
+as in the premises, so "no X is a Y" is usually true outside the page
+too. A player who answers that way every time gets 0.11 and 0.17
+against a guessing floor of 0.20 — believing the premises is a way of
+doing worse than a coin, not a way round the level, because the deal
+picks its answer before it picks the premises that give it. Elsewhere
+the words cost nothing and cannot: the bench deals every level twice,
+once named after real words and once after made-up ones, and the
+columns agree. The one channel by which they could have mattered is
+the read-back below, which throws a deal away when the printed lines
+do not parse — and no deal is thrown away either way.
 
 **"Cannot be told" is an answer as often as any other.** Premises that
 settle everything are premises nobody has to reason about, so the web
@@ -1327,13 +1365,13 @@ the level:
 
 | rung | | ans | lines | guess | const | surface | steps |
 |---|---|---|---|---|---|---|---|
-| 1 | same or opposite | 3 | 5 | 0.33 | 0.41 | 0.37 | 3.9 |
-| 4 | not more than | 3 | 7 | 0.33 | 0.43 | 0.30 | 4.3 |
-| 5 | all and at least one | 5 | 2 | 0.20 | 0.46 | 0.54 | 2.0 |
-| 7 | nine lines, and two that matter | 3 | 9 | 0.33 | 0.38 | 0.31 | 4.4 |
-| 8 | three at once | 5 | 3 | 0.20 | 0.30 | 0.33 | 2.4 |
-| 9 | up and down as well | 27 | 5 | 0.04 | 0.07 | 0.01 | 3.1 |
-| 12 | three questions, one answer | 3 | 13 | 0.33 | 0.35 | 0.35 | 10.4 |
+| 1 | same or opposite | 3 | 5 | 0.33 | 0.35 | 0.34 | 3.8 |
+| 4 | not more than | 3 | 7 | 0.33 | 0.34 | 0.34 | 3.8 |
+| 5 | all and at least one | 5 | 2 | 0.20 | 0.52 | 0.48 | 2.0 |
+| 7 | nine lines, and two that matter | 3 | 9 | 0.33 | 0.34 | 0.35 | 4.6 |
+| 8 | three at once | 5 | 3 | 0.20 | 0.28 | 0.42 | 2.4 |
+| 9 | up and down as well | 27 | 5 | 0.04 | 0.06 | 0.05 | 3.1 |
+| 12 | three questions, one answer | 3 | 13 | 0.33 | 0.34 | 0.36 | 10.4 |
 
 *guess* is one over the answers. *const* is the best fixed answer —
 the column that says whether *cannot be told* is really an answer or a
@@ -1344,23 +1382,25 @@ answers with that line's relation.
 **Left alone, that reader is not a straw man.** Before the deals were
 balanced against it, it answered level two six times in ten: in a
 chain, what a thing is to its neighbour is usually what it is to
-everything past it. Deals are now chosen so it lands at chance and no
-better — and no worse either, because a reader that is always wrong is
-a way round the level backwards.
+everything past it. Deals are now chosen so it lands at chance on the
+chain and direction levels — and no worse than chance either, because
+a reader that is always wrong is a way round the level backwards. It
+sits a few points over on the three levels named below, and each of
+those has a reason that is not a leak.
 
 **On a two-premise syllogism the surface reader is not even wrong.**
 The classical rules — a valid conclusion is negative exactly when a
 premise is, particular exactly when a premise is — are the atmosphere
 effect written down, and they are necessary conditions for validity.
 Measured: on level five, whenever anything follows at all, atmosphere
-names the right form **63 times out of 63**. The four forms are one
+names the right form **192 times out of 192**. The four forms are one
 answer between them there and the only question left is whether
 anything follows, so that level is dealt as the coin it is and both
-baselines sit at one half. Level eight breaks it by asking about a
+baselines sit at one half. Level eight blunts it by asking about a
 pair with a premise off the path between them, where atmosphere counts
-a quality that does not apply: it drops to 0.46. That measurement is
-the reason there are two categorical levels on this ladder rather than
-six.
+a quality that does not apply: it falls to 0.58 of the deals where
+something follows. That measurement is the reason there are two
+categorical levels on this ladder rather than six.
 
 **Two conventions are printed on the screen, because they are
 choices.** Nothing is equal to anything else in an order, so *not more

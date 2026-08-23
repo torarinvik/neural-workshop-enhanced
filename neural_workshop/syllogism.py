@@ -2,10 +2,23 @@
 """What follows from the premises — and how much of it can be faked.
 
 Between two and thirteen lines go up on the screen, all of them about
-made-up words, and one question about two of those words. The answer is
-whatever the lines force, and *cannot be told* is an answer as often
-as any other, because a set of premises that pins everything down is
-not a set of premises anybody has to reason about.
+things named after ordinary English nouns, and one question about two
+of those things. The answer is whatever the lines force, and *cannot
+be told* is an answer as often as any other, because a set of premises
+that pins everything down is not a set of premises anybody has to
+reason about.
+
+The names come from the word index the crossword and the Scrabble
+rack are built on, and are made up instead where that has not been
+fetched. **A real word carries a belief**, which is worth stating as
+a cost rather than waving away: the place it could be spent is the
+categorical rungs, where two nouns picked at random really are
+strangers to each other, and a player who answers from the world
+rather than from the page answers *none* every time. Measured, that
+reader gets 0.11 and 0.17 against guessing floors of 0.20 — believing
+the premises is not a way round these rungs but a way of doing worse
+than a coin, because the deal picks its answer before it picks the
+premises that give it.
 
 The families are relational-reasoning paradigms rather than
 inventions: transitive inference over an order, parity over a
@@ -49,36 +62,45 @@ kills the conversational implicature that some means not all. Under
 the Boolean reading used here, "every X is a Y" does not say there are
 any X.
 
-Measured over 150 deals a rung by ``tests/bench_syllogism.py``:
+Measured over 400 deals a rung by ``tests/bench_syllogism.py``, which
+is a proportion good to about ±0.03:
 
 ===== ================================ ==== ===== ===== ===== ======= =====
 rung  what it asks                     ans  lines guess const surface steps
 ===== ================================ ==== ===== ===== ===== ======= =====
-1     same or opposite                    3   5.0  0.33  0.41    0.37   3.9
-2     more and less                       3   5.0  0.33  0.38    0.35   2.9
-3     a gap in the chain                  3   7.0  0.33  0.37    0.35   4.5
-4     not more than                       3   7.0  0.33  0.43    0.30   4.3
-5     all and at least one                5   2.0  0.20  0.46    0.54   2.0
-6     which way from here                 9   4.0  0.11  0.15    0.17   2.8
-7     nine lines, and two that matter     3   9.0  0.33  0.38    0.31   4.4
-8     three at once                       5   3.0  0.20  0.30    0.33   2.4
-9     up and down as well                27   5.0  0.04  0.07    0.01   3.1
-10    the same kind of thing              3   8.0  0.33  0.41    0.33   7.2
-11    two questions, one answer           3   8.9  0.33  0.37    0.29   6.7
-12    three questions, one answer         3  12.9  0.33  0.35    0.35  10.4
+1     same or opposite                    3   5.0  0.33  0.35    0.34   3.8
+2     more and less                       3   5.0  0.33  0.34    0.34   3.1
+3     a gap in the chain                  3   7.0  0.33  0.36    0.32   4.4
+4     not more than                       3   7.0  0.33  0.34    0.34   3.8
+5     all and at least one                5   2.0  0.20  0.52    0.48   2.0
+6     which way from here                 9   4.0  0.11  0.12    0.09   2.8
+7     nine lines, and two that matter     3   9.0  0.33  0.34    0.35   4.6
+8     three at once                       5   3.0  0.20  0.28    0.42   2.4
+9     up and down as well                27   5.0  0.04  0.06    0.05   3.1
+10    the same kind of thing              3   8.0  0.33  0.36    0.32   7.5
+11    two questions, one answer           3   8.9  0.33  0.38    0.42   6.5
+12    three questions, one answer         3  12.9  0.33  0.34    0.36  10.4
 ===== ================================ ==== ===== ===== ===== ======= =====
 
-Rung five is the one row that does not sit at chance, and it is not a
-defect in the deal: **the classical rules are the atmosphere reader.**
-A valid conclusion is negative exactly when a premise is and
-particular exactly when a premise is, so on a two-premise syllogism
-atmosphere names the right form whenever anything follows at all —
-measured at 63 of 63. The four forms are one answer between them
-there, and the only question left is whether anything follows, so the
-rung is dealt as the coin it is and both baselines sit at one half.
-Rung eight breaks it by asking about a pair with a premise off the
-path between them: atmosphere counts that premise's quality and
-should not, and it drops to 0.46.
+The two categorical rungs are the rows that do not sit at chance, and
+it is not a defect in the deal: **the classical rules are the
+atmosphere reader.** A valid conclusion is negative exactly when a
+premise is and particular exactly when a premise is, so on a
+two-premise syllogism atmosphere names the right form whenever
+anything follows at all — measured at 192 of 192. The four forms are
+one answer between them there, and the only question left is whether
+anything follows, so rung five is dealt as the coin it is and both
+baselines sit at one half. Rung eight blunts it by asking about a
+pair with a premise off the path between them: atmosphere counts that
+premise's quality and should not, and it falls to 0.58 of the deals
+where something follows, which is 0.42 of all of them.
+
+Rung eleven is the third row over its floor, at 0.42 against 0.33,
+and the cause is the connectives rather than the premises: ``or``
+with one true half is true whatever the other half was misread as,
+so a reader that gets one claim right absorbs being wrong about the
+next. Choosing the connective along with the claims took it from
+0.57 to here; the rest is what a two-valued join gives away for free.
 
 SPDX-License-Identifier: GPL-2.0-or-later
 """
@@ -113,6 +135,26 @@ COMPASS = (('north', 'south'), ('east', 'west'), ('above', 'below'))
 
 
 # --- the words ------------------------------------------------------------
+#
+# The things reasoned about are named after ordinary English nouns,
+# drawn from the word index the crossword and the Scrabble rack are
+# built on. Which nouns is decided by :func:`neural_workshop.wordlist.
+# nouns`, and the band is a common one on purpose: the difficulty is
+# meant to be in putting the premises together, not in the vocabulary.
+#
+# The belief a real word carries is priced at the top of this file:
+# the reader it buys answers *none* on the categorical rungs and does
+# worse than guessing. What it costs nowhere is the rest of the
+# ladder, and that is measured too — ``either_way`` in the bench deals
+# every rung twice, once with real names and once with made-up ones,
+# and the two columns agree. They have to: the logic never reads the
+# names. The one channel by which they could have mattered is the
+# read-back, which throws a deal away if the printed lines do not
+# parse, and no deal is thrown away either way.
+#
+# With no index fetched there is nothing to draw from — the seed list
+# is function words — so the names are made up instead, by
+# :func:`nonsense`, which is the same task with the belief removed.
 
 ONSETS = ('b', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'p', 'r',
           's', 't', 'v', 'z')
@@ -125,8 +167,10 @@ _REAL: Optional[frozenset] = None
 def _real_words() -> frozenset:
     """Common English words, so a made-up one never turns out to be one.
 
-    Only common ones: a rare word carries no belief to bias with,
-    which is the whole reason the items are made up.
+    Only common ones, and only for the fallback: where the names are
+    invented they should be inventions all the way, and a rare word
+    that ``bavir`` happened to collide with would carry no belief to
+    bias with anyway.
     """
     global _REAL
     if _REAL is None:
@@ -164,6 +208,99 @@ def nonsense(rng: random.Random, count: int) -> Tuple[str, ...]:
         got.append(word)
     if len(got) < count:                         # pragma: no cover
         raise RuntimeError('could not name %d things' % count)
+    return tuple(got)
+
+
+#: Every word this task prints that is not the name of a thing, so
+#: that nothing is ever named after one. "north is north of south" is
+#: a line that reads as grammar rather than as a premise, and it is
+#: not the reader's job to work out which "north" is which.
+#:
+#: Taken off the page rather than off the source: the test that guards
+#: it deals every rung, tokenises everything printed, and asks that
+#: what is left after the names are removed is exactly this set. A
+#: frame that gains a word gains it here too, or the test says so.
+GRAMMAR = frozenset(
+    'a an about above all and are as at be below cannot different east '
+    'every exactly false follows from in is it least less links more no '
+    'none north not nothing of one opposite or other place premises '
+    'same so south stands still than the this three to told true two '
+    'way west what when which whole'.split())
+
+#: And a margin, of words that do not appear on the page today but
+#: would read as grammar if a name landed on one.
+NEARLY = frozenset(
+    'after any before both down each either kind left line neither '
+    'right some thing under up yes'.split())
+
+_POOL: Optional[Tuple[str, ...]] = None
+
+
+def _pool() -> Tuple[str, ...]:
+    """The nouns a deal may name things after, or empty if there are none.
+
+    Kept, because building it reads the index and the frequency list:
+    0.28 s once, against 0.1 ms for a deal. That is the whole of this
+    task's start-up cost and it is paid on the first question rather
+    than at import, so a machine that never opens Syllogisms never
+    pays it.
+    """
+    global _POOL
+    if _POOL is None:
+        try:
+            from .wordlist import nouns
+            _POOL = tuple(one.word for one in nouns().entries
+                          if one.word not in GRAMMAR
+                          and one.word not in NEARLY)
+        except Exception:                        # pragma: no cover
+            _POOL = ()
+    return _POOL
+
+
+def forget() -> None:
+    """Drop the cached name pool, for a test that changes what is on disk."""
+    global _POOL
+    _POOL = None
+
+
+def real_names() -> bool:
+    """Whether this machine has words to name things after.
+
+    It has them or it has nothing: the noun pool comes from the
+    fetched index, and without that there is no half-way state.
+    """
+    return bool(_pool())
+
+
+def things(rng: random.Random, count: int) -> Tuple[str, ...]:
+    """*count* things to reason about, no two of them opening alike.
+
+    Real words where the machine has them and made-up ones where it
+    does not, and the same rule either way: distinct first two
+    letters, because telling ``carpet`` from ``carpel`` at a glance is
+    not the skill this task is for.
+
+    The pool has to be forty times what the question needs before it
+    is drawn from at all, so that rule never turns into a search.
+    Eighteen names out of four thousand words is not a constraint;
+    eighteen out of thirty would be, and a thin pool is a sign that
+    something is wrong with the index rather than an occasion to
+    struggle on.
+    """
+    found = _pool()
+    if len(found) < 40 * count:
+        return nonsense(rng, count)
+    used, got = set(), []
+    for _try in range(400 * count):
+        if len(got) >= count:
+            break
+        word = found[rng.randrange(len(found))]
+        if word[:2] in used:
+            continue
+        used.add(word[:2])
+        got.append(word)
+    if len(got) < count:                         # pragma: no cover
+        return nonsense(rng, count)
     return tuple(got)
 
 
@@ -284,11 +421,33 @@ FORMS = (ALL, NONE, SOME, SOME_NOT)
 NOTHING = 'nothing follows'
 
 SAYS = {
-    ALL: 'every %s is a %s',
-    NONE: 'no %s is a %s',
-    SOME: 'at least one %s is a %s',
-    SOME_NOT: 'at least one %s is not a %s',
+    ALL: 'every %s is %s %s',
+    NONE: 'no %s is %s %s',
+    SOME: 'at least one %s is %s %s',
+    SOME_NOT: 'at least one %s is not %s %s',
 }
+
+#: Words that sound as though they started with the other kind of
+#: letter. The rule is about the sound rather than the spelling, and
+#: with made-up names the question never came up: it is "a idiot"
+#: that gave it away. Prefixes, so ``union`` covers ``unions``.
+SOUNDS_CONSONANT = ('uni', 'use', 'usu', 'uti', 'uto', 'ura', 'ute',
+                    'eu', 'ewe', 'one')
+SOUNDS_VOWEL = ('hour', 'honest', 'honor', 'honour', 'heir')
+
+
+def article(word: str) -> str:
+    """``a`` or ``an``, for a name printed after it."""
+    if word.startswith(SOUNDS_VOWEL):
+        return 'an'
+    if word.startswith(SOUNDS_CONSONANT):
+        return 'a'
+    return 'an' if word[:1] in 'aeiou' else 'a'
+
+
+def says(form: str, subject: str, other: str) -> str:
+    """One categorical line about two named things."""
+    return SAYS[form] % (subject, article(other), other)
 
 OPTIONS: Dict[str, Tuple[str, ...]] = {
     PARITY: ('the same', 'the opposite', UNTOLD),
@@ -314,7 +473,7 @@ def options_for(grade: Grade, about: Sequence[str] = ()) -> Tuple[str, ...]:
     half of what there is to get wrong here.
     """
     if grade.family == CATEGORICAL:
-        return tuple(SAYS[form] % (about[0], about[1])
+        return tuple(says(form, about[0], about[1])
                      for form in FORMS) + (NOTHING,)
     return OPTIONS[grade.family]
 
@@ -384,7 +543,7 @@ def _grow(rng: random.Random, grade: Grade, parts: int,
     ``parts``. A rung where two pieces mean one line fewer is a rung
     where counting the lines answers the question.
     """
-    items = names or nonsense(rng, grade.items)
+    items = names or things(rng, grade.items)
     family = grade.family
     groups = _split(rng, grade.items, parts)
     place: List[Optional[Tuple[int, ...]]] = [None] * grade.items
@@ -827,7 +986,7 @@ def _categorical_question(grade: Grade,
     "at least one X is not a Y" invites.
     """
     count = grade.items
-    terms = nonsense(rng, count)
+    terms = things(rng, count)
     ends = [(one, two) for one in range(count) for two in range(count)
             if abs(one - two) > 1]
     subject, other = ends[rng.randrange(len(ends))]
@@ -854,8 +1013,8 @@ def _categorical_question(grade: Grade,
     premises = choices[rng.randrange(len(choices))]
     order = list(range(len(premises)))
     rng.shuffle(order)
-    lines = tuple(SAYS[premises[one][0]] % (terms[premises[one][1]],
-                                            terms[premises[one][2]])
+    lines = tuple(says(premises[one][0], terms[premises[one][1]],
+                       terms[premises[one][2]])
                   for one in order)
     options = options_for(grade, (terms[subject], terms[other]))
     spare = _spare(count, premises, label, subject, other)
@@ -924,14 +1083,14 @@ def _categorical_working(count: int,
     """Why. For *nothing follows* that means two worlds, not a shrug."""
     named = (terms[subject], terms[other])
     if label != NOTHING:
-        return ('so ' + SAYS[label] % named,
+        return ('so ' + says(label, *named),
                 'and none of the other three follows')
     both = [form for form in FORMS
             if satisfiable(count, tuple(premises) + ((form, subject, other),))]
     if len(both) >= 2:
         return ('the premises are all still true when ' +
-                SAYS[both[0]] % named + ',',
-                'and all still true when ' + SAYS[both[1]] % named + ',',
+                says(both[0], *named) + ',',
+                'and all still true when ' + says(both[1], *named) + ',',
                 'so nothing follows about %s and %s' % named)
     return ('so nothing follows about %s and %s' % named,)  # pragma: no cover
 
@@ -1105,7 +1264,7 @@ def _binary_question(grade: Grade, rng: random.Random) -> Optional[Question]:
     """Two or three claims, and what the connectives make of them."""
     families = grade.inner
     size = 5
-    pool = nonsense(rng, (size + 1) * len(families))
+    pool = things(rng, (size + 1) * len(families))
     parts = []
     for number, family in enumerate(families):
         made = _claims(rng, grade, family, size,
@@ -1562,9 +1721,13 @@ def checks_out(question: Question) -> bool:
     return read_back(question) == question.answer
 
 
-__all__ = ['ALL', 'BINARY', 'CATEGORICAL', 'FORMS', 'GRADES', 'Grade',
-           'META', 'MOST_OPTIONS', 'NONE', 'NOTHING', 'OPTIONS', 'ORDER',
+__all__ = ['ALL', 'BINARY', 'CATEGORICAL', 'FORMS', 'GRADES', 'GRAMMAR',
+           'article',
+           'Grade',
+           'META', 'MOST_OPTIONS', 'NEARLY', 'NONE', 'NOTHING', 'OPTIONS',
+           'ORDER',
            'PARITY', 'PLANE', 'Question', 'SOME', 'SOME_NOT', 'SPACE',
            'UNTOLD', 'Web', 'checks_out', 'correct', 'deal_one', 'entails',
-           'generate', 'grade_of', 'nonsense', 'options_for', 'parse_line',
-           'read_back', 'satisfiable']
+           'forget', 'generate', 'grade_of', 'nonsense', 'options_for',
+           'parse_line', 'read_back', 'real_names', 'satisfiable', 'says',
+           'things']
