@@ -844,6 +844,37 @@ SOKO3D_ADAPTIVE = True
 SOKO3D_MARKS = True
 SOKO3D_TRAPS = False
 
+# Freeform Tetris: a well TETRIS_COLUMNS wide and TETRIS_ROWS deep, far
+# wider and far finer than a tetris well. Nothing is dealt at you:
+# TETRIS_QUEUE pieces are on offer and you click the one that comes
+# next. Rotation is continuous - hold Up or Down and the piece winds
+# round at TETRIS_SPIN degrees a second through the whole circle, with
+# TETRIS_DETENT degrees of detent at each quarter turn, because a piece
+# square to the grid is the only kind whose cells are whole cells and
+# so the only kind a gapless drop can be promised for. Set the detent
+# to 0 and every angle in the circle is held exactly as wound, with S
+# the way to square up on purpose. Every piece
+# on offer is cut out of the board's own skyline and is checked, after
+# every placement, to still have a drop that buries nothing; the count
+# of those drops is printed under it and a piece left with none is cut
+# again. TETRIS_RUNG picks the starting rung of a ladder that climbs by
+# shape alone - rectangles, then notches, then dented combs across six
+# columns. TETRIS_FALL is the gravity, and it is yours: no rung ever
+# changes it. With TETRIS_ADAPTIVE a run of placements that leave no
+# gap climbs a rung and gaps fall off one. TETRIS_GHOST outlines where
+# the piece would land, in one colour when that buries nothing and
+# another when it does.
+TETRIS_RUNG = 1
+TETRIS_COLUMNS = 72
+TETRIS_ROWS = 32
+TETRIS_PIECES = 25
+TETRIS_QUEUE = 5
+TETRIS_FALL = 2.5
+TETRIS_SPIN = 150
+TETRIS_DETENT = 7
+TETRIS_ADAPTIVE = True
+TETRIS_GHOST = True
+
 # Crossed Wires is the one task that hands the player nothing. A
 # marker on a grid that wraps round at every edge, a target to reach,
 # and four or eight keys whose directions have been scrambled - and

@@ -55,6 +55,7 @@ try:
     from neural_workshop.ui.outofsight import OutOfSight
     from neural_workshop.ui.sokoban import SokobanTask
     from neural_workshop.ui.sokoban3d import Sokoban3D
+    from neural_workshop.ui.tetris import FreeformTetris
     from neural_workshop.ui.maze import MazeTask
     from neural_workshop.ui.inthedark import InTheDark
     from neural_workshop.ui.sudoku import Sudoku

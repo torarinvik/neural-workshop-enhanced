@@ -999,6 +999,67 @@ SOKOBAN_3D = TaskSpec(
     note=sokoban_3d_note)
 
 
+def tetris_note(chosen: Dict[str, Any]) -> str:
+    """What the chosen well and rung amount to, and what is promised.
+
+    The promise is the line worth printing here rather than only in
+    the game: whatever these dials say, every piece on offer will have
+    somewhere to go that buries nothing. The rung changes how hard
+    that somewhere is to see, and nothing on this screen changes how
+    fast it arrives.
+    """
+    from .. import tetris
+    columns = int(chosen['TETRIS_COLUMNS'])
+    rows = int(chosen['TETRIS_ROWS'])
+    grade = tetris.grade_at(int(chosen['TETRIS_RUNG']))
+    least, most = grade.cells
+    said = [_('A %dx%d well is %d cells — a tetris well is 200.')
+            % (columns, rows, columns * rows),
+            _('Rung %d cuts %s: %d to %d cells across %d to %d columns.')
+            % (int(chosen['TETRIS_RUNG']), grade.name, least, most,
+               grade.span[0], grade.span[1])]
+    detent = int(chosen['TETRIS_DETENT'])
+    said.append(_('Every angle in the circle is held exactly as wound.')
+                if not detent else
+                _('Within %d° of a quarter turn the piece is held '
+                  'square, which is the only way a drop can be sure of '
+                  'burying nothing; S squares up on purpose.') % detent)
+    if chosen['TETRIS_ADAPTIVE']:
+        said.append(_('Six placements in a row with no gap climbs a rung; '
+                      'gaps fall off one.'))
+    said.append(_('Gravity stays at %g cells a second on every rung — '
+                  'the ladder is shape, not speed.')
+                % float(chosen['TETRIS_FALL']))
+    return '  '.join(said)
+
+
+TETRIS = TaskSpec(
+    title=_('Freeform Tetris options'),
+    options=(
+        Option('TETRIS_RUNG', _('Starting rung'), 1,
+               values=tuple(range(1, 9))),
+        Option('TETRIS_COLUMNS', _('Columns in the well'), 72,
+               values=(32, 48, 64, 72, 80, 96)),
+        Option('TETRIS_ROWS', _('Rows in the well'), 32,
+               values=(20, 24, 32, 40)),
+        Option('TETRIS_PIECES', _('Pieces per run'), 25,
+               values=(10, 15, 25, 40, 60, 100)),
+        Option('TETRIS_QUEUE', _('Pieces to choose between'), 5,
+               values=(2, 3, 4, 5, 6)),
+        Option('TETRIS_FALL', _('Gravity'), 2.5,
+               values=(1.0, 1.5, 2.5, 4.0, 6.0), suffix=_(' cells/s')),
+        Option('TETRIS_SPIN', _('Spin rate while a key is held'), 150,
+               values=(60, 90, 150, 220, 320), suffix=_('°/s')),
+        Option('TETRIS_DETENT', _('Pull onto the grid within'), 7,
+               values=(0, 3, 7, 12), suffix=_('° of a quarter turn')),
+        Option('TETRIS_ADAPTIVE',
+               _('Climb a rung after a run of placements with no gap'),
+               True),
+        Option('TETRIS_GHOST', _('Show where the piece would land'), True),
+    ),
+    note=tetris_note)
+
+
 def crossed_wires_note(chosen: Dict[str, Any]) -> str:
     """What is scrambled, how little is spare, and what moves under you.
 
@@ -1547,6 +1608,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'maze': MAZE,
     'you_are_here': YOU_ARE_HERE,
     'sokoban_3d': SOKOBAN_3D,
+    'tetris': TETRIS,
     'in_the_dark': IN_THE_DARK,
     'fog_of_war': FOG_OF_WAR,
     'removals': REMOVALS,

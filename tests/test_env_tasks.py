@@ -547,7 +547,8 @@ class TheBoundaryKnowsWhichTasksHaveAClock(unittest.TestCase):
                         'moving_targets', 'lookout', 'pursuit', 'reflex',
                         'count', 'recognition', 'matrix_reasoning',
                         'graph_mapping', 'concentration',
-                        'chain_of_custody', 'cookie_thief', 'donkey'):
+                        'chain_of_custody', 'cookie_thief', 'donkey',
+                        'tetris'):
             self.assertTrue(self.clocked(task_id), task_id)
 
     def test_the_ports_are_the_ones_the_task_has(self):
