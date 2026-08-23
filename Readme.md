@@ -554,7 +554,11 @@ Nothing is downloaded for this one — the road is generated.
 
 ### Perception
 
-The *Perception* category holds **Count**: a tangle of overlapping
+The *Perception* category holds two tasks. One asks about what is in
+front of you; the other asks about something that is not on the screen
+at all any more.
+
+**Count** is a tangle of overlapping
 outlines, and the question is how many there are. Type the number and
 press Enter. Past four or five, counting stops being a glance and
 becomes work — the eye has to keep track of what it has already
@@ -568,6 +572,64 @@ perception rather than from patiently ticking shapes off, and with
 *Add a shape when right* the count follows how you do.
 
 Nothing is downloaded for this one — the shapes are generated.
+
+**Mr. Time** shows a shape somewhere on the page, takes it away after
+a moment, and then — after a gap drawn from anything between nothing at
+all and the longest you allow — asks *how long ago did the shape
+appear?* You type the answer in seconds and press Enter. Nothing on
+screen was counting, which is the whole task: the interval has to have
+been timed while it was happening, because by the time the question
+arrives it is over.
+
+That is the recall half. Set *Which half to play* to **produce** and
+the question comes from the other end: the shape appears with a
+duration written under it, and the task is to click it when that much
+time has gone by. Space does the same thing as a click. Reading an
+interval that has already happened and laying one down on cue are not
+the same skill, and **both** shuffles the two so that neither can be
+prepared for.
+
+The ladder is precision, and it is what the name is about. Each rung
+names a finer unit — seconds, deciseconds, centiseconds, milliseconds,
+microseconds, nanoseconds — and tightens the band an answer has to
+land in: 25% of the interval, then 10%, 4%, 1.5%, 0.5% and 0.2%. A
+right answer asks for the next unit up; a wrong one gives one back.
+
+**The band is a share of the interval rather than a fixed number of
+milliseconds**, and that is the one design decision here worth
+defending. Human interval timing follows Weber's law — repeated
+estimates of a long interval scatter proportionally as widely as
+repeated estimates of a short one — so a fixed window would make a
+half-second trial and an eight-second trial two different tasks
+wearing one name, and a run's score would mostly report which
+intervals it happened to deal. With a proportional band every deal is
+equally hard, and the number that comes out of a run is a Weber
+fraction: the run summary reports it as *typically n% out*, which is
+directly comparable between runs, between settings, and between a
+person and a learner.
+
+**The last two rungs cannot be climbed, and they are there anyway.**
+Practised people land somewhere around 5-15% on this, which is rungs
+two and three; rung four is very hard and rung five is past anything
+the literature reports. Rung six asks for two parts in a thousand of a
+three-second gap — six milliseconds — which is less than half of one
+frame at sixty hertz, so it is past the *instrument* as well as past
+the hand: an agent stepping the boundary sees time quantised to
+16.7 ms and cannot express an answer that fine however well it has
+learned. Nanoseconds are the ceiling of this ladder in the same way
+0.3 s is Reflex's, kept so that reaching the rung below still means
+something. The task reports which rung a run got to for that reason.
+
+Two things the screen deliberately does not do. It never draws a
+clock, and it never prints the tolerance before the answer is in — the
+band is a fixed share of the interval, so a tolerance on the page is
+the answer in different units. The options screen quotes the band
+against the *longest* gap the settings allow, which leaks nothing
+about the gap actually dealt.
+
+Nothing is downloaded for this one — the shapes are generated, and
+which shape it is carries nothing at all. It is a marker for an
+instant, not a thing to remember.
 
 ### Reasoning
 
@@ -2087,7 +2149,7 @@ obs, events, done = env.step(2)         # one of three opaque ports
 env.close()
 ```
 
-Sixteen of the thirty-three are *declarations* rather than code — where
+Sixteen of the thirty-four are *declarations* rather than code — where
 the task class lives, what one port calls, which phase takes input, which
 phase means the trial is over, and what the difficulty knobs are called:
 
@@ -2103,12 +2165,13 @@ class HanoiEnv(TaskEnv):
 ```
 
 They carry **no deriver and no verifier**, because they paint the shared
-verdict label and the boundary already knows how to read one. Thirteen
+verdict label and the boundary already knows how to read one. Fourteen
 of them add a short method or two — a port that names an object rather than
-an index, a trial window the task has no phase for, a coach gated on
-whether the boundary will actually pay it. The four written before that
-existed still carry both, at about a hundred lines apiece. Sixteen and
-thirteen and four is thirty-three, which is the point of counting them.
+an index, a port that is a moment rather than a symbol, a trial window the
+task has no phase for, a coach gated on whether the boundary will actually
+pay it. The four written before that existed still carry both, at about a
+hundred lines apiece. Sixteen and fourteen and four is thirty-four, which
+is the point of counting them.
 `ADDING_A_TASK.md` is the whole contract.
 
 Two things had to change across the workshop to make this work, and both

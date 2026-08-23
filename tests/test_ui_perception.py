@@ -29,8 +29,7 @@ class PerceptionCategoryTests(unittest.TestCase):
         self.assertIn('perception', TASKS)
 
     def test_count_is_in_it(self):
-        self.assertEqual([task for task, _name in TASKS['perception']],
-                         ['count'])
+        self.assertIn('count', [task for task, _name in TASKS['perception']])
 
     def test_it_has_an_options_screen(self):
         from neural_workshop.ui import taskoptions

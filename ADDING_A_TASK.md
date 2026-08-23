@@ -1,6 +1,6 @@
 # Making a task reachable by the agent
 
-The Workshop ships thirty-three playable tasks and **all thirty-three are
+The Workshop ships thirty-four playable tasks and **all thirty-four are
 reachable by the learning agent**. Reachable means more than playable: the
 agent gets pixels and opaque ports, and every scalar it is paid must be
 re-derivable from the frames by someone who is not trusted with the game.
@@ -54,12 +54,13 @@ the programme has one pixel reader to get right rather than one per task.
 | `requires` | settings the boundary imposes whatever the player prefers. Almost always `{'feedback': True}`: a trial that resolves with no verdict painted resolves into nothing a third party can read. |
 
 The hooks are all still there — `build`, `drive`, `trial_open`, `tick`,
-`resolved`, `finished` — and an override wins over a declaration. Eleven of
-the twenty-nine wrappers need one. Count composes its answer out of digits,
+`resolved`, `finished` — and an override wins over a declaration. Twelve of
+the thirty wrappers need one. Count composes its answer out of digits,
 Sudoku and the Crossword steer a cursor, Scrabble's ports are rack
 *positions* rather than letters, Scramble's and Algebra's are a typewriter,
 Moving Targets and Concentration name an object rather than an index, Reflex
-has no phase for its trial window at all, and Chain of Custody and the 3D
+has no phase for its trial window at all, Mr. Time's last port is a
+*moment* rather than a symbol, and Chain of Custody and the 3D
 Maze steer and gate both. Most are six lines. Two more — Donkey and Cookie Thief — override
 `apply_dials` and `dials` only, which is the coach gate below rather than
 anything about their ports. The remaining four tasks predate all of this and
@@ -260,7 +261,9 @@ every one of them is a red. Algebra is the same shape, and arithmetic has no
 near misses at all. That is the honest floor and not a gap: the signal a
 learner gets for free is *what a wrong answer costs*, and the green still
 needs the knowing-answer test. Donkey is the same shape for a different
-reason. A task like this belongs in both places.
+reason, and so is Mr. Time, where one port is submit and one port is
+*now*, so a nonsense answer given is a nonsense answer marked. A task
+like this belongs in both places.
 
 Syllogisms is the one task where a coin gets a green often enough to see —
 every port is an answer, and one in three of them is right at the bottom of

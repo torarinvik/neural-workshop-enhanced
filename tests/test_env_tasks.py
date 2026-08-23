@@ -58,6 +58,7 @@ if UI_IMPORT_ERROR is None:
     from nwenv.inthedark import InTheDarkEnv
     from nwenv.lookout import COLOR_CHANNEL, FORM_CHANNEL
     from nwenv.maze import MazeEnv
+    from nwenv.mrtime import MrTimeEnv
     from nwenv.outcome import derive_public_outcome
     from nwenv.recognition import NEW, SEEN
     from nwenv.removals import RemovalsEnv
@@ -85,6 +86,14 @@ BY_LUCK = {
     'pursuit': (1500, {'seconds': 10}),
     'out_of_sight': (900, {}),
     'count': (900, {}),
+    # Paid on nearly every trial and paid mostly red, for the same
+    # reason Scramble is: one port is submit and one port is *now*, so
+    # a nonsense answer given is a nonsense answer marked. Measured at
+    # the bottom rung, where the band is a quarter of the interval and
+    # a random number lands inside it about one time in five — which
+    # is why there is a green in the tally at all. The green that
+    # means something is in PlayedProperlyItIsPaid, both halves of it.
+    'mr_time': (900, {'rung': 1, 'trials': 6}),
     'graph_mapping': (600, {}),
     'matrix_reasoning': (400, {}),
     'crossed_wires': (700, {'rung': 1, 'rounds': 3}),
@@ -202,6 +211,9 @@ class RandomPlayIsPaid(unittest.TestCase):
 
     def test_count(self):
         self.check('count')
+
+    def test_mr_time(self):
+        self.check('mr_time')
 
     def test_graph_mapping(self):
         self.check('graph_mapping')
@@ -500,6 +512,49 @@ class PlayedProperlyItIsPaid(unittest.TestCase):
                               task.layout)
             return {O.LEFT: 0, O.RIGHT: 1, O.GRAB: 2,
                     O.DROP: 2, O.WAIT: 3}[action]
+
+        self.assertEqual(driven(env, moves), [1.0])
+
+    def test_an_interval_that_was_actually_timed_is_paid(self):
+        """The recall half, answered off the task's own clock.
+
+        The policy reads the interval; the boundary does not, and still
+        pays it off the verdict painted on the frame. Typed one digit a
+        step through the same ports a learner has — this is the task
+        where the composed answer and the timing are the same problem.
+        """
+        env = MrTimeEnv(seed=0, mode='recall', rung=1, trials=3,
+                        adaptive=False)
+        plan = []
+
+        def moves(task):
+            if task.phase != 'asking':
+                del plan[:]
+                return 11                       # backspace: a no-op here
+            if not plan:
+                for character in '%.3f' % task.interval:
+                    plan.append(10 if character == '.' else int(character))
+                plan.append(12)
+            return plan.pop(0)
+
+        self.assertEqual(driven(env, moves), [1.0])
+
+    def test_a_duration_laid_down_on_cue_is_paid(self):
+        """The produce half: the action is not what, it is when.
+
+        Nothing on screen changes while the duration runs, so the
+        policy counts the driver's own ticks — which is exactly what a
+        learner has to do here, and the reason this task cannot be
+        played off a single frame.
+        """
+        env = MrTimeEnv(seed=0, mode='produce', rung=2, trials=3,
+                        adaptive=False)
+
+        def moves(task):
+            if task.phase != 'counting':
+                return 11
+            gone = task.clock() - task.appeared_at
+            return 13 if gone >= task.target else 11
 
         self.assertEqual(driven(env, moves), [1.0])
 
