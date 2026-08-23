@@ -468,10 +468,36 @@ class TheScrabbleScreen(unittest.TestCase):
         self.task.take_back()
         self.assertEqual(self.task.deal.board.letters, was)
 
+    def isolated_pair(self):
+        """Where two tiles laid across touch nothing already on the board.
+
+        The corner is not that place. On a small board it happens to be
+        one, but a big board seeds enough words that a play reaching the
+        corner is legal — and then the submission is *rightly* taken and
+        it is the deal, not the rule, that failed the test.
+        """
+        board = self.task.deal.board
+        size = board.size
+
+        def empty(row, col):
+            return not board.letters[row * size + col]
+
+        for row in range(size):
+            for col in range(size - 1):
+                if not (empty(row, col) and empty(row, col + 1)):
+                    continue
+                touching = [(row - 1, col), (row + 1, col),
+                            (row - 1, col + 1), (row + 1, col + 1),
+                            (row, col - 1), (row, col + 2)]
+                if all(not (0 <= r < size and 0 <= c < size) or empty(r, c)
+                       for r, c in touching):
+                    return row * size + col
+        self.fail('no isolated pair of squares on the board')
+
     def test_nonsense_is_refused_rather_than_scored_as_zero(self):
         self.open_one()
-        # Two tiles in a far corner, touching nothing.
-        self.task.at = 0
+        # Two tiles laid where they touch nothing at all.
+        self.task.at = self.isolated_pair()
         self.task.down = False
         self.task.lay(0)
         self.task.lay(1)
