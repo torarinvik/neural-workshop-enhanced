@@ -54,14 +54,16 @@ the programme has one pixel reader to get right rather than one per task.
 | `requires` | settings the boundary imposes whatever the player prefers. Almost always `{'feedback': True}`: a trial that resolves with no verdict painted resolves into nothing a third party can read. |
 
 The hooks are all still there — `build`, `drive`, `trial_open`, `tick`,
-`resolved`, `finished` — and an override wins over a declaration. Eight tasks
-need one. Count composes its answer out of digits, Sudoku and the Crossword
-steer a cursor, Scrabble's ports are rack *positions* rather than letters,
-Scramble's are a typewriter, Moving Targets and Concentration name an object
-rather than an index, and Reflex has no phase for its trial window at all.
-Each is six lines. Three
-more override `apply_dials` and `dials` only, which is the coach gate below
-rather than anything about their ports.
+`resolved`, `finished` — and an override wins over a declaration. Ten of the
+twenty-seven wrappers need one. Count composes its answer out of digits,
+Sudoku and the Crossword steer a cursor, Scrabble's ports are rack
+*positions* rather than letters, Scramble's are a typewriter, Moving Targets
+and Concentration name an object rather than an index, Reflex has no phase
+for its trial window at all, and Chain of Custody and the 3D Maze steer and
+gate both. Most are six lines. Two more — Donkey and Cookie Thief — override
+`apply_dials` and `dials` only, which is the coach gate below rather than
+anything about their ports. The remaining four tasks predate all of this and
+are whole environments of their own, at about a hundred lines apiece.
 
 ## The two things the UI must do
 
