@@ -1299,6 +1299,48 @@ ALGEBRA = TaskSpec(
     note=algebra_note)
 
 
+def syllogism_note(chosen: Dict[str, Any]) -> str:
+    """What the level asks, what it takes for granted, and an example.
+
+    The convention is quoted rather than paraphrased, because it is a
+    choice: with no ties in an order, "not more than" means "less
+    than" and nothing else, and a player who guessed otherwise would
+    be wrong about the task rather than about the premises.
+    """
+    from ..syllogism import GRADES, NOTHING, UNTOLD, deal_one
+    import random
+    rung = int(chosen['SYLLOGISM_LEVEL'])
+    grade = GRADES[max(0, min(len(GRADES) - 1, rung - 1))]
+    said = [_('Level %d, "%s".') % (rung, _(grade.name))]
+    shown = deal_one(grade, random.Random(rung))
+    if shown is not None:
+        said.append(_('%d lines, %d answers.') % (len(shown.lines),
+                                                  len(shown.options)))
+        said.append(_('Like this one: %s  %s')
+                    % ('  /  '.join(shown.lines[:2])
+                       + ('  ...' if len(shown.lines) > 2 else ''),
+                       shown.asked))
+        if not set(shown.options) & {UNTOLD, NOTHING}:
+            said.append(_('This level always settles the question, so it '
+                          'does not offer "cannot be told".'))
+    said.append(_('One answer, and nothing partial counts.'))
+    return '  '.join(said)
+
+
+SYLLOGISM = TaskSpec(
+    title=_('Syllogism options'),
+    options=(
+        Option('SYLLOGISM_LEVEL', _('Level'), 3, values=tuple(range(1, 13))),
+        Option('SYLLOGISM_TRIALS', _('Questions per run'), 6,
+               values=(1, 2, 3, 5, 6, 8, 10, 15)),
+        Option('SYLLOGISM_SHOW_WORKING', _('Show the working afterwards'),
+               True),
+        Option('SYLLOGISM_ADAPTIVE',
+               _('Climb a level after a right answer'), True),
+    ),
+    note=syllogism_note)
+
+
 def salesman_note(chosen: Dict[str, Any]) -> str:
     """What the score means at this size, and that it is exact.
 
@@ -1514,6 +1556,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'scrabble': SCRABBLE,
     'scramble': SCRAMBLE,
     'algebra': ALGEBRA,
+    'syllogism': SYLLOGISM,
     'chain_of_custody': CUSTODY,
     'cookie_thief': COOKIE_THIEF,
 }

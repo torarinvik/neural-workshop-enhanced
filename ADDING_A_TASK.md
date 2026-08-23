@@ -1,6 +1,6 @@
 # Making a task reachable by the agent
 
-The Workshop ships thirty-two playable tasks and **all thirty-two are
+The Workshop ships thirty-three playable tasks and **all thirty-three are
 reachable by the learning agent**. Reachable means more than playable: the
 agent gets pixels and opaque ports, and every scalar it is paid must be
 re-derivable from the frames by someone who is not trusted with the game.
@@ -55,7 +55,7 @@ the programme has one pixel reader to get right rather than one per task.
 
 The hooks are all still there — `build`, `drive`, `trial_open`, `tick`,
 `resolved`, `finished` — and an override wins over a declaration. Eleven of
-the twenty-eight wrappers need one. Count composes its answer out of digits,
+the twenty-nine wrappers need one. Count composes its answer out of digits,
 Sudoku and the Crossword steer a cursor, Scrabble's ports are rack
 *positions* rather than letters, Scramble's and Algebra's are a typewriter,
 Moving Targets and Concentration name an object rather than an index, Reflex
@@ -261,6 +261,12 @@ near misses at all. That is the honest floor and not a gap: the signal a
 learner gets for free is *what a wrong answer costs*, and the green still
 needs the knowing-answer test. Donkey is the same shape for a different
 reason. A task like this belongs in both places.
+
+Syllogisms is the one task where a coin gets a green often enough to see —
+every port is an answer, and one in three of them is right at the bottom of
+the ladder. Measured: six outcomes in nine hundred steps, five red and one
+green. That is not a defect either, but it is worth knowing which kind of
+floor a task has before reading anything off a learning curve drawn on it.
 
 **Run the panel:**
 

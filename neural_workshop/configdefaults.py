@@ -1040,6 +1040,34 @@ ALGEBRA_TRIALS = 6
 ALGEBRA_SHOW_WORKING = True
 ALGEBRA_ADAPTIVE = True
 
+# Syllogisms runs from "is this the same as that, or the opposite"
+# to three claims joined by connectives over thirteen lines of
+# premises about made-up words. Twelve levels, and the words are
+# made up on purpose: a real one carries a belief, and a belief is a
+# way of answering that is not reading.
+#
+# Every level offers the same answers its family has, and *cannot be
+# told* is one of them roughly as often as any other - premises that
+# settle everything are premises nobody has to reason about. The two
+# direction levels are the exception: they never leave a question
+# open, so they do not offer that answer at all.
+#
+# Levels one to four are chains - same and opposite, more and less,
+# then with premises written in the negative. Five and eight are
+# categorical: all, no, and at least one. Six and nine walk a grid,
+# flat and then in three dimensions. Ten asks whether two relations
+# are the same kind of thing, and eleven and twelve join two and
+# three claims with and, or, and exactly-one-of, where a claim can be
+# true, false, or not settled.
+#
+# SYLLOGISM_SHOW_WORKING prints the lines that mattered afterwards -
+# and for a "nothing follows", two worlds that both fit the premises
+# and disagree, which is what nothing following means.
+SYLLOGISM_LEVEL = 3
+SYLLOGISM_TRIALS = 6
+SYLLOGISM_SHOW_WORKING = True
+SYLLOGISM_ADAPTIVE = True
+
 ######################################################################
 # This is the end of the configuration file.
 ######################################################################

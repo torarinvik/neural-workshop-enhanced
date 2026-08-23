@@ -112,6 +112,13 @@ BY_LUCK = {
     # submitted is a random string marked, and every one of them is a
     # red. Arithmetic has no near misses.
     'algebra': (900, {'rung': 1, 'trials': 4}),
+    # Every port is an answer, so every port a rung offers is a trial
+    # settled — and one in three of them is right at the bottom of the
+    # ladder. This is the one task on the list where random play gets
+    # a green often enough to see, and the rung it is measured at is
+    # the reason the ports are a ceiling: twenty-four of the
+    # twenty-seven do nothing here.
+    'syllogism': (900, {'rung': 1, 'trials': 4}),
 }
 
 
@@ -219,6 +226,9 @@ class RandomPlayIsPaid(unittest.TestCase):
 
     def test_algebra(self):
         self.check('algebra')
+
+    def test_syllogism(self):
+        self.check('syllogism')
 
     # These six were in BY_LUCK with a measured step budget apiece and
     # no method beside them, so nothing ever played them. Found by the
@@ -404,6 +414,31 @@ class PlayedProperlyItIsPaid(unittest.TestCase):
             return algebra_env.KEYS.index(wanted[len(task.typed)])
 
         self.assertEqual(driven(env, moves), [1.0])
+
+    def test_the_answer_that_follows_is_paid(self):
+        """Answered through the ports, on a rung with nine of them live.
+
+        Rung six rather than rung one on purpose: a three-answer rung
+        would be passed by a policy that always presses zero one time
+        in three, and this one has to find the right index among nine
+        that change place with every deal.
+        """
+        env = catalog.env_class('syllogism')(seed=0, rung=6, trials=2)
+        self.assertEqual(driven(env, lambda task: task.question.answer),
+                         [1.0])
+
+    def test_an_answer_no_rung_offers_does_nothing(self):
+        """The ports are a ceiling, and the spare ones are silent."""
+        env = catalog.env_class('syllogism')(seed=0, rung=1, trials=2)
+        try:
+            env.reset()
+            before = env.task.phase, env.task.choice
+            _obs, events, _done = env.step(env.n_actions - 1)
+            self.assertEqual((env.task.phase, env.task.choice), before)
+            self.assertFalse([one for one in events
+                              if one.get('type') == 'outcome'])
+        finally:
+            env.close()
 
     def test_the_best_scrabble_play_is_paid(self):
         """Laid tile by tile, in the one order the ports allow.

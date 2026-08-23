@@ -571,7 +571,7 @@ Nothing is downloaded for this one — the shapes are generated.
 
 ### Reasoning
 
-The *Reasoning* category holds nine tasks.
+The *Reasoning* category holds ten tasks.
 
 #### Graph Mapping
 
@@ -1285,6 +1285,112 @@ brackets, and no more written terms than the collected form has.
 cd tests && PYTHONPATH=.. ../.venv/bin/python bench_algebra.py
 ```
 
+#### Syllogisms
+
+```
+kust is more than foosk        vutfaim is less than misoosk
+sasvil is less than vutfaim    sasvil is more than kust
+Is vutfaim more than kust, or less?     more / less / cannot be told
+```
+
+Lines about made-up words, and one question about two of them. Twelve
+levels, from a chain of *same* and *opposite* to three claims joined
+by connectives over thirteen lines of premises. The shape — a mixed
+relational drill that climbs — is the one
+[Syllogimous v3](https://4skinskywalker.github.io/Syllogimous-v3/)
+popularised; none of its code or wording is here and none could be, as
+that is CC BY-NC and this is GPL. What is here are the paradigms
+themselves, which belong to nobody: transitive inference, parity over
+a same/opposite chain, vector composition on a grid, categorical
+syllogisms, and three-valued composition over the lot.
+
+**The words are made up on purpose.** A real word carries a belief,
+and a belief is a way of answering that is not reading.
+
+**"Cannot be told" is an answer as often as any other.** Premises that
+settle everything are premises nobody has to reason about, so the web
+of premises falls into two pieces about a third of the time and the
+question is sometimes across the gap. That has a cost the design pays
+for: **the number of printed lines cannot depend on how many pieces
+there are**, or counting the lines would answer the question. So a
+second piece is paid for with an extra premise inside the first one.
+The two direction levels are the exception — they never leave a
+question open, so they do not offer that answer at all, because an
+answer that is never right is a free elimination.
+
+**Counting what is left standing measures nothing here.** Ten of the
+twelve levels offer three answers, so the *candidates* column that
+carries Algebra is log-ten of three on nearly all of them however long
+the derivation gets. This task is measured by three baselines that
+know nothing instead, and any of them beating chance is a way round
+the level:
+
+| rung | | ans | lines | guess | const | surface | steps |
+|---|---|---|---|---|---|---|---|
+| 1 | same or opposite | 3 | 5 | 0.33 | 0.41 | 0.37 | 3.9 |
+| 4 | not more than | 3 | 7 | 0.33 | 0.43 | 0.30 | 4.3 |
+| 5 | all and at least one | 5 | 2 | 0.20 | 0.46 | 0.54 | 2.0 |
+| 7 | nine lines, and two that matter | 3 | 9 | 0.33 | 0.38 | 0.31 | 4.4 |
+| 8 | three at once | 5 | 3 | 0.20 | 0.30 | 0.33 | 2.4 |
+| 9 | up and down as well | 27 | 5 | 0.04 | 0.07 | 0.01 | 3.1 |
+| 12 | three questions, one answer | 3 | 13 | 0.33 | 0.35 | 0.35 | 10.4 |
+
+*guess* is one over the answers. *const* is the best fixed answer —
+the column that says whether *cannot be told* is really an answer or a
+decoration. *surface* is a reader that never puts two premises
+together: it finds the one line naming the thing asked about and
+answers with that line's relation.
+
+**Left alone, that reader is not a straw man.** Before the deals were
+balanced against it, it answered level two six times in ten: in a
+chain, what a thing is to its neighbour is usually what it is to
+everything past it. Deals are now chosen so it lands at chance and no
+better — and no worse either, because a reader that is always wrong is
+a way round the level backwards.
+
+**On a two-premise syllogism the surface reader is not even wrong.**
+The classical rules — a valid conclusion is negative exactly when a
+premise is, particular exactly when a premise is — are the atmosphere
+effect written down, and they are necessary conditions for validity.
+Measured: on level five, whenever anything follows at all, atmosphere
+names the right form **63 times out of 63**. The four forms are one
+answer between them there and the only question left is whether
+anything follows, so that level is dealt as the coin it is and both
+baselines sit at one half. Level eight breaks it by asking about a
+pair with a premise off the path between them, where atmosphere counts
+a quality that does not apply: it drops to 0.46. That measurement is
+the reason there are two categorical levels on this ladder rather than
+six.
+
+**Two conventions are printed on the screen, because they are
+choices.** Nothing is equal to anything else in an order, so *not more
+than* means *less than* and nothing else — which is why negation is
+offered in the two families where it has exactly one reading and not
+in the direction families, where *not north of* says seven other
+things. And a direction names which sides a thing is on rather than an
+angle: *north and east* means north of it and east of it, one square
+at a time.
+
+The top two levels are three-valued. An *and* with one false half is
+false however the other half reads; an *exactly one of* with an
+unsettled half is never settled. That asymmetry is most of what those
+levels are about — and it showed up in the measurement first: reading
+one line per claim and then combining correctly scored .57 there,
+better than the same reader manages on either half alone, because the
+connectives absorb misreadings. The connectives are now chosen along
+with the claims rather than before them, and it sits at .42.
+
+**Every question is read back off its own page** by a parser that
+never saw how it was built, and a question that does not read back is
+dealt again rather than handed over. That is what catches the failure
+this task can have quietly: the generator still knows the answer, but
+a negation rendered the wrong way round or a direction put in a frame
+that means something else has stopped the page from saying it.
+
+```bash
+cd tests && PYTHONPATH=.. ../.venv/bin/python bench_syllogism.py
+```
+
 ### Planning
 
 Every task in the *Planning* category is scored the same honest way:
@@ -1913,7 +2019,7 @@ obs, events, done = env.step(2)         # one of three opaque ports
 env.close()
 ```
 
-Fifteen of the thirty-two are *declarations* rather than code — where
+Sixteen of the thirty-three are *declarations* rather than code — where
 the task class lives, what one port calls, which phase takes input, which
 phase means the trial is over, and what the difficulty knobs are called:
 
@@ -1933,8 +2039,8 @@ verdict label and the boundary already knows how to read one. Thirteen
 of them add a short method or two — a port that names an object rather than
 an index, a trial window the task has no phase for, a coach gated on
 whether the boundary will actually pay it. The four written before that
-existed still carry both, at about a hundred lines apiece. Fifteen and
-thirteen and four is thirty-two, which is the point of counting them.
+existed still carry both, at about a hundred lines apiece. Sixteen and
+thirteen and four is thirty-three, which is the point of counting them.
 `ADDING_A_TASK.md` is the whole contract.
 
 Two things had to change across the workshop to make this work, and both

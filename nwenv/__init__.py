@@ -116,6 +116,7 @@ from .crossword import CrosswordEnv  # noqa: E402
 from .scrabble import ScrabbleEnv  # noqa: E402
 from .scramble import ScrambleEnv  # noqa: E402
 from .algebra import AlgebraEnv  # noqa: E402
+from .syllogism import SyllogismEnv  # noqa: E402
 from .donkey import DonkeyEnv  # noqa: E402
 from .custody import CustodyEnv  # noqa: E402
 from .inthedark import InTheDarkEnv  # noqa: E402
@@ -165,7 +166,7 @@ __all__ = [
     'MatrixReasoningEnv', 'MazeEnv', 'MovingTargetsEnv', 'NCupMonteEnv',
     'PursuitEnv', 'RecognitionEnv', 'ReflexEnv', 'RemovalsEnv',
     'SalesmanEnv', 'ScrabbleEnv',
-    'AlgebraEnv',
+    'AlgebraEnv', 'SyllogismEnv',
     'ScrambleEnv', 'Sokoban3DEnv', 'SokobanEnv',
     'SudokuEnv',
 ]
