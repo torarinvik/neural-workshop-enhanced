@@ -38,10 +38,13 @@ that the answer does not need. Proving that nothing links two things
 takes every line, so an unsettled answer counts every premise as a
 step and none as a decoy.
 
-Every column is a proportion over 400 deals, which is about ±0.03,
-and the last section deals each rung twice — once named after real
-words and once after made-up ones — because that is the only place
-the choice of words could show up at all.
+Every column is a proportion over 2,000 deals, which is about ±0.011.
+The last section is not a measurement at all: it deals each rung
+twice, once named after real words and once after made-up ones, and
+checks that the two deals are the same deal. They are, by
+construction — the names come off a random stream of their own — and
+the section is there because that construction is the whole reason
+the rest of this table can be read as being about the premises.
 
 About a minute.
 
@@ -55,6 +58,7 @@ import random
 import statistics
 import sys
 import time
+from typing import Dict, Tuple
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -62,13 +66,37 @@ from neural_workshop import syllogism as S            # noqa: E402
 
 #: Questions dealt a rung. Cheap everywhere but the categorical rungs,
 #: which enumerate every way their premises could have been written.
-DEALS = 400
+#:
+#: Two thousand rather than a couple of hundred, and the reason is a
+#: mistake this bench made: at 150 deals a column moves by ±0.04 from
+#: sampling alone, which is the same size as the effects being looked
+#: for, and two rungs were published as sitting at chance when they do
+#: not. Here a proportion is good to about ±0.011, so three points
+#: over the floor is a finding and not a draw.
+DEALS = 2000
+
+#: Deals a rung gets in the last section, which deals every rung
+#: twice over. It is an exact check rather than a comparison of two
+#: samples, so this number buys coverage rather than confidence and
+#: does not have to be large.
+BOTH_WAYS = 400
+
+_DEALT: Dict[Tuple[int, int, bool], list] = {}
 
 
-def deal(rung: int, count: int = DEALS):
-    rng = random.Random(20260823 + rung)
-    return [one for one in (S.deal_one(S.grade_of(rung), rng)
-                            for _each in range(count)) if one]
+def deal(rung: int, count: int = DEALS, made_up: bool = False):
+    """Kept, because five sections ask the same rung for the same deals.
+
+    Without this the bench spends four fifths of its time dealing the
+    categorical rungs over again to get the answer it already had.
+    """
+    key = (rung, count, made_up)
+    if key not in _DEALT:
+        rng = random.Random(20260823 + rung)
+        _DEALT[key] = [one for one
+                       in (S.deal_one(S.grade_of(rung), rng, made_up)
+                           for _each in range(count)) if one]
+    return _DEALT[key]
 
 
 def ladder() -> None:
@@ -205,39 +233,41 @@ def believing() -> None:
 def either_way() -> None:
     """Whether a deal is any different when the names are made up.
 
-    It cannot be, and the reason is worth stating before the numbers:
-    the names are labels the logic never reads. The one channel by
-    which they could matter is the read-back — a deal whose printed
-    lines do not parse is thrown away and dealt again, and if real
-    words parsed less often the survivors would be a biased sample.
-    So that is what the first column measures, and it is the column
-    that would show a fault.
+    It is not, and this does not measure that — it checks it. The
+    words are drawn from a stream of their own, started with a single
+    number taken from the deal's, so the same seed builds the same
+    premises with the same answer whichever way the things are named.
+    Two columns of numbers would only have been able to say the
+    difference was smaller than the sample; this says there is none.
 
-    The rest is two independent draws of the same quantity. Two
-    columns of 400 deals sit about 0.03 apart from sampling alone and
-    the difference of two of them about 0.05, so a gap under a tenth
-    says nothing at all.
+    A row short of the full count is a deal whose printed lines read
+    back one way and not the other, which is the one way the words
+    could ever have mattered.
+
+    The options are compared by how many there are rather than by what
+    they say: on the categorical rungs an option is a sentence about
+    this deal's two terms, so it is one of the things that is supposed
+    to differ.
     """
     print()
-    print('%-4s %-32s %6s %6s %8s %8s'
-          % ('rung', 'name', 'dealt', '(made)', 'surface', '(made)'))
+    print('%-4s %-32s %12s %10s'
+          % ('rung', 'name', 'same deal', 'dealt'))
     for rung in range(1, len(S.GRADES) + 1):
-        got = []
+        pairs = []
         for made_up in (False, True):
-            S.forget()
-            if made_up:
-                S._POOL = ()                     # names made up instead
             rng = random.Random(11 + rung)
-            dealt = [S.deal_one(S.grade_of(rung), rng)
-                     for _each in range(400)]
-            made = [one for one in dealt if one]
-            got.append((len(made) / len(dealt),
-                        sum(1 for one in made if one.surface == one.answer)
-                        / len(made) if made else 0.0))
-        S.forget()
-        print('%-4d %-32s %6.2f %6.2f %8.2f %8.2f'
-              % (rung, S.grade_of(rung).name,
-                 got[0][0], got[1][0], got[0][1], got[1][1]))
+            pairs.append([S.deal_one(S.grade_of(rung), rng, made_up)
+                          for _each in range(BOTH_WAYS)])
+        agree = sum(1 for one, other in zip(*pairs)
+                    if one is not None and other is not None
+                    and (one.answer, one.surface, one.steps, one.decoys,
+                         len(one.lines), len(one.options))
+                    == (other.answer, other.surface, other.steps,
+                        other.decoys, len(other.lines),
+                        len(other.options)))
+        print('%-4d %-32s %6d/%-5d %10.2f'
+              % (rung, S.grade_of(rung).name, agree, BOTH_WAYS,
+                 sum(1 for one in pairs[0] if one) / BOTH_WAYS))
 
 
 def timing() -> None:

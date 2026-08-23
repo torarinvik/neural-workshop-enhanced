@@ -43,6 +43,7 @@ from uisupport import (Syllogism, TASKS, close_overlays,       # noqa: E402
 from pyglet.window import key                                  # noqa: E402
 
 from neural_workshop import syllogism as S             # noqa: E402
+from neural_workshop.wordlist import index_ready       # noqa: E402
 from neural_workshop.syllogism import (                # noqa: E402
     ALL, BINARY, CATEGORICAL, FORMS, GRADES, META, NONE, NOTHING, ORDER,
     PARITY, PLANE, SOME, SOME_NOT, SPACE, UNTOLD, checks_out, correct,
@@ -61,9 +62,22 @@ def _tokens(text):
     return set(one.lower() for one in WORD.findall(text))
 
 
-def dealt(rung, count=MANY, seed=11):
+def needs_words(case):
+    """Skip only where there is no index, and never quietly.
+
+    Asking ``_pool()`` whether it is empty would skip for two
+    different reasons — no index fetched, which is honest, and an
+    index that is there but came back empty, which is a fault wearing
+    a skip's clothes.
+    """
+    if not index_ready():
+        case.skipTest('no word index on this machine')
+    case.assertTrue(S._pool(), 'the index is here but named nothing')
+
+
+def dealt(rung, count=MANY, seed=11, made_up=False):
     rng = random.Random(seed + rung)
-    return [one for one in (deal_one(grade_of(rung), rng)
+    return [one for one in (deal_one(grade_of(rung), rng, made_up)
                             for _each in range(count)) if one]
 
 
@@ -282,11 +296,27 @@ class ThePageSaysWhatTheAnswerNeeds(unittest.TestCase):
 
 
 class NoRungCanBeAnsweredWithoutReasoning(unittest.TestCase):
-    """The failure that looks like success, so it is measured."""
+    """The failure that looks like success, so it is measured.
+
+    Four hundred deals a rung rather than the ninety this used to
+    take, and the count is the point. A proportion over ninety moves
+    ±0.05 on its own, and both bounds below sit a tenth away from what
+    they are testing — so the test failed about one run in thirty for
+    no reason but the draw, and passed the rest of the time without
+    having shown anything. At four hundred a bound a tenth away is
+    four widths away.
+
+    Dealt once for the class, because that is eight seconds and both
+    tests want the same deals.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.deals = {rung: dealt(rung, 400)
+                     for rung in range(1, len(GRADES) + 1)}
 
     def test_no_answer_is_right_much_more_often_than_the_rest(self):
-        for rung in range(1, len(GRADES) + 1):
-            made = dealt(rung, 90)
+        for rung, made in self.deals.items():
             tally = collections.Counter(one.answer for one in made)
             best = tally.most_common(1)[0][1] / len(made)
             self.assertLess(best, 0.6, '%d: always answering "%s" scores %.2f'
@@ -301,8 +331,7 @@ class NoRungCanBeAnsweredWithoutReasoning(unittest.TestCase):
         anything follows, so all that is left to ask is whether
         anything does. It is dealt as the coin it is.
         """
-        for rung in range(1, len(GRADES) + 1):
-            made = dealt(rung, 90)
+        for rung, made in self.deals.items():
             got = sum(1 for one in made if one.surface == one.answer)
             self.assertLess(got / len(made), 0.62 if rung == 5 else 0.5,
                             '%d: reading one line scores %.2f'
@@ -407,14 +436,11 @@ class TheThingsAreNamedAfterWords(unittest.TestCase):
 
     def spy(self, made_up):
         """Deal every rung, keeping what each deal named its things."""
-        S.forget()
-        if made_up:
-            S._POOL = ()
         called = set()
         real = S.things
 
-        def watch(rng, count):
-            got = real(rng, count)
+        def watch(rng, count, invented=False):
+            got = real(rng, count, invented)
             called.update(got)
             return got
 
@@ -422,7 +448,7 @@ class TheThingsAreNamedAfterWords(unittest.TestCase):
         try:
             printed = set()
             for rung in range(1, len(GRADES) + 1):
-                for one in dealt(rung, 12):
+                for one in dealt(rung, 12, made_up=made_up):
                     printed.update(_tokens(
                         ' '.join(one.lines + one.options + one.working
                                  + (one.asked,))))
@@ -431,8 +457,7 @@ class TheThingsAreNamedAfterWords(unittest.TestCase):
         return called, printed
 
     def test_they_are_words_where_the_index_has_been_fetched(self):
-        if not S._pool():
-            self.skipTest('no word index on this machine')
+        needs_words(self)
         got = S.things(random.Random(3), 14)
         for word in got:
             self.assertIn(word, S._pool())
@@ -444,12 +469,49 @@ class TheThingsAreNamedAfterWords(unittest.TestCase):
         for word in got:
             self.assertTrue(4 <= len(word) <= 8, word)
 
+    def test_they_are_made_up_where_they_are_asked_to_be(self):
+        """The setting, which is threaded down rather than switched on."""
+        needs_words(self)
+        for word in S.things(random.Random(3), 14, made_up=True):
+            self.assertNotIn(word, S._pool())
+        question = generate(1, seed=5, made_up=True)
+        for word in _tokens(' '.join(question.lines)) - S.GRAMMAR:
+            self.assertNotIn(word, S._pool(), question.lines)
+
+    def test_the_same_seed_deals_the_same_premises_either_way(self):
+        """The names are a costume, and this is why it can be said flatly.
+
+        They come off a random stream of their own, started with one
+        number taken from the deal's, so naming the things differently
+        cannot move a premise, an answer or a line count. Without that
+        the two would be different streams and the strongest thing
+        anybody could say is that no difference showed up in the
+        sample they looked at.
+        """
+        needs_words(self)
+        for rung in range(1, len(GRADES) + 1):
+            for seed in range(4):
+                one = generate(rung, seed=seed)
+                other = generate(rung, seed=seed, made_up=True)
+                self.assertEqual(
+                    (one.answer, one.surface, one.steps, one.decoys,
+                     len(one.lines), len(one.options)),
+                    (other.answer, other.surface, other.steps,
+                     other.decoys, len(other.lines), len(other.options)),
+                    (rung, seed))
+                self.assertNotEqual(one.lines, other.lines, (rung, seed))
+
+    def test_which_it_is_does_not_depend_on_what_ran_before(self):
+        """Carried down the call, so two runs cannot bleed into each other."""
+        first = generate(6, seed=8, made_up=True)
+        second = generate(6, seed=8)
+        self.assertEqual(generate(6, seed=8, made_up=True), first)
+        self.assertEqual(generate(6, seed=8), second)
+        self.assertNotEqual(first.lines, second.lines)
+
     def test_they_are_distinct_and_open_differently_either_way(self):
-        for empty in (True, False):
-            S.forget()
-            if empty:
-                S._POOL = ()
-            got = S.things(random.Random(2), 14)
+        for made_up in (True, False):
+            got = S.things(random.Random(2), 14, made_up)
             self.assertEqual(len(set(got)), 14)
             self.assertEqual(len(set(one[:2] for one in got)), 14)
 
@@ -578,6 +640,18 @@ class TheSyllogismScreen(unittest.TestCase):
         """It is a choice rather than a fact, so it is on the screen."""
         self.open_one(2)
         self.assertIn('not more than', self.task.note.text)
+
+    def test_the_setting_reaches_the_deal(self):
+        """Made-up names are an option, and the screen has to honour it."""
+        needs_words(self)
+        self.task.real_words = True
+        self.open_one(1)
+        real = _tokens(' '.join(self.task.question.lines)) - S.GRAMMAR
+        self.assertTrue(real <= set(S._pool()), real)
+        self.task.real_words = False
+        self.open_one(1)
+        invented = _tokens(' '.join(self.task.question.lines)) - S.GRAMMAR
+        self.assertFalse(invented & set(S._pool()), invented)
 
     def test_the_arrows_walk_the_highlight_and_come_round(self):
         self.open_one()

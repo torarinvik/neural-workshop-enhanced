@@ -130,6 +130,7 @@ class Syllogism:
         self.total_trials = int(opts['SYLLOGISM_TRIALS'])
         self.show_working = bool(opts['SYLLOGISM_SHOW_WORKING'])
         self.adaptive = bool(opts['SYLLOGISM_ADAPTIVE'])
+        self.real_words = bool(opts['SYLLOGISM_REAL_WORDS'])
 
     @staticmethod
     def clamped(rung: int) -> int:
@@ -292,7 +293,8 @@ class Syllogism:
             self._finish()
             return
         self.trial += 1
-        made = generate(self.rung, seed=self.rng.randrange(1 << 30))
+        made = generate(self.rung, seed=self.rng.randrange(1 << 30),
+                        made_up=not self.real_words)
         if made is None:
             # A rung that could not build a question that reads back
             # off its own page. Said rather than retried forever, and

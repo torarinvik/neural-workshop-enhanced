@@ -1049,7 +1049,7 @@ ALGEBRA_ADAPTIVE = True
 # instead. A real word does carry a belief, and the place that could
 # be spent is the two categorical levels, where "no X is a Y" is how
 # the world usually is; answering that way every time is measured at
-# 0.11 and 0.17 against a guessing floor of 0.20, so believing the
+# 0.13 and 0.17 against a guessing floor of 0.20, so believing the
 # premises is a way of doing worse than a coin rather than a way
 # round the level.
 #
@@ -1070,10 +1070,16 @@ ALGEBRA_ADAPTIVE = True
 # SYLLOGISM_SHOW_WORKING prints the lines that mattered afterwards -
 # and for a "nothing follows", two worlds that both fit the premises
 # and disagree, which is what nothing following means.
+#
+# SYLLOGISM_REAL_WORDS off names the things with made-up words
+# instead, which is what this task did first and is not a worse task:
+# it is the same one with the belief taken out. It is also what
+# happens anyway on a machine with no word list fetched.
 SYLLOGISM_LEVEL = 3
 SYLLOGISM_TRIALS = 6
 SYLLOGISM_SHOW_WORKING = True
 SYLLOGISM_ADAPTIVE = True
+SYLLOGISM_REAL_WORDS = True
 
 ######################################################################
 # This is the end of the configuration file.

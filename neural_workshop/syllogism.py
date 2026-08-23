@@ -15,7 +15,7 @@ a cost rather than waving away: the place it could be spent is the
 categorical rungs, where two nouns picked at random really are
 strangers to each other, and a player who answers from the world
 rather than from the page answers *none* every time. Measured, that
-reader gets 0.11 and 0.17 against guessing floors of 0.20 — believing
+reader gets 0.13 and 0.17 against guessing floors of 0.20 — believing
 the premises is not a way round these rungs but a way of doing worse
 than a coin, because the deal picks its answer before it picks the
 premises that give it.
@@ -62,24 +62,28 @@ kills the conversational implicature that some means not all. Under
 the Boolean reading used here, "every X is a Y" does not say there are
 any X.
 
-Measured over 400 deals a rung by ``tests/bench_syllogism.py``, which
-is a proportion good to about ±0.03:
+Measured over 2,000 deals a rung by ``tests/bench_syllogism.py``,
+which is a proportion good to about ±0.011. **That number is not
+incidental**: an earlier draft of this table ran 150 deals a rung, and
+at that width a column moves by ±0.04 from sampling alone — the size
+of the very effects it is printed to catch. Two rungs were published
+as sitting at chance that do not.
 
 ===== ================================ ==== ===== ===== ===== ======= =====
 rung  what it asks                     ans  lines guess const surface steps
 ===== ================================ ==== ===== ===== ===== ======= =====
-1     same or opposite                    3   5.0  0.33  0.35    0.34   3.8
-2     more and less                       3   5.0  0.33  0.34    0.34   3.1
-3     a gap in the chain                  3   7.0  0.33  0.36    0.32   4.4
-4     not more than                       3   7.0  0.33  0.34    0.34   3.8
-5     all and at least one                5   2.0  0.20  0.52    0.48   2.0
-6     which way from here                 9   4.0  0.11  0.12    0.09   2.8
-7     nine lines, and two that matter     3   9.0  0.33  0.34    0.35   4.6
-8     three at once                       5   3.0  0.20  0.28    0.42   2.4
-9     up and down as well                27   5.0  0.04  0.06    0.05   3.1
-10    the same kind of thing              3   8.0  0.33  0.36    0.32   7.5
-11    two questions, one answer           3   8.9  0.33  0.38    0.42   6.5
-12    three questions, one answer         3  12.9  0.33  0.34    0.36  10.4
+1     same or opposite                    3   5.0  0.33  0.35    0.33   3.8
+2     more and less                       3   5.0  0.33  0.34    0.32   3.1
+3     a gap in the chain                  3   7.0  0.33  0.34    0.31   4.4
+4     not more than                       3   7.0  0.33  0.34    0.33   3.8
+5     all and at least one                5   2.0  0.20  0.50    0.50   2.0
+6     which way from here                 9   4.0  0.11  0.13    0.11   2.8
+7     nine lines, and two that matter     3   9.0  0.33  0.34    0.35   4.4
+8     three at once                       5   3.0  0.20  0.31    0.40   2.5
+9     up and down as well                27   5.0  0.04  0.05    0.03   3.1
+10    the same kind of thing              3   8.0  0.33  0.34    0.34   7.5
+11    two questions, one answer           3   8.9  0.33  0.34    0.35   6.6
+12    three questions, one answer         3  12.9  0.33  0.35    0.33  10.3
 ===== ================================ ==== ===== ===== ===== ======= =====
 
 The two categorical rungs are the rows that do not sit at chance, and
@@ -87,20 +91,22 @@ it is not a defect in the deal: **the classical rules are the
 atmosphere reader.** A valid conclusion is negative exactly when a
 premise is and particular exactly when a premise is, so on a
 two-premise syllogism atmosphere names the right form whenever
-anything follows at all — measured at 192 of 192. The four forms are
+anything follows at all — measured at 1,000 of 1,000. The four forms are
 one answer between them there, and the only question left is whether
 anything follows, so rung five is dealt as the coin it is and both
 baselines sit at one half. Rung eight blunts it by asking about a
 pair with a premise off the path between them: atmosphere counts that
 premise's quality and should not, and it falls to 0.58 of the deals
-where something follows, which is 0.42 of all of them.
+where something follows, which is 0.40 of all of them.
 
-Rung eleven is the third row over its floor, at 0.42 against 0.33,
-and the cause is the connectives rather than the premises: ``or``
-with one true half is true whatever the other half was misread as,
-so a reader that gets one claim right absorbs being wrong about the
-next. Choosing the connective along with the claims took it from
-0.57 to here; the rest is what a two-valued join gives away for free.
+Rung eleven is the third row over its floor, at 0.35 against 0.33 —
+and measured again over four thousand deals of its own, 0.366 ±
+0.008, so the three points are there. The cause is the connectives
+rather than the premises: ``or`` with one true half
+is true whatever the other half was misread as, so a reader that gets
+one claim right absorbs being wrong about the next. Choosing the
+connective along with the claims took it from 0.57 to here; what is
+left is what a two-valued join gives away for free.
 
 SPDX-License-Identifier: GPL-2.0-or-later
 """
@@ -145,12 +151,13 @@ COMPASS = (('north', 'south'), ('east', 'west'), ('above', 'below'))
 # The belief a real word carries is priced at the top of this file:
 # the reader it buys answers *none* on the categorical rungs and does
 # worse than guessing. What it costs nowhere is the rest of the
-# ladder, and that is measured too — ``either_way`` in the bench deals
-# every rung twice, once with real names and once with made-up ones,
-# and the two columns agree. They have to: the logic never reads the
-# names. The one channel by which they could have mattered is the
-# read-back, which throws a deal away if the printed lines do not
-# parse, and no deal is thrown away either way.
+# ladder, and that is not measured but checked — the words are drawn
+# from a stream of their own, so the same seed deals the same
+# premises with the same answer whichever way the things are named,
+# and ``either_way`` in the bench deals every rung both ways and finds
+# every deal identical. The one channel left is the read-back, which
+# throws a deal away if the printed lines do not parse; no deal is
+# thrown away either way.
 #
 # With no index fetched there is nothing to draw from — the seed list
 # is function words — so the names are made up instead, by
@@ -165,18 +172,21 @@ _REAL: Optional[frozenset] = None
 
 
 def _real_words() -> frozenset:
-    """Common English words, so a made-up one never turns out to be one.
+    """English words, so an invented one never turns out to be one.
 
-    Only common ones, and only for the fallback: where the names are
-    invented they should be inventions all the way, and a rare word
-    that ``bavir`` happened to collide with would carry no belief to
-    bias with anyway.
+    Every word the machine has, not the common ones: ``heel`` came out
+    of the syllable machine and went on the screen next to
+    ``famboond``, and a name that is a word among names that are not
+    is the one thing invented names are for avoiding. Where nothing
+    has been fetched this is the 669-word seed list and the collision
+    is possible again — that machine has no wider list to check
+    against, and saying so is better than pretending.
     """
     global _REAL
     if _REAL is None:
         try:
-            from .wordlist import SEED_WORDS
-            _REAL = frozenset(' '.join(SEED_WORDS).split())
+            from .wordlist import SEED_WORDS, pool
+            _REAL = frozenset(' '.join(SEED_WORDS).split()) | pool().words
         except Exception:                        # pragma: no cover
             _REAL = frozenset()
     return _REAL
@@ -240,7 +250,7 @@ def _pool() -> Tuple[str, ...]:
     """The nouns a deal may name things after, or empty if there are none.
 
     Kept, because building it reads the index and the frequency list:
-    0.28 s once, against 0.1 ms for a deal. That is the whole of this
+    0.8 s once, against 0.1 ms for a deal. That is the whole of this
     task's start-up cost and it is paid on the first question rather
     than at import, so a machine that never opens Syllogisms never
     pays it.
@@ -258,9 +268,10 @@ def _pool() -> Tuple[str, ...]:
 
 
 def forget() -> None:
-    """Drop the cached name pool, for a test that changes what is on disk."""
-    global _POOL
+    """Drop the cached word sets, for a test that changes what is on disk."""
+    global _POOL, _REAL
     _POOL = None
+    _REAL = None
 
 
 def real_names() -> bool:
@@ -272,35 +283,47 @@ def real_names() -> bool:
     return bool(_pool())
 
 
-def things(rng: random.Random, count: int) -> Tuple[str, ...]:
+def things(rng: random.Random, count: int,
+           made_up: bool = False) -> Tuple[str, ...]:
     """*count* things to reason about, no two of them opening alike.
 
     Real words where the machine has them and made-up ones where it
-    does not, and the same rule either way: distinct first two
-    letters, because telling ``carpet`` from ``carpel`` at a glance is
-    not the skill this task is for.
+    does not or where it is asked for them, and the same rule either
+    way: distinct first two letters, because telling ``carpet`` from
+    ``carpel`` at a glance is not the skill this task is for.
 
     The pool has to be forty times what the question needs before it
     is drawn from at all, so that rule never turns into a search.
-    Eighteen names out of four thousand words is not a constraint;
+    Eighteen names out of three thousand words is not a constraint;
     eighteen out of thirty would be, and a thin pool is a sign that
     something is wrong with the index rather than an occasion to
     struggle on.
+
+    **Exactly one number is taken from the caller's stream, whichever
+    way this goes**, and the words are drawn from a second stream
+    started off it. That is what makes the naming a costume rather
+    than a variable: the same seed deals the same premises, with the
+    same answer and the same everything else, whether the things are
+    called ``harbour`` and ``beetle`` or ``vartok`` and ``misoosk``.
+    Without it the two would be different random streams and the only
+    way to say the words change nothing would be to measure it and
+    hope the sample was big enough.
     """
-    found = _pool()
+    words = random.Random(rng.randrange(1 << 32))
+    found = () if made_up else _pool()
     if len(found) < 40 * count:
-        return nonsense(rng, count)
+        return nonsense(words, count)
     used, got = set(), []
     for _try in range(400 * count):
         if len(got) >= count:
             break
-        word = found[rng.randrange(len(found))]
+        word = found[words.randrange(len(found))]
         if word[:2] in used:
             continue
         used.add(word[:2])
         got.append(word)
     if len(got) < count:                         # pragma: no cover
-        return nonsense(rng, count)
+        return nonsense(words, count)
     return tuple(got)
 
 
@@ -535,7 +558,8 @@ def _joined(edges: Sequence[Tuple[int, int, Tuple[int, ...]]],
 
 
 def _grow(rng: random.Random, grade: Grade, parts: int,
-          names: Optional[Tuple[str, ...]] = None) -> Optional[Web]:
+          names: Optional[Tuple[str, ...]] = None,
+          made_up: bool = False) -> Optional[Web]:
     """A web of premises for *grade*, in *parts* pieces.
 
     **The number of printed premises does not depend on the number of
@@ -543,7 +567,7 @@ def _grow(rng: random.Random, grade: Grade, parts: int,
     ``parts``. A rung where two pieces mean one line fewer is a rung
     where counting the lines answers the question.
     """
-    items = names or things(rng, grade.items)
+    items = names or things(rng, grade.items, made_up)
     family = grade.family
     groups = _split(rng, grade.items, parts)
     place: List[Optional[Tuple[int, ...]]] = [None] * grade.items
@@ -824,7 +848,8 @@ def _index(options: Sequence[str], label: str) -> int:
     return options.index(label) if label in options else 0
 
 
-def _chain_question(grade: Grade, rng: random.Random) -> Optional[Question]:
+def _chain_question(grade: Grade, rng: random.Random,
+                    made_up: bool = False) -> Optional[Question]:
     """One question from an order, a parity or a direction.
 
     The answer wanted and whether the surface reader should get it are
@@ -838,7 +863,7 @@ def _chain_question(grade: Grade, rng: random.Random) -> Optional[Question]:
     kept = None
     for _try in range(40):
         parts = 1 if grade.family in AXES else rng.choice((1, 2))
-        web = _grow(rng, grade, parts)
+        web = _grow(rng, grade, parts, made_up=made_up)
         if web is None:
             continue
         found = _askable(web)
@@ -974,8 +999,8 @@ def _atmosphere(premises: Sequence[Tuple[str, int, int]]) -> str:
     return SOME if particular else ALL
 
 
-def _categorical_question(grade: Grade,
-                          rng: random.Random) -> Optional[Question]:
+def _categorical_question(grade: Grade, rng: random.Random,
+                          made_up: bool = False) -> Optional[Question]:
     """Two or three premises about kinds of thing.
 
     **The pair asked about is not always the two ends, and not always
@@ -986,7 +1011,7 @@ def _categorical_question(grade: Grade,
     "at least one X is not a Y" invites.
     """
     count = grade.items
-    terms = things(rng, count)
+    terms = things(rng, count, made_up)
     ends = [(one, two) for one in range(count) for two in range(count)
             if abs(one - two) > 1]
     subject, other = ends[rng.randrange(len(ends))]
@@ -1108,7 +1133,8 @@ def _flat(found: Dict[str, List]) -> List[Tuple[str, Tuple]]:
     return [(label, one) for label in sorted(found) for one in found[label]]
 
 
-def _meta_question(grade: Grade, rng: random.Random) -> Optional[Question]:
+def _meta_question(grade: Grade, rng: random.Random,
+                   made_up: bool = False) -> Optional[Question]:
     """Two relations out of one web, and whether they are the same kind."""
     inner = grade.inner[0] if grade.inner else ORDER
     sub = _sub(grade, inner, grade.items, grade.extra)
@@ -1118,7 +1144,7 @@ def _meta_question(grade: Grade, rng: random.Random) -> Optional[Question]:
     kept = None
     for _try in range(40):
         parts = 1 if inner in AXES else rng.choice((1, 2))
-        web = _grow(rng, sub, parts)
+        web = _grow(rng, sub, parts, made_up=made_up)
         if web is None:
             continue
         found = _askable(web)
@@ -1260,11 +1286,12 @@ def _claims(rng: random.Random, grade: Grade, family: str, items: int,
     return None
 
 
-def _binary_question(grade: Grade, rng: random.Random) -> Optional[Question]:
+def _binary_question(grade: Grade, rng: random.Random,
+                     made_up: bool = False) -> Optional[Question]:
     """Two or three claims, and what the connectives make of them."""
     families = grade.inner
     size = 5
-    pool = things(rng, (size + 1) * len(families))
+    pool = things(rng, (size + 1) * len(families), made_up)
     parts = []
     for number, family in enumerate(families):
         made = _claims(rng, grade, family, size,
@@ -1396,22 +1423,30 @@ BUILDERS = {
 }
 
 
-def deal_one(grade: Grade, rng: random.Random) -> Optional[Question]:
-    """One question at *grade*, read back before it is handed over."""
+def deal_one(grade: Grade, rng: random.Random,
+             made_up: bool = False) -> Optional[Question]:
+    """One question at *grade*, read back before it is handed over.
+
+    *made_up* names the things with invented words instead of real
+    ones. It is carried down through every builder rather than set on
+    the module, because a run that asked for invented names and a run
+    that did not have to be able to happen in either order and come
+    out the same both times.
+    """
     builder = BUILDERS.get(grade.family)
     if builder is None:
         return None
     for _try in range(12):
-        made = builder(grade, rng)
+        made = builder(grade, rng, made_up)
         if made is not None and checks_out(made):
             return made
     return None
 
 
-def generate(level_number: int, seed: Optional[int] = None) \
-        -> Optional[Question]:
+def generate(level_number: int, seed: Optional[int] = None,
+             made_up: bool = False) -> Optional[Question]:
     """A question for *level_number*, one-based into :data:`GRADES`."""
-    return deal_one(grade_of(level_number), random.Random(seed))
+    return deal_one(grade_of(level_number), random.Random(seed), made_up)
 
 
 def correct(question: Question, chosen: int) -> bool:

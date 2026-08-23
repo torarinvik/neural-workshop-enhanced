@@ -1310,9 +1310,10 @@ def syllogism_note(chosen: Dict[str, Any]) -> str:
     from ..syllogism import GRADES, NOTHING, UNTOLD, deal_one, real_names
     import random
     rung = int(chosen['SYLLOGISM_LEVEL'])
+    made_up = not chosen['SYLLOGISM_REAL_WORDS']
     grade = GRADES[max(0, min(len(GRADES) - 1, rung - 1))]
     said = [_('Level %d, "%s".') % (rung, _(grade.name))]
-    shown = deal_one(grade, random.Random(rung))
+    shown = deal_one(grade, random.Random(rung), made_up)
     if shown is not None:
         said.append(_('%d lines, %d answers.') % (len(shown.lines),
                                                   len(shown.options)))
@@ -1324,10 +1325,16 @@ def syllogism_note(chosen: Dict[str, Any]) -> str:
             said.append(_('This level always settles the question, so it '
                           'does not offer "cannot be told".'))
     said.append(_('One answer, and nothing partial counts.'))
-    if not real_names():
-        said.append(_('The things are named with made-up words here. Run '
-                      '"python -m neural_workshop.wordlist" once and they '
-                      'are named after ordinary ones instead.'))
+    if made_up:
+        said.append(_('Made-up names, which is the older way and not a '
+                      'worse one: a real word carries a belief, and the '
+                      'measured cost of that is on the two categorical '
+                      'levels.'))
+    elif not real_names():
+        said.append(_('No word list has been fetched, so the things are '
+                      'named with made-up words whatever this says. Run '
+                      '"python -m neural_workshop.wordlist" once to name '
+                      'them after ordinary ones.'))
     return '  '.join(said)
 
 
@@ -1341,6 +1348,8 @@ SYLLOGISM = TaskSpec(
                True),
         Option('SYLLOGISM_ADAPTIVE',
                _('Climb a level after a right answer'), True),
+        Option('SYLLOGISM_REAL_WORDS',
+               _('Name things after real words'), True),
     ),
     note=syllogism_note)
 

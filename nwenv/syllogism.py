@@ -27,6 +27,12 @@ these ports and reads the verdict off the frame.
 trial. The only potential available before it is which answer is
 right, which is the answer.
 
+``real_words`` is a knob like the rung and the trial count: off, the
+things are named with invented words instead of English ones. The
+premises are the same either way — the logic never reads a name — but
+an experiment that wants no lexical prior in its observations can say
+so rather than hope.
+
 SPDX-License-Identifier: GPL-2.0-or-later
 """
 from __future__ import annotations
@@ -49,7 +55,8 @@ class SyllogismEnv(TaskEnv):
     open_phase = ('asking',)
     settled_phase = ('judged',)
     knobs = {'rung': 'start_rung', 'trials': 'total_trials',
-             'show_working': 'show_working', 'adaptive': 'adaptive'}
+             'show_working': 'show_working', 'adaptive': 'adaptive',
+             'real_words': 'real_words'}
 
 
 def make_syllogism_env(seed: int = 0,

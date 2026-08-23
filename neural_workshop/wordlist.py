@@ -231,6 +231,35 @@ ENDINGS = (('ies', 'y'), ('es', ''), ('s', ''), ('est', ''), ('est', 'e'),
 #: and capital are all nouns and there are hundreds more of them.
 ADJECTIVE = ('ous', 'ful', 'ish', 'able', 'ible', 'less')
 
+#: What a definition says when the word it defines is one English
+#: itself marks as coarse. A screen on the register rather than a list
+#: of words: three entries in the band answer to it, and they are the
+#: three anybody would have named. It says nothing about the
+#: anatomical vocabulary, which is defined clinically and reads that
+#: way.
+COARSE = re.compile(r"\b(vulgar|obscene|profane|profanity|derogatory|"
+                    r"epithet|expletive|offensive term|swear word|"
+                    r"curse word)\b", re.IGNORECASE)
+
+
+def countable(word: str, known: frozenset) -> bool:
+    """Whether *word* has a plural, which is most of being a thing.
+
+    The strongest single signal there is here, and it costs one set
+    lookup. ``camel`` has ``camels`` and ``coastal`` has no
+    ``coastals``; ``bacteria`` and ``formulae`` are already plural and
+    have nothing past them; ``obesity`` and ``patience`` are mass
+    nouns, which are things one cannot have two of and so cannot be
+    "every X is a Y" either.
+
+    Both endings are accepted rather than chosen between, because the
+    choice is about sound: ``church`` takes ``churches`` and
+    ``stomach`` takes ``stomachs``, and nothing here can hear which.
+    """
+    if word + 's' in known or word + 'es' in known:
+        return True
+    return word.endswith('y') and word[:-1] + 'ies' in known
+
 
 def a_form_of(word: str, known: frozenset) -> bool:
     """Whether *word* is an inflection of some other word in *known*.
@@ -256,21 +285,26 @@ def a_form_of(word: str, known: frozenset) -> bool:
 def noun_like(entry: Entry, known: frozenset) -> bool:
     """Whether *entry* can stand as the name of a thing.
 
-    The clue is read three ways. Any capital letter in it and the word
+    The clue is read four ways. Any capital letter in it and the word
     is a place, a person or a brand — that is the cheapest screen there
     is for the proper nouns :data:`PROPER` and :data:`NAMED` leave
     behind, and it is affordable because a name only has to be *a*
-    noun, not any particular one. Then the part of speech, as far as
-    the gloss admits it. Then the head of the gloss: a clue that opens
-    with a plural ("kidneys or kidney function") or with a participle
-    ("possessing skill") is describing a quality rather than a thing,
-    whatever the word looks like.
+    noun, not any particular one. Then the register. Then the part of
+    speech, as far as the gloss admits it. Then the head of the gloss:
+    a clue that opens with a plural ("kidneys or kidney function") or
+    with a participle ("possessing skill") is describing a quality
+    rather than a thing, whatever the word looks like.
+
+    And then the word itself is asked whether it has a plural, which
+    is the one test that does not go through the definition at all.
     """
     if not entry.clue or any(one.isupper() for one in entry.clue):
         return False
-    if NOT_A_NOUN.search(entry.clue):
+    if COARSE.search(entry.clue) or NOT_A_NOUN.search(entry.clue):
         return False
     if entry.word.endswith(ADJECTIVE) or a_form_of(entry.word, known):
+        return False
+    if not countable(entry.word, known):
         return False
     head = re.match(r'[a-z]+', entry.clue)
     return head is not None and not a_form_of(head.group(), known)
@@ -697,15 +731,13 @@ def nouns(max_rank: int = NOUN_RANK,
     words and carries no clues, so there is nothing here to read. A
     caller that needs names either has this or makes them up.
 
-    3,874 words come through at the default band, and they are not all
-    nouns. Sampled sixty at a time, seven or eight are not: adjectives
-    whose gloss is itself a noun phrase ("coastal — interface between
-    land and sea"), a Latin plural the endings above do not cover
-    ("formulae"), the occasional proper noun that never once takes a
-    capital ("bauer — manufacturer of ice hockey equipment"). Call it
-    one in eight, reported rather than chased: a name here is a label,
-    and an adjective standing in for a noun reads oddly and means
-    nothing else.
+    3,461 words come through at the default band, and they are not all
+    nouns. Sampled sixty at a time, three or four are not: an
+    adjective that also has a plural ("rough", "idle"), a spelling
+    nobody writes ("tho"), the occasional proper noun that never once
+    takes a capital. Call it one in fifteen, reported rather than
+    chased: a name here is a label, and an adjective standing in for a
+    noun reads oddly and means nothing else.
     """
     key = (int(max_rank), tuple(lengths))
     if key in _NOUNS:
@@ -770,11 +802,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     return 0
 
 
-__all__ = ['ADJECTIVE', 'BANDS', 'CLUES', 'CLUE_WORDS', 'ENDINGS', 'Entry',
+__all__ = ['ADJECTIVE', 'BANDS', 'CLUES', 'CLUE_WORDS', 'COARSE', 'ENDINGS',
+           'Entry',
            'Lexicon', 'NAMED', 'NOT_A_NOUN', 'NOUN_RANK',
            'PROPER', 'Progress',
            'SEED', 'SOURCES', 'Source', 'WORDS', 'a_form_of', 'build_index',
-           'clue_from',
+           'clue_from', 'countable',
            'fetch', 'forget', 'have', 'index_path', 'index_ready',
            'local_path', 'main', 'missing_message', 'noun_like', 'nouns',
            'pool', 'ranks',

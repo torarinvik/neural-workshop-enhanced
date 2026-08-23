@@ -107,10 +107,16 @@ class AWordThatCanNameAThing(unittest.TestCase):
     a verb, an adjective, a plural, and a person.
     """
 
-    #: Enough of a dictionary for the inflection test to have an
-    #: opinion. The real one is the whole frequency list.
+    #: Enough of a dictionary for the inflection and plural tests to
+    #: have an opinion. The real one is the whole frequency list. The
+    #: plurals are here so that a test about one rule is not quietly
+    #: passed by another: every word these tests refuse is refused for
+    #: the reason the test names, not for want of a plural.
     KNOWN = frozenset(('crop', 'kidney', 'net', 'beauty', 'run', 'use',
-                       'possess', 'process', 'individual', 'press'))
+                       'possess', 'process', 'individual', 'press',
+                       'camels', 'cities', 'buses', 'shrines', 'musics',
+                       'animals', 'renals', 'walks', 'bolognas',
+                       'vigorouses', 'skillfuls', 'washables'))
 
     def noun(self, word, clue):
         return W.noun_like(W.Entry(word, 1, clue), self.KNOWN)
@@ -156,6 +162,30 @@ class AWordThatCanNameAThing(unittest.TestCase):
         """Music, logic, animal and capital are all nouns."""
         for word in ('music', 'animal'):
             self.assertTrue(self.noun(word, 'a perfectly nouny gloss'), word)
+
+    def test_a_thing_has_a_plural(self):
+        """The one test that never reads the definition."""
+        known = frozenset(('camels', 'churches', 'stomachs', 'stories'))
+        for word in ('camel', 'church', 'stomach', 'story'):
+            self.assertTrue(W.countable(word, known), word)
+        for word in ('coastal', 'bacteria', 'obesity'):
+            self.assertFalse(W.countable(word, known), word)
+
+    def test_a_word_with_no_plural_is_not_a_name(self):
+        # Mass nouns included, and not by accident: a thing one cannot
+        # have two of cannot be "every X is a Y" either.
+        self.assertFalse(self.noun('patience', 'quality of enduring delay'))
+        self.assertTrue(self.noun('camel', 'humped mammal of the desert'),
+                        'the same clue with a plural behind it')
+
+    def test_what_the_dictionary_itself_calls_coarse(self):
+        """A screen on the register, and a partial one: it reads the
+        definition rather than the word, so a clinical gloss of a
+        clinical word reads as clinical and stays."""
+        for clue in ('vulgar term for something unpleasant',
+                     'derogatory term for a person',
+                     'profane exclamation of anger'):
+            self.assertFalse(self.noun('camel', clue), clue)
 
 
 class TheSeedIsEnoughToPlayWith(unittest.TestCase):

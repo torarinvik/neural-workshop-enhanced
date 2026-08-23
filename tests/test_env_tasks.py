@@ -427,6 +427,21 @@ class PlayedProperlyItIsPaid(unittest.TestCase):
         self.assertEqual(driven(env, lambda task: task.question.answer),
                          [1.0])
 
+    def test_the_naming_is_a_knob_like_the_others(self):
+        """An environment that wants the same task without the belief."""
+        from neural_workshop import syllogism
+        if not syllogism._pool():
+            self.skipTest('no word index on this machine')
+        env = catalog.env_class('syllogism')(seed=0, rung=1, trials=1,
+                                             real_words=False)
+        try:
+            env.reset()
+            self.assertFalse(env.task.real_words)
+            said = ' '.join(env.task.question.lines).split()
+            self.assertFalse(set(said) & set(syllogism._pool()), said)
+        finally:
+            env.close()
+
     def test_an_answer_no_rung_offers_does_nothing(self):
         """The ports are a ceiling, and the spare ones are silent."""
         env = catalog.env_class('syllogism')(seed=0, rung=1, trials=2)

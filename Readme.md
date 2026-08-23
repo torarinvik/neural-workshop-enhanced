@@ -1090,10 +1090,20 @@ but there is a definition, and a definition gives the part of speech
 away by its shape: a verb is glossed "to run", an adjective "having
 the quality of", and a good half of the rest simply say which they
 are. Reading that, plus refusing any clue with a capital letter in it
-(the cheapest screen there is for the proper nouns that leak above)
-and any word that is an inflection of another, leaves 3,874 usable
-names. Seven or eight in sixty are not really nouns — an adjective
-whose gloss is itself a noun phrase, a Latin plural — which is
+(the cheapest screen there is for the proper nouns that leak above),
+any word that is an inflection of another, and any clue that marks
+its word as coarse — which is a screen on the register rather than a
+list of words, and three entries in the band answer to it.
+
+**The strongest single test is the one that does not read the
+definition at all: does the word have a plural?** `camels` is in the
+frequency list and `coastals` is not; `bacteria` and `formulae` are
+already plural and have nothing past them; `obesity` and `patience`
+are mass nouns, which are things one cannot have two of and so cannot
+be "every X is a Y" either. It costs one set lookup and it is what
+takes the residue from one name in eight to one in fifteen. 3,461
+words come through. Three or four in sixty are still not nouns — an
+adjective that also has a plural, a spelling nobody writes — which is
 reported rather than chased, because a name here is a label and an
 adjective in the place of a noun reads oddly and means nothing else.
 
@@ -1329,21 +1339,29 @@ common noun, and it is read off the definition: a verb is glossed "to
 run" and an adjective "having the quality of", so the shape of the
 gloss gives the part of speech away even when the words do not. Run
 `python -m neural_workshop.wordlist` once to fetch it; until then the
-things are named with made-up words instead.
+things are named with made-up words instead, and the options screen
+says which you are getting. Made-up names are also a setting, because
+they are not a worse task — they are the same one with the belief
+taken out, and the paragraph below is what that belief costs.
 
 **A real word carries a belief, and that is priced rather than waved
 away.** The place it could be spent is the two categorical levels,
 where two nouns picked at random are strangers in the world as well
 as in the premises, so "no X is a Y" is usually true outside the page
-too. A player who answers that way every time gets 0.11 and 0.17
+too. A player who answers that way every time gets 0.13 and 0.17
 against a guessing floor of 0.20 — believing the premises is a way of
 doing worse than a coin, not a way round the level, because the deal
-picks its answer before it picks the premises that give it. Elsewhere
-the words cost nothing and cannot: the bench deals every level twice,
-once named after real words and once after made-up ones, and the
-columns agree. The one channel by which they could have mattered is
-the read-back below, which throws a deal away when the printed lines
-do not parse — and no deal is thrown away either way.
+picks its answer before it picks the premises that give it.
+
+Elsewhere the words cost nothing, and that is checked rather than
+measured. **The names are drawn from a random stream of their own**,
+started with a single number taken from the deal's, so the same seed
+builds the same premises with the same answer whichever way the
+things are named — two columns of numbers could only ever have said
+the difference was smaller than the sample. The bench deals every
+level both ways and finds all 400 pairs identical. The one channel
+left is the read-back below, which throws a deal away when the
+printed lines do not parse, and no deal is thrown away either way.
 
 **"Cannot be told" is an answer as often as any other.** Premises that
 settle everything are premises nobody has to reason about, so the web
@@ -1365,13 +1383,20 @@ the level:
 
 | rung | | ans | lines | guess | const | surface | steps |
 |---|---|---|---|---|---|---|---|
-| 1 | same or opposite | 3 | 5 | 0.33 | 0.35 | 0.34 | 3.8 |
-| 4 | not more than | 3 | 7 | 0.33 | 0.34 | 0.34 | 3.8 |
-| 5 | all and at least one | 5 | 2 | 0.20 | 0.52 | 0.48 | 2.0 |
-| 7 | nine lines, and two that matter | 3 | 9 | 0.33 | 0.34 | 0.35 | 4.6 |
-| 8 | three at once | 5 | 3 | 0.20 | 0.28 | 0.42 | 2.4 |
-| 9 | up and down as well | 27 | 5 | 0.04 | 0.06 | 0.05 | 3.1 |
-| 12 | three questions, one answer | 3 | 13 | 0.33 | 0.34 | 0.36 | 10.4 |
+| 1 | same or opposite | 3 | 5 | 0.33 | 0.35 | 0.33 | 3.8 |
+| 4 | not more than | 3 | 7 | 0.33 | 0.34 | 0.33 | 3.8 |
+| 5 | all and at least one | 5 | 2 | 0.20 | 0.50 | 0.50 | 2.0 |
+| 7 | nine lines, and two that matter | 3 | 9 | 0.33 | 0.34 | 0.35 | 4.4 |
+| 8 | three at once | 5 | 3 | 0.20 | 0.31 | 0.40 | 2.5 |
+| 9 | up and down as well | 27 | 5 | 0.04 | 0.05 | 0.03 | 3.1 |
+| 11 | two questions, one answer | 3 | 9 | 0.33 | 0.34 | 0.35 | 6.6 |
+| 12 | three questions, one answer | 3 | 13 | 0.33 | 0.35 | 0.33 | 10.3 |
+
+Every column is a proportion over 2,000 deals, good to about ±0.011.
+**That width is the point of stating it.** An earlier run of this
+bench used 150 deals a rung, where a column moves ±0.04 on its own —
+the size of the effects it is printed to catch — and two rungs got
+published as sitting at chance that do not.
 
 *guess* is one over the answers. *const* is the best fixed answer —
 the column that says whether *cannot be told* is really an answer or a
@@ -1393,13 +1418,13 @@ The classical rules — a valid conclusion is negative exactly when a
 premise is, particular exactly when a premise is — are the atmosphere
 effect written down, and they are necessary conditions for validity.
 Measured: on level five, whenever anything follows at all, atmosphere
-names the right form **192 times out of 192**. The four forms are one
+names the right form **1,000 times out of 1,000**. The four forms are one
 answer between them there and the only question left is whether
 anything follows, so that level is dealt as the coin it is and both
 baselines sit at one half. Level eight blunts it by asking about a
 pair with a premise off the path between them, where atmosphere counts
 a quality that does not apply: it falls to 0.58 of the deals where
-something follows. That measurement is the reason there are two
+something follows, which is 0.40 of all of them. That measurement is the reason there are two
 categorical levels on this ladder rather than six.
 
 **Two conventions are printed on the screen, because they are
@@ -1418,7 +1443,10 @@ levels are about — and it showed up in the measurement first: reading
 one line per claim and then combining correctly scored .57 there,
 better than the same reader manages on either half alone, because the
 connectives absorb misreadings. The connectives are now chosen along
-with the claims rather than before them, and it sits at .42.
+with the claims rather than before them, and it sits at 0.35 against
+a floor of 0.33 — measured again over four thousand deals of its own,
+0.366 ± 0.008, so the three points are real. What is left is what a
+two-valued join gives away for free.
 
 **Every question is read back off its own page** by a parser that
 never saw how it was built, and a question that does not read back is
