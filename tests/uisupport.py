@@ -67,6 +67,7 @@ try:
     from neural_workshop.ui.scrabble import Scrabble
     from neural_workshop.ui.scramble import Scramble
     from neural_workshop.ui.overrun import Overrun
+    from neural_workshop.ui.ninarow import NInARow
     from neural_workshop.ui.algebra import Algebra
     from neural_workshop.ui.syllogism import Syllogism
     from neural_workshop.ui.youarehere import YouAreHere

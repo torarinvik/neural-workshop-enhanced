@@ -1235,6 +1235,46 @@ SUDOKU = TaskSpec(
     note=sudoku_note)
 
 
+def ninarow_note(chosen: Dict[str, Any]) -> str:
+    """Explain the board the selected rung will actually deal."""
+    from .. import ninarow
+    rung = int(chosen['NINAROW_LEVEL'])
+    grade = ninarow.grade_at(rung)
+    grid = int(chosen['NINAROW_GRID']) or grade.size
+    pellets = int(chosen['NINAROW_PELLETS']) or grade.pellets
+    said = [_('Level %d, "%s": a %d by %d board with about %d pellets.')
+            % (rung, _(grade.name), grid, grid, pellets),
+            _('Find the one empty cell that completes a line of five. '
+              'The board is a scenario, not a game against the computer.')]
+    if not chosen['NINAROW_GRID'] and not chosen['NINAROW_PELLETS']:
+        said.append(_('Both board size and pellet count grow with the level.'))
+    elif chosen['NINAROW_GRID'] or chosen['NINAROW_PELLETS']:
+        said.append(_('A non-zero grid or pellet setting overrides that '
+                      'part of the level.'))
+    if chosen['NINAROW_ADAPTIVE']:
+        said.append(_('A right answer climbs one level; a miss falls one.'))
+    return '  '.join(said)
+
+
+NINAROW = TaskSpec(
+    title=_('N-in-a-row options'),
+    options=(
+        Option('NINAROW_LEVEL', _('Starting level'), 1,
+               values=tuple(range(1, 9))),
+        Option('NINAROW_TRIALS', _('Positions per run'), 5,
+               values=(1, 2, 3, 5, 8, 10, 15)),
+        Option('NINAROW_GRID', _('Grid size (0 follows level)'), 0,
+               values=(0, 5, 6, 7, 9, 11, 13, 15, 17, 19)),
+        Option('NINAROW_PELLETS', _('Pellets (0 follows level)'), 0,
+               values=(0, 8, 14, 22, 34, 48, 66, 86, 112, 160)),
+        Option('NINAROW_SHOW_ANSWER', _('Mark the winning cell afterwards'),
+               True),
+        Option('NINAROW_ADAPTIVE', _('Climb a level after a right answer'),
+               True),
+    ),
+    note=ninarow_note)
+
+
 def crossword_note(chosen: Dict[str, Any]) -> str:
     """What the grid will look like, and the two things people ask.
 
@@ -1848,6 +1888,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'fog_of_war': FOG_OF_WAR,
     'removals': REMOVALS,
     'sudoku': SUDOKU,
+    'n_in_a_row': NINAROW,
     'crossed_wires': CROSSED_WIRES,
     'crossword': CROSSWORD,
     'scrabble': SCRABBLE,

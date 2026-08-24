@@ -139,6 +139,11 @@ BY_LUCK = {
     # reads zero, which is measured in tests/bench_overrun.py. No walk
     # types a sentence, so the green is in PlayedProperlyItIsPaid.
     'overrun': (900, {'rung': 12, 'waves': 6, 'adaptive': False}),
+    # Every empty cell is a port and the easiest board has twenty-five
+    # cells, so random play is paid often enough to prove the boundary is
+    # live while the proper-play test below proves the green path.
+    'n_in_a_row': (900, {'rung': 1, 'trials': 4,
+                         'grid': 5, 'pellets': 8, 'adaptive': False}),
     # Every port is an answer, so every port a rung offers is a trial
     # settled — and one in three of them is right at the bottom of the
     # ladder. This is the one task on the list where random play gets
@@ -265,6 +270,9 @@ class RandomPlayIsPaid(unittest.TestCase):
 
     def test_overrun(self):
         self.check('overrun')
+
+    def test_n_in_a_row(self):
+        self.check('n_in_a_row')
 
     # These six were in BY_LUCK with a measured step budget apiece and
     # no method beside them, so nothing ever played them. Found by the
@@ -451,6 +459,12 @@ class PlayedProperlyItIsPaid(unittest.TestCase):
             return overrun_env.LETTERS.index(word[len(task.typed)])
 
         self.assertEqual(driven(env, moves), [1.0])
+
+    def test_the_winning_cell_is_paid(self):
+        """The policy that reads the scenario can answer through one port."""
+        env = catalog.env_class('n_in_a_row')(
+            seed=0, rung=1, trials=2, grid=5, pellets=8, adaptive=False)
+        self.assertEqual(driven(env, lambda task: task.puzzle.answer), [1.0])
 
     def test_a_worked_out_answer_is_paid(self):
         """Typed a character at a time, on a rung that wants a polynomial.
@@ -656,7 +670,7 @@ class TheBoundaryKnowsWhichTasksHaveAClock(unittest.TestCase):
         for task_id in ('crossed_wires', 'maze', 'sokoban', 'sudoku',
                         'tower_of_hanoi', 'salesman', 'jigsaw',
                         'you_are_here', 'sokoban_3d', 'crossword',
-                        'scrabble', 'scramble', 'algebra'):
+                        'scrabble', 'scramble', 'algebra', 'n_in_a_row'):
             self.assertFalse(self.clocked(task_id), task_id)
 
     def test_the_ones_that_move_on_their_own_are(self):
@@ -681,6 +695,7 @@ class TheBoundaryKnowsWhichTasksHaveAClock(unittest.TestCase):
         # is no submit, and the gaps come back with the word before
         # them, so there is no space either.
         self.assertEqual(catalog.env_class('overrun').ports, 27)
+        self.assertEqual(catalog.env_class('n_in_a_row').ports, 19 * 19)
         self.assertEqual(catalog.env_class('algebra').ports, 21)
         # Six for the wheel and five for the sights, out of one budget.
         self.assertEqual(catalog.env_class('two_hands').ports, 11)

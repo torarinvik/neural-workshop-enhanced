@@ -937,6 +937,20 @@ CHESS_LEVEL = 1
 CHESS_TRIALS = 10
 CHESS_ADAPTIVE = True
 
+# N-in-a-row deals a board with both colours already on it and asks for
+# the one empty cell that completes five.  The level grows the board and
+# the number of pellets together, from a five-by-five with a handful of
+# marks to a nineteen-by-nineteen search that is deliberately too crowded
+# to solve by one glance.  GRID and PELLETS set explicit values when they
+# are non-zero; zero leaves that dial coupled to the level.  Five remains
+# the winning length at every size.
+NINAROW_LEVEL = 1
+NINAROW_TRIALS = 5
+NINAROW_GRID = 0
+NINAROW_PELLETS = 0
+NINAROW_SHOW_ANSWER = True
+NINAROW_ADAPTIVE = True
+
 # Chain of Custody is one box among several and one bay to put it in.
 # The box is ringed for a moment at the start and then looks like the
 # rest of them, and the belt carries them all round a loop while the
