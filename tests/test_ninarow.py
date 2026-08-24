@@ -16,9 +16,12 @@ class GeneratorTests(unittest.TestCase):
         for rung in range(1, len(N.GRADES) + 1):
             puzzle = N.generate(rung, seed=17)
             self.assertIsNotNone(puzzle, rung)
+            self.assertEqual(puzzle.length, N.GRADES[rung - 1].length)
             self.assertEqual(puzzle.winning_moves, (puzzle.answer,), rung)
-            self.assertFalse(N.winner(puzzle.cells, puzzle.size, N.PLAYER))
-            self.assertFalse(N.winner(puzzle.cells, puzzle.size, N.OPPONENT))
+            self.assertFalse(N.winner(puzzle.cells, puzzle.size, N.PLAYER,
+                                       puzzle.length))
+            self.assertFalse(N.winner(puzzle.cells, puzzle.size, N.OPPONENT,
+                                       puzzle.length))
             self.assertEqual(sum(value != N.EMPTY for value in puzzle.cells),
                              puzzle.pellets)
 
@@ -33,6 +36,14 @@ class GeneratorTests(unittest.TestCase):
         self.assertEqual(puzzle.size, 9)
         self.assertEqual(puzzle.pellets, 30)
         self.assertEqual(puzzle.winning_moves, (puzzle.answer,))
+
+    def test_custom_length_and_machine_rung(self):
+        puzzle = N.generate(9, seed=4)
+        self.assertEqual((puzzle.size, puzzle.length), (128, 100))
+        self.assertEqual(puzzle.winning_moves, (puzzle.answer,))
+        custom = N.generate(1, seed=4, size=12, pellets=60, length=7)
+        self.assertEqual((custom.size, custom.length), (12, 7))
+        self.assertEqual(custom.winning_moves, (custom.answer,))
 
     def test_line_and_cell_coordinates_agree(self):
         line = N.line_cells(7, 1, 1, 1, 1)
@@ -81,6 +92,12 @@ class ScreenTests(unittest.TestCase):
         self.task.on_draw()
         self.assertEqual(len(self.task.puzzle.cells),
                          self.task.puzzle.size ** 2)
+
+    def test_the_superhuman_position_opens_and_draws(self):
+        self.open_one(9)
+        self.task.on_draw()
+        self.assertEqual((self.task.puzzle.size, self.task.puzzle.length),
+                         (128, 100))
 
     def test_arrows_move_the_highlight_without_leaving_the_board(self):
         self.open_one()

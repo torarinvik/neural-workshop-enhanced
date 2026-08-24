@@ -2,8 +2,8 @@
 """The N-in-a-row puzzle screen.
 
 The board is a scenario, not a match against the computer.  Blue is the
-player's pellet, orange is the opponent's, and one cell completes a line of
-five.  A person steers a highlighted cell or clicks it, then presses Enter;
+player's pellet, orange is the opponent's, and one cell completes the current
+line.  A person steers a highlighted cell or clicks it, then presses Enter;
 the agent boundary calls :meth:`choose` with the flat cell id directly.
 
 SPDX-License-Identifier: GPL-2.0-or-later
@@ -21,7 +21,8 @@ from .. import display, state
 from ..constants import FONTLIST
 from ..geometry import calc_fontsize, from_bottom_edge, from_top_edge, width_center
 from ..i18n import _
-from ..ninarow import EMPTY, OPPONENT, PLAYER, Puzzle, generate, grade_at
+from ..ninarow import (EMPTY, GRADES, OPPONENT, PLAYER, Puzzle, generate,
+                       grade_at)
 from . import cursor, taskoptions
 from .verdict import VerdictLabel, above_the_band
 
@@ -32,7 +33,7 @@ SELECT_COLOUR = (232, 178, 0)
 
 
 class NInARow:
-    """Find the cell that completes five in a row."""
+    """Find the cell that completes the dealt line length."""
 
     instance: Optional['NInARow'] = None
 
@@ -68,12 +69,13 @@ class NInARow:
         self.total_trials = int(opts['NINAROW_TRIALS'])
         self.grid_size = int(opts['NINAROW_GRID'])
         self.pellets = int(opts['NINAROW_PELLETS'])
+        self.line_length = int(opts['NINAROW_LENGTH'])
         self.show_answer = bool(opts['NINAROW_SHOW_ANSWER'])
         self.adaptive = bool(opts['NINAROW_ADAPTIVE'])
 
     @staticmethod
     def clamped(rung: int) -> int:
-        return max(1, min(8, int(rung)))
+        return max(1, min(len(GRADES), int(rung)))
 
     def open_options(self) -> None:
         taskoptions.open_task_options('n_in_a_row',
@@ -227,7 +229,8 @@ class NInARow:
         self.trial += 1
         self.puzzle = generate(
             self.rung, seed=self.rng.randrange(1 << 30),
-            size=self.grid_size or None, pellets=self.pellets or None)
+            size=self.grid_size or None, pellets=self.pellets or None,
+            length=self.line_length or None)
         if self.puzzle is None:
             self.phase = 'done'
             self.message = _('No unique position at this setting')
@@ -239,7 +242,8 @@ class NInARow:
         self.verdict.clear()
         self.started_at = self.clock()
         self.phase = 'asking'
-        self.message = _('Find the move that makes five')
+        self.message = _('Find the move that completes %d in a row') % (
+            self.puzzle.length,)
         self._redraw()
 
     # --- interaction -----------------------------------------------------
@@ -300,10 +304,12 @@ class NInARow:
 
     def _redraw(self) -> None:
         if self.puzzle is None:
-            self.note.text = _('The board grows from 5 to 19 squares.')
+            self.note.text = _('The board grows from 5 to 128 squares; '
+                               'the line grows from 3 to 100.')
         else:
-            self.note.text = _('%d x %d board   %d pellets   five to win') % (
-                self.puzzle.size, self.puzzle.size, self.puzzle.pellets)
+            self.note.text = _('%d x %d board   %d pellets   %d in a row') % (
+                self.puzzle.size, self.puzzle.size, self.puzzle.pellets,
+                self.puzzle.length)
         if self.phase == 'asking':
             self.status.text = '%s     %s' % (
                 self.message, _('question %d/%d') %

@@ -3,16 +3,19 @@
 
 This is not a game against an opponent.  A position is dealt with both
 colours already on the board and the player has one move.  The move is
-right when it completes a line of five; every dealt position has exactly
-one such cell.  That makes the task a compact visual search rather than a
-reaction game, and lets the ladder spend its difficulty on what a person
+right when it completes the dealt line length; every dealt position has
+exactly one such cell. That makes the task a compact visual search rather
+than a reaction game, and lets the ladder spend its difficulty on what a person
 has to hold in view: the size of the board, the number of pellets, and the
 number of nearly-complete lines competing for attention.
 
 The generator is deliberately independent of pyglet.  A position can be
 dealt, checked, and used by an agent without a window.  The UI paints the
 same flat board the rules module describes, while the environment exposes
-one opaque port per cell.
+one opaque port per cell.  Early rungs are approachable three-in-a-row; the
+middle returns to classic five-in-a-row, while the upper rungs make both
+dimensions large and the required line long, ending in a 100-in-a-row search
+that is intended for a program rather than a glance.
 
 SPDX-License-Identifier: GPL-2.0-or-later
 """
@@ -24,8 +27,9 @@ from typing import List, NamedTuple, Optional, Sequence, Tuple
 EMPTY = 0
 PLAYER = 1
 OPPONENT = -1
+MIN_LENGTH = 3
 WIN_LENGTH = 5
-MAX_SIZE = 19
+MAX_SIZE = 128
 MAX_CELLS = MAX_SIZE * MAX_SIZE
 
 # Four orientations are enough: every line has one of these directions.
@@ -33,6 +37,7 @@ DIRECTIONS: Tuple[Tuple[int, int], ...] = (
     (1, 0), (0, 1), (1, 1), (1, -1))
 
 _LINES: dict = {}
+_LINES_THROUGH: dict = {}
 
 
 class Grade(NamedTuple):
@@ -41,24 +46,26 @@ class Grade(NamedTuple):
     name: str
     size: int
     pellets: int
+    length: int
     #: Number of random board constructions tried before falling back to a
     #: lower-density version of the same rung.
     attempts: int = 80
 
 
-# The board grows from a tiny tactical pattern to a crowded nineteen.  The
-# last three rungs are intentionally much larger: reading every possible
-# five-line there is a combinatorial visual search even though the answer is
-# still one cell and the rules remain human-readable.
+# The first rungs are approachable three- and four-in-a-row patterns.  The
+# middle is recognisable five-in-a-row. Then the objective itself grows:
+# finding the one cell that completes fifteen, forty, or one hundred in a
+# row is a different class of search from spotting XXX_.
 GRADES: Tuple[Grade, ...] = (
-    Grade('a line in the open', 5, 8),
-    Grade('a second look', 6, 14),
-    Grade('two lines crossing', 7, 22),
-    Grade('the crowded corner', 9, 34),
-    Grade('a board of threats', 11, 48),
-    Grade('the long board', 13, 66),
-    Grade('the blind side', 15, 86),
-    Grade('superhuman', 19, 112),
+    Grade('three in the open', 5, 7, 3),
+    Grade('a second look', 6, 12, 3),
+    Grade('four to find', 8, 22, 4),
+    Grade('the crowded corner', 12, 45, 5),
+    Grade('a board of threats', 16, 80, 5),
+    Grade('the long board', 24, 150, 8),
+    Grade('the blind side', 32, 300, 15),
+    Grade('search horizon', 64, 1200, 40),
+    Grade('superhuman', 128, 6000, 100),
 )
 
 
@@ -67,6 +74,7 @@ class Puzzle(NamedTuple):
 
     size: int
     pellets: int
+    length: int
     cells: Tuple[int, ...]
     answer: int
     rung: int
@@ -78,7 +86,8 @@ class Puzzle(NamedTuple):
     @property
     def winning_moves(self) -> Tuple[int, ...]:
         """All immediate winning cells, normally the singleton answer."""
-        return tuple(winning_moves(self.cells, self.size, PLAYER))
+        return tuple(winning_moves(self.cells, self.size, PLAYER,
+                                   self.length))
 
 
 def grade_at(rung: int) -> Grade:
@@ -108,7 +117,7 @@ def line_cells(size: int, row: int, col: int, dr: int, dc: int,
 
 def all_lines(size: int, length: int = WIN_LENGTH
               ) -> Tuple[Tuple[int, ...], ...]:
-    """Every possible five-cell line on a square board."""
+    """Every possible line of *length* on a square board."""
     key = (int(size), int(length))
     if key in _LINES:
         return _LINES[key]
@@ -121,6 +130,28 @@ def all_lines(size: int, length: int = WIN_LENGTH
                     found.append(line)
     _LINES[key] = tuple(found)
     return _LINES[key]
+
+
+def lines_through(size: int, length: int, cell: int
+                  ) -> Tuple[Tuple[int, ...], ...]:
+    """The possible lines of *length* that contain one cell.
+
+    The generator uses this local view while adding pellets.  Rechecking
+    every line after every pellet is needlessly expensive on the large
+    machine-facing rungs; a new winner can only be created on a line that
+    contains the newly occupied cell.
+    """
+    size, length, cell = int(size), int(length), int(cell)
+    key = (size, length)
+    indexed = _LINES_THROUGH.get(key)
+    if indexed is None:
+        indexed_lists = [[] for _ in range(size * size)]
+        for line in all_lines(size, length):
+            for line_cell in line:
+                indexed_lists[line_cell].append(line)
+        indexed = tuple(tuple(lines) for lines in indexed_lists)
+        _LINES_THROUGH[key] = indexed
+    return indexed[cell]
 
 
 def winner(cells: Sequence[int], size: int, player: int = PLAYER,
@@ -143,33 +174,53 @@ def winning_moves(cells: Sequence[int], size: int, player: int = PLAYER,
     return sorted(found)
 
 
-def _safe(cells: Sequence[int], size: int, target: int) -> bool:
+def _winner_through(cells: Sequence[int], size: int, cell: int,
+                    player: int, length: int) -> bool:
+    """Whether a move at *cell* has just completed a line."""
+    return any(all(cells[line_cell] == player for line_cell in line)
+               for line in lines_through(size, length, cell))
+
+
+def _winning_moves_through(cells: Sequence[int], size: int, cell: int,
+                           player: int, length: int) -> List[int]:
+    """New immediate wins on lines touched by a newly placed pellet."""
+    found = set()
+    for line in lines_through(size, length, cell):
+        if sum(cells[line_cell] == player for line_cell in line) != length - 1:
+            continue
+        empty = [line_cell for line_cell in line
+                 if cells[line_cell] == EMPTY]
+        if len(empty) == 1:
+            found.add(empty[0])
+    return sorted(found)
+
+
+def _safe(cells: Sequence[int], size: int, target: int,
+          length: int = WIN_LENGTH) -> bool:
     """True when the target is the sole immediate player win."""
-    return (not winner(cells, size, PLAYER)
-            and not winner(cells, size, OPPONENT)
-            and winning_moves(cells, size, PLAYER) == [target])
+    return (not winner(cells, size, PLAYER, length)
+            and not winner(cells, size, OPPONENT, length)
+            and winning_moves(cells, size, PLAYER, length) == [target])
 
 
-def _candidate_patterns(size: int) -> List[Tuple[Tuple[int, ...], int, int]]:
-    """Patterns with four player pellets and a blocked back end.
+def _candidate_patterns(size: int, length: int
+                        ) -> List[Tuple[Tuple[int, ...], int, int]]:
+    """Patterns with ``length - 1`` player pellets and a blocked back end.
 
-    The blocked end matters.  Without it, ``XXXX_`` has the target and the
-    empty cell on the other side of the four as two equivalent answers.
+    The blocked end matters.  Without it, a line can have two equivalent
+    answers at its ends.
     """
     found = []
     for row in range(size):
         for col in range(size):
             for dr, dc in DIRECTIONS:
-                line = line_cells(size, row, col, dr, dc)
+                line = line_cells(size, row, col, dr, dc, length)
                 before = (row - dr, col - dc)
-                after = (row + dr * WIN_LENGTH,
-                         col + dc * WIN_LENGTH)
+                after = (row + dr * length, col + dc * length)
                 if line is None:
                     continue
-                # On a five-by-five board the line fills the whole axis, so
-                # neither end has an in-board blocker.  That is still a
-                # unique answer: the other end of XXXX_ is outside the
-                # board.  On larger boards block whichever end is available.
+                # If neither end is on the board, the board edge itself is
+                # the blocker. Otherwise block whichever end is available.
                 if _inside(size, *before):
                     blocked = _index(size, *before)
                 elif _inside(size, *after):
@@ -180,7 +231,7 @@ def _candidate_patterns(size: int) -> List[Tuple[Tuple[int, ...], int, int]]:
     return found
 
 
-def _try_deal(size: int, pellets: int, rng: random.Random,
+def _try_deal(size: int, pellets: int, length: int, rng: random.Random,
               patterns: Sequence[Tuple[Tuple[int, ...], int, int]]) \
         -> Optional[Puzzle]:
     line, blocked, target = rng.choice(patterns)
@@ -189,14 +240,48 @@ def _try_deal(size: int, pellets: int, rng: random.Random,
         cells[blocked] = OPPONENT
     for cell in line[:-1]:
         cells[cell] = PLAYER
+    want = max(length, min(int(pellets), size * size - 1))
 
-    # The pattern itself accounts for four player pellets and one blocker.
-    # Add noise one pellet at a time, retaining only positions that cannot
-    # accidentally create a winner or a second answer.
-    want = max(5, min(int(pellets), size * size - 1))
+    # A short line can participate in several crossing three- or four-line
+    # threats. Close those accidental alternatives before adding noise. The
+    # long-line rungs almost never need this, but keeping it here makes the
+    # beginner generator honest too: every deal really has one answer.
+    placed = sum(value != EMPTY for value in cells)
+    for _repair in range(size * size):
+        extras = [move for move in winning_moves(cells, size, PLAYER, length)
+                  if move != target]
+        if not extras:
+            break
+        repaired = False
+        for extra in extras:
+            for candidate_line in lines_through(size, length, extra):
+                if sum(cells[line_cell] == PLAYER
+                       for line_cell in candidate_line) != length - 1:
+                    continue
+                for blocker_cell in candidate_line:
+                    if cells[blocker_cell] != EMPTY or blocker_cell == target:
+                        continue
+                    cells[blocker_cell] = OPPONENT
+                    if not _winner_through(cells, size, blocker_cell,
+                                           OPPONENT, length):
+                        repaired = True
+                        placed += 1
+                        break
+                    cells[blocker_cell] = EMPTY
+                if repaired:
+                    break
+            if repaired:
+                break
+        if not repaired:
+            return None
+    if placed > want:
+        return None
+
+    # The pattern itself accounts for length - 1 player pellets and, when
+    # needed, one blocker. Add noise one pellet at a time, retaining only
+    # positions that cannot accidentally create a winner or a second answer.
     order = list(range(size * size))
     rng.shuffle(order)
-    placed = sum(value != EMPTY for value in cells)
     for cell in order:
         if placed >= want:
             break
@@ -206,39 +291,47 @@ def _try_deal(size: int, pellets: int, rng: random.Random,
         # without making the player's answer a trivial four-in-a-row count.
         value = OPPONENT if rng.random() < 0.62 else PLAYER
         cells[cell] = value
-        if winner(cells, size, value) or (
-                value == PLAYER and winning_moves(cells, size, PLAYER)
-                != [target]):
+        if _winner_through(cells, size, cell, value, length) or (
+                value == PLAYER and any(
+                    move != target
+                    for move in _winning_moves_through(
+                        cells, size, cell, PLAYER, length))):
             cells[cell] = EMPTY
             continue
         placed += 1
 
-    if placed < want or not _safe(cells, size, target):
+    if placed < want or not _safe(cells, size, target, length):
         return None
-    return Puzzle(size, placed, tuple(cells), target, 0)
+    return Puzzle(size, placed, length, tuple(cells), target, 0)
 
 
 def generate(rung: int, seed: Optional[int] = None,
              size: Optional[int] = None,
-             pellets: Optional[int] = None) -> Optional[Puzzle]:
+             pellets: Optional[int] = None,
+             length: Optional[int] = None) -> Optional[Puzzle]:
     """Deal a deterministic position with exactly one winning cell.
 
-    ``size`` and ``pellets`` are optional overrides used by experiments and
-    tests.  Normal play takes both from the rung.  A very crowded arbitrary
-    board may not admit a unique answer; in that case the function returns
-    ``None`` rather than quietly dealing a position with a different rule.
+    ``size``, ``pellets`` and ``length`` are optional overrides used by
+    experiments and tests. Normal play takes all three from the rung. A very
+    crowded arbitrary board may not admit a unique answer; in that case the
+    function returns ``None`` rather than quietly changing the rule.
     """
     grade = grade_at(rung)
-    board_size = max(WIN_LENGTH, min(MAX_SIZE,
+    target_length = max(MIN_LENGTH, min(MAX_SIZE,
+                                       int(grade.length if length is None
+                                           else length)))
+    board_size = max(target_length, min(MAX_SIZE,
                                      int(grade.size if size is None else size)))
     count = grade.pellets if pellets is None else int(pellets)
-    count = max(5, min(board_size * board_size - 1, count))
+    count = max(MIN_LENGTH, min(board_size * board_size - 1, count))
+    count = max(target_length, count)
     rng = random.Random(seed)
-    patterns = _candidate_patterns(board_size)
+    patterns = _candidate_patterns(board_size, target_length)
     for _attempt in range(max(1, grade.attempts)):
-        made = _try_deal(board_size, count, rng, patterns)
+        made = _try_deal(board_size, count, target_length, rng, patterns)
         if made is not None:
-            return Puzzle(made.size, made.pellets, made.cells, made.answer,
+            return Puzzle(made.size, made.pellets, made.length, made.cells,
+                          made.answer,
                           max(1, min(len(GRADES), int(rung))))
     return None
 

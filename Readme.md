@@ -2103,22 +2103,21 @@ of the frame where the outcome reader looks, and the guard is against
 the geometry rather than a sweep of pixels — where the pieces land is
 content, so a clean sweep of one run says nothing about the next.
 
-**N-in-a-row.** A classic five-in-a-row board becomes a visual tactics
-puzzle: the screen deals a position with player and opponent pellets, and
-you must find the one empty cell that completes a line of five. It is not a
-match against a CPU, so the task measures seeing the winning move rather than
-waiting for an opponent. The board grows from 5x5 to 19x19, while the number
-of pellets and the density of misleading lines grow with it. The first rung
-is a quick pattern; the final rung is deliberately crowded enough that the
-winning move can be difficult to hold in mind even when it is visible.
+**N-in-a-row.** A visual tactics puzzle starts with a five-by-five board and
+three-in-a-row, which makes the first position approachable for a child. The
+middle rungs return to the familiar five-in-a-row rule, while the upper
+rungs make the board and the objective grow together: the final position is
+128x128 with 100 in a row to find. It is not a match against a CPU, so the
+task measures seeing the winning move rather than waiting for an opponent.
 
 The agent has one opaque port per cell in the largest board, with unused
 ports harmless on smaller boards. A pellet is not an answer, and every deal
 is rejected unless exactly one empty cell wins immediately. The generator
 checks the whole board for both colours, so the useful move is a property of
 the position rather than a hidden answer known only to the task. Adaptive
-play raises or lowers the rung from the player's success, while the grid and
-pellet controls can be fixed for experiments.
+play raises or lowers the rung from the player's success, while the grid,
+pellet, and line-length controls can be fixed for children, adults, or a
+machine search.
 
 ### Self-control
 

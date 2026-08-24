@@ -1242,15 +1242,19 @@ def ninarow_note(chosen: Dict[str, Any]) -> str:
     grade = ninarow.grade_at(rung)
     grid = int(chosen['NINAROW_GRID']) or grade.size
     pellets = int(chosen['NINAROW_PELLETS']) or grade.pellets
-    said = [_('Level %d, "%s": a %d by %d board with about %d pellets.')
-            % (rung, _(grade.name), grid, grid, pellets),
-            _('Find the one empty cell that completes a line of five. '
+    length = int(chosen['NINAROW_LENGTH']) or grade.length
+    said = [_('Level %d, "%s": a %d by %d board with about %d pellets; '
+              'find %d in a row.')
+            % (rung, _(grade.name), grid, grid, pellets, length),
+            _('Find the one empty cell that completes the line. '
               'The board is a scenario, not a game against the computer.')]
-    if not chosen['NINAROW_GRID'] and not chosen['NINAROW_PELLETS']:
-        said.append(_('Both board size and pellet count grow with the level.'))
-    elif chosen['NINAROW_GRID'] or chosen['NINAROW_PELLETS']:
-        said.append(_('A non-zero grid or pellet setting overrides that '
-                      'part of the level.'))
+    if not chosen['NINAROW_GRID'] and not chosen['NINAROW_PELLETS'] \
+            and not chosen['NINAROW_LENGTH']:
+        said.append(_('The board, pellet count, and line length grow with '
+                      'the level.'))
+    else:
+        said.append(_('A non-zero grid, pellet, or line-length setting '
+                      'overrides that part of the level.'))
     if chosen['NINAROW_ADAPTIVE']:
         said.append(_('A right answer climbs one level; a miss falls one.'))
     return '  '.join(said)
@@ -1260,13 +1264,15 @@ NINAROW = TaskSpec(
     title=_('N-in-a-row options'),
     options=(
         Option('NINAROW_LEVEL', _('Starting level'), 1,
-               values=tuple(range(1, 9))),
+               values=tuple(range(1, 10))),
         Option('NINAROW_TRIALS', _('Positions per run'), 5,
                values=(1, 2, 3, 5, 8, 10, 15)),
         Option('NINAROW_GRID', _('Grid size (0 follows level)'), 0,
-               values=(0, 5, 6, 7, 9, 11, 13, 15, 17, 19)),
+               values=(0, 5, 6, 8, 12, 16, 24, 32, 64, 128)),
         Option('NINAROW_PELLETS', _('Pellets (0 follows level)'), 0,
-               values=(0, 8, 14, 22, 34, 48, 66, 86, 112, 160)),
+               values=(0, 7, 12, 22, 45, 80, 150, 300, 1200, 6000)),
+        Option('NINAROW_LENGTH', _('Line length (0 follows level)'), 0,
+               values=(0, 3, 4, 5, 8, 15, 40, 100)),
         Option('NINAROW_SHOW_ANSWER', _('Mark the winning cell afterwards'),
                True),
         Option('NINAROW_ADAPTIVE', _('Climb a level after a right answer'),

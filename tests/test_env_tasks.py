@@ -695,7 +695,7 @@ class TheBoundaryKnowsWhichTasksHaveAClock(unittest.TestCase):
         # is no submit, and the gaps come back with the word before
         # them, so there is no space either.
         self.assertEqual(catalog.env_class('overrun').ports, 27)
-        self.assertEqual(catalog.env_class('n_in_a_row').ports, 19 * 19)
+        self.assertEqual(catalog.env_class('n_in_a_row').ports, 128 * 128)
         self.assertEqual(catalog.env_class('algebra').ports, 21)
         # Six for the wheel and five for the sights, out of one budget.
         self.assertEqual(catalog.env_class('two_hands').ports, 11)
