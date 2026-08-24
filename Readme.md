@@ -2561,7 +2561,7 @@ obs, events, done = env.step(2)         # one of three opaque ports
 env.close()
 ```
 
-Nineteen of the forty-one are *declarations* rather than code — where
+Twenty-one of the forty-three are *declarations* rather than code — where
 the task class lives, what one port calls, which phase takes input, which
 phase means the trial is over, and what the difficulty knobs are called:
 
@@ -2577,12 +2577,12 @@ class HanoiEnv(TaskEnv):
 ```
 
 They carry **no deriver and no verifier**, because they paint the shared
-verdict label and the boundary already knows how to read one. Sixteen
+verdict label and the boundary already knows how to read one. Eighteen
 of them add a short method or two — a port that names an object rather than
 an index, a port that is a moment rather than a symbol, a trial window the
 task has no phase for, a coach gated on whether the boundary will actually
 pay it. The four written before that existed still carry both, at about a
-hundred lines apiece. Nineteen and eighteen and four is forty-one, which
+hundred lines apiece. Twenty-one and eighteen and four is forty-three, which
 is the point of counting them.
 `ADDING_A_TASK.md` is the whole contract.
 

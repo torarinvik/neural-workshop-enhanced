@@ -42,11 +42,11 @@ clock with the window hidden, so they prove stepped-versus-scheduled
 parity rather than literal visible-window execution.
 
 **Every task in the workshop is wrapped**, and ``catalog`` is the list.
-Thirty of them are declarations on :class:`TaskEnv` rather than
+Thirty-nine of them are declarations on :class:`TaskEnv` rather than
 code — where the task class lives, what one port calls, which phase
 takes input, which phase means the trial is over — and they paint
 :class:`neural_workshop.ui.verdict.VerdictLabel` when a trial settles,
-so they carry neither a deriver nor a verifier. Fourteen of those add a
+so they carry neither a deriver nor a verifier. Eighteen of those add a
 short method or two on top. The four written before that existed still
 carry both.
 
