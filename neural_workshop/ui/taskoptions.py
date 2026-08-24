@@ -1802,6 +1802,22 @@ COOKIE_THIEF = TaskSpec(
     note=cookie_note)
 
 
+CHESS = TaskSpec(
+    title=_('Winning Move options'),
+    options=(
+        Option('CHESS_LEVEL', _('Starting level'), 1,
+               values=tuple(range(1, 11))),
+        Option('CHESS_TRIALS', _('Puzzles per run'), 10,
+               values=(1, 3, 5, 8, 10, 15, 20, 30, 50)),
+        Option('CHESS_ADAPTIVE', _('Climb after a correct move'), True),
+    ),
+    note=lambda chosen: _('Level 1 is an obvious mate. Level 10 mixes '
+                           'defenders, decoys and tactical forks. The '
+                           'difficulty rises after a mate and falls after '
+                           'a miss.')
+)
+
+
 #: Task id → the settings screen it owns.
 TASK_SPECS: Dict[str, TaskSpec] = {
     'monkey_ladder': MONKEY_LADDER,
@@ -1841,6 +1857,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'syllogism': SYLLOGISM,
     'chain_of_custody': CUSTODY,
     'cookie_thief': COOKIE_THIEF,
+    'chess': CHESS,
 }
 
 

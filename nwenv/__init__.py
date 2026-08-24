@@ -110,6 +110,7 @@ from .recognition import RecognitionEnv  # noqa: E402
 from .reflex import ReflexEnv  # noqa: E402
 from .salesman import SalesmanEnv  # noqa: E402
 from .sudoku import SudokuEnv  # noqa: E402
+from .chess import ChessEnv  # noqa: E402
 from .tracking import MovingTargetsEnv  # noqa: E402
 from .cookiethief import CookieThiefEnv  # noqa: E402
 from .crossedwires import CrossedWiresEnv  # noqa: E402
@@ -146,7 +147,7 @@ from .sight import (OutOfSightEnv, derive_sight_outcome,  # noqa: E402
                     make_sight_env, verify_sight_outcome)
 
 __all__ = [
-    'Accounting', 'DiagnosticEnv', 'FrameExport', 'MonkeyLadderEnv',
+    'Accounting', 'ChessEnv', 'DiagnosticEnv', 'FrameExport', 'MonkeyLadderEnv',
     'NeuralWorkshopEnv', 'OutOfSightEnv', 'TestProbe', 'capture_rgba',
     'derive_ladder_outcome', 'derive_public_outcome', 'derive_sight_outcome',
     'diagnose_public_outcome', 'digest_rgba', 'format_accounting', 'make_env',

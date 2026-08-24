@@ -1056,6 +1056,22 @@ you have already assembled is a memory task, not a reasoning one. A
 larger library therefore means longer before anything comes round
 again; the default hundred images is a hundred fresh puzzles.
 
+#### Winning Move
+
+One legal chess position is dealt and the side to move has exactly one
+checkmate in one. Click a piece and then its destination; legal destinations
+are highlighted, illegal moves leave the puzzle open, and a legal move that
+does not mate spends the attempt.
+
+Positions are generated during play rather than selected from an answer
+list. A small mating motif is reflected, rotated or colour-swapped, then
+decoy material is added one piece at a time. After every change
+`python-chess` enumerates the legal moves and the candidate is kept only when
+exactly one of them ends in checkmate. Level one stays sparse; level ten adds
+up to fourteen independently checked decoys and prefers positions with more
+legal alternatives. The same seeded random source used by the agent boundary
+drives generation, so a seed still reproduces the exact puzzle.
+
 #### Sudoku
 
 Twelve rungs, from a four by four that falls to naked singles up to a
@@ -2415,7 +2431,7 @@ obs, events, done = env.step(2)         # one of three opaque ports
 env.close()
 ```
 
-Seventeen of the thirty-seven are *declarations* rather than code — where
+Eighteen of the thirty-eight are *declarations* rather than code — where
 the task class lives, what one port calls, which phase takes input, which
 phase means the trial is over, and what the difficulty knobs are called:
 
@@ -2436,7 +2452,7 @@ of them add a short method or two — a port that names an object rather than
 an index, a port that is a moment rather than a symbol, a trial window the
 task has no phase for, a coach gated on whether the boundary will actually
 pay it. The four written before that existed still carry both, at about a
-hundred lines apiece. Seventeen and sixteen and four is thirty-seven, which
+hundred lines apiece. Eighteen and sixteen and four is thirty-eight, which
 is the point of counting them.
 `ADDING_A_TASK.md` is the whole contract.
 

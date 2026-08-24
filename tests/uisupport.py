@@ -63,6 +63,7 @@ try:
     from neural_workshop.ui.removals import Removals
     from neural_workshop.ui.crossedwires import CrossedWires
     from neural_workshop.ui.crossword import Crossword
+    from neural_workshop.ui.chess import Chess
     from neural_workshop.ui.scrabble import Scrabble
     from neural_workshop.ui.scramble import Scramble
     from neural_workshop.ui.overrun import Overrun

@@ -931,6 +931,12 @@ SUDOKU_TRIALS = 3
 SUDOKU_SHOW_CLASHES = True
 SUDOKU_ADAPTIVE = True
 
+# Winning Move: one chess position, one winning move. Higher levels add
+# defenders and decoys; adaptive runs climb toward level ten.
+CHESS_LEVEL = 1
+CHESS_TRIALS = 10
+CHESS_ADAPTIVE = True
+
 # Chain of Custody is one box among several and one bay to put it in.
 # The box is ringed for a moment at the start and then looks like the
 # rest of them, and the belt carries them all round a loop while the
