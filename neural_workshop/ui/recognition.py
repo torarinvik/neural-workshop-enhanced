@@ -97,6 +97,12 @@ class Recognition:
         self._reset()
         self._build_chrome()
 
+    def reseed(self, seed: int) -> None:
+        """Rebind this task and its media supply to one deterministic RNG."""
+        self.rng = random.Random(int(seed))
+        self.pool.rng = self.rng
+        self.pool.reload()
+
     # --- layout ----------------------------------------------------------
 
     def _build_chrome(self) -> None:

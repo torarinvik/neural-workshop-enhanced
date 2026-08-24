@@ -616,7 +616,14 @@ class TaskEnv:
         self._virtual_now = 0.0
         if hasattr(task, 'clock'):
             task.clock = lambda: self._virtual_now
-        if hasattr(task, 'rng'):
+        reseed = getattr(task, 'reseed', None)
+        if callable(reseed):
+            # Some tasks own stochastic children (media pools, generators,
+            # and similar resources). A single generic hook lets them bind
+            # every child to the requested seed without teaching this shared
+            # boundary task-specific attribute names.
+            reseed(seed)
+        elif hasattr(task, 'rng'):
             task.rng = random.Random(seed)
         self.apply_dials(task)
         # Whatever the wrapper just set, a per-move label stays off

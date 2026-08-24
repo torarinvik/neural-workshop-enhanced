@@ -304,6 +304,15 @@ class RecognitionTests(unittest.TestCase):
         self.assertTrue(self.game.start_run())
         self.assertEqual(len(self.game.trials), 40)
 
+    def test_reseed_rebuilds_the_same_media_stream(self):
+        self.game.reseed(41)
+        self.assertTrue(self.game.start_run())
+        first = list(self.game.trials)
+        self.game._reset()
+        self.game.reseed(41)
+        self.assertTrue(self.game.start_run())
+        self.assertEqual(self.game.trials, first)
+
     def test_every_repeat_is_a_genuine_second_showing(self):
         self.game.start_run()
         seen = set()
