@@ -1578,6 +1578,33 @@ out is a word you cannot type at speed, and speed is all that task is.
 cd tests && PYTHONPATH=.. ../.venv/bin/python bench_scramble.py
 ```
 
+#### Verbal Reasoning
+
+Verbal Reasoning draws English multiple-choice questions from the verified
+artifact built by the sibling `VerbalIQDataset` project. The corpus is not
+copied into the Workshop. It is opened only when the first run begins, and a
+trial reads one Parquet row group and only the seven columns needed to play;
+imports, the task hub, and opening the task itself do no dataset I/O.
+
+Install the optional reader in the Python environment that runs the Workshop:
+
+```bash
+python -m pip install pyarrow
+```
+
+By default the task looks for
+`/Users/torarinvikbjarko/Documents/Coding Projects/Python Projects/VerbalIQDataset`
+and prefers `build/verbal-iq-release`. To use another checkout or a directory
+containing Parquet files:
+
+```bash
+export NW_VERBAL_IQ_DATASET=/path/to/VerbalIQDataset
+```
+
+Only displayable English questions with two to five indexed choices are
+offered. Choices are shuffled on every deal while the gold answer follows its
+text, so a source's answer-position distribution is not a shortcut.
+
 #### Algebra
 
 ```

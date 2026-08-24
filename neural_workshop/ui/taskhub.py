@@ -74,6 +74,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('numberology', _('Numberology')),
         ('syllogism', _('Syllogisms')),
         ('chess', _('Winning Move')),
+        ('verbal_reasoning', _('Verbal Reasoning')),
     ],
     'planning': [
         ('tower_of_hanoi', _('Tower of Hanoi')),
@@ -446,6 +447,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'chess':
         from .chess import Chess
         Chess()
+        return
+    if task_id == 'verbal_reasoning':
+        from .verbal import VerbalReasoning
+        VerbalReasoning()
         return
     if task_id == 'ncup_monte':
         from .ncupmonte import NCupMonte

@@ -1234,6 +1234,13 @@ TRIVIA_TRIALS = 10
 TRIVIA_SHOW_ANSWER = True
 TRIVIA_ADAPTIVE = True
 
+# Verbal Reasoning reads multiple-choice questions from the separately built
+# VerbalIQDataset Parquet artifact. The corpus and pyarrow are both opened
+# only after a run starts, so neither adds to Workshop startup time. Point
+# NW_VERBAL_IQ_DATASET at another checkout or artifact when required.
+VERBAL_REASONING_TRIALS = 6
+VERBAL_REASONING_EXPLANATION = True
+
 ######################################################################
 # This is the end of the configuration file.
 ######################################################################

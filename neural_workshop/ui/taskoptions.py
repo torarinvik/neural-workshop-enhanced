@@ -1660,6 +1660,15 @@ TRIVIA = TaskSpec(
     ),
     note=trivia_note)
 
+VERBAL_REASONING = TaskSpec(
+    title=_('Verbal Reasoning options'),
+    options=(
+        Option('VERBAL_REASONING_TRIALS', _('Questions per run'), 6,
+               values=(1, 2, 3, 5, 6, 8, 10, 15)),
+        Option('VERBAL_REASONING_EXPLANATION',
+               _('Show the source explanation after answering'), True),
+    ))
+
 
 def salesman_note(chosen: Dict[str, Any]) -> str:
     """What the score means at this size, and that it is exact.
@@ -1954,6 +1963,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'numberology': NUMBEROLOGY,
     'syllogism': SYLLOGISM,
     'trivia': TRIVIA,
+    'verbal_reasoning': VERBAL_REASONING,
     'chain_of_custody': CUSTODY,
     'cookie_thief': COOKIE_THIEF,
     'chess': CHESS,

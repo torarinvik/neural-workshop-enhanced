@@ -691,7 +691,8 @@ class TheBoundaryKnowsWhichTasksHaveAClock(unittest.TestCase):
         for task_id in ('crossed_wires', 'maze', 'sokoban', 'sudoku',
                         'tower_of_hanoi', 'salesman', 'jigsaw',
                         'you_are_here', 'sokoban_3d', 'crossword',
-                        'scrabble', 'scramble', 'algebra', 'n_in_a_row'):
+                        'scrabble', 'scramble', 'algebra',
+                        'n_in_a_row', 'verbal_reasoning'):
             self.assertFalse(self.clocked(task_id), task_id)
 
     def test_the_ones_that_move_on_their_own_are(self):
@@ -718,6 +719,7 @@ class TheBoundaryKnowsWhichTasksHaveAClock(unittest.TestCase):
         self.assertEqual(catalog.env_class('overrun').ports, 27)
         self.assertEqual(catalog.env_class('n_in_a_row').ports, 128 * 128)
         self.assertEqual(catalog.env_class('algebra').ports, 21)
+        self.assertEqual(catalog.env_class('verbal_reasoning').ports, 5)
         # Six for the wheel and five for the sights, out of one budget.
         self.assertEqual(catalog.env_class('two_hands').ports, 11)
 
