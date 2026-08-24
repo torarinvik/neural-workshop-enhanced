@@ -669,6 +669,42 @@ PURSUIT = TaskSpec(
     note=pursuit_note)
 
 
+def buzzwire_note(chosen: Dict[str, Any]) -> str:
+    """The chosen wire in one line, and what the adaptive ladder does.
+
+    Three axes make the space; the note names the run's shape — how
+    narrow, how bent, how long — and says when the corridor will move
+    on its own.
+    """
+    said = [_('A corridor %d%% of the screen tall, %d bends, %d s to '
+              'take each wire.') % (int(chosen['BUZZWIRE_WIDTH']),
+                                    int(chosen['BUZZWIRE_BENDS']),
+                                    int(chosen['BUZZWIRE_SECONDS']))]
+    if not int(chosen['BUZZWIRE_BENDS']):
+        said.append(_('No bends: a straight corridor, the bottom rung.'))
+    if chosen['BUZZWIRE_ADAPTIVE']:
+        said.append(_('A clear narrows the corridor 5%%; a buzz relaxes '
+                      'it 5%%.'))
+    return '  '.join(said)
+
+
+BUZZWIRE = TaskSpec(
+    title=_('Buzz Wire options'),
+    options=(
+        Option('BUZZWIRE_WIDTH', _('Corridor width'), 8,
+               values=(3, 4, 5, 6, 8, 10, 12, 15), suffix='%'),
+        Option('BUZZWIRE_BENDS', _('Bends in the wire'), 3,
+               values=(0, 1, 2, 3, 4, 5, 6, 8)),
+        Option('BUZZWIRE_SECONDS', _('Seconds per wire'), 20,
+               values=(5, 8, 12, 20, 30, 45, 60), suffix=' s'),
+        Option('BUZZWIRE_ROUNDS', _('Wires per run'), 3,
+               values=(1, 2, 3, 5, 8, 10, 15, 20)),
+        Option('BUZZWIRE_ADAPTIVE',
+               _('Narrow the corridor while you keep clearing it'), True),
+    ),
+    note=buzzwire_note)
+
+
 def out_of_sight_note(chosen: Dict[str, Any]) -> str:
     """What the chosen field hides, and the one silent clamp.
 
@@ -1934,6 +1970,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'moving_targets': TRACKING,
     'lookout': LOOKOUT,
     'pursuit': PURSUIT,
+    'buzz_wire': BUZZWIRE,
     'out_of_sight': OUT_OF_SIGHT,
     'donkey': DONKEY,
     'two_hands': TWO_HANDS,

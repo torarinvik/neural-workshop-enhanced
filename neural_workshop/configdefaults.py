@@ -588,6 +588,18 @@ PURSUIT_SECONDS = 20
 PURSUIT_ROUNDS = 3
 PURSUIT_ADAPTIVE = True
 
+# Buzz Wire: carry the cursor from the blue pad to the green one along
+# a corridor BUZZWIRE_WIDTH per cent of a screen height across, bent
+# BUZZWIRE_BENDS times, within BUZZWIRE_SECONDS. One touch of the
+# walls buzzes the wire out, scored by how far along it got. With
+# BUZZWIRE_ADAPTIVE a cleared wire narrows the corridor by 5% and a
+# buzz relaxes it by the same step.
+BUZZWIRE_WIDTH = 8
+BUZZWIRE_BENDS = 3
+BUZZWIRE_SECONDS = 20
+BUZZWIRE_ROUNDS = 3
+BUZZWIRE_ADAPTIVE = True
+
 # Out of Sight: SIGHT_TARGETS dots among SIGHT_DOTS flash a colour and
 # then look like all the rest. Two things then make any single frame
 # too little to answer from. SIGHT_CROSS_MS is how often two dots are
