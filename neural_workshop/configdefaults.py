@@ -1093,6 +1093,25 @@ SCRAMBLE_TRIALS = 5
 SCRAMBLE_SHOW_COUNT = True
 SCRAMBLE_ADAPTIVE = True
 
+# Overrun draws a sentence from the same Simple English Wikipedia text
+# and slides it at the right-hand margin. Type it away and the line is
+# hauled back by a word at a time; let the end of it cross and a life
+# goes. Clear a whole sentence and a life comes back. You start with
+# three.
+#
+# OVERRUN_LEVEL turns one dial and only one: how fast the line moves.
+# Every level deals the same sentences out of the same vocabulary, so
+# the ladder is a typing speed and can be read as one - level one asks
+# for about nineteen words a minute and level twelve for about
+# eighty-four, which is the range between hunting for the keys and not
+# needing to look at them. The options screen prints the rate for the
+# level chosen. A wave always starts with as much clear road ahead of
+# it as it has characters, which is what stops a long sentence being a
+# harder question than a short one at the same level.
+OVERRUN_LEVEL = 4
+OVERRUN_WAVES = 8
+OVERRUN_ADAPTIVE = True
+
 # Algebra runs from 3 + 4 to one integer in a box of ten to the
 # twenty-eighth. What grows is not the size of the numbers - that is a
 # clerical ladder with a calculator at the top of it - but how big a

@@ -632,6 +632,100 @@ cannot come to believe in a rule the game does not have.
 Nothing is downloaded for this one either — the road and the sky are
 generated.
 
+#### Overrun
+
+A sentence sits in a lane and slides at the right-hand margin. Type it
+away and the line is hauled back a word at a time; let the end of it
+cross and a life goes. Clear a whole sentence and a life comes back.
+You start with three, and the run ends when the lives do or when the
+sentences do.
+
+The word being typed is always at the **left-hand end** of the line,
+so the eye has one place to look and only the clock moves it: clearing
+a word takes the front off the line and what is behind it moves up
+into the same place. That is also what makes the game a tug of war
+rather than a chase — the drift pushes the end of the line at the
+margin and every word typed hauls it back by its own width.
+
+**A wave starts with as much clear road ahead of it as it has
+characters.** This is the rule the whole task turns on and it is worth
+being explicit about, because the obvious layout — every line starting
+at the left-hand end of the lane — is what was written first and it is
+wrong. Under it the road ahead of a line is *the lane minus the line*,
+so a long sentence gets less time and has more to type, and the two
+effects multiply. Measured at the sixth rung:
+
+| layout | words a minute asked for | range over the sentences |
+|---|---|---|
+| runway = the text | 37.9 | 34.7 to 40.4 |
+| every wave from the left | 27.9 | 13.5 to 40.4 |
+
+The spread on the top row is the sentences themselves — a line with
+long words in it is more keys for the same number of cells — and it is
+a few words a minute wide. The spread on the bottom row is a **factor
+of three**: the same setting would have been two different tasks
+depending on which sentence came up, and the number printed on the
+options screen would have been an average over both.
+
+**The level is the clock and nothing else.** Every rung deals from the
+same sentences, of the same lengths, out of the same vocabulary. So
+the ladder is a typing speed and can be read as one:
+
+| rung | drift, chars/s | seconds a wave allows | words a minute |
+|---|---|---|---|
+| 1 | 1.9 | 19.3 | 19 |
+| 4 | 2.9 | 12.6 | 29 |
+| 6 | 3.8 | 9.7 | 38 |
+| 8 | 4.9 | 7.5 | 49 |
+| 10 | 6.4 | 5.7 | 64 |
+| 12 | 8.4 | 4.4 | 84 |
+
+which is the range between hunting for the keys and not needing to
+look at them. Freeform Tetris makes the opposite promise for the same
+reason — its ladder is shape and never speed — and both exist so that
+a number taken off one rung can be compared with a number taken off
+another.
+
+**A mistyped letter stays until it is rubbed out**, drawn in vermillion
+over the letter it should have been. Ignoring a wrong key is kinder and
+it is what the first version did, and the cost of it is the entire
+floor of the task. With wrong keys ignored a correct prefix can only
+grow, so a walk hitting keys at random lands a letter every twenty-six
+presses — 2.3 characters a second at sixty presses a second. The
+arithmetic says that beats the bottom three rungs. Played out rather
+than worked out, it is worse:
+
+| rung | 1–5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 |
+|---|---|---|---|---|---|---|---|---|
+| waves cleared, wrong key ignored | 1.00 | 0.95 | 0.82 | 0.53 | 0.37 | 0.13 | 0.02 | 0.00 |
+| waves cleared, letter sticks | 0.00 | 0.00 | 0.00 | 0.00 | 0.00 | 0.00 | 0.00 | 0.00 |
+
+Two thirds of the ladder, cleared by something that cannot read. The
+mean rate is not the race: the deadline walks forward every time a word
+goes, so a walk that gets lucky in its first two words carries the
+slack down the rest of the line, and that is the part that had to be
+measured rather than reasoned about.
+
+Twenty-seven ports at the agent boundary — twenty-six letters and a
+rub-out, no submit and no space — which is the smallest port set of the
+four word games. Random play is paid on every wave and paid nothing but
+red, and the reason is the clock rather than the ports: a wave ends on
+its own whether or not anything was typed. Over 900 steps, three seeds
+apiece: no outcomes at all at the first rung, one at the fourth, one at
+the eighth, three at the twelfth. Zero at rung one is the wave lasting
+1,157 ticks, which is longer than the budget — not a gap in the
+wrapper.
+
+The text is the same Simple English Wikipedia bank Scramble uses, cut
+to the sentences that fit a lane with their own runway: 24 to 44
+characters out of the 20,000 commonest words, which is 10,151 of the
+36,118 in the bank and 58 of the 70 written into the source for a
+machine that has fetched nothing.
+
+```bash
+cd tests && PYTHONPATH=.. ../.venv/bin/python bench_overrun.py
+```
+
 ### Perception
 
 The *Perception* category holds two tasks. One asks about what is in
@@ -1370,6 +1464,12 @@ a scrambled `ntsoe` that turns out to have been *Notestein* is not.
 ladder still has 3,900 to draw on. With nothing fetched there are
 seventy sentences in the repository, enough to play and not enough to
 stop repeating, and the screen says which it has.
+
+Two tasks read this bank. Overrun takes the short end of it — 24 to 44
+characters, so a whole sentence fits a lane with its own length of road
+ahead of it — and cuts the vocabulary tighter than Scramble does, at
+the 20,000 commonest words rather than 60,000: a word you have to work
+out is a word you cannot type at speed, and speed is all that task is.
 
 ```bash
 cd tests && PYTHONPATH=.. ../.venv/bin/python bench_scramble.py
@@ -2315,7 +2415,7 @@ obs, events, done = env.step(2)         # one of three opaque ports
 env.close()
 ```
 
-Seventeen of the thirty-six are *declarations* rather than code — where
+Seventeen of the thirty-seven are *declarations* rather than code — where
 the task class lives, what one port calls, which phase takes input, which
 phase means the trial is over, and what the difficulty knobs are called:
 
@@ -2331,12 +2431,12 @@ class HanoiEnv(TaskEnv):
 ```
 
 They carry **no deriver and no verifier**, because they paint the shared
-verdict label and the boundary already knows how to read one. Fifteen
+verdict label and the boundary already knows how to read one. Sixteen
 of them add a short method or two — a port that names an object rather than
 an index, a port that is a moment rather than a symbol, a trial window the
 task has no phase for, a coach gated on whether the boundary will actually
 pay it. The four written before that existed still carry both, at about a
-hundred lines apiece. Seventeen and fifteen and four is thirty-six, which
+hundred lines apiece. Seventeen and sixteen and four is thirty-seven, which
 is the point of counting them.
 `ADDING_A_TASK.md` is the whole contract.
 

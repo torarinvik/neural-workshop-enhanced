@@ -6,6 +6,14 @@ Everything here drives time by hand — a target's age is how old its
 ``born`` stamp is, so backdating one is the same as waiting. That
 keeps the tests instant and exact instead of sleeping and hoping.
 
+It was only half true until recently, and the half that was missing
+cost a test. Backdating said how old a target was, but *now* was still
+the wall clock, so a target went on ageing between one line of a test
+and the next — and one that outlived its 1.6 seconds was expired and
+thrown away underneath a test still holding it. :class:`ReflexTests`
+now holds the task's clock still, so the backdating is the only thing
+that ages anything.
+
 SPDX-License-Identifier: GPL-2.0-or-later
 """
 from __future__ import annotations
@@ -40,7 +48,7 @@ class AttentionCategoryTests(unittest.TestCase):
         self.assertEqual([task for task, _name in TASKS['attention']],
                          ['reflex', 'ncup_monte', 'moving_targets',
                           'lookout', 'pursuit', 'out_of_sight', 'donkey',
-                          'two_hands'])
+                          'two_hands', 'overrun'])
 
     def test_it_has_an_options_screen(self):
         from neural_workshop.ui import taskoptions
@@ -94,6 +102,26 @@ class ReflexTests(unittest.TestCase):
         state.cfg.REFLEX_LIFETIME_MS = 1600
         state.cfg.REFLEX_ADAPTIVE = False
         self.game = Reflex()
+        # The task's own clock, held still. A target's age is measured
+        # against ``self.clock``, so on the wall clock its 1.6 seconds
+        # could run out between a test spawning one and the test looking
+        # at it — and the next ``update`` then expires it, drops its
+        # sprite and takes it out of ``targets`` while the test still
+        # holds the reference. That is what made
+        # ``test_a_resize_moves_targets_to_the_same_relative_place``
+        # report "sprite unexpectedly None": nothing about the resize,
+        # just 1.6 seconds going by. It passed alone every time it was
+        # tried and failed every time it was run inside a batch that
+        # happened to be taking twice as long as usual — so it read as
+        # a test-ordering problem for a while, which is the worst way
+        # for a defect like this to behave. Reproduced in the end by
+        # dropping a two-second sleep into the test.
+        #
+        # Every test in this class ages a target by backdating ``born``,
+        # which is exact and needs no seconds to pass. Holding the clock
+        # is what makes that the only way one ever ages.
+        self.now = 1000.0
+        self.game.clock = lambda: self.now
 
     def tearDown(self):
         close_overlays()
@@ -108,6 +136,22 @@ class ReflexTests(unittest.TestCase):
         return self.game.targets
 
     # --- spawning --------------------------------------------------------
+
+    def test_a_target_ages_by_the_clock_this_class_holds(self):
+        """The guard on the held clock in ``setUp``, and it is not idle.
+
+        Take the freeze away and this fails: winding ``self.now``
+        forward would stop meaning anything, the target would still be
+        a fraction of a second old by the wall clock, and every other
+        test here would go back to being a race between the machine and
+        a target's 1.6 seconds.
+        """
+        self.game.start_run()
+        target = self._spawn(1)[0]
+        self.assertIn(target, self.game.targets)
+        self.now += self.game.lifetime * 2
+        self.game.update(0.016)
+        self.assertNotIn(target, self.game.targets)
 
     def test_a_run_starts_empty_and_fills(self):
         self.assertTrue(self.game.start_run())
@@ -213,7 +257,7 @@ class ReflexTests(unittest.TestCase):
         self.game.start_run()
         target = self._spawn(1)[0]
         full = target.side
-        target.born = time.time() - self.game.lifetime * 0.5
+        target.born = self.game.clock() - self.game.lifetime * 0.5
         self.game.update(0.016)
         self.assertLess(target.side, full)
         self.assertGreater(target.side, 0)
@@ -221,7 +265,7 @@ class ReflexTests(unittest.TestCase):
     def test_remaining_runs_from_one_to_zero(self):
         self.game.start_run()
         target = self._spawn(1)[0]
-        now = time.time()
+        now = self.game.clock()
         self.assertAlmostEqual(target.remaining(target.born), 1.0, places=2)
         self.assertAlmostEqual(
             target.remaining(target.born + target.lifetime), 0.0, places=6)
@@ -262,7 +306,7 @@ class ReflexTests(unittest.TestCase):
         centre_x, centre_y = target.centre()
         edge = centre_x + target.side / 2 - 1
         self.assertIsNotNone(self.game.target_at(edge, centre_y))
-        target.born = time.time() - self.game.lifetime * 0.9
+        target.born = self.game.clock() - self.game.lifetime * 0.9
         self.game.update(0.016)
         # The old edge is outside the target now that it has shrunk.
         self.assertIsNone(self.game.target_at(edge, centre_y))
@@ -273,7 +317,7 @@ class ReflexTests(unittest.TestCase):
         self.game.start_run()
         first, second = self._spawn(2)[:2]
         second.x_frac, second.y_frac = first.x_frac, first.y_frac
-        second.born = time.time() - self.game.lifetime * 0.7
+        second.born = self.game.clock() - self.game.lifetime * 0.7
         self.game.update(0.016)
         centre_x, centre_y = first.centre()
         self.assertIs(self.game.target_at(centre_x, centre_y), second)
@@ -377,6 +421,11 @@ class ReflexTests(unittest.TestCase):
         display.relayout()
         self.assertEqual((target.x_frac, target.y_frac), fracs)
         self.assertNotEqual(target.centre(), before)
+        # Said out loud because it is what this test is really resting
+        # on, and because it was the thing that broke: a target the game
+        # has expired and thrown away has no sprite, and "sprite is None"
+        # is a confusing way to be told so.
+        self.assertIn(target, self.game.targets)
         self.assertIsNotNone(target.sprite)
         self.game.on_draw()
 

@@ -1363,6 +1363,57 @@ SCRAMBLE = TaskSpec(
     note=scramble_note)
 
 
+def overrun_note(chosen: Dict[str, Any]) -> str:
+    """What the level asks of the fingers, in the units typing is sold in.
+
+    Words a minute rather than an adjective, because it is the one
+    number a player already knows their own value of, and because it is
+    measured over the sentences the rung actually deals rather than
+    read off the drift — the gaps are cells the line has to cross and
+    are not keys anybody presses.
+
+    The text being Wikipedia's, the attribution belongs on a screen a
+    player opens rather than only in a docstring.
+    """
+    from ..overrun import (GRADES, LONGEST, MOST_LIVES, SHORTEST, TOP_RANK,
+                           pace)
+    from ..sentences import LICENCE, REPO, have, missing_message
+    rung = int(chosen['OVERRUN_LEVEL'])
+    grade = GRADES[max(0, min(len(GRADES) - 1, rung - 1))]
+    said = []
+    if not have():
+        said.append(missing_message())
+    said.append(_('Level %d, "%s": the line crosses %.1f characters a '
+                  'second, which asks for about %d words a minute.')
+                % (rung, _(grade.name), grade.speed, int(round(pace(rung)))))
+    said.append(_('Every level deals the same sentences — %d to %d '
+                  'characters, out of the %s commonest words — so what '
+                  'changes between the first and the twelfth is the clock '
+                  'and nothing else.')
+                % (SHORTEST, LONGEST, '{:,}'.format(TOP_RANK)))
+    said.append(_('A wave starts with as much clear road ahead of it as it '
+                  'has characters, so a long sentence and a short one ask '
+                  'for the same rate.'))
+    said.append(_('Clear a whole sentence and a life comes back, up to %d; '
+                  'let one run out and a life goes. The run ends when the '
+                  'lives do.') % MOST_LIVES)
+    said.append(_('A wrong letter stays until it is rubbed out.'))
+    said.append(_('Text from %s, %s.') % (REPO, LICENCE))
+    return '  '.join(said)
+
+
+OVERRUN = TaskSpec(
+    title=_('Overrun options'),
+    options=(
+        Option('OVERRUN_LEVEL', _('Level'), 4, values=tuple(range(1, 13))),
+        Option('OVERRUN_WAVES', _('Sentences per run'), 8,
+               values=(3, 5, 8, 12, 20, 30)),
+        Option('OVERRUN_ADAPTIVE',
+               _('Climb a level after a cleared sentence'), True),
+    ),
+    note=overrun_note)
+
+
 def algebra_note(chosen: Dict[str, Any]) -> str:
     """What the level asks, and how big the search behind it is.
 
@@ -1708,6 +1759,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'out_of_sight': OUT_OF_SIGHT,
     'donkey': DONKEY,
     'two_hands': TWO_HANDS,
+    'overrun': OVERRUN,
     'count': COUNTING,
     'mr_time': MR_TIME,
     'graph_mapping': GRAPH_MAPPING,

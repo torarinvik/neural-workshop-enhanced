@@ -54,6 +54,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('out_of_sight', _('Out of Sight')),
         ('donkey', _('Donkey')),
         ('two_hands', _('Two Hands')),
+        ('overrun', _('Overrun')),
     ],
     'perception': [
         ('count', _('Count')),
@@ -421,6 +422,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'scramble':
         from .scramble import Scramble
         Scramble()
+        return
+    if task_id == 'overrun':
+        from .overrun import Overrun
+        Overrun()
         return
     if task_id == 'algebra':
         from .algebra import Algebra

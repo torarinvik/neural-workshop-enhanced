@@ -130,6 +130,15 @@ BY_LUCK = {
     # submitted is a random string marked, and every one of them is a
     # red. Arithmetic has no near misses.
     'algebra': (900, {'rung': 1, 'trials': 4}),
+    # Paid on every wave and paid nothing but red, and the reason is
+    # the clock rather than the ports: a wave ends on its own whether
+    # or not anything was typed, so the cost of not keeping up arrives
+    # without a submit key to ask for it. Driven at the top rung
+    # because that is where a wave is short enough to finish inside the
+    # budget — at the first it runs 1,157 ticks and a 900-step sweep
+    # reads zero, which is measured in tests/bench_overrun.py. No walk
+    # types a sentence, so the green is in PlayedProperlyItIsPaid.
+    'overrun': (900, {'rung': 12, 'waves': 6, 'adaptive': False}),
     # Every port is an answer, so every port a rung offers is a trial
     # settled — and one in three of them is right at the bottom of the
     # ladder. This is the one task on the list where random play gets
@@ -253,6 +262,9 @@ class RandomPlayIsPaid(unittest.TestCase):
 
     def test_syllogism(self):
         self.check('syllogism')
+
+    def test_overrun(self):
+        self.check('overrun')
 
     # These six were in BY_LUCK with a measured step budget apiece and
     # no method beside them, so nothing ever played them. Found by the
@@ -414,6 +426,29 @@ class PlayedProperlyItIsPaid(unittest.TestCase):
             if following == ' ':
                 return scramble_env.SPACE
             return scramble_env.LETTERS.index(following)
+
+        self.assertEqual(driven(env, moves), [1.0])
+
+    def test_a_line_typed_away_before_it_runs_out_is_paid(self):
+        """The one green in this task, and it is on the top rung.
+
+        Rung twelve rather than rung one on purpose. A policy that can
+        read the line types a letter a tick, which is sixty characters
+        a second against the 6.95 the hardest rung asks for, so the
+        rung it is driven at says nothing about how hard the rung is —
+        what it says is that the *clock* cannot stop a boundary that is
+        wired up, which is the thing a wrapper for a moving task can
+        get wrong and a wrapper for a still one cannot.
+        """
+        from nwenv import overrun as overrun_env
+        env = catalog.env_class('overrun')(seed=0, rung=12, waves=2,
+                                           adaptive=False)
+
+        def moves(task):
+            word = task._target()
+            if not word or not word.startswith(task.typed):
+                return overrun_env.BACK
+            return overrun_env.LETTERS.index(word[len(task.typed)])
 
         self.assertEqual(driven(env, moves), [1.0])
 
@@ -630,7 +665,7 @@ class TheBoundaryKnowsWhichTasksHaveAClock(unittest.TestCase):
                         'count', 'recognition', 'matrix_reasoning',
                         'graph_mapping', 'concentration',
                         'chain_of_custody', 'cookie_thief', 'donkey',
-                        'two_hands', 'tetris'):
+                        'two_hands', 'tetris', 'overrun'):
             self.assertTrue(self.clocked(task_id), task_id)
 
     def test_the_ports_are_the_ones_the_task_has(self):
@@ -642,6 +677,10 @@ class TheBoundaryKnowsWhichTasksHaveAClock(unittest.TestCase):
         self.assertEqual(catalog.env_class('crossword').ports, 32)
         self.assertEqual(catalog.env_class('scrabble').ports, 14)
         self.assertEqual(catalog.env_class('scramble').ports, 29)
+        # Two fewer than Scramble: the words clear themselves, so there
+        # is no submit, and the gaps come back with the word before
+        # them, so there is no space either.
+        self.assertEqual(catalog.env_class('overrun').ports, 27)
         self.assertEqual(catalog.env_class('algebra').ports, 21)
         # Six for the wheel and five for the sights, out of one budget.
         self.assertEqual(catalog.env_class('two_hands').ports, 11)
@@ -678,7 +717,7 @@ class DenseShapingOnlyPaintsWhereItIsPaid(unittest.TestCase):
     def test_there_are_some(self):
         """Or the rest of this class is checking nothing."""
         for task_id in ('you_are_here', 'chain_of_custody', 'donkey',
-                        'cookie_thief', 'two_hands',
+                        'cookie_thief', 'two_hands', 'overrun',
                         'maze', 'concentration'):
             self.assertIn(task_id, self.dense_tasks())
 
