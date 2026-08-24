@@ -19,22 +19,24 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from test_ui_attention import *   # noqa: F401,F403,E402
-from test_ui_display import *     # noqa: F401,F403,E402
-from test_ui_jigsaw import *      # noqa: F401,F403,E402
-from test_ui_longterm import *    # noqa: F401,F403,E402
-from test_ui_matrices import *    # noqa: F401,F403,E402
-from test_ui_menus import *       # noqa: F401,F403,E402
-from test_ui_perception import *  # noqa: F401,F403,E402
-from test_sokoban import *        # noqa: F401,F403,E402
-from test_tetris import *         # noqa: F401,F403,E402
-from test_ninarow import *        # noqa: F401,F403,E402
-from test_trivia import *         # noqa: F401,F403,E402
-from test_ui_planning import *    # noqa: F401,F403,E402
-from test_ui_reasoning import *   # noqa: F401,F403,E402
-from test_ui_screens import *     # noqa: F401,F403,E402
-from test_ui_tasks import *       # noqa: F401,F403,E402
-from test_ui_units import *       # noqa: F401,F403,E402
-
 if __name__ == '__main__':
+    # Keep this compatibility runner explicit.  Importing these modules at
+    # collection time made pytest run the entire UI suite a second time.
+    from test_ui_attention import *   # noqa: F401,F403,E402
+    from test_ui_display import *     # noqa: F401,F403,E402
+    from test_ui_jigsaw import *      # noqa: F401,F403,E402
+    from test_ui_longterm import *    # noqa: F401,F403,E402
+    from test_ui_matrices import *    # noqa: F401,F403,E402
+    from test_ui_menus import *       # noqa: F401,F403,E402
+    from test_ui_perception import *  # noqa: F401,F403,E402
+    from test_sokoban import *        # noqa: F401,F403,E402
+    from test_tetris import *         # noqa: F401,F403,E402
+    from test_ninarow import *        # noqa: F401,F403,E402
+    from test_trivia import *         # noqa: F401,F403,E402
+    from test_ui_planning import *    # noqa: F401,F403,E402
+    from test_ui_reasoning import *   # noqa: F401,F403,E402
+    from test_ui_screens import *     # noqa: F401,F403,E402
+    from test_ui_tasks import *       # noqa: F401,F403,E402
+    from test_ui_units import *       # noqa: F401,F403,E402
+
     unittest.main(verbosity=2)

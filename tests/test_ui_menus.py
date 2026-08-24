@@ -14,7 +14,7 @@ from uisupport import (AllCycler, Cycler, GameSelect, ImageSelect,
                        close_overlays, current_3d_color_count,
                        current_active_position_ids, current_cell_count,
                        decode_3d_colors, decode_3d_pattern, key, needs_ui,
-                       state, tasks_for)
+                       reset_window, state, tasks_for)
 
 
 @needs_ui
@@ -288,6 +288,45 @@ class HubArrowKeyTests(unittest.TestCase):
         self.hub.on_key_press(key.RIGHT, 0)
         self.hub.on_key_press(key.LEFT, 0)
         self.assertEqual(self.hub.category, before)
+
+
+@needs_ui
+class HubGridLayoutTests(unittest.TestCase):
+    """Dense categories remain visible and clickable without special cases."""
+
+    def setUp(self):
+        close_overlays()
+        reset_window()
+        self.hub = TaskHub(category='reasoning')
+
+    def tearDown(self):
+        close_overlays()
+        reset_window()
+
+    def test_dense_category_uses_three_columns(self):
+        self.assertEqual(len(self.hub.task_rects),
+                         len(tasks_for('reasoning')))
+        lefts = {left for left, _bottom, _width, _height, _task
+                 in self.hub.task_rects}
+        bottoms = {bottom for _left, bottom, _width, _height, _task
+                   in self.hub.task_rects}
+        self.assertEqual(len(lefts), 3)
+        self.assertEqual(len(bottoms), 5)
+
+    def test_every_card_fits_and_cards_do_not_overlap(self):
+        rects = self.hub.task_rects
+        for left, bottom, width, height, _task in rects:
+            self.assertGreaterEqual(left, 0)
+            self.assertGreaterEqual(bottom, 0)
+            self.assertLessEqual(left + width, state.window.width)
+            self.assertLessEqual(bottom + height, state.window.height)
+
+        for index, first in enumerate(rects):
+            ax, ay, aw, ah, _ = first
+            for bx, by, bw, bh, _ in rects[index + 1:]:
+                overlaps = (ax < bx + bw and bx < ax + aw and
+                            ay < by + bh and by < ay + ah)
+                self.assertFalse(overlaps)
 
 
 if __name__ == '__main__':

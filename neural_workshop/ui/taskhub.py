@@ -242,12 +242,28 @@ class TaskHub:
             self.empty.text = _('No tasks in this category yet.')
             return
         self.empty.text = ''
-        card_w = min(int(window.width * 0.46), window.width - 2 * gutter)
-        card_h = max(52, int(calc_fontsize(40)))
-        card_x = (window.width - card_w) // 2
-        top = from_top_edge(220)
+        columns = 3
+        rows = (len(tasks) + columns - 1) // columns
+        grid_w = min(window.width - 2 * gutter, int(window.width * 0.68))
+        card_gap_x = max(10, int(window.width * 0.012))
+        card_w = (grid_w - card_gap_x * (columns - 1)) // columns
+        grid_w = columns * card_w + (columns - 1) * card_gap_x
+        grid_x = (window.width - grid_w) // 2
+
+        # Size the rows from the space between the tabs and the footer.  The
+        # largest category currently needs five rows at the default window
+        # size, while a larger window gets the roomier cards in the mock-up.
+        top = from_top_edge(215)
+        bottom = from_bottom_edge(72)
+        card_gap_y = max(8, min(18, int(window.height * 0.015)))
+        available = max(1, top - bottom - card_gap_y * (rows - 1))
+        preferred_h = max(52, min(100, int(window.height * 0.095)))
+        card_h = max(36, min(preferred_h, available // rows))
+
         for index, (task_id, name) in enumerate(tasks):
-            y = top - index * (card_h + 14)
+            row, column = divmod(index, columns)
+            card_x = grid_x + column * (card_w + card_gap_x)
+            y = top - row * (card_h + card_gap_y)
             selected = index == self.selected
             fill = self.accent if selected else (
                 (32, 36, 46, 255) if state.cfg.BLACK_BACKGROUND
@@ -257,10 +273,21 @@ class TaskHub:
                 card_x, y - card_h // 2, card_w, card_h, color=fill,
                 batch=self.batch)
             self.shapes.append(rect)
+
+            card_font = calc_fontsize(16)
+            while card_font > 10:
+                probe = pyglet.text.Label(
+                    name, font_size=card_font, weight='bold',
+                    font_name=FONTLIST)
+                fits = probe.content_width <= card_w - 24
+                probe.delete()
+                if fits:
+                    break
+                card_font -= 1
             label = pyglet.text.Label(
-                name, font_size=calc_fontsize(16), weight='bold',
+                name, font_size=card_font, weight='bold',
                 color=ink, batch=self.batch,
-                x=window.width // 2, y=y,
+                x=card_x + card_w // 2, y=y,
                 anchor_x='center', anchor_y='center', font_name=FONTLIST)
             self.task_labels.append(label)
             self.task_rects.append(
