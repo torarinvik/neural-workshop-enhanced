@@ -1138,6 +1138,12 @@ ALGEBRA_TRIALS = 6
 ALGEBRA_SHOW_WORKING = True
 ALGEBRA_ADAPTIVE = True
 
+# Numberology starts with child-friendly generated sequences and has no final
+# level. A perfect session advances the next session by one level.
+NUMBEROLOGY_LEVEL = 1
+NUMBEROLOGY_TRIALS = 6
+NUMBEROLOGY_ADVANCE = True
+
 # Syllogisms runs from "is this the same as that, or the opposite"
 # to three claims joined by connectives over thirteen lines of
 # premises. Twelve levels. The things reasoned about are named after

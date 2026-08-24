@@ -118,6 +118,7 @@ from .scrabble import ScrabbleEnv  # noqa: E402
 from .scramble import ScrambleEnv  # noqa: E402
 from .overrun import OverrunEnv  # noqa: E402
 from .algebra import AlgebraEnv  # noqa: E402
+from .numberology import NumberologyEnv  # noqa: E402
 from .syllogism import SyllogismEnv  # noqa: E402
 from .donkey import DonkeyEnv  # noqa: E402
 from .twohands import TwoHandsEnv  # noqa: E402
@@ -172,7 +173,7 @@ __all__ = [
     'PursuitEnv', 'RecognitionEnv', 'ReflexEnv', 'RemovalsEnv',
     'SalesmanEnv', 'ScrabbleEnv',
     'AlgebraEnv', 'SyllogismEnv',
-    'FreeformTetrisEnv', 'OverrunEnv',
+    'FreeformTetrisEnv', 'NumberologyEnv', 'OverrunEnv',
     'ScrambleEnv', 'Sokoban3DEnv', 'SokobanEnv', 'TwoHandsEnv',
     'SudokuEnv',
 ]

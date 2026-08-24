@@ -47,6 +47,31 @@ class SuffixCycler(Cycler):
         return '%s%s' % (self.value(), self.suffix)
 
 
+class UnboundedIntCycler(Cycler):
+    """A positive integer selector with no highest menu value."""
+
+    def __init__(self, value: int = 1) -> None:
+        self.i = max(1, int(value))
+        self.values = None
+
+    def choose(self, val: Any) -> None:
+        self.i = max(1, int(val))
+
+    def nxt(self) -> int:
+        self.i += 1
+        return self.i
+
+    def prv(self) -> int:
+        self.i = max(1, self.i - 1)
+        return self.i
+
+    def value(self) -> int:
+        return self.i
+
+    def __str__(self) -> str:
+        return str(self.i)
+
+
 class Option(NamedTuple):
     """One row of a task's options screen.
 
@@ -75,6 +100,11 @@ class TaskSpec(NamedTuple):
 def current_value(option: Option) -> Any:
     """Read *option* from the live config, coerced into range."""
     value = state.cfg[option.key]
+    if option.key == 'NUMBEROLOGY_LEVEL':
+        try:
+            return max(1, int(value))
+        except (TypeError, ValueError):
+            return int(option.default)
     if option.values is None:
         if isinstance(value, bool):
             return value
@@ -90,6 +120,8 @@ def current_value(option: Option) -> Any:
 def _build_row(option: Option) -> Any:
     """The Menu value object for *option*."""
     value = current_value(option)
+    if option.key == 'NUMBEROLOGY_LEVEL':
+        return UnboundedIntCycler(value)
     if option.values is None:
         return bool(value)
     values = list(option.values)
@@ -1453,6 +1485,30 @@ ALGEBRA = TaskSpec(
     note=algebra_note)
 
 
+def numberology_note(chosen: Dict[str, Any]) -> str:
+    """Describe the procedural length and rule family at a level."""
+    from ..numberology import generate, sequence_length
+    level = int(chosen['NUMBEROLOGY_LEVEL'])
+    shown = generate(level, seed=level)
+    return _('Level %d: %d numbers are shown. %s. A perfect session '
+             'advances to level %d.') % (
+                 level, sequence_length(level), _(shown.rule), level + 1)
+
+
+NUMBEROLOGY = TaskSpec(
+    title=_('Numberology options'),
+    options=(
+        # This row uses an unbounded integer cycler, so 10,000 and beyond are
+        # reachable from the menu instead of being hidden behind a cap.
+        Option('NUMBEROLOGY_LEVEL', _('Starting level'), 1, values=(1,)),
+        Option('NUMBEROLOGY_TRIALS', _('Questions per session'), 6,
+               values=(1, 2, 3, 5, 6, 8, 10, 15)),
+        Option('NUMBEROLOGY_ADVANCE', _('Advance after a perfect session'),
+               True),
+    ),
+    note=numberology_note)
+
+
 def syllogism_note(chosen: Dict[str, Any]) -> str:
     """What the level asks, what it takes for granted, and an example.
 
@@ -1781,6 +1837,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'scrabble': SCRABBLE,
     'scramble': SCRAMBLE,
     'algebra': ALGEBRA,
+    'numberology': NUMBEROLOGY,
     'syllogism': SYLLOGISM,
     'chain_of_custody': CUSTODY,
     'cookie_thief': COOKIE_THIEF,

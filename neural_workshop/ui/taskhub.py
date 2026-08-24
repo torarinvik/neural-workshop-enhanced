@@ -70,6 +70,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('scrabble', _('Scrabble')),
         ('scramble', _('Scramble')),
         ('algebra', _('Algebra')),
+        ('numberology', _('Numberology')),
         ('syllogism', _('Syllogisms')),
     ],
     'planning': [
@@ -430,6 +431,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'algebra':
         from .algebra import Algebra
         Algebra()
+        return
+    if task_id == 'numberology':
+        from .numberology import Numberology
+        Numberology()
         return
     if task_id == 'syllogism':
         from .syllogism import Syllogism
