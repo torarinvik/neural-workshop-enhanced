@@ -66,6 +66,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('matrix_reasoning', _('Matrix Reasoning')),
         ('jigsaw', _('Jigsaw Puzzle')),
         ('sudoku', _('Sudoku')),
+        ('go_winning_move', _('Find the Winning Move')),
         ('crossed_wires', _('Crossed Wires')),
         ('crossword', _('Crossword')),
         ('scrabble', _('Scrabble')),
@@ -411,6 +412,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'sudoku':
         from .sudoku import Sudoku
         Sudoku()
+        return
+    if task_id == 'go_winning_move':
+        from .go import GoWinningMove
+        GoWinningMove()
         return
     if task_id == 'crossed_wires':
         from .crossedwires import CrossedWires

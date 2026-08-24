@@ -99,6 +99,7 @@ from .accounting import Accounting, format_accounting  # noqa: E402
 from .concentration import ConcentrationEnv  # noqa: E402
 from .counting import CountingEnv  # noqa: E402
 from .graphmapping import GraphMappingEnv  # noqa: E402
+from .go import GoEnv, make_go_env, verify_go_outcome  # noqa: E402
 from .mrtime import MrTimeEnv  # noqa: E402
 from .hanoi import HanoiEnv  # noqa: E402
 from .jigsaw import JigsawEnv  # noqa: E402
@@ -171,6 +172,7 @@ __all__ = [
     'ConcentrationEnv', 'CookieThiefEnv', 'CountingEnv',
     'CrossedWiresEnv', 'CrosswordEnv', 'CustodyEnv', 'DonkeyEnv',
     'GraphMappingEnv',
+    'GoEnv', 'make_go_env', 'verify_go_outcome',
     'HanoiEnv', 'InTheDarkEnv', 'JigsawEnv', 'LookoutEnv',
     'MatrixReasoningEnv', 'MazeEnv', 'MovingTargetsEnv', 'MrTimeEnv',
     'NCupMonteEnv',
