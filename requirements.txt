@@ -1,5 +1,9 @@
 pyglet>=2
 python-chess>=1.999
+# The Marble Maze's physics engine. Heavyweight, and the only one the
+# workshop carries: the tray, walls and marbles are compiled into a
+# MuJoCo model and stepped headlessly; pyglet still draws every pixel.
+mujoco>=3.2
 
 # Not required to play, and not imported by anything the game runs.
 # "python -m neural_workshop.sentences" reads one row group of a parquet

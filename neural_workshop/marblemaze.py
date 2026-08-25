@@ -10,27 +10,37 @@ control, and a control you cannot see is a control you cannot learn.
 
 Nothing here imports pyglet. The whole of the simulation is testable
 without a GL context and :mod:`tests.test_marblemaze` does exactly that.
+The dynamics themselves are MuJoCo's — the one heavyweight dependency
+this workshop carries, and it carries it for this task alone.
 
 Three things in here are worth reading before changing anything.
 
-**The rolling factor is five sevenths and it is not a fudge.** A solid
-sphere rolling without slipping down a plane inclined at θ accelerates
-at ``g·sinθ / (1 + I/mr²)``, and a solid sphere's moment of inertia is
-``2/5·mr²``, so the bracket is ``7/5`` and the acceleration is
-``5/7·g·sinθ``. Two sevenths of gravity goes into spin rather than
-travel. Drop that factor and the marble is 40% too eager, which does
-not read as "wrong physics" so much as "the board is twice as steep as
-it looks" — the tell is that a player stops believing the picture.
+**The five sevenths is derived, not applied.** A solid sphere rolling
+without slipping down a plane inclined at θ accelerates at
+``g·sinθ / (1 + I/mr²)``, which for ``I = 2/5·mr²`` is ``5/7·g·sinθ``:
+two sevenths of gravity goes into spin rather than travel. Nothing here
+multiplies by five sevenths — the marble is a rigid sphere in MuJoCo's
+contact solver, which resolves the friction at the contact patch every
+substep, and five sevenths falls out of that, along with what a marble
+does after a wall has broken its roll: skid, until the tray drags it
+round. The tests measure the factor rather than restating it. What the
+engine cannot say is the *threshold* half of rolling resistance — its
+regularised torque lets a marble creep on a slope too shallow to
+really start it — so :class:`Simulation` keeps a rest clamp that makes
+``atan(Crr)`` a true stall angle. See the class docstring for the full
+division of labour between engine and wrapper.
 
 **A hole is not a wall.** A marble whose contact patch crosses the rim
-stops being supported and starts to *fall*, which means it keeps its
-in-plane velocity and picks up the full gravity rather than five
-sevenths of it. Fast enough and it clears the far rim and lands with a
-clatter. That is a real property of the real toy — you can outrun a
-small hole — and it is the reason the capture test is on the marble's
-height rather than on its position. Treating a hole as a disc that
-kills on contact removes it, and with it the only reason to ever go
-fast.
+stops being supported and starts to *fall*: no contact, so no friction
+and no change of spin, and the whole of gravity rather than five
+sevenths of it. It gets out only over the far lip and only by paying
+for the climb — its centre has dropped, and ``2·g·drop`` comes out of
+its speed squared to put it back. Fast enough and it comes over with
+something to spare. That is a real property of the real toy — you can
+outrun a small hole — and it is the reason the capture test is on the
+marble's height rather than on its position. Treating a hole as a disc
+that kills on contact removes it, and with it the only reason to ever
+go fast.
 
 **The board is certified passable before it is dealt.** Holes are
 proposed one at a time against a cheap analytic clearance test, and
@@ -52,6 +62,8 @@ import heapq
 import math
 import random
 from typing import Dict, List, NamedTuple, Optional, Sequence, Tuple
+
+import mujoco
 
 # --- the physical world ----------------------------------------------------
 #
@@ -83,32 +95,103 @@ WALL_SHARE = 0.11
 #: A 15mm steel marble.
 MARBLE_RADIUS = 0.0075
 
-#: Solid sphere: ``a = g·sinθ / (1 + I/mr²)`` with ``I = 2/5·mr²``.
-#: Two sevenths of gravity goes into spin instead of travel.
-ROLL_FACTOR = 5.0 / 7.0
+#: A solid sphere's moment of inertia, in units of ``m·r²``. The
+#: engine derives it from the sphere geom; it is named here because
+#: the numbers the tests check against come out of it.
+SPHERE_INERTIA = 2.0 / 5.0
 
-#: Rolling resistance, dimensionless. Steel on varnished hardwood is
-#: nearer 0.002; this is four times that because the real tray's
-#: surface is neither flat nor clean, and a marble that coasts for
-#: eleven seconds after the board is levelled plays like a bug.
+#: What the contact patch keeps back, and what is left over for travel.
+#: An impulse at the contact point moves the *contact* by
+#: ``1 + 1/SPHERE_INERTIA = 7/2`` times what it moves the centre, so
+#: the friction holding a roll together is two sevenths of whatever
+#: drives the ball and five sevenths reaches the tray as travel.
+#: Neither number is used by the physics — the engine produces them —
+#: but the tests that measure the engine are written in these terms.
+SLIP_SHARE = SPHERE_INERTIA / (1.0 + SPHERE_INERTIA)     # 2/7
+ROLL_FACTOR = 1.0 / (1.0 + SPHERE_INERTIA)               # 5/7
+
+#: Coulomb friction at the contact patch, steel on varnished hardwood.
+#: Handbook values sit about here. The engine takes one coefficient,
+#: not a static/kinetic pair; it only ever bites when something has
+#: broken the roll, because gravity alone asks the patch for two
+#: sevenths of ``g·sinθ``, a twelfth of what it can hold at this
+#: tray's steepest tilt.
+FRICTION_STATIC = 0.50
+
+#: Rolling resistance, dimensionless: how far ahead of the contact
+#: point the normal force's line of action rides, in ball radii. Steel
+#: on varnished hardwood is nearer 0.002; this is four times that,
+#: because the real tray's surface is neither flat nor clean. Tuned by
+#: play, twice: a slicker board (0.006, with the drag at 0.25) was
+#: tried and taken back. With the drag below, a marble at half the
+#: cap coasts about 1.2m of open board, which is the feel that won.
+#: It enters the engine as its rolling-friction coefficient (scaled
+#: by the radius, since MuJoCo's is a length), so the deceleration on
+#: the flat is a consequence rather than a line of code. The *stall* half
+#: — a slope of ``atan(Crr)`` below which nothing starts — is the
+#: wrapper's rest clamp: the engine's regularised torque cannot
+#: refuse to move, only resist.
 ROLLING_RESISTANCE = 0.008
 
-#: Viscous drag per second. Small, and its whole job is to stop the
-#: very slowest drift from lasting forever once resistance has been
-#: linearised away near zero speed.
-VISCOUS_DRAG = 0.35
+#: Viscous drag per second — the air, and the varnish. Its visible job
+#: is to keep the top end of a long straight run finite, and it is the
+#: biggest single term in how far a rolling marble coasts, so it is
+#: the first knob to reach for when the board feels sticky or slick.
+#: Lower than it reads, because the noslip solver now delivers the
+#: whole of the dry rolling resistance that the regularised contact
+#: used to shave: at 0.35 beside that, the coast came out a fifth
+#: shorter than the board this number was chosen on. 0.22 restores
+#: the measured coast — 1.2m of open board from half the cap — that
+#: play settled on.
+VISCOUS_DRAG = 0.22
+
+#: The engine's torsional friction at the floor contact, a length in
+#: MuJoCo's terms. This is what winds down a marble that has come off
+#: a wall turning like a top — the turn has only the contact patch to
+#: work against, so it dies there.
+SPIN_GRIP = 0.005
+
+#: Below this speed a marble nothing is driving is *stopped* rather
+#: than slowed. Rolling resistance is a threshold and not a decay, and
+#: a tray the player has levelled has to be level rather than nearly
+#: so. Six millimetres a second is a tenth of one per frame — well
+#: under half a screen pixel — and it is deliberately not smaller:
+#: the engine's regularised rolling friction fades with speed, so a
+#: lower bar leaves a levelled marble crawling its last centimetre
+#: for ten visible seconds, which is the sticky-board lie from the
+#: other direction.
+REST_SPEED = 0.006
 
 #: Restitution, steel on wood. Measured values for a hardwood rail sit
 #: between 0.2 and 0.3; a labyrinth's walls are thin and give a little.
+#:
+#: This is the *impact* and only the impact. What a player sees a wall
+#: do is mostly not this: the marble arrives spinning the way it was
+#: going, keeps most of that spin through the blow, and then has to be
+#: dragged round to a new roll by the tray — which takes the rebound
+#: back out of it, and leaves it near the wall rather than crossing
+#: the corridor. The engine's default contact happens to land right in
+#: the measured steel-on-wood band, so this number is documentation
+#: and a test bound rather than an input.
 WALL_RESTITUTION = 0.28
 
-#: How much of the tangential speed a wall scuff takes off.
-WALL_FRICTION = 0.12
+#: Coulomb friction against a wall. Deliberately *low*, and lower than
+#: the varnish figure a handbook would give, because it is the knob
+#: that decides how much of the marble's roll survives an impact: the
+#: friction acts over the finite contact the engine resolves, and at
+#: the tray's own 0.5 it eats the spin whole, which turns every wall
+#: hit into a slow drift back across the corridor. At this value a
+#: graze still puts spin about the normal into the ball — the scuff a
+#: corridor wall gives a real marble — while a square hit keeps its
+#: roll and settles at the wall.
+WALL_FRICTION = 0.08
 
-#: Restitution, steel on steel. The textbook figure is nearer 0.95 for
-#: a free pair; these are rolling and shedding energy into spin, so a
-#: little under two thirds is what a pair of them actually does.
-BALL_RESTITUTION = 0.62
+#: Restitution, steel on steel: the damping ratio of the ball-ball
+#: contact pair is set for the textbook figure for a polished pair.
+#: Nothing is discounted for the energy a pair sheds into spin — both
+#: balls leave the impact skidding, and the tray drags each back to a
+#: roll, which is where that third of the striker's speed goes.
+BALL_RESTITUTION = 0.92
 
 #: A speed clamp, m/s. Physically it stands in for the terminal speed a
 #: marble reaches against resistance on a tray this size — a real one
@@ -116,9 +199,10 @@ BALL_RESTITUTION = 0.62
 #: load-bearing for the coach: see :data:`POTENTIAL_QUANTUM`.
 SPEED_CAP = 1.0
 
-#: Physics substeps per rendered frame. Four is where the marble stops
-#: cornering through wall ends at full speed: one substep at 60Hz moves
-#: it 16mm, which is more than a wall is thick.
+#: Physics substeps per rendered frame. One substep of a 60Hz step is
+#: about 4ms, in which a capped marble moves 4mm — comfortably inside
+#: a wall's thickness, so the engine's contacts are never asked to
+#: catch a marble that has already passed through.
 SUBSTEPS = 4
 
 #: The most the tray tips, radians. Eight degrees. Past about ten the
@@ -130,6 +214,16 @@ MAX_TILT = 0.140
 TILT_STEP = 0.006
 
 #: Knob axes and directions, as the ports and the arrow keys see them.
+#:
+#: **Named for where the marble goes, not for which edge lifts.**
+#: :data:`TILT_NORTH` sends the marble north, which it does by dropping
+#: the north edge. The two conventions are equally sayable and the
+#: distinction is invisible from the call site, so it is worth being
+#: blunt: east and west were always the marble's way round, north and
+#: south were once the edge's, and half a compass pointing each way is
+#: a trap rather than a convention. :meth:`Simulation.tilt` is where
+#: this is turned into a sign and
+#: :mod:`tests.test_marblemaze` drives all four knobs to pin it.
 TILT_NORTH, TILT_SOUTH, TILT_WEST, TILT_EAST = 'N', 'S', 'W', 'E'
 
 # --- the coach's yardstick -------------------------------------------------
@@ -938,14 +1032,25 @@ class Marble:
     is a real degree of freedom rather than bookkeeping: it is what
     makes a hole something a fast marble can clear.
 
-    *spin* is carried for the renderer alone — nothing reads it back
-    into the dynamics, because a rolling-without-slipping marble's spin
-    is determined by its velocity and the physics already spends the
-    two sevenths that go into it.
+    Spin is a degree of freedom too, and not bookkeeping either.
+    ``wx``/``wy``/``wz`` are the angular velocity in the tray's frame,
+    radians a second, and the same contact solve that moves the centre
+    integrates them — they are not slaved to the velocity. That is what
+    a bounce needs: a marble coming off a wall is still spinning the
+    way it *was* going, and the tray has to drag it round before it
+    rolls again. A slaved spin cannot say that, and the difference is
+    most of what a wall feels like.
+
+    ``qw``/``qx``/``qy``/``qz`` are the orientation those rates
+    integrate to, as a unit quaternion, which the renderer turns into a
+    matrix. An orientation has to be integrated rather than accumulated
+    one angle per axis, because rotations about different axes do not
+    commute — and a marble with a photograph of steel wrapped round it
+    shows the difference the moment it spins about more than one.
     """
 
-    __slots__ = ('x', 'y', 'vx', 'vy', 'z', 'vz', 'spin_x', 'spin_y',
-                 'state', 'over')
+    __slots__ = ('x', 'y', 'vx', 'vy', 'z', 'vz', 'wx', 'wy', 'wz',
+                 'qw', 'qx', 'qy', 'qz', 'state', 'over')
 
     def __init__(self, x: float, y: float) -> None:
         self.x = x
@@ -954,9 +1059,15 @@ class Marble:
         self.vy = 0.0
         self.z = MARBLE_RADIUS
         self.vz = 0.0
-        #: Radians of accumulated roll about each in-plane axis.
-        self.spin_x = 0.0
-        self.spin_y = 0.0
+        #: Angular velocity in the tray's frame, radians a second.
+        self.wx = 0.0
+        self.wy = 0.0
+        self.wz = 0.0
+        #: Orientation, a unit quaternion (w, x, y, z).
+        self.qw = 1.0
+        self.qx = 0.0
+        self.qy = 0.0
+        self.qz = 0.0
         #: 'rolling', 'falling' (in a pit, past saving), 'home', 'lost'.
         self.state = 'rolling'
         #: The hole it is currently unsupported over, if any.
@@ -970,13 +1081,181 @@ class Marble:
     def speed(self) -> float:
         return math.hypot(self.vx, self.vy)
 
+    @property
+    def slipping(self) -> float:
+        """How fast the contact patch is sliding, m/s. Nought is a roll.
+
+        The velocity of the point of the marble that is touching the
+        tray: ``v + ω × (-R·n̂)``, which for a tray normal of ``+z``
+        comes out as the two terms below. Everything the sphere does
+        is this number being driven away from nought and dragged back.
+        """
+        return math.hypot(self.vx - MARBLE_RADIUS * self.wy,
+                          self.vy + MARBLE_RADIUS * self.wx)
+
+    def roll_with_travel(self) -> None:
+        """Set the spin that matches the velocity: a clean roll, no skid."""
+        self.wy = self.vx / MARBLE_RADIUS
+        self.wx = -self.vy / MARBLE_RADIUS
+
+
+# --- the engine ------------------------------------------------------------
+
+
+def _quat_rotate(q: Tuple[float, float, float, float],
+                 v: Tuple[float, float, float]
+                 ) -> Tuple[float, float, float]:
+    """Rotate vector *v* by unit quaternion *q*: body frame to tray frame."""
+    w, x, y, z = q
+    vx, vy, vz = v
+    tx = 2.0 * (y * vz - z * vy)
+    ty = 2.0 * (z * vx - x * vz)
+    tz = 2.0 * (x * vy - y * vx)
+    return (vx + w * tx + y * tz - z * ty,
+            vy + w * ty + z * tx - x * tz,
+            vz + w * tz + x * ty - y * tx)
+
+
+def _quat_unrotate(q: Tuple[float, float, float, float],
+                   v: Tuple[float, float, float]
+                   ) -> Tuple[float, float, float]:
+    """The inverse rotation: tray frame into the body's own."""
+    w, x, y, z = q
+    return _quat_rotate((w, -x, -y, -z), v)
+
+
+def _mjcf(tray: Tray, count: int) -> str:
+    """The tray, as the engine's model description.
+
+    Three classes of contact, each on its own terms:
+
+    * **floor-ball** is an implicit contact — the only one — with
+      ``condim="6"``: sliding, torsional *and* rolling friction, which
+      is the whole of how a tray talks to a marble. Implicit, because
+      it is the one contact the game switches off: a hole is a place
+      where the floor stops existing for one marble, done by clearing
+      that ball's contact bits.
+    * **wall-ball** is an explicit ``<pair>``, which the engine keeps
+      active regardless of contact bits — a falling marble still clips
+      rims — with the low friction of :data:`WALL_FRICTION`, so a
+      marble's roll survives the blow and a square hit settles at the
+      wall instead of drifting back across the corridor.
+    * **ball-ball** is a ``<pair>`` with an underdamped contact, which
+      is what restitution is in this engine: the damping ratio is set
+      for steel on steel.
+
+    The timestep and gravity written here are placeholders; every
+    substep overwrites both.
+    """
+    crr = ROLLING_RESISTANCE * MARBLE_RADIUS
+    parts = [
+        '<mujoco>',
+        # noslip: two post-solver passes that enforce the friction
+        # cone exactly instead of by regularisation. Without them the
+        # engine's rolling friction fades below a couple of
+        # centimetres a second and a levelled marble crawls its last
+        # stretch forever; with them the deceleration matches the dry
+        # figure to one percent and a levelled tray stops. Two is
+        # where the behaviour lands; more iterations change nothing
+        # but the bill.
+        '<option integrator="implicitfast" cone="elliptic" '
+        'noslip_iterations="2" '
+        'timestep="0.004" gravity="0 0 -%.5f"/>' % GRAVITY,
+        '<worldbody>',
+        '<geom name="floor" type="plane" size="%.4f %.4f 0.1" '
+        'friction="%.3f %.4f %.6f" condim="6" contype="1" conaffinity="1"/>'
+        % (max(tray.width, 1.0) * 2, max(tray.depth, 1.0) * 2,
+           FRICTION_STATIC, SPIN_GRIP, crr),
+    ]
+    for index, wall in enumerate(tray.walls):
+        parts.append(
+            '<geom name="wall%d" type="box" pos="%.6f %.6f %.6f" '
+            'size="%.6f %.6f %.6f" contype="0" conaffinity="0"/>'
+            % (index, (wall.x0 + wall.x1) / 2.0, (wall.y0 + wall.y1) / 2.0,
+               tray.height / 2.0,
+               max(1e-4, (wall.x1 - wall.x0) / 2.0),
+               max(1e-4, (wall.y1 - wall.y0) / 2.0),
+               tray.height / 2.0))
+    for i in range(count):
+        x, y = tray.starts[i] if i < len(tray.starts) else (10.0 + i, 10.0)
+        parts.append(
+            '<body name="ball%d" pos="%.6f %.6f %.6f"><freejoint/>'
+            '<geom name="ball%d" type="sphere" size="%.4f" density="7800" '
+            'friction="%.3f %.4f %.6f" condim="3" contype="1" '
+            'conaffinity="1"/></body>'
+            % (i, x, y, MARBLE_RADIUS, i, MARBLE_RADIUS,
+               FRICTION_STATIC, SPIN_GRIP, crr))
+    parts.append('</worldbody>')
+    parts.append('<contact>')
+    for i in range(count):
+        for index in range(len(tray.walls)):
+            # Stiff and critically damped, and the stiffness is the
+            # point: at the default softness a wall hit is a squeeze
+            # spread over three frames, and during a squeeze the floor
+            # re-rolls the marble to its shrinking speed — the spin
+            # that should carry it back to the wall dies in transit,
+            # and the marble drifts eight centimetres back across the
+            # corridor. Stiff, the blow is over in a substep, the spin
+            # survives it, and the tray drags the marble back to the
+            # wall, where it settles. Measured, not reasoned: the
+            # sweep lives in the port notes, and the hug is asserted
+            # by the tests.
+            parts.append(
+                '<pair geom1="ball%d" geom2="wall%d" condim="3" '
+                'solref="0.009 1.0" '
+                'friction="%.3f %.3f 0.0001 0.0001 0.0001"/>'
+                % (i, index, WALL_FRICTION, WALL_FRICTION))
+        for j in range(i + 1, count):
+            # Underdamped: dampratio 0.03 rings back as a restitution
+            # of about BALL_RESTITUTION for a steel pair. The time
+            # constant stays above twice the substep, as the solver
+            # requires of a stable contact.
+            parts.append(
+                '<pair geom1="ball%d" geom2="ball%d" condim="3" '
+                'solref="0.009 0.03" '
+                'friction="0.05 0.05 0.0001 0.0001 0.0001"/>' % (i, j))
+    parts.append('</contact>')
+    parts.append('</mujoco>')
+    return ''.join(parts)
+
 
 class Simulation:
-    """The tray, the marbles on it, and the clock they run against.
+    """The tray, the marbles on it, and the engine that moves them.
 
-    Stepped at a fixed rate by whoever owns the clock — a real one for a
-    player, a virtual one for the agent boundary — so a run is the same
-    run either way. Nothing in here reads the wall clock.
+    The dynamics are MuJoCo's. The tray's geometry — floor, wall
+    strips, one body per marble — is compiled into an engine model when
+    the first step needs it, and every substep syncs the plain
+    :class:`Marble` objects into the engine, steps it once, and syncs
+    them back out. The marbles stay plain Python data on purpose: the
+    renderer, the boundary and the tests all read and write them
+    directly, and none of them should know an engine exists.
+
+    What the engine owns: rolling and its five sevenths, sliding
+    friction, rolling and torsional resistance, wall impacts, and
+    marble-on-marble impacts. What this wrapper still owns, because
+    the game's guarantees live there rather than in mechanics:
+
+    * **Tilt** enters as a rotated gravity vector, exactly as before —
+      the tray never moves, the world leans.
+    * **Holes.** The floor is a plane; a hole is a place where that
+      plane stops existing for one marble. Wall and marble contacts
+      are explicit ``<pair>`` entries, which the engine keeps active
+      regardless of the mask, so a falling marble still clips rims and
+      rails. Capture, and the energy toll for climbing the far lip,
+      are the same code they always were.
+    * **The rest clamp.** The engine's rolling friction is a smooth
+      regularised torque, not a dry threshold: left alone, a marble
+      creeps on a tray tilted below the stall angle instead of
+      refusing to start. The clamp restores ``atan(Crr)`` as a real
+      threshold, which is what makes levelling the tray a move.
+    * **The speed cap**, because the coach's one-step-per-tick
+      guarantee is an inequality about travel per tick, and it has to
+      hold whatever the contact solver does.
+
+    Stepped at a fixed rate by whoever owns the clock — a real one for
+    a player, a virtual one for the agent boundary — so a run is the
+    same run either way. Nothing in here reads the wall clock, and the
+    engine is deterministic: the same actions replay the same run.
     """
 
     def __init__(self, tray: Tray) -> None:
@@ -989,16 +1268,27 @@ class Simulation:
         self.cupped_this_step = 0
         self.lost_this_step = 0
         self.struck_this_step = 0.0
-        self._buckets = self._bucket_walls()
+        self._model = None
+        self._data = None
+        self._ball_geoms: Tuple[int, ...] = ()
+        self._built_for = -1
 
     # --- the knobs -------------------------------------------------------
 
     def tilt(self, which: str) -> None:
-        """One nudge of one knob."""
+        """One nudge of one knob, named for the way the marble then goes.
+
+        The pitch signs are the ones to look at. Gravity in the tray's
+        frame is ``gy = -g·cos(roll)·sin(pitch)``, so a marble goes
+        *north* — towards larger y — on a *negative* pitch, and the
+        knob called north has to subtract. Roll needs no such care:
+        ``gx = g·sin(roll)`` already sends the marble east on a
+        positive one.
+        """
         if which == TILT_NORTH:
-            self.pitch = min(MAX_TILT, self.pitch + TILT_STEP)
-        elif which == TILT_SOUTH:
             self.pitch = max(-MAX_TILT, self.pitch - TILT_STEP)
+        elif which == TILT_SOUTH:
+            self.pitch = min(MAX_TILT, self.pitch + TILT_STEP)
         elif which == TILT_EAST:
             self.roll = min(MAX_TILT, self.roll + TILT_STEP)
         elif which == TILT_WEST:
@@ -1007,38 +1297,25 @@ class Simulation:
     def level(self) -> None:
         self.pitch = self.roll = 0.0
 
-    # --- broad phase -----------------------------------------------------
+    # --- the engine ------------------------------------------------------
 
-    def _bucket_walls(self) -> Dict[Tuple[int, int], Tuple[Wall, ...]]:
-        """Index the walls by tray cell, so a marble tests eight not ninety.
+    def _ensure_engine(self) -> None:
+        """Compile the tray for the number of marbles it currently has.
 
-        Without this the top rung tests every marble against every one
-        of about ninety strips four times a frame, which on a tray with
-        four marbles is thirteen hundred box tests per frame and shows
-        up as a frame rate. With it, a marble tests the strips whose
-        boxes touch its own cell and its neighbours.
+        Rebuilt when the marble count changes, which in play is never
+        and in tests is whenever one replaces ``sim.marbles`` to stage
+        a scene. The count is baked into the model because bodies are.
         """
-        pitch = max(self.tray.cell, MARBLE_RADIUS * 4)
-        buckets: Dict[Tuple[int, int], List[Wall]] = {}
-        for wall in self.tray.walls:
-            lo_i = int(math.floor(wall.x0 / pitch))
-            hi_i = int(math.floor(wall.x1 / pitch))
-            lo_j = int(math.floor(wall.y0 / pitch))
-            hi_j = int(math.floor(wall.y1 / pitch))
-            for j in range(lo_j, hi_j + 1):
-                for i in range(lo_i, hi_i + 1):
-                    buckets.setdefault((i, j), []).append(wall)
-        self._bucket_pitch = pitch
-        return {key: tuple(val) for key, val in buckets.items()}
-
-    def _walls_near(self, x: float, y: float) -> Tuple[Wall, ...]:
-        pitch = self._bucket_pitch
-        i, j = int(math.floor(x / pitch)), int(math.floor(y / pitch))
-        found: List[Wall] = []
-        for dj in (-1, 0, 1):
-            for di in (-1, 0, 1):
-                found.extend(self._buckets.get((i + di, j + dj), ()))
-        return tuple(found)
+        count = len(self.marbles)
+        if self._model is not None and count == self._built_for:
+            return
+        model = mujoco.MjModel.from_xml_string(_mjcf(self.tray, count))
+        self._model = model
+        self._data = mujoco.MjData(model)
+        self._ball_geoms = tuple(
+            mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, 'ball%d' % i)
+            for i in range(count))
+        self._built_for = count
 
     # --- one step --------------------------------------------------------
 
@@ -1053,142 +1330,129 @@ class Simulation:
             self._substep(piece)
 
     def _substep(self, dt: float) -> None:
-        pitch, roll = self.pitch, self.roll
+        self._ensure_engine()
+        model, data = self._model, self._data
         # Gravity resolved into the tray's own frame. The tray is
         # R_y(roll)·R_x(pitch) from the world, so world (0,0,-g) becomes
         # (g·sin roll, -g·cos roll·sin pitch, -g·cos roll·cos pitch).
-        sin_r, cos_r = math.sin(roll), math.cos(roll)
-        sin_p, cos_p = math.sin(pitch), math.cos(pitch)
+        sin_r, cos_r = math.sin(self.roll), math.cos(self.roll)
+        sin_p, cos_p = math.sin(self.pitch), math.cos(self.pitch)
         gx = GRAVITY * sin_r
         gy = -GRAVITY * cos_r * sin_p
         gn = GRAVITY * cos_r * cos_p          # into the tray, holds it up
-        for marble in self.marbles:
+        model.opt.gravity[:] = (gx, gy, -gn)
+        model.opt.timestep = dt
+
+        # In: decide support, set each ball's floor mask, write state.
+        for i, marble in enumerate(self.marbles):
+            geom = self._ball_geoms[i]
             if marble.state == 'rolling':
-                self._roll(marble, dt, gx, gy, gn)
-            elif marble.state == 'falling':
-                self._fall(marble, dt, gx, gy, gn)
-        self._collide_marbles()
-
-    def _roll(self, marble: Marble, dt: float, gx: float, gy: float,
-              gn: float) -> None:
-        # Five sevenths: the rest of gravity is spinning it up.
-        marble.vx += ROLL_FACTOR * gx * dt
-        marble.vy += ROLL_FACTOR * gy * dt
-        self._resist(marble, dt, gn)
-        self._advance(marble, dt)
-        self._hit_walls(marble)
-        self._check_support(marble)
-
-    def _fall(self, marble: Marble, dt: float, gx: float, gy: float,
-              gn: float) -> None:
-        """Unsupported over a hole: full gravity, no rolling, no friction.
-
-        This is the part that lets a fast marble outrun a small hole,
-        and it is why the capture test is on *height* rather than on
-        position. It keeps whatever in-plane speed it had, so whether
-        it clears the far rim is decided by how fast it was going when
-        it crossed the near one — which is exactly the bargain the real
-        toy offers.
-        """
-        marble.vx += gx * dt
-        marble.vy += gy * dt
-        marble.vz -= gn * dt
-        marble.z += marble.vz * dt
-        self._advance(marble, dt)
-        over = self._hole_under(marble)
-        if marble.z <= 0.0:
-            if over is not None and not over.home:
-                marble.state = 'lost'
-                self.lost_this_step += 1
-            elif over is not None and over.home:
-                marble.state = 'home'
-                self.cupped_this_step += 1
+                hole = self._hole_under(marble)
+                if hole is not None:
+                    # Unsupported: the floor stops existing for this
+                    # marble until it is swallowed or over the far lip.
+                    marble.state = 'falling'
+                    marble.over = hole
+            if marble.live:
+                grounded = 1 if marble.state == 'rolling' else 0
+                model.geom_contype[geom] = grounded
+                model.geom_conaffinity[geom] = grounded
+                base, vbase = i * 7, i * 6
+                data.qpos[base:base + 3] = (marble.x, marble.y, marble.z)
+                data.qpos[base + 3:base + 7] = (marble.qw, marble.qx,
+                                                marble.qy, marble.qz)
+                data.qvel[vbase:vbase + 3] = (marble.vx, marble.vy,
+                                              marble.vz)
+                data.qvel[vbase + 3:vbase + 6] = _quat_unrotate(
+                    (marble.qw, marble.qx, marble.qy, marble.qz),
+                    (marble.wx, marble.wy, marble.wz))
             else:
-                # Caught the far rim on the way down. It clatters back
-                # onto the surface having spent most of its drop.
-                marble.z = 0.0
-                marble.vz = 0.0
-            return
-        if over is None:
-            # Out over solid tray again with the centre still low: it
-            # has clipped the rim. Put it back on the surface and take
-            # the bounce out of it.
-            marble.z = MARBLE_RADIUS
-            self.struck_this_step = max(self.struck_this_step,
-                                        min(1.0, abs(marble.vz) * 2.0))
-            marble.vz = 0.0
-            marble.vx *= 0.72
-            marble.vy *= 0.72
-            marble.state = 'rolling'
-            marble.over = None
-            self._hit_walls(marble)
-        else:
-            marble.over = over
-            self._hit_walls(marble)
+                # Done marbles are parked out of everyone's way. The
+                # park is rewritten every substep, so nothing drifts.
+                model.geom_contype[geom] = 0
+                model.geom_conaffinity[geom] = 0
+                data.qpos[i * 7:i * 7 + 7] = (10.0 + i, 10.0, 1.0,
+                                              1.0, 0.0, 0.0, 0.0)
+                data.qvel[i * 6:i * 6 + 6] = 0.0
 
-    def _resist(self, marble: Marble, dt: float, gn: float) -> None:
-        """Rolling resistance and a little drag, both opposing motion."""
-        speed = marble.speed
-        if speed <= 1e-9:
-            marble.vx = marble.vy = 0.0
-            return
-        shed = ROLLING_RESISTANCE * gn * dt + VISCOUS_DRAG * speed * dt
-        if shed >= speed:
-            marble.vx = marble.vy = 0.0
-            return
-        scale = (speed - shed) / speed
-        marble.vx *= scale
-        marble.vy *= scale
+        before = [(m.vx, m.vy) if m.live else None for m in self.marbles]
+        mujoco.mj_step(model, data)
 
-    def _advance(self, marble: Marble, dt: float) -> None:
-        speed = marble.speed
-        if speed > SPEED_CAP:
-            scale = SPEED_CAP / speed
-            marble.vx *= scale
-            marble.vy *= scale
-        marble.x += marble.vx * dt
-        marble.y += marble.vy * dt
-        # Rolling without slipping: ω = v/r, about the axis across the
-        # direction of travel. Only the renderer reads this.
-        marble.spin_y += marble.vx / MARBLE_RADIUS * dt
-        marble.spin_x -= marble.vy / MARBLE_RADIUS * dt
-
-    # --- contact ---------------------------------------------------------
-
-    def _hit_walls(self, marble: Marble) -> None:
-        radius = MARBLE_RADIUS
-        for wall in self._walls_near(marble.x, marble.y):
-            near_x = min(max(marble.x, wall.x0), wall.x1)
-            near_y = min(max(marble.y, wall.y0), wall.y1)
-            dx, dy = marble.x - near_x, marble.y - near_y
-            gap = math.hypot(dx, dy)
-            if gap >= radius:
+        # Out: read the engine back into the plain marbles.
+        for i, marble in enumerate(self.marbles):
+            if not marble.live:
                 continue
-            if gap < 1e-9:
-                # Dead centre of the box: pick the shallowest way out.
-                left, right = marble.x - wall.x0, wall.x1 - marble.x
-                down, up = marble.y - wall.y0, wall.y1 - marble.y
-                least = min(left, right, down, up)
-                nx, ny = ((-1.0, 0.0) if least == left else
-                          (1.0, 0.0) if least == right else
-                          (0.0, -1.0) if least == down else (0.0, 1.0))
-                push = least + radius
+            base, vbase = i * 7, i * 6
+            marble.x = float(data.qpos[base])
+            marble.y = float(data.qpos[base + 1])
+            marble.z = float(data.qpos[base + 2])
+            marble.qw = float(data.qpos[base + 3])
+            marble.qx = float(data.qpos[base + 4])
+            marble.qy = float(data.qpos[base + 5])
+            marble.qz = float(data.qpos[base + 6])
+            marble.vx = float(data.qvel[vbase])
+            marble.vy = float(data.qvel[vbase + 1])
+            marble.vz = float(data.qvel[vbase + 2])
+            # The engine keeps a free joint's spin in the body's own
+            # frame; everything here speaks the tray's.
+            marble.wx, marble.wy, marble.wz = _quat_rotate(
+                (marble.qw, marble.qx, marble.qy, marble.qz),
+                (float(data.qvel[vbase + 3]),
+                 float(data.qvel[vbase + 4]),
+                 float(data.qvel[vbase + 5])))
+
+        # A falling marble ends its fall here, one way or the other.
+        for marble in self.marbles:
+            if marble.state != 'falling':
+                continue
+            over = self._hole_under(marble)
+            if over is None:
+                self._over_the_lip(marble, gn)
             else:
-                nx, ny = dx / gap, dy / gap
-                push = radius - gap
-            marble.x += nx * push
-            marble.y += ny * push
-            into = marble.vx * nx + marble.vy * ny
-            if into < 0.0:
-                self.struck_this_step = max(self.struck_this_step,
-                                            min(1.0, -into * 1.6))
-                marble.vx -= (1.0 + WALL_RESTITUTION) * into * nx
-                marble.vy -= (1.0 + WALL_RESTITUTION) * into * ny
-                # Scuff: the wall takes a little of the sideways speed.
-                tx, ty = -ny, nx
-                along = marble.vx * tx + marble.vy * ty
-                marble.vx -= WALL_FRICTION * along * tx
-                marble.vy -= WALL_FRICTION * along * ty
+                marble.over = over
+                if marble.z <= 0.0:
+                    self._swallow(marble, over)
+
+        # The wrapper's own guarantees: drag, the cap, the rest clamp.
+        resting_tilt = math.hypot(gx, gy) <= ROLLING_RESISTANCE * gn
+        for i, marble in enumerate(self.marbles):
+            if not marble.live:
+                continue
+            # The thin drag the engine does not model: air, varnish.
+            keep = 1.0 - VISCOUS_DRAG * dt
+            marble.vx *= keep
+            marble.vy *= keep
+            speed = marble.speed
+            if speed > SPEED_CAP:
+                # Load-bearing for the coach: see POTENTIAL_QUANTUM.
+                # The spin comes down with the travel, so a capped
+                # marble is still rolling rather than skating.
+                scale = SPEED_CAP / speed
+                marble.vx *= scale
+                marble.vy *= scale
+                marble.wx *= scale
+                marble.wy *= scale
+            if marble.state == 'rolling':
+                if abs(marble.wz) < REST_SPEED / MARBLE_RADIUS:
+                    marble.wz = 0.0
+                if (resting_tilt and marble.speed < REST_SPEED
+                        and math.hypot(marble.wx, marble.wy)
+                        < REST_SPEED / MARBLE_RADIUS):
+                    # Below the stall angle nothing can start it, and
+                    # the engine's regularised rolling friction cannot
+                    # say so — it would creep across a levelled tray.
+                    marble.vx = marble.vy = 0.0
+                    marble.wx = marble.wy = 0.0
+            was = before[i]
+            if was is not None and marble.live:
+                # A jolt is a change of velocity gravity cannot explain.
+                jolt = math.hypot(marble.vx - was[0] - gx * dt,
+                                  marble.vy - was[1] - gy * dt)
+                if jolt > 0.02:
+                    self.struck_this_step = max(self.struck_this_step,
+                                                min(1.0, jolt * 1.6))
+
+    # --- holes -----------------------------------------------------------
 
     def _hole_under(self, marble: Marble) -> Optional[Hole]:
         """The hole whose rim the marble's contact patch is inside, if any."""
@@ -1197,51 +1461,52 @@ class Simulation:
                 return hole
         return None
 
-    def _check_support(self, marble: Marble) -> None:
-        hole = self._hole_under(marble)
-        if hole is None:
-            marble.over = None
-            return
-        marble.over = hole
-        marble.state = 'falling'
-        marble.vz = 0.0
+    def _over_the_lip(self, marble: Marble, gn: float) -> None:
+        """Past the rim of the pit it was falling into: out, or in.
 
-    def _collide_marbles(self) -> None:
-        """Equal masses, impulse along the line of centres.
+        Reached the moment the contact point is over solid tray again,
+        whatever height the marble is at, which is what makes the fall
+        terminate. There is no state in which a marble is neither
+        supported nor over a hole: an earlier design could leave one
+        skating about at nought height for the rest of the trial,
+        never settling and never letting the coach read a potential
+        again.
 
-        Positional correction is split evenly and applied before the
-        impulse, so a pair that has been squeezed together by the
-        geometry separates rather than jittering against each other for
-        the rest of the tray.
+        The toll is energy: the centre dropped, and ``2·g·drop`` comes
+        out of the speed squared to put it back on the tray. Graded by
+        the drop, so a marble that barely dipped pays almost nothing
+        and one that nearly went in pays nearly all of it.
         """
-        live = [m for m in self.marbles if m.live]
-        span = 2.0 * MARBLE_RADIUS
-        for a in range(len(live)):
-            first = live[a]
-            for b in range(a + 1, len(live)):
-                second = live[b]
-                dx = second.x - first.x
-                dy = second.y - first.y
-                gap = math.hypot(dx, dy)
-                if gap >= span or gap < 1e-9:
-                    continue
-                nx, ny = dx / gap, dy / gap
-                push = (span - gap) / 2.0
-                first.x -= nx * push
-                first.y -= ny * push
-                second.x += nx * push
-                second.y += ny * push
-                closing = ((second.vx - first.vx) * nx
-                           + (second.vy - first.vy) * ny)
-                if closing >= 0.0:
-                    continue
-                self.struck_this_step = max(self.struck_this_step,
-                                            min(1.0, -closing * 1.4))
-                impulse = -(1.0 + BALL_RESTITUTION) * closing / 2.0
-                first.vx -= impulse * nx
-                first.vy -= impulse * ny
-                second.vx += impulse * nx
-                second.vy += impulse * ny
+        hole = marble.over
+        drop = MARBLE_RADIUS - marble.z
+        if hole is not None and drop > 0.0:
+            have = marble.vx * marble.vx + marble.vy * marble.vy
+            need = 2.0 * gn * drop
+            if have <= need:
+                # It reached the far side without the speed to climb
+                # back out of the throat. It is in the hole.
+                self._swallow(marble, hole)
+                return
+            keep = math.sqrt((have - need) / have)
+            marble.vx *= keep
+            marble.vy *= keep
+            self.struck_this_step = max(self.struck_this_step,
+                                        min(1.0, drop / MARBLE_RADIUS))
+        marble.z = MARBLE_RADIUS
+        marble.vz = 0.0
+        marble.over = None
+        marble.state = 'rolling'
+        # Coming over the lip is a contact, and it leaves the marble
+        # rolling on whatever speed it has left.
+        marble.roll_with_travel()
+
+    def _swallow(self, marble: Marble, hole: Hole) -> None:
+        if hole.home:
+            marble.state = 'home'
+            self.cupped_this_step += 1
+        else:
+            marble.state = 'lost'
+            self.lost_this_step += 1
 
     # --- reading the run -------------------------------------------------
 
@@ -1296,10 +1561,13 @@ def par_seconds(tray: Tray) -> float:
 
 
 __all__ = [
-    'BOARD_DEPTH', 'BOARD_WIDTH', 'GRADES', 'GRAVITY', 'Grade', 'Hole',
+    'BALL_RESTITUTION', 'BOARD_DEPTH', 'BOARD_WIDTH',
+    'FRICTION_STATIC', 'GRADES', 'GRAVITY', 'Grade', 'Hole',
     'MARBLE_RADIUS', 'MAX_TILT', 'Marble', 'POTENTIAL_QUANTUM',
-    'ROLL_FACTOR', 'SPEED_CAP', 'SUBSTEPS', 'Simulation', 'TILT_EAST',
-    'TILT_NORTH', 'TILT_SOUTH', 'TILT_STEP', 'TILT_WEST', 'Tray',
-    'Unbuildable', 'Wall', 'clamped_rung', 'deal', 'par_seconds',
+    'REST_SPEED', 'ROLLING_RESISTANCE', 'ROLL_FACTOR', 'SLIP_SHARE',
+    'SPEED_CAP', 'SPHERE_INERTIA', 'SPIN_GRIP', 'SUBSTEPS', 'Simulation',
+    'TILT_EAST', 'TILT_NORTH', 'TILT_SOUTH', 'TILT_STEP', 'TILT_WEST',
+    'Tray', 'Unbuildable', 'VISCOUS_DRAG', 'WALL_FRICTION',
+    'WALL_RESTITUTION', 'Wall', 'clamped_rung', 'deal', 'par_seconds',
     'potential_at',
 ]

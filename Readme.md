@@ -43,7 +43,7 @@ stable compared to the original project and work with modern Python and Pyglet
 
 
 ## Notes:
-* You need pyglet installed for this to work.
+* You need pyglet installed for this to work, and mujoco for the Marble Maze's physics (`pip install mujoco`).
 
 ### Code layout
 

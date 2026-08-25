@@ -41,7 +41,7 @@ import time
 from typing import Dict, List, Optional, Tuple
 
 import pyglet
-from pyglet.math import Mat4, Vec3
+from pyglet.math import Mat4, Quaternion, Vec3
 from pyglet.window import key
 
 from .. import display, state
@@ -90,6 +90,25 @@ ELEVATION = math.radians(47.0)
 FRAMING = 1.30
 
 
+def _turned(marble: MM.Marble) -> Mat4:
+    """A marble's orientation, as a matrix in the stage's frame.
+
+    The model keeps it as a quaternion in the *tray's* frame, where x
+    runs across the tray, y up it and z out of it. The stage works in
+    the room's frame, which the tray meets at ``(x, z, -y)``, and a
+    rotation carries between them by moving its axis the same way —
+    which for a quaternion means moving the vector part and leaving the
+    scalar alone.
+
+    The conjugate is there because pyglet's ``Quaternion.to_mat4``
+    hands back the transpose of what ``Mat4.from_rotation`` builds for
+    the same turn, and this end of the pipe is the one that has to
+    agree with the rest of the stage.
+    """
+    return Quaternion(marble.qw, -marble.qx, -marble.qz,
+                      marble.qy).to_mat4()
+
+
 class MarbleMaze:
     """Tip the tray, roll the marbles home, miss the holes. Esc for the hub."""
 
@@ -114,6 +133,11 @@ class MarbleMaze:
         self.until = 0.0
         self.started_at = 0.0
         self.held: set = set()
+        #: Held-key time not yet spent as knob nudges. See :meth:`update`.
+        self._nudge_due = 0.0
+        #: When the last frame was drawn, on the wall clock. None until
+        #: the first, and only ever read under a running event loop.
+        self._drawn_at: Optional[float] = None
         #: Set by the agent boundary when it is paying per action. Off
         #: for a person, so the human game stays pixel-identical.
         self.coach = False
@@ -126,7 +150,20 @@ class MarbleMaze:
         self.marble_mesh: Optional[render3d.Mesh] = None
         self._holes_uniform: Tuple[Tuple[float, float, float, float], ...] = ()
         self._build_chrome()
-        pyglet.clock.schedule_interval(self.update, 1 / 60.)
+        # Nothing is scheduled on the pyglet clock, and that is the
+        # third design for this line, so the graveyard is worth
+        # keeping. A 1/60 *interval* drifted against the redraw — which
+        # is another interval item — so a drawn frame would carry two
+        # physics steps in one stretch of play and none in the next,
+        # and on a gliding sphere that alternation reads as the speed
+        # pulsing. An *every-tick* item cured the drift and cost a
+        # core: pyglet's loop stops sleeping when one exists, and the
+        # update ran forty thousand times a second, measured. What a
+        # marble needs is neither schedule — it is one step per drawn
+        # frame, of exactly the wall time that frame represents, and
+        # the only place that binding exists is the draw itself. See
+        # the top of :meth:`on_draw`. The driver's path is unchanged:
+        # it calls :meth:`update` with the dt it owns, as ever.
         state.window.push_handlers(self.on_key_press, self.on_key_release,
                                    self.on_draw)
         cursor.acquire()
@@ -404,9 +441,7 @@ class MarbleMaze:
             for marble in self.sim.marbles:
                 if marble.state in ('home', 'lost'):
                     continue
-                spin = (Mat4.from_rotation(marble.spin_x, Vec3(1., 0., 0.))
-                        @ Mat4.from_rotation(-marble.spin_y,
-                                             Vec3(0., 0., 1.)))
+                spin = _turned(marble)
                 model, nscale = render3d.placed(
                     (marble.x - half_w, marble.z, half_d - marble.y),
                     spin=spin, frame=frame)
@@ -500,11 +535,40 @@ class MarbleMaze:
     # --- the clock -------------------------------------------------------
 
     def update(self, dt: float) -> None:
+        """One tick of real time: nudge the held knobs, step the sim.
+
+        Two disciplines in here, both about *dt* being whatever the
+        clock says rather than a sixtieth.
+
+        The knobs are nudged on held-key *time*, through an
+        accumulator, so a key held for a second is sixty nudges however
+        often this happens to be called — every-tick scheduling runs
+        once per clock tick, and another overlay's timer can add ticks.
+
+        The sim is stepped in pieces no longer than a sixtieth, because
+        its substep count is sized for that: one substep of a 60Hz step
+        moves a capped marble 4mm, safely under a wall's thickness, and
+        a long frame handed over whole would stretch the substeps past
+        what the tunnelling test certifies. The 0.05 clamp is the usual
+        spiral-of-death stop: a truly late frame drops time rather than
+        spending the next frames catching up.
+        """
         now = self.clock()
         if self.phase == 'rolling' and self.sim is not None:
-            for which in self.held:
-                self.sim.tilt(which)
-            self.sim.step(min(dt, 0.05))
+            piece = min(dt, 0.05)
+            if self.held:
+                self._nudge_due += piece
+                while self._nudge_due >= 1 / 60.:
+                    self._nudge_due -= 1 / 60.
+                    for which in self.held:
+                        self.sim.tilt(which)
+            else:
+                self._nudge_due = 0.0
+            left = piece
+            while left > 0.0:
+                bite = min(left, 1 / 60.)
+                self.sim.step(bite)
+                left -= bite
             self._pay_coach()
             if self.sim.settled:
                 self._settle()
@@ -628,12 +692,12 @@ class MarbleMaze:
 
     # --- events ----------------------------------------------------------
 
-    #: Arrow keys to knobs. Up tips the far edge away and down, which is
-    #: the direction a marble then rolls, so "up" means "the marble goes
-    #: away from me" rather than "the far edge lifts".
+    #: Arrow keys to knobs. Up sends the marble away from the player,
+    #: which is north on the tray — and the knobs are named for where
+    #: the marble goes, so the map is the identity it looks like.
     _KEYS = {
-        key.UP: MM.TILT_SOUTH, key.W: MM.TILT_SOUTH,
-        key.DOWN: MM.TILT_NORTH, key.S: MM.TILT_NORTH,
+        key.UP: MM.TILT_NORTH, key.W: MM.TILT_NORTH,
+        key.DOWN: MM.TILT_SOUTH, key.S: MM.TILT_SOUTH,
         key.LEFT: MM.TILT_WEST, key.A: MM.TILT_WEST,
         key.RIGHT: MM.TILT_EAST, key.D: MM.TILT_EAST,
     }
@@ -663,6 +727,20 @@ class MarbleMaze:
         return pyglet.event.EVENT_HANDLED
 
     def on_draw(self) -> bool:
+        # A person's physics is stepped here, and only here: once per
+        # drawn frame, by the wall time since the last one, so what the
+        # eye is shown is exactly the motion that time held. Gated on
+        # the event loop actually running, which is true for a person
+        # and false everywhere else — the driver calls update() with a
+        # dt it owns and dispatches this handler for captures, and a
+        # test that draws a frame must not nudge the sim by however
+        # long the test happened to take.
+        loop = pyglet.app.event_loop
+        if loop is not None and loop.is_running:
+            now = time.perf_counter()
+            last, self._drawn_at = self._drawn_at, now
+            if last is not None:
+                self.update(now - last)
         display.ensure_laid_out()
         state.window.clear()
         if self.tray is not None and self.stage.ok:

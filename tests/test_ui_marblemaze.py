@@ -32,7 +32,10 @@ if UI_IMPORT_ERROR is None:
     from nwenv.marblemaze import MarbleMazeEnv
     from nwenv.frames import capture_rgba, digest_rgba
 
-#: Ports, in the order :class:`MarbleMazeEnv` declares them.
+#: Ports, in the order :class:`MarbleMazeEnv` declares them. The names
+#: are the marble's heading, which is what the knobs behind them are
+#: named for too — see the note on ``TILT_NORTH`` in
+#: :mod:`neural_workshop.marblemaze`.
 NORTH, SOUTH, WEST, EAST = 0, 1, 2, 3
 
 
@@ -80,7 +83,7 @@ def pilot(task, pace=0.11):
     error_y = heading[1] * pace - target.vy
     if abs(error_x) >= abs(error_y):
         return EAST if error_x > 0 else WEST
-    return SOUTH if error_y > 0 else NORTH
+    return NORTH if error_y > 0 else SOUTH
 
 
 def dealt(rung, trials=2, seed=1234, coach=False):
@@ -133,6 +136,53 @@ class TheStageIsReal3D(unittest.TestCase):
         task = MarbleMaze()
         self.assertTrue(task.stage.ok,
                         'the 3D stage did not build: %s' % task.stage.trouble)
+
+    def test_the_marble_turns_the_way_the_model_says(self):
+        """Two conventions have to meet here and neither is obvious.
+
+        The model keeps the marble's orientation as a quaternion in the
+        tray's frame; the stage wants a matrix in the room's, which the
+        tray meets at ``(x, z, -y)``. On top of that, pyglet's
+        ``Quaternion.to_mat4`` hands back the transpose of what
+        ``Mat4.from_rotation`` builds for the same turn, so the
+        conjugate is what agrees with the rest of the stage. Get either
+        wrong and the marble rolls sideways, or backwards, and nothing
+        else in this file would notice.
+
+        A single-axis roll is the case where the old accumulated-angle
+        form was right, so it is the case that can be checked against
+        it. Both axes, because a sign error shows in one and not the
+        other.
+        """
+        from pyglet.math import Mat4, Vec3
+        from neural_workshop.ui.marblemaze import _turned
+
+        tray = M.deal(1, seed=17)._replace(walls=(), holes=())
+        for vx, vy in ((0.30, 0.0), (0.0, 0.30)):
+            sim = M.Simulation(tray)
+            sim.marbles = [M.Marble(tray.width / 2.0, tray.depth / 2.0)]
+            marble = sim.marbles[0]
+            marble.vx, marble.vy = vx, vy
+            marble.roll_with_travel()
+            turned = 0.0
+            for _ in range(4):
+                was = (marble.x, marble.y)
+                sim.step(1 / 60.0)
+                turned += math.hypot(marble.x - was[0],
+                                     marble.y - was[1]) / M.MARBLE_RADIUS
+            self.assertGreater(turned, 1.0,
+                               'it did not roll far enough to say')
+            want = (Mat4.from_rotation(-turned if vy else 0.0,
+                                       Vec3(1., 0., 0.))
+                    @ Mat4.from_rotation(-turned if vx else 0.0,
+                                         Vec3(0., 0., 1.)))
+            # Distance over radius is the rolling angle only up to the
+            # engine's regularised slip, so the tolerance is a couple
+            # of degrees: what this pins is the axis and the sign —
+            # the difference between rolling and rolling backwards, or
+            # sideways — not the solver's last digit.
+            for got, expected in zip(_turned(marble), want):
+                self.assertAlmostEqual(got, expected, delta=0.06)
 
     def test_a_tray_becomes_meshes(self):
         task = dealt(6, trials=2)
@@ -440,8 +490,146 @@ class PlayedProperlyItIsPaid(unittest.TestCase):
                          {M.TILT_NORTH, M.TILT_SOUTH,
                           M.TILT_WEST, M.TILT_EAST})
 
+    def test_each_port_sends_the_marble_the_way_it_is_named(self):
+        """Port order against the compass, end to end.
+
+        The model's own suite pins :meth:`Simulation.tilt` against the
+        compass, and this pins the table that sits in front of it, so
+        the two cannot drift apart. Worth having as its own case:
+        the ports are a tuple whose order is easy to reshuffle while
+        every test that plays *through* them goes on passing, because
+        a controller written against the table reshuffles with it.
+        """
+        compass = ((NORTH, 0.0, 1.0), (SOUTH, 0.0, -1.0),
+                   (EAST, 1.0, 0.0), (WEST, -1.0, 0.0))
+        for port, want_x, want_y in compass:
+            tray = M.deal(1, seed=17)._replace(walls=(), holes=())
+            sim = M.Simulation(tray)
+            sim.marbles = [M.Marble(tray.width / 2.0, tray.depth / 2.0)]
+            for _ in range(30):
+                sim.tilt(MarbleMazeEnv.action_table[port])
+                sim.step(1 / 60.0)
+            marble = sim.marbles[0]
+            went = (marble.vx * want_x + marble.vy * want_y) / marble.speed
+            self.assertGreater(went, 0.99,
+                               'port %d sent the marble (%+.3f, %+.3f)'
+                               % (port, marble.vx, marble.vy))
+
     def test_the_boundary_knows_this_one_moves_on_its_own(self):
         self.assertTrue(MarbleMazeEnv.clocked)
+
+
+@needs_ui
+class ThePhysicsRunsOnTheWallClock(unittest.TestCase):
+    """Each drawn frame shows exactly the real time that passed.
+
+    The jitter this class guards against was never in the model: the
+    task used to schedule its update as a 1/60 *interval* item while
+    the redraw is another, and two interval items drift — stretches of
+    play where one frame carried two physics steps and the next none,
+    which on a gliding sphere reads as the speed pulsing. The cure is
+    the every-tick schedule plus a sim stepped by the true dt, and
+    these tests pin the properties that make that safe.
+    """
+
+    def setUp(self):
+        close_overlays()
+
+    def tearDown(self):
+        close_overlays()
+        reset_window()
+
+    def test_nothing_is_scheduled_on_the_pyglet_clock(self):
+        """Neither schedule form: both were tried, both were wrong.
+
+        A 1/60 interval item drifts against the redraw's own interval
+        item — frames alternate between two physics steps and none.
+        An every-tick item stops pyglet's loop sleeping at all — the
+        update ran forty thousand times a second, measured, a core
+        gone. The stepping lives in ``on_draw`` instead.
+        """
+        import pyglet
+        task = dealt(1, trials=2)
+        clock = pyglet.clock.get_default()
+        every_tick = [item.func for item in clock._schedule_items]
+        self.assertNotIn(task.update, every_tick,
+                         'an every-tick item busy-spins the event loop')
+        intervals = [item.func for item in clock._schedule_interval_items]
+        self.assertNotIn(task.update, intervals,
+                         'an interval item drifts against the redraw')
+
+    def test_the_draw_steps_a_persons_sim_and_only_a_persons(self):
+        """One physics step per drawn frame under a live event loop —
+        and none anywhere else. The else matters as much: the driver
+        dispatches this same handler to capture frames, and a capture
+        that nudged the sim by however long the harness took would put
+        wall-clock noise inside the sealed boundary."""
+        import pyglet
+        task = dealt(1, trials=2)
+        loop = pyglet.app.event_loop
+        was = loop.is_running
+        try:
+            loop.is_running = False
+            before = task.sim.elapsed
+            task.on_draw()
+            task.on_draw()
+            self.assertEqual(task.sim.elapsed, before,
+                             'a draw stepped the sim with no loop running')
+            loop.is_running = True
+            task.on_draw()          # first draw only starts the clock
+            task.on_draw()
+            self.assertGreater(task.sim.elapsed, before,
+                               'a drawn frame did not step the sim')
+        finally:
+            loop.is_running = was
+
+    def test_uneven_frames_lose_no_time(self):
+        """The sim's clock advances by exactly the dt handed in.
+
+        This is the property that replaces render interpolation: a
+        fixed-step engine must blend between states because its clock
+        moves in quanta, and ours need not because it does not.
+        """
+        task = dealt(1, trials=2)
+        frames = (1 / 60., 1 / 47., 1 / 144., 1 / 60., 0.031, 1 / 90.)
+        before = task.sim.elapsed
+        for dt in frames:
+            task.update(dt)
+        self.assertAlmostEqual(task.sim.elapsed - before, sum(frames),
+                               places=9)
+
+    def test_a_long_frame_is_stepped_in_sixtieth_bites(self):
+        """A hitch must not stretch the substeps past what the
+        tunnelling test certifies: one substep of a 60Hz step moves a
+        capped marble 4mm, under a wall's thickness, and a 0.05s frame
+        handed over whole would triple that."""
+        task = dealt(1, trials=2)
+        bites = []
+        stepped = task.sim.step
+        task.sim.step = lambda dt: (bites.append(dt), stepped(dt))[1]
+        task.update(0.05)
+        self.assertGreater(len(bites), 1)
+        for bite in bites:
+            self.assertLessEqual(bite, 1 / 60. + 1e-12)
+        self.assertAlmostEqual(sum(bites), 0.05, places=9)
+
+    def test_the_held_tilt_rate_is_a_rate_of_time_not_of_calls(self):
+        """Sixty nudges a second held, however often update is called.
+
+        Every-tick scheduling runs once per clock tick, and another
+        overlay's timer adds ticks — a naive nudge-per-call would tilt
+        faster whenever something else was animating, which is the kind
+        of wrong nobody ever traces.
+        """
+        fine = dealt(1, trials=2)
+        fine.held.add(M.TILT_EAST)
+        for _ in range(8):
+            fine.update(1 / 240.)             # called four times as often
+        coarse = dealt(1, trials=2)
+        coarse.held.add(M.TILT_EAST)
+        for _ in range(2):
+            coarse.update(1 / 60.)            # the same span of held time
+        self.assertAlmostEqual(fine.sim.roll, coarse.sim.roll, places=12)
 
 
 @needs_ui
@@ -465,6 +653,34 @@ class TheKeysAndTheHubAgree(unittest.TestCase):
         for _ in range(10):
             task.update(1 / 60.)
         self.assertAlmostEqual(task.sim.roll, held, places=9)
+
+    def test_every_arrow_sends_the_marble_where_it_points(self):
+        """Up is away, down is towards, and the letters agree with them.
+
+        The third layer of the same convention: the model names its
+        knobs for the marble's heading and the ports pass that through,
+        and this is the keyboard's end of it. Only ``RIGHT`` was
+        covered before, which is the axis that was never wrong — north
+        and south sat backwards against east and west for as long as
+        nothing pressed ``UP`` and looked at the marble.
+        """
+        arrows = ((key.UP, key.W, 0.0, 1.0), (key.DOWN, key.S, 0.0, -1.0),
+                  (key.RIGHT, key.D, 1.0, 0.0), (key.LEFT, key.A, -1.0, 0.0))
+        tray = M.deal(1, seed=17)._replace(walls=(), holes=())
+        for arrow, letter, want_x, want_y in arrows:
+            knob = MarbleMaze._KEYS[arrow]
+            self.assertEqual(MarbleMaze._KEYS[letter], knob,
+                             'the letter and the arrow disagree')
+            sim = M.Simulation(tray)
+            sim.marbles = [M.Marble(tray.width / 2.0, tray.depth / 2.0)]
+            for _ in range(30):
+                sim.tilt(knob)
+                sim.step(1 / 60.0)
+            marble = sim.marbles[0]
+            went = (marble.vx * want_x + marble.vy * want_y) / marble.speed
+            self.assertGreater(went, 0.99,
+                               'key %r sent the marble (%+.3f, %+.3f)'
+                               % (knob, marble.vx, marble.vy))
 
     def test_l_levels_the_tray(self):
         task = dealt(1, trials=2)
