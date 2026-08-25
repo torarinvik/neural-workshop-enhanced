@@ -949,6 +949,14 @@ CHESS_LEVEL = 1
 CHESS_TRIALS = 10
 CHESS_ADAPTIVE = True
 
+# Find the Winning Move: one Go position, one Black stone that takes White's
+# last liberty. Higher levels grow the board and bury the atari among decoys
+# that capture something but not enough. There is no adaptive dial here as
+# there is for the chess board next door: this task's level is fixed for the
+# length of a run, and the 1-0 keys set it from the ready screen.
+GO_LEVEL = 1
+GO_TRIALS = 10
+
 # N-in-a-row deals a board with both colours already on it and asks for the
 # one empty cell that completes the current line length. The early levels
 # use three in a row; later levels return to classic five-in-a-row before

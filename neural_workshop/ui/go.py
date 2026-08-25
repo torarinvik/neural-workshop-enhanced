@@ -15,7 +15,7 @@ from ..constants import FONTLIST
 from ..geometry import calc_fontsize, from_bottom_edge, from_top_edge, width_center
 from ..go import GoProblem, capture_moves, generate_problem, play
 from ..i18n import _
-from . import cursor
+from . import cursor, taskoptions
 from .verdict import VerdictLabel, above_the_band
 
 
@@ -30,9 +30,8 @@ class GoWinningMove:
         self.rng = random.Random()
         #: Swapped out by an agent environment for a virtual clock.
         self.clock = time.time
-        self.start_difficulty = 1
-        self.total_trials = 10
-        self.difficulty = 1
+        self._read_options()
+        self.difficulty = max(1, min(10, self.start_difficulty))
         self.cursor_x = 0
         self.cursor_y = 0
         self.trial = 0
@@ -48,6 +47,29 @@ class GoWinningMove:
         cursor.acquire()
         display.register_overlay(self)
         GoWinningMove.instance = self
+
+    # --- options ---------------------------------------------------------
+
+    def _read_options(self) -> None:
+        opts = taskoptions.settings(taskoptions.GO_WINNING_MOVE)
+        self.start_difficulty = int(opts['GO_LEVEL'])
+        self.total_trials = int(opts['GO_TRIALS'])
+
+    def open_options(self) -> None:
+        taskoptions.open_task_options('go_winning_move',
+                                      on_apply=self.apply_options)
+
+    def apply_options(self) -> None:
+        """Take the new dials and put the run back to the start.
+
+        Rather than letting them wait until the task is next opened,
+        which is what a screen with no ``on_apply`` does. A level row
+        that visibly does nothing is worse than no row.
+        """
+        self._read_options()
+        self._reset()
+        self.difficulty = max(1, min(10, self.start_difficulty))
+        self._build_chrome()
 
     def _build_chrome(self) -> None:
         bg = 0 if state.cfg.BLACK_BACKGROUND else 255
@@ -65,7 +87,7 @@ class GoWinningMove:
             anchor_x='center', anchor_y='center', font_name=FONTLIST)
         self.footnote = pyglet.text.Label(
             _('Esc: menu   1-0: level   Space: start/next'
-              '   click, or arrows + Enter'),
+              '   click, or arrows + Enter   C: options'),
             font_size=calc_fontsize(11), color=(fg, fg, fg, 255),
             batch=self.batch, x=width_center(), y=from_bottom_edge(24),
             anchor_x='center', anchor_y='center', font_name=FONTLIST)
@@ -228,6 +250,8 @@ class GoWinningMove:
     def on_key_press(self, symbol: int, modifiers: int) -> bool:
         if symbol == key.ESCAPE:
             self.return_to_hub()
+        elif symbol == key.C:
+            self.open_options()
         elif symbol == key.SPACE and self.phase in ('ready', 'done'):
             self.start_run()
         elif symbol == key.SPACE and self.phase in ('solved', 'failed'):

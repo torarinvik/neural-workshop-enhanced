@@ -26,6 +26,10 @@ from .. import state
 from ..marblemaze import GRADES as _MARBLE_GRADES
 from ..constants import FONTLIST
 from ..geometry import calc_fontsize, from_bottom_edge, width_center
+# Imported up here rather than inside the note, because the Level row
+# needs the ladder's *length* to build its choices. The module is pure
+# board arithmetic and imports no pyglet, so it costs nothing at boot.
+from ..go import DIFFICULTIES as _GO_LADDER
 from .menu import Cycler, Menu
 from ..i18n import _
 
@@ -2017,6 +2021,68 @@ CHESS = TaskSpec(
 )
 
 
+def go_winning_move_note(chosen: Dict[str, Any]) -> str:
+    """What this level actually deals, read off the ladder itself.
+
+    Three things change as it climbs and none of them is "a bigger
+    board", which is the one a player notices first. The winning move
+    is *shown* on level one and never again. The group you are trying
+    to kill is marked up to level four and unmarked after it, which is
+    the largest single step on the ladder. And from level four the
+    position carries **decoys** — points that really do capture, just
+    fewer stones than the winning move takes. Past there, "did
+    anything get captured" stops being the question.
+
+    Everything below is read off
+    :data:`~neural_workshop.go.DIFFICULTIES` rather than restated, so a
+    note cannot drift from the ladder it is describing.
+    """
+    level = max(1, min(len(_GO_LADDER), int(chosen['GO_LEVEL'])))
+    trials = int(chosen['GO_TRIALS'])
+    rung = _GO_LADDER[level - 1]
+
+    said = [_('Level %d: a %dx%d board, a White group of %d, %d %s a run.')
+            % (level, rung.size, rung.size, rung.target_size, trials,
+               _('position') if trials == 1 else _('positions'))]
+    said.append(_('Black to play; one point takes its last liberty.'))
+    if rung.show_move:
+        said.append(_('This level points at the answer.'))
+    if rung.show_target:
+        said.append(_('The group to capture is marked.'))
+    else:
+        said.append(_('It is not marked — finding which group is '
+                      'dying is most of the work.'))
+    if len(rung.decoy_sizes) == 1:
+        stones = rung.decoy_sizes[0]
+        said.append(_('One decoy group of %d %s sits there too; '
+                      'taking it captures something, not the group.')
+                    % (stones, _('stone') if stones == 1 else _('stones')))
+    elif rung.decoy_sizes:
+        # The sizes rather than just the count, because the top
+        # rungs are near ties — 23 stones against a target of 24 —
+        # and that is what turns a local atari scan into a
+        # whole-board comparison.
+        said.append(_('%d decoy groups sit there too (%s stones); '
+                      'taking any captures something, not the group.')
+                    % (len(rung.decoy_sizes),
+                       ', '.join(str(size)
+                                 for size in rung.decoy_sizes)))
+    said.append(_('The level holds for the whole run; it does not '
+                  'climb after a correct answer.'))
+    return ' '.join(said)
+
+
+GO_WINNING_MOVE = TaskSpec(
+    title=_('Find the Winning Move options'),
+    options=(
+        Option('GO_LEVEL', _('Level'), 1,
+               values=tuple(range(1, len(_GO_LADDER) + 1))),
+        Option('GO_TRIALS', _('Positions per run'), 10,
+               values=(1, 3, 5, 8, 10, 15, 20, 30, 50)),
+    ),
+    note=go_winning_move_note)
+
+
 #: Task id → the settings screen it owns.
 TASK_SPECS: Dict[str, TaskSpec] = {
     'monkey_ladder': MONKEY_LADDER,
@@ -2062,6 +2128,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'chain_of_custody': CUSTODY,
     'cookie_thief': COOKIE_THIEF,
     'chess': CHESS,
+    'go_winning_move': GO_WINNING_MOVE,
 }
 
 
