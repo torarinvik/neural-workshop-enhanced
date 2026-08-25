@@ -55,7 +55,7 @@ the programme has one pixel reader to get right rather than one per task.
 
 The hooks are all still there — `build`, `drive`, `trial_open`, `tick`,
 `resolved`, `finished` — and an override wins over a declaration. Nineteen
-of the forty wrappers need one. Count composes its answer out of digits,
+of the forty-one wrappers need one. Count composes its answer out of digits,
 Sudoku and the Crossword steer a cursor, Scrabble's ports are rack
 *positions* rather than letters, Scramble's and Algebra's are a typewriter,
 Moving Targets and Concentration name an object rather than an index, Reflex
