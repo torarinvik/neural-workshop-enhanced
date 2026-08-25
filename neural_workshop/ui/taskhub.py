@@ -52,6 +52,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('moving_targets', _('Moving Targets')),
         ('lookout', _('Lookout')),
         ('pursuit', _('Pursuit')),
+        ('buzz_wire', _('Buzz Wire')),
         ('out_of_sight', _('Out of Sight')),
         ('donkey', _('Donkey')),
         ('two_hands', _('Two Hands')),
@@ -528,6 +529,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'pursuit':
         from .pursuit import Pursuit
         Pursuit()
+        return
+    if task_id == 'buzz_wire':
+        from .buzzwire import BuzzWire
+        BuzzWire()
         return
     if task_id == 'out_of_sight':
         from .outofsight import OutOfSight
