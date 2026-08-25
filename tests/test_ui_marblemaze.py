@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import math
 import os
+import random
 import unittest
 
 from uisupport import (UI_IMPORT_ERROR, close_overlays, geometry, key,
@@ -82,6 +83,27 @@ def pilot(task, pace=0.11):
     return SOUTH if error_y > 0 else NORTH
 
 
+def dealt(rung, trials=2, seed=1234, coach=False):
+    """A task with a tray already dealt, from a *seeded* deal.
+
+    ``MarbleMaze.__init__`` seeds its generator from the clock, which is
+    right for a person and wrong for a test: every case below would
+    otherwise be run against whatever tray came up. Measured before this
+    existed, ``test_one_marble_and_a_coach_pays_per_action`` failed
+    about one run in six — on the trays where the marble starts hard
+    against the corner the test tilts towards, nothing moves, the
+    potential never changes, and the coach has nothing to say. That is
+    a true observation about that tray, not a defect in the coach.
+    """
+    task = MarbleMaze()
+    task.rng = random.Random(seed)
+    task.coach = coach
+    task.start_rung = task.rung = rung
+    task.total_trials = trials
+    task.start_run()
+    return task
+
+
 def driven(env, moves, steps=6000):
     """Play *env* by *moves*, a callable handed the task each step."""
     scalars = []
@@ -113,10 +135,7 @@ class TheStageIsReal3D(unittest.TestCase):
                         'the 3D stage did not build: %s' % task.stage.trouble)
 
     def test_a_tray_becomes_meshes(self):
-        task = MarbleMaze()
-        task.start_rung = task.rung = 6
-        task.total_trials = 2
-        task.start_run()
+        task = dealt(6, trials=2)
         for name in ('body', 'frame', 'walls', 'pits', 'cup', 'collar'):
             self.assertIn(name, task.meshes, name)
         self.assertIsNotNone(task.marble_mesh)
@@ -141,21 +160,17 @@ class TheStageIsReal3D(unittest.TestCase):
             self.assertTrue(task.textured, 'the baked maps did not upload')
         else:
             self.assertFalse(task.textured)
+        task.close()
         # Either way the stage runs and a tray draws.
+        task = dealt(2, trials=2)
         self.assertTrue(task.stage.ok)
-        task.start_rung = task.rung = 2
-        task.total_trials = 2
-        task.start_run()
         state.window.clear()
         task.on_draw()
 
     def test_a_stage_with_no_maps_still_draws(self):
-        task = MarbleMaze()
+        task = dealt(2, trials=2)
         task.stage._marble_tex = ()
         task.textured = False
-        task.start_rung = task.rung = 2
-        task.total_trials = 2
-        task.start_run()
         state.window.clear()
         task.on_draw()
         self.assertTrue(task.stage.ok)
@@ -238,10 +253,7 @@ class TheScreenAnswersItsPorts(unittest.TestCase):
         return digest_rgba(capture_rgba(window)[2])
 
     def test_a_port_changes_the_picture(self):
-        task = MarbleMaze()
-        task.start_rung = task.rung = 3
-        task.total_trials = 2
-        task.start_run()
+        task = dealt(3, trials=2)
         before = self._frame()
         for _ in range(12):
             task.tilt(M.TILT_EAST)
@@ -249,10 +261,7 @@ class TheScreenAnswersItsPorts(unittest.TestCase):
         self.assertNotEqual(before, self._frame())
 
     def test_the_tray_tips_the_way_the_knob_says(self):
-        task = MarbleMaze()
-        task.start_rung = task.rung = 1
-        task.total_trials = 2
-        task.start_run()
+        task = dealt(1, trials=2)
         for _ in range(5):
             task.tilt(M.TILT_EAST)
         self.assertGreater(task.sim.roll, 0.0)
@@ -261,10 +270,7 @@ class TheScreenAnswersItsPorts(unittest.TestCase):
         self.assertLess(task.sim.roll, 0.0)
 
     def test_a_port_does_nothing_once_the_tray_has_settled(self):
-        task = MarbleMaze()
-        task.start_rung = task.rung = 1
-        task.total_trials = 2
-        task.start_run()
+        task = dealt(1, trials=2)
         task.phase = 'lost'
         held = task.sim.roll
         task.tilt(M.TILT_EAST)
@@ -282,11 +288,7 @@ class TheVerdictIsPaintedWhenItShould(unittest.TestCase):
         reset_window()
 
     def _rolling_task(self, rung=2):
-        task = MarbleMaze()
-        task.start_rung = task.rung = rung
-        task.total_trials = 2
-        task.start_run()
-        return task
+        return dealt(rung, trials=2)
 
     def test_nothing_is_painted_while_the_tray_is_still_in_play(self):
         task = self._rolling_task()
@@ -371,11 +373,7 @@ class TheCoachIsGatedOnTheMarbleCount(unittest.TestCase):
         reset_window()
 
     def test_one_marble_and_a_coach_pays_per_action(self):
-        task = MarbleMaze()
-        task.coach = True
-        task.start_rung = task.rung = 1
-        task.total_trials = 2
-        task.start_run()
+        task = dealt(1, trials=2, coach=True)
         self.assertEqual(len(task.sim.marbles), 1)
         self.assertTrue(task.paying)
         seen = set()
@@ -390,11 +388,7 @@ class TheCoachIsGatedOnTheMarbleCount(unittest.TestCase):
         self.assertTrue(seen, 'the coach never said anything')
 
     def test_several_marbles_and_a_coach_says_nothing_per_action(self):
-        task = MarbleMaze()
-        task.coach = True
-        task.start_rung = task.rung = 5
-        task.total_trials = 2
-        task.start_run()
+        task = dealt(5, trials=2, coach=True)
         self.assertGreater(len(task.sim.marbles), 1)
         self.assertFalse(task.paying)
         for _ in range(60 * 10):
@@ -406,20 +400,13 @@ class TheCoachIsGatedOnTheMarbleCount(unittest.TestCase):
 
     def test_a_person_never_gets_a_coach(self):
         """The human game stays pixel-identical, so old runs compare."""
-        task = MarbleMaze()
-        task.start_rung = task.rung = 1
-        task.total_trials = 2
-        task.start_run()
+        task = dealt(1, trials=2)
         self.assertFalse(task.coach)
         self.assertFalse(task.paying)
 
     def test_a_tick_that_changes_nothing_pays_nothing(self):
         """Otherwise standing still against a wall would farm it."""
-        task = MarbleMaze()
-        task.coach = True
-        task.start_rung = task.rung = 1
-        task.total_trials = 2
-        task.start_run()
+        task = dealt(1, trials=2, coach=True)
         task.update(1 / 60.)          # level tray, marble at rest
         task.update(1 / 60.)
         self.assertIsNone(task.verdict_shown)
@@ -468,10 +455,7 @@ class TheKeysAndTheHubAgree(unittest.TestCase):
         reset_window()
 
     def test_held_arrows_keep_tipping_the_tray(self):
-        task = MarbleMaze()
-        task.start_rung = task.rung = 1
-        task.total_trials = 2
-        task.start_run()
+        task = dealt(1, trials=2)
         task.on_key_press(key.RIGHT, 0)
         for _ in range(10):
             task.update(1 / 60.)
@@ -483,10 +467,7 @@ class TheKeysAndTheHubAgree(unittest.TestCase):
         self.assertAlmostEqual(task.sim.roll, held, places=9)
 
     def test_l_levels_the_tray(self):
-        task = MarbleMaze()
-        task.start_rung = task.rung = 1
-        task.total_trials = 2
-        task.start_run()
+        task = dealt(1, trials=2)
         for _ in range(6):
             task.tilt(M.TILT_EAST)
         task.on_key_press(key.L, 0)
