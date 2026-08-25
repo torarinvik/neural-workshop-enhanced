@@ -56,6 +56,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('donkey', _('Donkey')),
         ('two_hands', _('Two Hands')),
         ('overrun', _('Overrun')),
+        ('buzz_wire', _('Buzz Wire')),
     ],
     'perception': [
         ('count', _('Count')),
@@ -423,6 +424,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'removals':
         from .removals import Removals
         Removals()
+        return
+    if task_id == 'buzz_wire':
+        from .buzzwire import BuzzWire
+        BuzzWire()
         return
     if task_id == 'you_are_here':
         from .youarehere import YouAreHere

@@ -48,7 +48,7 @@ class AttentionCategoryTests(unittest.TestCase):
         self.assertEqual([task for task, _name in TASKS['attention']],
                          ['reflex', 'ncup_monte', 'moving_targets',
                           'lookout', 'pursuit', 'out_of_sight', 'donkey',
-                          'two_hands', 'overrun'])
+                          'two_hands', 'overrun', 'buzz_wire'])
 
     def test_it_has_an_options_screen(self):
         from neural_workshop.ui import taskoptions

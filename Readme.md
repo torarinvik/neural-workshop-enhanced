@@ -813,6 +813,108 @@ machine that has fetched nothing.
 cd tests && PYTHONPATH=.. ../.venv/bin/python bench_overrun.py
 ```
 
+#### Buzz Wire
+
+The fairground game, in three dimensions and with the physics done
+properly. A bent wire runs between two posts, a metal loop is threaded
+on it, and the loop has to get from one post to the other without the
+two ever touching. It is the only task here whose difficulty is the
+*precision of a continuous action* rather than the choice of a discrete
+one — Pursuit is its nearest neighbour, and the contrast is worth
+stating: Pursuit's quarry is built to break prediction, while a buzz
+wire is completely predictable and completely visible from the first
+frame, and is hard anyway.
+
+**The loop is a hole, not a point.** Contact is decided exactly,
+between a circle in space and a tube in space, and one consequence
+falls out of that for free and turns out to be the whole top of the
+ladder. A wire crossing the loop's plane at an angle cuts an
+**ellipse** through it, stretched along the lean by one over the cosine
+of the angle: square on, a wire needs a hole its own width; at fifty
+degrees, half again; at sixty, twice. So a bend has to be *turned
+into*, and turned into early, because at the bend it is already too
+late. Nobody wrote that rule; it is what the geometry says, and from
+the seventh rung the loop stops aiming itself and the wrist becomes the
+player's problem. Turn it too far and the wire will not let you: the
+hole stops admitting it at all and the loop jams.
+
+**The arm is a physical object.** Mass, momentum, viscous drag, a
+downward sag the hand never quite cancels, and a tremor that is a real
+Ornstein-Uhlenbeck process rather than per-frame noise — it has a
+correlation time of a tenth of a second or less, so it produces drifts
+you have to catch rather than jitter that averages out. A tenth of a
+second is inside anybody's reaction time. That is the honest statement
+of what "superhuman" means at the top of this ladder: not a wire too
+thin to see, but a disturbance nobody could answer in time and a
+controller running at the frame rate could.
+
+**The ladder was measured, not described.** `bench_buzzwire.py` flies
+all twelve rungs with a reference pilot — a fixed-gain PD controller
+that reads the true state and presses the same eleven ports a learner
+has, one a tick. It flies the first nine clean, drops one wire in
+twelve at the tenth, and cannot hold the eleventh or the twelfth at
+all, buzzing ten and thirty times a metre on them. The gap runs from
+ten and a half millimetres at the bottom to under two at the top; one
+full press of a key is worth a sixteenth of the gap on the first rung
+and a quarter of it on the last.
+
+```bash
+cd tests && PYTHONPATH=.. ../.venv/bin/python bench_buzzwire.py
+```
+
+The pilot is a yardstick and not a ceiling. It is deliberately *not*
+allowed to read the tremor — that is a force inside the arm and nothing
+on screen carries it — and an earlier version that did subtract it
+cancelled the disturbance exactly and flew the whole ladder, which is a
+measurement of the cheat rather than of the wire.
+
+**The screen is a real renderer**, not a ray caster like the two 3D
+screens next door: those draw a world of unit cubes on a grid seen from
+inside, and this is a smooth curve in general position with a loop
+threaded on it. So `neural_workshop.ui.scene3d` builds meshes — the
+wire a swept tube on a rotation-minimising frame, the loop a torus,
+both with per-vertex normals shaded by Lambert and Blinn — and hands
+the hardware a depth per vertex through pyglet's shape shader, with
+`GL_DEPTH_TEST` on around its own batch. A depth buffer rather than a
+painter's algorithm, because a loop threaded on a wire is in front of
+it and behind it at the same time and no sort gets that right. The
+depth handed over is `near/z` rather than `z`, which is the quantity
+that interpolates linearly across a triangle in screen space.
+
+It stays inside a frame because of the division of labour: the camera
+never moves and neither does the wire, so the five thousand triangles of
+the scene are projected once when the level is dealt, and what is
+rebuilt every frame is the loop, its shadow on the board and the slice
+of wire the sight view looks down — about seven hundred vertices
+between them.
+
+The screen is split. On the left the whole wire, from a camera whose
+angle is itself a difficulty dial — square to the run at the bottom of
+the ladder, swung forty-four degrees round towards the wire's own axis
+at the top, until a bend towards you and a bend away from you look
+nearly alike and the board's shadow is the cue that is left. On the
+right, the view down the wire from just behind the loop, and that panel
+is not a luxury: a wire is forty centimetres of stage and the gap on
+the top rung is under two millimetres, which drawn to scale is a fifth
+of a pixel. Without it the one quantity the whole game is about would
+not be in the picture, and a task whose answer is not in the frame is
+not a task this workshop can wrap. What it does not show is the rest of
+the wire, so when to start turning the wrist is still read off the left
+panel.
+
+The agent gets eleven opaque ports: six that shove the loop, four that
+turn the wrist and one that braces the hand, with the four wrist ports
+doing nothing below the seventh rung. Random play is paid and paid red
+— eleven ports at random leave the loop wandering by the near post
+until the clock runs out, and the clock running out is a verdict — so
+the floor is the cost of getting nowhere rather than zero. The green
+has to be flown for, and `tests/test_env_tasks.py` flies it with the
+same pilot the ladder was measured with. Coach mode strings milestone
+beads along the wire and pays the sign of the change in how many are
+still ahead; the beads are spaced against the furthest one tick could
+ever carry the loop, so one action moves the count by one at most and
+the signal is a potential in the sense of Ng et al. rather than a hint.
+
 ### Perception
 
 The *Perception* category holds two tasks. One asks about what is in
@@ -2561,7 +2663,7 @@ obs, events, done = env.step(2)         # one of three opaque ports
 env.close()
 ```
 
-Twenty-one of the forty-three are *declarations* rather than code — where
+Twenty-two of the forty-four are *declarations* rather than code — where
 the task class lives, what one port calls, which phase takes input, which
 phase means the trial is over, and what the difficulty knobs are called:
 
@@ -2582,7 +2684,7 @@ of them add a short method or two — a port that names an object rather than
 an index, a port that is a moment rather than a symbol, a trial window the
 task has no phase for, a coach gated on whether the boundary will actually
 pay it. The four written before that existed still carry both, at about a
-hundred lines apiece. Twenty-one and eighteen and four is forty-three, which
+hundred lines apiece. Twenty-two and eighteen and four is forty-four, which
 is the point of counting them.
 `ADDING_A_TASK.md` is the whole contract.
 

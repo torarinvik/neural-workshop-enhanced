@@ -609,6 +609,29 @@ SIGHT_PROBES = 6
 SIGHT_ROUNDS = 5
 SIGHT_ADAPTIVE = True
 
+# Buzz Wire: the fairground game, in three dimensions and with the
+# physics done properly. A bent wire runs between two posts and a metal
+# loop is threaded on it; get the loop from one post to the other
+# without the two touching. BUZZ_LEVEL is the rung, one to twelve. What
+# moves across the ladder is the size of the loop's hole against a wire
+# of fixed thickness - two centimetres of play at the bottom, under two
+# millimetres at the top - together with how bendy the wire is, how
+# much the hand sags and shakes, and how far round towards the wire's
+# own axis the camera has been swung, which is what makes a bend
+# towards you and a bend away from you hard to tell apart. From level
+# seven the loop stops aiming itself: a wire cutting the loop's plane at
+# an angle needs a hole wider than its own thickness by one over the
+# cosine of that angle, so a bend has to be turned into, and turned into
+# early. The top rungs allow no touches at all, which is the real game.
+# BUZZ_METER prints how much of the clearance is gone; BUZZ_BEADS
+# strings milestones along the wire and lights the ones passed.
+BUZZ_LEVEL = 2
+BUZZ_TRIALS = 3
+BUZZ_ADAPTIVE = True
+BUZZ_METER = True
+BUZZ_BEADS = True
+BUZZ_SIGHT = True
+
 
 # Count: a tangle of overlapping outlines, and the question is how
 # many. COUNT_SHAPE is 'lines', 'circles', 'triangles', 'rectangles'

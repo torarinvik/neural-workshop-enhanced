@@ -19,13 +19,15 @@ import shutil
 import tempfile
 import unittest
 
-from uisupport import (Concentration, Counting, GraphMapping, JigsawPuzzle,
+from uisupport import (BuzzWire, Concentration, Counting, GraphMapping,
+                       JigsawPuzzle,
                        Lookout, MatrixReasoning, MazeTask, MonkeyLadder,
                        MovingTargets, OutOfSight, Pursuit, SokobanTask,
                        NCupMonte, Recognition, Reflex, TowerOfHanoi,
                        TravelingSalesman, close_overlays, needs_ui,
                        reset_window, state, taskoptions)
 
+from neural_workshop import buzzwire as bw
 from neural_workshop import datasets, media
 
 
@@ -103,6 +105,33 @@ class MaximaTests(unittest.TestCase):
         for option in spec.options:
             self.saved[option.key] = state.cfg[option.key]
         return push(task_id)
+
+    def test_buzz_wire_at_the_top_of_its_ladder(self):
+        """The hardest wire the options offer, dealt, flown and drawn.
+
+        The top rung is the one worth pushing here rather than the
+        biggest board: every dial that matters on this task moves the
+        *physics* rather than the size of anything, and the thing that
+        would break is the geometry — a wire bent tighter than the loop
+        that has to go round it, or a clearance one tick of thrust can
+        cross. Both are held as arithmetic in tests/test_buzzwire.py;
+        this is the same claim made by playing it.
+        """
+        self._push('buzz_wire')
+        task = BuzzWire()
+        try:
+            self.assertEqual(task.start_rung, len(bw.GRADES))
+            task.start_run()
+            self.assertEqual(task.rung, len(bw.GRADES))
+            for _tick in range(120):
+                if task.phase != 'flying':
+                    break
+                task.press(bw.pilot_port(task.hand))
+                task.update(1.0 / 60.0)
+            self.assertGreater(task.hand.arc, bw.THREADED_AT)
+            task.on_draw()
+        finally:
+            task.close()
 
     def test_monkey_ladder_ten_by_ten_length_fifty(self):
         self._push('monkey_ladder')

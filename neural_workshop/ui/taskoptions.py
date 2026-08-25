@@ -733,6 +733,78 @@ OUT_OF_SIGHT = TaskSpec(
     note=out_of_sight_note)
 
 
+def buzz_wire_note(chosen: Dict[str, Any]) -> str:
+    """What this rung's wire, hand and clock actually amount to.
+
+    Every number here is read off the grade rather than described in
+    round terms, because the whole of this task is one quantity — how
+    much room there is between the wire and the hole — and a player who
+    cannot see that number has no way to tell the third rung from the
+    ninth until they have lost on it.
+    """
+    from ..buzzwire import (GRADES, WIRE_RADIUS, clamped_rung, clearance,
+                            hand_speed, ticks_per_clearance)
+    rung = clamped_rung(int(chosen['BUZZ_LEVEL']))
+    grade = GRADES[rung - 1]
+    said = [_('Level %d, "%s". The loop\'s hole is %.0f mm across against a '
+              '%.0f mm wire, so you have %.1f mm of room on either side, and '
+              'one full press of a key eventually uses about %d%% of it.')
+            % (rung, _(grade.name), grade.hole * 20.0, WIRE_RADIUS * 20.0,
+               clearance(grade) * 10.0,
+               int(round(100.0 / max(1e-6, ticks_per_clearance(grade)))))]
+    said.append(
+        _('The hand travels %.1f cm a second flat out and the clock allows '
+          '%d seconds.') % (hand_speed(grade), int(grade.seconds))
+        if not grade.sag else
+        _('The hand travels %.1f cm a second flat out, sags at %.0f cm/s² '
+          'when you stop holding it up, and the clock allows %d seconds.')
+        % (hand_speed(grade), grade.sag, int(grade.seconds)))
+    if grade.tremor:
+        said.append(_('It also shakes: a drift that turns over about %d '
+                      'times a second, which you have to catch rather '
+                      'than wait out.') % max(1, int(1.0 / grade.tremor_tau)))
+    if grade.twist > 0.0:
+        said.append(_('From this rung the loop no longer aims itself. A '
+                      'wire crossing it at an angle needs a wider hole '
+                      'than its own thickness — half again at fifty '
+                      'degrees, twice at sixty — so I, K, J and L turn '
+                      'the wrist, and a bend has to be turned into '
+                      'before you are in it.'))
+    else:
+        said.append(_('The loop still aims itself along the wire here, so '
+                      'the four turning keys do nothing yet.'))
+    said.append(_('No touches at all are allowed.') if not grade.touches
+                else _('One touch is allowed before the run is lost.')
+                if grade.touches == 1
+                else _('%d touches are allowed before the run is lost.')
+                % grade.touches)
+    if grade.view:
+        said.append(_('The camera stands %d° round towards the wire\'s own '
+                      'run, which is what makes a bend towards you and a '
+                      'bend away from you hard to tell apart. The shadow '
+                      'on the board is the cue that is left.')
+                    % int(grade.view))
+    if chosen['BUZZ_ADAPTIVE']:
+        said.append(_('Get home with time to spare and the next wire is a '
+                      'level harder; lose one and it is a level easier.'))
+    return '  '.join(said)
+
+
+BUZZ_WIRE = TaskSpec(
+    title=_('Buzz Wire options'),
+    options=(
+        Option('BUZZ_LEVEL', _('Level'), 2, values=tuple(range(1, 13))),
+        Option('BUZZ_TRIALS', _('Wires per run'), 3,
+               values=(1, 2, 3, 5, 8, 10)),
+        Option('BUZZ_ADAPTIVE',
+               _('Climb a level when you get home with time to spare'), True),
+        Option('BUZZ_METER', _('Show how much of the gap is gone'), True),
+        Option('BUZZ_BEADS', _('String milestones along the wire'), True),
+        Option('BUZZ_SIGHT', _('Show the view down the wire'), True),
+    ),
+    note=buzz_wire_note)
+
+
 def sokoban_note(chosen: Dict[str, Any]) -> str:
     """What the chosen rung is made of, and what the par will mean."""
     from ..sokoban import GRADES
@@ -1935,6 +2007,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'lookout': LOOKOUT,
     'pursuit': PURSUIT,
     'out_of_sight': OUT_OF_SIGHT,
+    'buzz_wire': BUZZ_WIRE,
     'donkey': DONKEY,
     'two_hands': TWO_HANDS,
     'overrun': OVERRUN,

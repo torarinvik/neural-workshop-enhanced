@@ -101,6 +101,14 @@ BY_LUCK = {
     'salesman': (600, {}),
     'sokoban': (2500, {'rung': 1, 'trials': 3}),
     'sokoban_3d': (1500, {'rung': 1, 'trials': 3}),
+    # Paid on every wire and paid nothing but red, and the reason is
+    # the clock rather than the ports: a wire ends on its own when the
+    # time is up whether or not the loop got anywhere, so the cost of
+    # not getting anywhere arrives without anything having to go wrong.
+    # Driven with a short clock because the ladder's own is eighteen
+    # seconds -- a thousand ticks, which is longer than this sweep.
+    # No walk flies a wire, so the green is in PlayedProperlyItIsPaid.
+    'buzz_wire': (900, {'rung': 1, 'trials': 4, 'seconds': 4}),
     'chain_of_custody': (900, {'rung': 3, 'trials': 4}),
     'cookie_thief': (900, {'rung': 4, 'trials': 4}),
     # Paid on every road, and paid nothing but red on any of them: a
@@ -227,6 +235,9 @@ class RandomPlayIsPaid(unittest.TestCase):
     def test_sokoban_3d(self):
         self.check('sokoban_3d')
 
+    def test_buzz_wire(self):
+        self.check('buzz_wire')
+
     def test_recognition(self):
         self.check('recognition')
 
@@ -351,6 +362,26 @@ class PlayedProperlyItIsPaid(unittest.TestCase):
             wide = task.maze.width
             return MazeEnv.action_table.index(
                 (step % wide - here % wide, step // wide - here // wide))
+
+        self.assertEqual(driven(env, moves), [1.0])
+
+    def test_a_flown_buzz_wire_is_paid(self):
+        """Flown by the reference pilot, through the same eleven ports.
+
+        Random play never finishes a wire -- eleven ports shoved at
+        random leave the loop wandering by the near post -- so the green
+        on this task needs a policy that can actually hold a line. The
+        pilot reads the true state, which is what makes it a yardstick;
+        it presses the same ports a learner would and the boundary still
+        reads the verdict off the pixels.
+        """
+        from neural_workshop import buzzwire as bw
+        env = catalog.env_class('buzz_wire')(seed=0, rung=1, trials=2)
+
+        def moves(task):
+            if task.hand is None or task.phase != 'flying':
+                return 0
+            return bw.pilot_port(task.hand)
 
         self.assertEqual(driven(env, moves), [1.0])
 
@@ -698,6 +729,7 @@ class TheBoundaryKnowsWhichTasksHaveAClock(unittest.TestCase):
     def test_the_ones_that_move_on_their_own_are(self):
         for task_id in ('removals', 'in_the_dark', 'ncup_monte',
                         'moving_targets', 'lookout', 'pursuit', 'reflex',
+                        'buzz_wire',
                         'count', 'recognition', 'matrix_reasoning',
                         'graph_mapping', 'concentration',
                         'chain_of_custody', 'cookie_thief', 'donkey',
