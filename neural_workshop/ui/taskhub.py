@@ -56,6 +56,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('donkey', _('Donkey')),
         ('two_hands', _('Two Hands')),
         ('overrun', _('Overrun')),
+        ('marble_maze', _('Marble Maze')),
     ],
     'perception': [
         ('count', _('Count')),
@@ -483,6 +484,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'verbal_reasoning':
         from .verbal import VerbalReasoning
         VerbalReasoning()
+        return
+    if task_id == 'marble_maze':
+        from .marblemaze import MarbleMaze
+        MarbleMaze()
         return
     if task_id == 'ncup_monte':
         from .ncupmonte import NCupMonte

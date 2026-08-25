@@ -1,6 +1,6 @@
 # Making a task reachable by the agent
 
-The Workshop ships forty-three playable tasks and **all forty-three are
+The Workshop ships forty-four playable tasks and **all forty-four are
 reachable by the learning agent**. Reachable means more than playable: the
 agent gets pixels and opaque ports, and every scalar it is paid must be
 re-derivable from the frames by someone who is not trusted with the game.
@@ -54,17 +54,17 @@ the programme has one pixel reader to get right rather than one per task.
 | `requires` | settings the boundary imposes whatever the player prefers. Almost always `{'feedback': True}`: a trial that resolves with no verdict painted resolves into nothing a third party can read. |
 
 The hooks are all still there — `build`, `drive`, `trial_open`, `tick`,
-`resolved`, `finished` — and an override wins over a declaration. Eighteen
-of the thirty-nine wrappers need one. Count composes its answer out of digits,
+`resolved`, `finished` — and an override wins over a declaration. Nineteen
+of the forty wrappers need one. Count composes its answer out of digits,
 Sudoku and the Crossword steer a cursor, Scrabble's ports are rack
 *positions* rather than letters, Scramble's and Algebra's are a typewriter,
 Moving Targets and Concentration name an object rather than an index, Reflex
 has no phase for its trial window at all, Mr. Time's last port is a
 *moment* rather than a symbol, and Chain of Custody and the 3D
 Maze steer and gate both, and Overrun's twenty-seventh port is a rub-out.
-Most are six lines. Three more — Donkey, Two Hands
-and Cookie Thief — override `apply_dials` and `dials` only, which is the
-coach gate below rather than anything about their ports. The remaining four tasks predate all of this and
+Most are six lines. Four more — Donkey, Two Hands,
+Cookie Thief and the Marble Maze — override `apply_dials` and `dials` only,
+which is the coach gate below rather than anything about their ports. The remaining four tasks predate all of this and
 are whole environments of their own, at about a hundred lines apiece.
 
 ## The two things the UI must do

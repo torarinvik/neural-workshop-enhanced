@@ -111,6 +111,22 @@ BY_LUCK = {
     # longer budget than the other clocked tasks because a road is four
     # ticks a drawn row.
     'donkey': (1500, {'rung': 1, 'trials': 4}),
+    # Paid, and paid nothing but red: random tilting walks a marble
+    # into a hole or runs the clock out, and neither is a green.
+    #
+    # A ten-second tray rather than the rung's own fifty-five, which is
+    # what makes this reliable rather than merely likely. Random play
+    # loses a marble down a hole on about six trays in ten; on the rest
+    # the tray is decided by its clock, so a budget past the clock is
+    # paid on *every* tray instead of on most of them. The same option
+    # is on the player's screen, so this is a shorter tray rather than
+    # a different task.
+    #
+    # The green is in PlayedProperlyItIsPaid, in
+    # tests/test_ui_marblemaze.py, where a policy that knows the route
+    # flies a tray home through these same four ports.
+    'marble_maze': (900, {'rung': 4, 'trials': 2, 'adaptive': False,
+                          'seconds': 10}),
     # Paid on every road, and the floor here is not zero: five of the
     # eleven ports do not touch the wheel at all, so a uniform port is
     # a hold five times in eleven and the car spends most of a road
@@ -304,6 +320,9 @@ class RandomPlayIsPaid(unittest.TestCase):
 
     def test_tower_of_hanoi(self):
         self.check('tower_of_hanoi')
+
+    def test_marble_maze(self):
+        self.check('marble_maze')
 
     def test_every_task_in_by_luck_is_actually_played(self):
         """The list and the methods are two lists, so they can drift.
@@ -701,7 +720,7 @@ class TheBoundaryKnowsWhichTasksHaveAClock(unittest.TestCase):
                         'count', 'recognition', 'matrix_reasoning',
                         'graph_mapping', 'concentration',
                         'chain_of_custody', 'cookie_thief', 'donkey',
-                        'two_hands', 'tetris', 'overrun'):
+                        'two_hands', 'tetris', 'overrun', 'marble_maze'):
             self.assertTrue(self.clocked(task_id), task_id)
 
     def test_the_ports_are_the_ones_the_task_has(self):
@@ -720,6 +739,8 @@ class TheBoundaryKnowsWhichTasksHaveAClock(unittest.TestCase):
         self.assertEqual(catalog.env_class('n_in_a_row').ports, 128 * 128)
         self.assertEqual(catalog.env_class('algebra').ports, 21)
         self.assertEqual(catalog.env_class('verbal_reasoning').ports, 5)
+        # Two knobs, two ways each, and nothing else on the boundary.
+        self.assertEqual(catalog.env_class('marble_maze').ports, 4)
         # Six for the wheel and five for the sights, out of one budget.
         self.assertEqual(catalog.env_class('two_hands').ports, 11)
 

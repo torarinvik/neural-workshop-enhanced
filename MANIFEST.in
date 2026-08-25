@@ -5,3 +5,4 @@ recursive-include neural_workshop *.py
 recursive-include bwaccel *.py
 recursive-include nwenv *.py
 recursive-include tests *.py
+recursive-include res/marblemaze *.png

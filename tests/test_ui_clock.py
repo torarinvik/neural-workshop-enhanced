@@ -40,11 +40,14 @@ TASK_DIR = os.path.join(ROOT, 'neural_workshop', 'ui')
 
 #: Files under it that are not tasks. Menus, chrome and helpers are
 #: never stepped, so their deadlines are nobody's but the player's.
+#: ``render3d.py`` is in here for the same reason the other helpers
+#: are: it is a renderer with no notion of time at all, and the task
+#: that drives it keeps the clock.
 NOT_TASKS = frozenset({
     '__init__.py', 'cursor.py', 'effects.py', 'field.py', 'gameselect.py',
     'glyphs.py', 'graph.py', 'hud.py', 'menu.py', 'message.py', 'readouts.py',
-    'screens.py', 'taskhub.py', 'taskoptions.py', 'textinput.py',
-    'trialui.py', 'verdict.py',
+    'render3d.py', 'screens.py', 'taskhub.py', 'taskoptions.py',
+    'textinput.py', 'trialui.py', 'verdict.py',
 })
 
 #: The one place ``time.time`` may be named: installing the default.

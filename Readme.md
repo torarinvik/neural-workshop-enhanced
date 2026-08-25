@@ -2131,6 +2131,125 @@ the 3D Maze next door, which had been shipping it: see **the agent
 environment** below for what a sweep of that one could and could not
 have seen.
 
+#### Marble Maze
+
+The wooden labyrinth. Two knobs tip a tray, the tray has walls and holes
+in it, and a steel marble goes where gravity tells it. Get every marble
+to the green cup before the clock runs out, and do not lose one down a
+hole on the way.
+
+It is the workshop's only screen with a **real perspective pipeline**
+behind it — a depth buffer, a directional light, a 1024-square shadow
+map, four-times multisampling — and that is a requirement rather than a
+flourish. The 3D Maze and 3D Sokoban next door are ray casters, which
+is the right tool for a corridor seen from inside it, where every
+surface is vertical and the only unknown is distance. Here the thing
+the player is operating is *the angle of a plane*, and a flat rendering
+can show where the marble is but not what the tray is doing. A learner
+that cannot see the tilt would be integrating its own action history to
+recover the control it is already holding, which is a different and
+much worse task. `neural_workshop/ui/render3d.py` is the whole of the
+pipeline, in about seven hundred lines.
+
+**The physics is the real thing, in SI units.** A 15mm steel marble on
+a 250-to-420mm tray, standard gravity, and a solid sphere rolling
+without slipping accelerates at `5/7 g sinθ` — two sevenths of gravity
+goes into spin rather than travel. Drop that factor and the marble is
+40% too eager, which does not read as wrong physics so much as a board
+twice as steep as it looks. Rolling resistance is a constant
+`Crr·g·cosθ` against the direction of travel, which gives the tray a
+real *stall angle*: below about two thirds of a degree nothing moves at
+all, and that is why levelling the tray is a usable move rather than an
+approximate one.
+
+**A hole is not a wall**, and this is the part worth playing for. A
+marble whose contact patch crosses a rim stops being supported and
+starts to *fall* — keeping its in-plane speed and picking up the full
+gravity rather than five sevenths of it. Sent across fast enough it
+clears the far rim and lands with a clatter. Measured on a 12mm hole:
+lost at 0.15 and 0.45 m/s, across at 0.95. Widen the hole to 24mm and
+no speed saves it. That is the only reason to ever go fast, and it is
+why the capture test is on the marble's *height* rather than on its
+position.
+
+**Every tray is generated, and certified before it is dealt.** A
+randomised-depth-first maze, braided to taste, walls merged into strips,
+then holes bitten out of the corridors against an analytic clearance
+test — and then the whole tray is proved passable by a Dijkstra sweep
+over a grid of every place the marble's *centre* may legally be. A tray
+that has been sealed off by its own holes is not dealt. That matters
+more than it sounds: from outside, "unwinnable" and "very hard" look
+identical, and the upper rungs run corridors two marble-widths wide.
+
+The sweep does double duty. It is the certificate, and it is also the
+distance field the coach's shaping potential is quantised out of, so
+the two are the same computation and cannot drift apart.
+
+Two bugs that certification could not catch are worth recording,
+because both passed every test that existed at the time:
+
+- **The route bar.** Holes cut a tray into pockets, and a pocketed tray
+  still certifies — the marble is placed in the pocket the cup is in,
+  and everything passes while "inhuman" deals a marble twelve
+  centimetres from home on a forty-centimetre tray. The certificate
+  answers *can this be won*, which is not the same question as *is this
+  the rung it says it is*. A tray now owes 45% of the route its walls
+  alone would give, and gives holes back until it can pay.
+- **The rim start.** The free grid rules out points inside a hole, so
+  the furthest legal point on a tray is often *exactly on a rim* —
+  legal, not over the hole, one millimetre from being over it. Random
+  play at rung four resolved at a median of 59 ticks, because half the
+  trays dropped their marble down the hole it was standing on inside
+  the first second whatever anyone did. A trial lost before the player
+  has touched a knob is not a hard trial; a start now clears every pit
+  by two marble radii over and above the pit's own.
+
+**Several marbles share one pair of knobs**, from rung five up, to four
+of them at rung thirteen. They start nose to tail along the same route
+so that a tilt which serves one at least points the rest the right way,
+and they knock each other about with an impulse along the line of
+centres. This is also where the dense reward stops: the shaping
+potential is the summed quantised distance of every live marble, and
+the guarantee that one action moves it by at most one step rests on a
+marble travelling at most 16.7mm in a tick against a 25mm quantum —
+which is an argument about *a* marble. Three of them can each cross a
+boundary in the same tick, and on the top rung they measurably do. So
+the several-marble rungs are honestly sparse rather than dishonestly
+dense, and the gate is on the marble count rather than on the caller.
+
+Two things about the rendering are worth knowing before changing it.
+The holes are cut with `discard` and their rims antialiased by
+**alpha-to-coverage**, not by per-sample shading: measured on the top
+rung at 1880x886, `glMinSampleShading(1)` costs **39.6ms a frame
+against 3.8ms**, because it runs the whole shader — wood grain and all
+— four times per pixel across the entire tray to smooth an edge a few
+thousand pixels long. And the stage stops above the bottom quarter of
+the frame, because lit pine passes straight through the outcome
+reader's pattern for a *negative* verdict: `(196, 128, 74)` is red over
+180 with the other two under 140. `check_band.py` reports the task
+clean, and that is the useless kind of clean — whether a frame lands
+there depends on the grain seed, the tilt and the shadows. The guard is
+the geometry, and `tests/test_ui_marblemaze.py` asserts it at six
+window sizes.
+
+The marble's colour, roughness and normal maps are baked out of a
+source `.glb` by `tools/bake_marble_textures.py` — 20MB of asset down
+to 640KB in `res/marblemaze/` — and the shader keeps a procedural
+fallback, so a checkout without them renders a plainer marble rather
+than a black one. Nothing is taken from the companion labyrinth asset:
+its base-colour map is a UV *atlas* keyed to a fixed two-million-
+triangle mesh, and this task generates its trays, so there is no mesh
+to key it to. Six candidate squares were cropped and mirror-tiled
+looking for a patch of clean grain to tile instead; every one large
+enough contained the pale gaps between islands. The tray keeps its
+procedural timber, which is better than any of them.
+
+Random play is paid, and paid nothing but red: it wanders a marble into
+a hole or runs the clock out, and neither is a green. That is the same
+floor Scramble has — what a learner gets for free is what a mistake
+costs — so the green needs a policy that knows the answer, and
+`tests/test_ui_marblemaze.py` flies one through the same four ports.
+
 **Freeform Tetris.** A well seventy-two columns wide and thirty-two
 deep — a tetris well is ten by twenty — with cells about a third the
 size, so that where a piece goes is a search rather than a choice
@@ -2561,7 +2680,7 @@ obs, events, done = env.step(2)         # one of three opaque ports
 env.close()
 ```
 
-Twenty-one of the forty-three are *declarations* rather than code — where
+Twenty-one of the forty-four are *declarations* rather than code — where
 the task class lives, what one port calls, which phase takes input, which
 phase means the trial is over, and what the difficulty knobs are called:
 
@@ -2577,12 +2696,12 @@ class HanoiEnv(TaskEnv):
 ```
 
 They carry **no deriver and no verifier**, because they paint the shared
-verdict label and the boundary already knows how to read one. Eighteen
+verdict label and the boundary already knows how to read one. Nineteen
 of them add a short method or two — a port that names an object rather than
 an index, a port that is a moment rather than a symbol, a trial window the
 task has no phase for, a coach gated on whether the boundary will actually
 pay it. The four written before that existed still carry both, at about a
-hundred lines apiece. Twenty-one and eighteen and four is forty-three, which
+hundred lines apiece. Twenty-one and nineteen and four is forty-four, which
 is the point of counting them.
 `ADDING_A_TASK.md` is the whole contract.
 

@@ -20,6 +20,10 @@ from typing import (Any, Callable, Dict, NamedTuple, Optional, Sequence)
 import pyglet
 
 from .. import state
+# Imported up here rather than inside a note, because the Marble Maze's
+# Level row needs the ladder's *length* to build its choices. The module
+# is pure arithmetic and imports no pyglet, so it costs nothing at boot.
+from ..marblemaze import GRADES as _MARBLE_GRADES
 from ..constants import FONTLIST
 from ..geometry import calc_fontsize, from_bottom_edge, width_center
 from .menu import Cycler, Menu
@@ -1660,6 +1664,59 @@ TRIVIA = TaskSpec(
     ),
     note=trivia_note)
 
+def marble_maze_note(chosen: Dict[str, Any]) -> str:
+    """What this rung's tray is, and the two things that surprise people.
+
+    Both surprises are physics rather than rules, which is why they are
+    said here rather than left to be discovered: that a marble can
+    outrun a hole if it is going fast enough, and that on a
+    several-marble tray the one pair of knobs moves all of them.
+    """
+    rung = int(chosen['MARBLE_MAZE_LEVEL'])
+    grade = _MARBLE_GRADES[max(0, min(len(_MARBLE_GRADES) - 1, rung - 1))]
+    corridor = 2.0 * 7.5 * grade.slack
+    said = [_('Level %d, "%s": a %dx%d maze in corridors %dmm wide, with '
+              '%d %s to miss and %d %s to bring home, in %ds.')
+            % (rung, _(grade.name), grade.cols, grade.rows, round(corridor),
+               grade.holes, _('hole') if grade.holes == 1 else _('holes'),
+               grade.marbles,
+               _('marble') if grade.marbles == 1 else _('marbles'),
+               int(grade.seconds))]
+    said.append(_('The marble is a 15mm steel one and it behaves like it: '
+                  'it accelerates at five sevenths of gravity down the '
+                  'slope, because the other two sevenths go into spin, '
+                  'and it keeps rolling after you level the tray.'))
+    said.append(_('A hole only takes a marble that is over it long enough '
+                  'to fall in. Sent across fast enough, a marble clears '
+                  'the far rim and lands with a clatter — which is the '
+                  'only reason to ever go fast.'))
+    if grade.marbles > 1:
+        said.append(_('There is one tray and one pair of knobs, so all %d '
+                      'marbles feel every tilt. They start nose to tail '
+                      'along the same route, and they knock each other '
+                      'about.') % grade.marbles)
+    said.append(_('Every tray is generated and then certified: a sweep of '
+                  'every place the marble may legally stand proves there '
+                  'is a way through before it is dealt.'))
+    return ' '.join(said)
+
+
+MARBLE_MAZE = TaskSpec(
+    title=_('Marble Maze options'),
+    options=(
+        Option('MARBLE_MAZE_LEVEL', _('Level'), 1,
+               values=tuple(range(1, len(_MARBLE_GRADES) + 1))),
+        Option('MARBLE_MAZE_TRIALS', _('Trays per run'), 5,
+               values=(1, 2, 3, 5, 8, 10)),
+        Option('MARBLE_MAZE_ADAPTIVE',
+               _('Climb a level when you finish a tray in good time'), True),
+        Option('MARBLE_MAZE_SHADOWS', _('Cast shadows'), True),
+        Option('MARBLE_MAZE_SECONDS', _('Seconds per tray'), 0,
+               values=(0, 15, 30, 45, 60, 90, 120)),
+    ),
+    note=marble_maze_note)
+
+
 VERBAL_REASONING = TaskSpec(
     title=_('Verbal Reasoning options'),
     options=(
@@ -1964,6 +2021,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'syllogism': SYLLOGISM,
     'trivia': TRIVIA,
     'verbal_reasoning': VERBAL_REASONING,
+    'marble_maze': MARBLE_MAZE,
     'chain_of_custody': CUSTODY,
     'cookie_thief': COOKIE_THIEF,
     'chess': CHESS,

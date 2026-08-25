@@ -1241,6 +1241,18 @@ TRIVIA_ADAPTIVE = True
 VERBAL_REASONING_TRIALS = 6
 VERBAL_REASONING_EXPLANATION = True
 
+# The Marble Maze tips a wooden tray in three dimensions. MARBLE_MAZE_SHADOWS
+# turns off the shadow-map pass on machines where it costs more than it is
+# worth; the tray is still drawn in perspective either way, because the tilt
+# is the control and a flat tray would be a different task.
+MARBLE_MAZE_LEVEL = 1
+MARBLE_MAZE_TRIALS = 5
+MARBLE_MAZE_ADAPTIVE = True
+MARBLE_MAZE_SHADOWS = True
+# Nought means "however long the level says", which is between 45 and 140
+# seconds. Any other number caps every tray at it.
+MARBLE_MAZE_SECONDS = 0
+
 ######################################################################
 # This is the end of the configuration file.
 ######################################################################
