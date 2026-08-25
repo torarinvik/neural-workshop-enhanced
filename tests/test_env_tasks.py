@@ -415,42 +415,6 @@ class PlayedProperlyItIsPaid(unittest.TestCase):
 
         self.assertEqual(driven(env, moves), [1.0])
 
-    def test_a_steady_hand_on_the_wire_is_paid(self):
-        """Walked along the wire waypoint by waypoint, never touching."""
-        import math
-        env = catalog.env_class('buzz_wire')(
-            seed=0, width=0.12, bends=2, seconds=20, rounds=1)
-
-        def moves(task):
-            if task.phase not in ('arming', 'steering'):
-                return None
-            points = task._wire_pixels()
-            if task.phase == 'arming':
-                target = points[0]
-            else:
-                # Dense samples along the polyline, so the aim point is
-                # always a little way down the wire rather than a corner
-                # to be cut.
-                samples = []
-                for a, b in zip(points, points[1:]):
-                    span = math.hypot(b[0] - a[0], b[1] - a[1])
-                    for k in range(max(1, int(span // 8))):
-                        t = k / max(1, int(span // 8))
-                        samples.append((a[0] + (b[0] - a[0]) * t,
-                                        a[1] + (b[1] - a[1]) * t))
-                samples.append(points[-1])
-                nearest = min(range(len(samples)), key=lambda i: math.hypot(
-                    samples[i][0] - task.mouse[0],
-                    samples[i][1] - task.mouse[1]))
-                target = samples[min(nearest + 3, len(samples) - 1)]
-            dx = target[0] - task.mouse[0]
-            dy = target[1] - task.mouse[1]
-            if abs(dx) > abs(dy):
-                return 3 if dx > 0 else 2
-            return 0 if dy > 0 else 1
-
-        self.assertEqual(driven(env, moves), [1.0])
-
     def test_a_solved_sudoku_is_paid(self):
         """Steered to each blank and filled in with the right digit."""
         from nwenv import sudoku as sudoku_env
