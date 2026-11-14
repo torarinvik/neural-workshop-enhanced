@@ -1279,6 +1279,54 @@ colour work above and the near-miss idea — which was itself a strategy
 the Sandia tool declared, as `MODIFIED_CORRECT_ANSWER`, and never
 wrote.
 
+#### Hidden Rule
+
+Matrix Reasoning asks which of eight pictures finishes a pattern; this
+asks the player to find the pattern themselves, by experiment. A lamp
+lights for some objects and not others, by a rule nobody states. An
+object is a handful of properties — colour, shape, size, how many,
+solid or hollow, underlined or not — and any object can be built and
+put under the lamp. Each **test** costs a point. Two free examples
+start the notebook, one lit and one dark. When you think you have the
+rule, sit the **exam**: objects you have not tested come up one at a
+time and each must be called lit (Y) or dark (N), with nothing said
+until the last. Every wrong call costs the rung's penalty, which rises
+with the rung. The round passes if tests plus penalties come in at or
+under par. Afterwards the rule is printed.
+
+Three skills nothing else in the workshop asks for together: keeping in
+mind every rule the notebook still allows, choosing the test those
+rules disagree about (and not the one you expect to light the lamp),
+and knowing when you know enough to stop paying for tests.
+
+| Rung | What the rule may be |
+| --- | --- |
+| 1–3 | Two or three properties of two values; the rule is one value ("blue"). |
+| 4–5 | "Not" a value, where a property has three or more. |
+| 6–7 | Two values that must both hold ("blue and round"). |
+| 8–9 | Either of two ("blue or round"), found only by testing what should *not* light. |
+| 10–11 | One but not both. |
+| 12+ | **The lamp lies** on a share of tests, up to one in ten. One reading is no longer proof. |
+| 13–15 | Three at once; any of three. Five properties. |
+| 16–18 | Mixtures: at least two of three, (a and b) or c, (a or b) and c. Six properties, 384 objects. |
+| 19+ | "Not" inside any rule; past rung 20 par is below the reference. |
+
+Par is set by a Bayesian reference experimenter playing the identical
+deal: the lamp lies on the same numbered tests whatever is tested, and
+the exam is the same objects in the same order. It keeps every rule
+the rung allows, weighted by how many readings each contradicts, tests
+the object its rules are most evenly split on, and sits the exam once
+what it expects to lose there is worth less than a test. It looks one
+test ahead only. Measured over sixty deals a rung it pays about 2
+tests at rung 4, 8 at rung 12 and 23 at rungs 16 and up, and from
+rung 12 players who test at random pass at most a quarter of the time.
+Par is twice the reference's cost at rung 1, the reference's cost by
+rung 12, and less than it past rung 20, by more at every rung.
+
+The agent plays through ten ports: six step one property each to its
+next value (free), then Test, Exam, Lit and Dark. It is turn-based, so
+it takes the think clock.
+
 #### Jigsaw Puzzle
 
 A photograph is cut into a square grid of tiles and shuffled; click

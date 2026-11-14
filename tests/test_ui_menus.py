@@ -312,7 +312,8 @@ class HubGridLayoutTests(unittest.TestCase):
         bottoms = {bottom for _left, bottom, _width, _height, _task
                    in self.hub.task_rects}
         self.assertEqual(len(lefts), 3)
-        self.assertEqual(len(bottoms), 5)
+        self.assertEqual(len(bottoms),
+                         -(-len(tasks_for('reasoning')) // 3))
 
     def test_every_card_fits_and_cards_do_not_overlap(self):
         rects = self.hub.task_rects

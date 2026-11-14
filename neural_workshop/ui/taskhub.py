@@ -68,6 +68,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
     'reasoning': [
         ('graph_mapping', _('Graph Mapping')),
         ('matrix_reasoning', _('Matrix Reasoning')),
+        ('hidden_rule', _('Hidden Rule')),
         ('jigsaw', _('Jigsaw Puzzle')),
         ('video_puzzle', _('Video Puzzle')),
         ('sudoku', _('Sudoku')),
@@ -263,7 +264,7 @@ class TaskHub:
         grid_x = (window.width - grid_w) // 2
 
         # Size the rows from the space between the tabs and the footer.  The
-        # largest category currently needs five rows at the default window
+        # largest category currently needs six rows at the default window
         # size, while a larger window gets the roomier cards in the mock-up.
         top = from_top_edge(215)
         bottom = from_bottom_edge(72)
@@ -563,6 +564,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'matrix_reasoning':
         from .ravens import MatrixReasoning
         MatrixReasoning()
+        return
+    if task_id == 'hidden_rule':
+        from .hiddenrule import HiddenRule
+        HiddenRule()
         return
     if task_id == 'jigsaw':
         from .jigsaw import JigsawPuzzle

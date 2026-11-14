@@ -596,6 +596,42 @@ SONAR = TaskSpec(
     note=sonar_note)
 
 
+def hidden_rule_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung allows the rule to be."""
+    from .. import hiddenrule
+    level = hiddenrule.grade(int(chosen['HIDDEN_RULE_RUNG']))
+    said = [_('Rung %d: %d properties, a wrong answer costs %d tests.')
+            % (level.rung, len(level.values), level.penalty)]
+    kinds = {'both': _('and'), 'either': _('or'),
+             'one_of': _('one but not both'), 'all': _('three at once')}
+    named = [kinds[form] for form in level.forms if form in kinds]
+    if level.nots:
+        named.append(_('not'))
+    if 'two_of' in level.forms:
+        named.append(_('mixtures'))
+    if named:
+        said.append(_('Rules may use: %s.') % ', '.join(named))
+    if level.noise:
+        said.append(_('The lamp lies on %d%% of tests.')
+                    % round(level.noise * 100))
+    if level.factor < 1.0:
+        said.append(_('You must beat the reference player.'))
+    return '  '.join(said)
+
+
+HIDDEN_RULE = TaskSpec(
+    title=_('Hidden Rule options'),
+    options=(
+        Option('HIDDEN_RULE_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 6, 8, 10, 12, 13, 16, 19, 25, 30)),
+        Option('HIDDEN_RULE_TRIALS', _('Rounds per run'), 5,
+               values=(1, 3, 5, 8, 12)),
+        Option('HIDDEN_RULE_ADAPTIVE',
+               _('Climb a rung under par, drop one over'), True),
+    ),
+    note=hidden_rule_note)
+
+
 def dispatch_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung puts on the map."""
     from .. import dispatch
@@ -2266,6 +2302,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'mr_time': MR_TIME,
     'graph_mapping': GRAPH_MAPPING,
     'matrix_reasoning': MATRIX_REASONING,
+    'hidden_rule': HIDDEN_RULE,
     'jigsaw': JIGSAW,
     'camera': CAMERA,
     'sonar': SONAR,

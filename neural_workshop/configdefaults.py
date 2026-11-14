@@ -726,6 +726,18 @@ SONAR_RUNG = 1
 SONAR_TRIALS = 8
 SONAR_ADAPTIVE = True
 
+# Hidden Rule: a lamp lights for some objects and not others, by a rule
+# nobody states. Testing an object costs a point; the exam asks objects
+# not seen before, lit or dark, and every wrong answer costs the rung's
+# penalty. A round passes if it costs no more than par, set from what a
+# Bayesian reference experimenter paid on the identical deal. Higher
+# rungs bring more properties, then "not", "and", "or", "one but not
+# both", three-part rules and mixtures; from rung 12 the lamp sometimes
+# lies; past rung 20 par is below the reference's own cost.
+HIDDEN_RULE_RUNG = 1
+HIDDEN_RULE_TRIALS = 5
+HIDDEN_RULE_ADAPTIVE = True
+
 # Dispatch: incidents appear on a town map in real time and grow until
 # a crew deals with them or they burn out. Click a crew, then where to
 # send it; any crew can be redirected at any moment. A round passes if
