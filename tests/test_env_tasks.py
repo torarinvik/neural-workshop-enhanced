@@ -438,7 +438,7 @@ class PlayedProperlyItIsPaid(unittest.TestCase):
 
     def test_a_solved_jigsaw_is_paid(self):
         """Swapped tile by tile into place, which is also the minimum."""
-        env = catalog.env_class('jigsaw')(seed=0, side=2, puzzles=2)
+        env = catalog.env_class('jigsaw')(seed=0, pieces=4, puzzles=2)
 
         def moves(task):
             wrong = next((where for where, tile in enumerate(task.order)
@@ -754,7 +754,7 @@ class TheBoundaryKnowsWhichTasksHaveAClock(unittest.TestCase):
                         'graph_mapping', 'concentration',
                         'chain_of_custody', 'cookie_thief', 'donkey',
                         'two_hands', 'tetris', 'overrun', 'marble_maze',
-                        'video_puzzle', 'dispatch'):
+                        'video_sequence', 'video_jigsaw', 'dispatch'):
             self.assertTrue(self.clocked(task_id), task_id)
 
     def test_the_ports_are_the_ones_the_task_has(self):

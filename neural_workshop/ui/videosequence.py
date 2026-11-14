@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Video Puzzle: put the pieces of a shuffled video clip back in order.
+"""Video Sequence: put the pieces of a shuffled video clip back in order.
 
 A short clip of somebody doing something — a jump, a throw, a stroke
 of a paddle — is cut into a few equal stretches of time, and the
@@ -90,14 +90,14 @@ def best_columns(pieces: int, width: float, height: float,
     return best
 
 
-class VideoPuzzle:
+class VideoSequence:
     """Show a clip in shuffled pieces, swap them by clicks, score it."""
 
-    instance: Optional['VideoPuzzle'] = None
+    instance: Optional['VideoSequence'] = None
 
     def __init__(self) -> None:
-        if VideoPuzzle.instance is not None:
-            VideoPuzzle.instance.close()
+        if VideoSequence.instance is not None:
+            VideoSequence.instance.close()
         self.rng = random.Random()
         #: Swapped out by an agent environment for a virtual clock.
         self.clock = time.time
@@ -131,16 +131,16 @@ class VideoPuzzle:
         pyglet.clock.schedule_interval(self.update, 1 / 30.)
         cursor.acquire()
         display.register_overlay(self)
-        VideoPuzzle.instance = self
+        VideoSequence.instance = self
 
     # --- options ---------------------------------------------------------
 
     def _read_options(self) -> None:
-        opts = taskoptions.settings(taskoptions.VIDEO_PUZZLE)
-        self.start_pieces = int(opts['VIDEO_PUZZLE_PIECES'])
-        self.total_puzzles = int(opts['VIDEO_PUZZLE_PUZZLES'])
-        self.adaptive = bool(opts['VIDEO_PUZZLE_ADAPTIVE'])
-        self.mark_placed = bool(opts['VIDEO_PUZZLE_MARK_PLACED'])
+        opts = taskoptions.settings(taskoptions.VIDEO_SEQUENCE)
+        self.start_pieces = int(opts['VIDEO_SEQUENCE_PIECES'])
+        self.total_puzzles = int(opts['VIDEO_SEQUENCE_PUZZLES'])
+        self.adaptive = bool(opts['VIDEO_SEQUENCE_ADAPTIVE'])
+        self.mark_placed = bool(opts['VIDEO_SEQUENCE_MARK_PLACED'])
         self.pieces = self.clamped(self.start_pieces)
 
     @staticmethod
@@ -148,7 +148,7 @@ class VideoPuzzle:
         return max(FEWEST, min(MOST, pieces))
 
     def open_options(self) -> None:
-        taskoptions.open_task_options('video_puzzle',
+        taskoptions.open_task_options('video_sequence',
                                       on_apply=self.apply_options)
 
     def apply_options(self) -> None:
@@ -168,7 +168,7 @@ class VideoPuzzle:
         self.tile_group = pyglet.graphics.Group(order=0)
         self.mark_group = pyglet.graphics.Group(order=1)
         self.title = pyglet.text.Label(
-            _('Video Puzzle'), font_size=calc_fontsize(22), weight='bold',
+            _('Video Sequence'), font_size=calc_fontsize(22), weight='bold',
             color=self.textcolor, batch=self.batch,
             x=width_center(), y=from_top_edge(36),
             anchor_x='center', anchor_y='center', font_name=FONTLIST)
@@ -323,7 +323,7 @@ class VideoPuzzle:
             self._stall(_('No video library yet — see the Readme'))
             return
         if not videoclips.have_ffmpeg():
-            self._stall(_('Video Puzzle needs the ffmpeg program — '
+            self._stall(_('Video Sequence needs the ffmpeg program — '
                           'see the Readme'))
             return
         self.trial_pieces = self.pieces
@@ -493,7 +493,7 @@ class VideoPuzzle:
     # --- lifecycle -------------------------------------------------------
 
     def close(self) -> None:
-        if VideoPuzzle.instance is not self:
+        if VideoSequence.instance is not self:
             return
         pyglet.clock.unschedule(self.update)
         cursor.release()
@@ -502,7 +502,7 @@ class VideoPuzzle:
                                      self.on_mouse_motion, self.on_draw)
         self._clear_drawn()
         self.segments = []
-        VideoPuzzle.instance = None
+        VideoSequence.instance = None
 
     def return_to_hub(self) -> None:
         self.close()

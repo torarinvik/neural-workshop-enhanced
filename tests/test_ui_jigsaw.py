@@ -31,10 +31,10 @@ class ScrambleTests(unittest.TestCase):
         self.rng = random.Random(20260820)
 
     def test_a_scramble_is_a_permutation_and_never_the_answer(self):
-        for side in (2, 3, 4, 6):
+        for count in (2, 4, 9, 16, 36, 400):
             for _try in range(50):
-                order = jigsaw.scramble(side, self.rng)
-                self.assertEqual(sorted(order), list(range(side * side)))
+                order = jigsaw.scramble(count, self.rng)
+                self.assertEqual(sorted(order), list(range(count)))
                 self.assertTrue(any(tile != position
                                     for position, tile in enumerate(order)))
 
@@ -73,7 +73,7 @@ class ScrambleTests(unittest.TestCase):
 
     def test_solving_along_the_cycles_meets_the_minimum(self):
         for _try in range(100):
-            order = jigsaw.scramble(4, self.rng)
+            order = jigsaw.scramble(16, self.rng)
             par = jigsaw.minimum_swaps(order)
             swaps = 0
             for position in range(len(order)):
@@ -83,6 +83,57 @@ class ScrambleTests(unittest.TestCase):
                         order[position]
                     swaps += 1
             self.assertEqual(swaps, par)
+
+
+class GridTests(unittest.TestCase):
+    """Any number of pieces from two up becomes a grid, with no top."""
+
+    def test_two_pieces_is_the_picture_cut_in_half(self):
+        self.assertEqual(sorted(jigsaw.grid_for(2)), [1, 2])
+        self.assertEqual(jigsaw.grid_for(2, 4 / 3.), (2, 1))
+
+    def test_nothing_goes_below_two(self):
+        for asked in (-5, 0, 1):
+            self.assertEqual(jigsaw.count_for(asked), 2)
+
+    def test_squares_stay_square(self):
+        for side in (2, 3, 10, 31, 100):
+            self.assertEqual(jigsaw.grid_for(side * side), (side, side))
+
+    def test_a_grid_holds_at_least_what_was_asked_and_not_much_more(self):
+        for aspect in (1.0, 4 / 3., 16 / 9.):
+            for asked in list(range(2, 400)) + [1000, 5000, 100000]:
+                columns, rows = jigsaw.grid_for(asked, aspect)
+                self.assertGreaterEqual(columns * rows, asked)
+                self.assertLess(columns * rows, asked + columns + 1)
+
+    def test_a_wide_picture_gets_more_columns_than_rows(self):
+        columns, rows = jigsaw.grid_for(300, 4 / 3.)
+        self.assertEqual((columns, rows), (20, 15))
+
+    def test_bigger_and_smaller_step_one_grid_at_a_time(self):
+        for aspect in (1.0, 4 / 3.):
+            count = 2
+            for _step in range(60):
+                more = jigsaw.bigger(count, aspect)
+                self.assertGreater(more, count)
+                self.assertEqual(jigsaw.count_for(more, aspect), more)
+                self.assertEqual(jigsaw.smaller(more, aspect), count)
+                count = more
+            self.assertGreater(count, 100)
+            # from a number that is not itself a grid, too
+            for asked in range(2, 300):
+                self.assertGreater(jigsaw.bigger(asked, aspect),
+                                   jigsaw.count_for(asked, aspect))
+                self.assertLessEqual(jigsaw.smaller(asked, aspect),
+                                     max(2, jigsaw.count_for(asked, aspect)
+                                         - 1))
+        self.assertEqual(jigsaw.smaller(2), 2)
+
+    def test_the_seam_goes_when_tiles_are_small(self):
+        self.assertEqual(jigsaw.seam_for(80), 2.0)
+        self.assertEqual(jigsaw.seam_for(12), 1.0)
+        self.assertEqual(jigsaw.seam_for(4), 0.0)
 
 
 class DatasetTests(unittest.TestCase):
@@ -201,13 +252,12 @@ class JigsawScreenTests(unittest.TestCase):
     def test_starting_deals_a_scrambled_board(self):
         self.task.start_run()
         self.assertEqual(self.task.phase, 'solving')
-        side = self.task.trial_side
-        self.assertEqual(len(self.task.tiles), side * side)
-        self.assertEqual(sorted(self.task.order),
-                         list(range(side * side)))
+        count = self.task.trial_pieces
+        self.assertEqual(len(self.task.tiles), count)
+        self.assertEqual(sorted(self.task.order), list(range(count)))
         self.assertGreater(self.task.par, 0)
         self.task.on_draw()
-        wanted = side * side + (1 if self.task.preview else 0)
+        wanted = count + (1 if self.task.preview else 0)
         self.assertEqual(len(self.task.sprites), wanted)
 
     def test_two_clicks_swap_and_count(self):
@@ -223,8 +273,8 @@ class JigsawScreenTests(unittest.TestCase):
 
     def test_clicking_a_tile_twice_unpicks_it(self):
         self.task.start_run()
-        self.task._pick(3)
-        self.task._pick(3)
+        self.task._pick(1)
+        self.task._pick(1)
         self.assertIsNone(self.task.picked)
         self.assertEqual(self.task.swaps, 0)
 
@@ -232,20 +282,19 @@ class JigsawScreenTests(unittest.TestCase):
         self.task.start_run()
         self._solve()
         self.assertEqual(self.task.phase, 'solved')
-        side, efficiency, _took = self.task.results[-1]
-        self.assertEqual(side, self.task.trial_side)
+        count, efficiency, _took = self.task.results[-1]
+        self.assertEqual(count, self.task.trial_pieces)
         self.assertEqual(efficiency, 1.0)
         self.assertIn('minimum was %d' % self.task.par, self.task.message)
 
     def test_an_efficient_solve_grows_the_grid_and_a_loose_one_shrinks(self):
         self.task.adaptive = True
-        self.task.side = 3
+        self.task.start_pieces = 9
         self.task.start_run()
         self._solve()
-        self.assertEqual(self.task.side, 4)
-        self.task.side = 4
+        self.assertEqual(self.task.pieces, 12)
         self.task.phase = 'solving'
-        self.task.order = jigsaw.scramble(self.task.trial_side,
+        self.task.order = jigsaw.scramble(self.task.trial_pieces,
                                           self.task.rng)
         self.task.par = jigsaw.minimum_swaps(self.task.order)
         self.task.swaps = self.task.par * 3      # flailing
@@ -257,7 +306,70 @@ class JigsawScreenTests(unittest.TestCase):
             home = self.task.order[position]
             self.task._pick(position)
             self.task._pick(home)
-        self.assertEqual(self.task.side, 3)
+        self.assertEqual(self.task.pieces, 9)
+
+    def test_two_pieces_is_one_swap(self):
+        self.task.start_pieces = 2
+        self.task.start_run()
+        self.assertEqual(self.task.trial_pieces, 2)
+        self.assertEqual(self.task.par, 1)
+        self.task._pick(0)
+        self.task._pick(1)
+        self.assertEqual(self.task.phase, 'solved')
+
+    def test_hundreds_of_pieces_deal_draw_and_solve(self):
+        self.task.start_pieces = 900
+        self.task.start_run()
+        self.assertEqual(self.task.trial_pieces, 900)
+        self.assertEqual((self.task.columns, self.task.rows), (30, 30))
+        self.task.on_draw()
+        sprites = list(self.task.sprites)
+        self._solve()
+        self.assertEqual(self.task.phase, 'solved')
+        self.assertEqual(self.task.swaps, self.task.par)
+        # a swap moved two pictures; it did not rebuild the board
+        self.assertEqual([id(s) for s in self.task.sprites],
+                         [id(s) for s in sprites])
+        for where, sprite in enumerate(self.task.sprites[:900]):
+            self.assertIs(sprite.image, self.task.tiles[where])
+
+    def test_a_grid_finer_than_the_picture_is_held_to_its_pixels(self):
+        self.task.start_pieces = 1000000          # of a 96x96 picture
+        self.task.start_run()
+        self.assertEqual((self.task.columns, self.task.rows), (96, 96))
+        self.task.on_draw()
+
+    def test_every_tile_has_its_own_place_on_the_board(self):
+        for asked in (2, 6, 49, 400):
+            self.task.start_pieces = asked
+            self.task.start_run()
+            rects = self.task._tile_rects()
+            self.assertEqual(len(set((round(x), round(y))
+                                     for x, y, _w, _h in rects)),
+                             self.task.trial_pieces)
+            for where, (x, y, w, h) in enumerate(rects):
+                self.assertEqual(self.task._at(x + w / 2, y + h / 2),
+                                 where)
+
+    def test_the_cursor_reaches_what_no_port_names(self):
+        self.task.start_pieces = 400
+        self.task.start_run()
+        last = self.task.trial_pieces - 1
+        for _step in range(40):
+            self.task.steer(jigsaw.DOWN)
+            self.task.steer(jigsaw.RIGHT)
+        self.assertEqual(self.task.cursor, last)
+        self.task.steer(jigsaw.PICK)
+        self.assertEqual(self.task.picked, last)
+        for _step in range(40):
+            self.task.steer(jigsaw.UP)
+            self.task.steer(jigsaw.LEFT)
+        before = list(self.task.order)
+        self.task.steer(jigsaw.PICK)
+        self.assertEqual(self.task.swaps, 1)
+        self.assertEqual(self.task.order[0], before[last])
+        self.task.steer(7)                       # a position port
+        self.assertEqual(self.task.picked, 7)
 
     def test_a_run_never_repeats_an_image_while_it_can_help_it(self):
         self.task.total_puzzles = 3
@@ -379,12 +491,27 @@ class JigsawHubTests(unittest.TestCase):
         JigsawPuzzle.instance.close()
 
     def test_the_options_note_counts_the_tiles(self):
-        note = taskoptions.jigsaw_note({'JIGSAW_SIDE': 5,
+        note = taskoptions.jigsaw_note({'JIGSAW_PIECES': 25,
                                         'JIGSAW_ADAPTIVE': False})
         self.assertIn('25 tiles', note)
-        library = taskoptions.jigsaw_note({'JIGSAW_SIDE': 2,
+        library = taskoptions.jigsaw_note({'JIGSAW_PIECES': 2,
                                            'JIGSAW_ADAPTIVE': True})
         self.assertTrue('downloaded' in library or 'Readme' in library)
+
+    def test_the_config_file_may_ask_for_any_number_of_pieces(self):
+        option = taskoptions.JIGSAW.options[0]
+        saved = state.cfg['JIGSAW_PIECES']
+        try:
+            state.cfg['JIGSAW_PIECES'] = 7777
+            self.assertEqual(taskoptions.current_value(option), 7777)
+            row = taskoptions._build_row(option)
+            self.assertEqual(row.value(), 7777)
+            state.cfg['JIGSAW_PIECES'] = 'junk'
+            self.assertEqual(taskoptions.current_value(option), 9)
+            state.cfg['JIGSAW_PIECES'] = 1
+            self.assertEqual(taskoptions.current_value(option), 9)
+        finally:
+            state.cfg['JIGSAW_PIECES'] = saved
 
 
 if __name__ == '__main__':

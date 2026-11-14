@@ -61,18 +61,18 @@ class CuttingTests(unittest.TestCase):
         self.assertTrue(videoclips.lively(videoclips.cut(moving, 3)))
 
     def test_a_shuffle_is_never_the_answer(self):
-        from neural_workshop.ui import videopuzzle
+        from neural_workshop.ui import videosequence
         rng = random.Random(4)
-        for pieces in range(videopuzzle.FEWEST, videopuzzle.MOST + 1):
+        for pieces in range(videosequence.FEWEST, videosequence.MOST + 1):
             for _try in range(30):
-                order = videopuzzle.shuffle(pieces, rng)
+                order = videosequence.shuffle(pieces, rng)
                 self.assertEqual(sorted(order), list(range(pieces)))
                 self.assertNotEqual(order, list(range(pieces)))
 
     def test_the_layout_picks_a_row_for_a_wide_room(self):
-        from neural_workshop.ui import videopuzzle
-        self.assertEqual(videopuzzle.best_columns(3, 1200, 200, 4 / 3), 3)
-        self.assertEqual(videopuzzle.best_columns(4, 400, 400, 4 / 3), 2)
+        from neural_workshop.ui import videosequence
+        self.assertEqual(videosequence.best_columns(3, 1200, 200, 4 / 3), 3)
+        self.assertEqual(videosequence.best_columns(4, 400, 400, 4 / 3), 2)
 
 
 @needs_ffmpeg
@@ -205,7 +205,7 @@ class RemoteZipTests(unittest.TestCase):
 
 @needs_ui
 @needs_ffmpeg
-class VideoPuzzleScreenTests(unittest.TestCase):
+class VideoSequenceScreenTests(unittest.TestCase):
     """The screen: dealing, playing, swapping, scoring, cleaning up."""
 
     STUB = datasets.Dataset(
@@ -224,13 +224,13 @@ class VideoPuzzleScreenTests(unittest.TestCase):
         shutil.rmtree(cls.clips, ignore_errors=True)
 
     def setUp(self):
-        from neural_workshop.ui.videopuzzle import VideoPuzzle
+        from neural_workshop.ui.videosequence import VideoSequence
         close_overlays()
         self.tmp = tempfile.mkdtemp()
         self.saved_dir = datasets.datasets_dir
         datasets.datasets_dir = lambda: self.tmp
         shutil.copytree(self.clips, os.path.join(self.tmp, self.STUB.key))
-        self.task = VideoPuzzle()
+        self.task = VideoSequence()
         self.task.pool = media.MediaPool(self.STUB, self.task.rng)
         self.task.total_puzzles = 2
         self.task.adaptive = False
@@ -339,10 +339,10 @@ class VideoPuzzleScreenTests(unittest.TestCase):
         self.task.on_draw()
 
     def test_closing_gives_back_its_handlers(self):
-        from neural_workshop.ui.videopuzzle import VideoPuzzle
+        from neural_workshop.ui.videosequence import VideoSequence
         self.task.start_run()
         self.task.close()
-        self.assertIsNone(VideoPuzzle.instance)
+        self.assertIsNone(VideoSequence.instance)
         self.assertNotIn(self.task, display.open_overlays())
 
     def test_the_boundary_pays_a_solved_clip(self):
@@ -350,7 +350,7 @@ class VideoPuzzleScreenTests(unittest.TestCase):
         self.task.close()
         shutil.copytree(self.clips,
                         os.path.join(self.tmp, datasets.UCF101.key))
-        env = catalog.env_class('video_puzzle')(seed=0, pieces=3,
+        env = catalog.env_class('video_sequence')(seed=0, pieces=3,
                                                 puzzles=2)
         scalars = []
         try:
@@ -375,26 +375,26 @@ class VideoPuzzleScreenTests(unittest.TestCase):
 
 
 @needs_ui
-class VideoPuzzleHubTests(unittest.TestCase):
+class VideoSequenceHubTests(unittest.TestCase):
 
     def tearDown(self):
         close_overlays()
         reset_window()
 
     def test_it_is_listed_under_reasoning(self):
-        self.assertIn('video_puzzle',
+        self.assertIn('video_sequence',
                       [task_id for task_id, _label in TASKS['reasoning']])
 
     def test_the_hub_can_launch_it(self):
         from neural_workshop.ui.taskhub import launch_task
-        from neural_workshop.ui.videopuzzle import VideoPuzzle
-        launch_task('video_puzzle')
-        self.assertIsNotNone(VideoPuzzle.instance)
-        VideoPuzzle.instance.close()
+        from neural_workshop.ui.videosequence import VideoSequence
+        launch_task('video_sequence')
+        self.assertIsNotNone(VideoSequence.instance)
+        VideoSequence.instance.close()
 
     def test_the_options_note_names_the_cut(self):
-        note = taskoptions.video_puzzle_note({'VIDEO_PUZZLE_PIECES': 6,
-                                              'VIDEO_PUZZLE_ADAPTIVE': False})
+        note = taskoptions.video_sequence_note({'VIDEO_SEQUENCE_PIECES': 6,
+                                              'VIDEO_SEQUENCE_ADAPTIVE': False})
         self.assertIn('6 stretches', note)
 
 

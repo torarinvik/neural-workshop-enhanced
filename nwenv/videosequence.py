@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""The stepped agent boundary for Video Puzzle.
+"""The stepped agent boundary for Video Sequence.
 
 Nine ports, one to a position, because nine pieces is the most a clip
 is cut into; a four-piece puzzle leaves five doing nothing. A swap is
@@ -24,10 +24,10 @@ from typing import Optional
 from .taskenv import TaskEnv
 
 
-class VideoPuzzleEnv(TaskEnv):
-    """Deterministic, stepped view of one Video Puzzle run."""
+class VideoSequenceEnv(TaskEnv):
+    """Deterministic, stepped view of one Video Sequence run."""
 
-    task_class = ('neural_workshop.ui.videopuzzle', 'VideoPuzzle')
+    task_class = ('neural_workshop.ui.videosequence', 'VideoSequence')
     #: The task's own ceiling: nine pieces.
     ports = 9
     clocked = True
@@ -39,14 +39,14 @@ class VideoPuzzleEnv(TaskEnv):
              'adaptive': 'adaptive', 'mark_placed': 'mark_placed'}
 
 
-def make_video_puzzle_env(seed: int = 0,
-                          shm_name: Optional[str] = None) -> VideoPuzzleEnv:
+def make_video_sequence_env(seed: int = 0,
+                          shm_name: Optional[str] = None) -> VideoSequenceEnv:
     """A production environment: the task's own defaults."""
-    return VideoPuzzleEnv(seed=seed, shm_name=shm_name)
+    return VideoSequenceEnv(seed=seed, shm_name=shm_name)
 
 
 #: The verifier, generated from the inherited deriver so the two cannot drift.
-verify_video_puzzle_outcome = VideoPuzzleEnv.verifier()
+verify_video_sequence_outcome = VideoSequenceEnv.verifier()
 
-__all__ = ['VideoPuzzleEnv', 'make_video_puzzle_env',
-           'verify_video_puzzle_outcome']
+__all__ = ['VideoSequenceEnv', 'make_video_sequence_env',
+           'verify_video_sequence_outcome']

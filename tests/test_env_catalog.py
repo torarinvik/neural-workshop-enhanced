@@ -127,12 +127,14 @@ class EveryWrapperHasTheRightShape(unittest.TestCase):
                 continue
             task = catalog.ui_class(row.task_id)
             attrs = set(dir(task))
+            # A task built on another holds what its base sets.
+            import inspect
             source = ''
-            try:
-                import inspect
-                source = inspect.getsource(task)
-            except Exception:
-                pass
+            for base in task.__mro__[:-1]:
+                try:
+                    source += inspect.getsource(base)
+                except Exception:
+                    pass
             for name, attr in sorted(knobs.items()):
                 self.assertTrue(attr in attrs or ('self.%s' % attr) in source,
                                 '%s: knob %r sets %r, which %s never holds'

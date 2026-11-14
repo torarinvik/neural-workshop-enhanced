@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 """The stepped agent boundary for Jigsaw Puzzle.
 
-A hundred ports, one to a board position, because ten by ten is the
-biggest grid the task will cut. A three-by-three puzzle leaves
-ninety-one of them doing nothing.
+A puzzle is as many pieces as it is asked to be -- two, or hundreds --
+so no row of ports can name every position. The first hundred ports
+name the first hundred positions outright, which is the whole board up
+to ten by ten; the last five are a cursor (up, down, left, right,
+pick), which reaches any board whatever its size and is drawn on it.
 
 **A swap is two ports**, as a move is in Hanoi: the first names a tile,
 the second names the tile to trade it with. Naming the same one twice
@@ -32,14 +34,14 @@ class JigsawEnv(TaskEnv):
     """Deterministic, stepped view of one Jigsaw Puzzle run."""
 
     task_class = ('neural_workshop.ui.jigsaw', 'JigsawPuzzle')
-    #: The task's own ceiling: ten tiles a side.
-    ports = 100
+    #: A hundred positions and a five-port cursor.
+    ports = 105
     clocked = False
-    action = '_pick'
+    action = 'steer'
     open_phase = ('solving',)
     settled_phase = ('solved',)
     deal = '_next_puzzle'
-    knobs = {'side': 'start_side', 'puzzles': 'total_puzzles',
+    knobs = {'pieces': 'start_pieces', 'puzzles': 'total_puzzles',
              'adaptive': 'adaptive', 'preview': 'preview',
              'mark_placed': 'mark_placed'}
 

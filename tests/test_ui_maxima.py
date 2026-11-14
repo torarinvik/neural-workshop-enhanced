@@ -221,15 +221,16 @@ class MaximaTests(unittest.TestCase):
         finally:
             task.close()
 
-    def test_jigsaw_ten_by_ten(self):
+    def test_jigsaw_at_the_top_of_its_ladder(self):
         self._push('jigsaw')
         with StubLibrary() as stub:
             task = JigsawPuzzle()
             try:
                 task.pool = media.MediaPool(stub, task.rng)
                 task.start_run()
-                self.assertEqual(task.trial_side, 10)
-                self.assertEqual(len(task.order), 100)
+                # 2500 asked of a 96-pixel stub, which has the pixels
+                self.assertEqual(task.trial_pieces, 2500)
+                self.assertEqual(len(task.order), 2500)
                 task.on_draw()
             finally:
                 task.close()

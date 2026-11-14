@@ -105,9 +105,26 @@ class TaskSpec(NamedTuple):
     note: Optional[NoteBuilder] = None
 
 
+#: Rows whose listed values are a ladder and not a fence: any whole
+#: number from the first rung up is honoured when the config file
+#: holds it, and the row then offers it among the others.
+OPEN_ENDED = ('JIGSAW_PIECES', 'VIDEO_JIGSAW_PIECES')
+
+#: The piece counts the jigsaws' rows step through.
+PIECE_LADDER = (2, 4, 6, 9, 12, 16, 25, 36, 49, 64, 100, 144, 225, 400,
+                625, 900, 1600, 2500)
+
+
 def current_value(option: Option) -> Any:
     """Read *option* from the live config, coerced into range."""
     value = state.cfg[option.key]
+    if option.key in OPEN_ENDED:
+        try:
+            if int(value) >= option.values[0]:
+                return int(value)
+        except (TypeError, ValueError):
+            pass
+        return option.default
     if option.key == 'NUMBEROLOGY_LEVEL':
         try:
             return max(1, int(value))
@@ -133,6 +150,8 @@ def _build_row(option: Option) -> Any:
     if option.values is None:
         return bool(value)
     values = list(option.values)
+    if value not in values:
+        values = sorted(values + [value])
     return SuffixCycler(values, default=values.index(value),
                         suffix=option.suffix)
 
@@ -462,6 +481,13 @@ MATRIX_REASONING = TaskSpec(
     ),
     note=matrix_reasoning_note)
 
+def _pieces_said(pieces: int, aspect: float, what: str) -> str:
+    from .jigsaw import grid_for
+    columns, rows = grid_for(pieces, aspect)
+    return (_('A puzzle of %d is %d columns by %d rows: %d tiles of '
+              'one %s.') % (pieces, columns, rows, columns * rows, what))
+
+
 def jigsaw_note(chosen: Dict[str, Any]) -> str:
     """What the chosen grid amounts to, and whether it can be played.
 
@@ -470,12 +496,13 @@ def jigsaw_note(chosen: Dict[str, Any]) -> str:
     that out before a run fails to start.
     """
     from .. import datasets
-    side = int(chosen['JIGSAW_SIDE'])
-    said = [_('A %dx%d puzzle is %d tiles of one photograph.')
-            % (side, side, side * side)]
+    said = [_pieces_said(int(chosen['JIGSAW_PIECES']), 1.0,
+                         _('photograph'))]
     if chosen['JIGSAW_ADAPTIVE']:
         said.append(_('Solve near the minimum swap count and the grid '
                       'grows; flail and it shrinks.'))
+    said.append(_('Any number of pieces can be set as JIGSAW_PIECES in '
+                  'the config file.'))
     stocked = datasets.have(datasets.DIV2K)
     if stocked:
         said.append(_('%d photographs downloaded.') % stocked)
@@ -488,8 +515,7 @@ def jigsaw_note(chosen: Dict[str, Any]) -> str:
 JIGSAW = TaskSpec(
     title=_('Jigsaw Puzzle options'),
     options=(
-        Option('JIGSAW_SIDE', _('Tiles per side'), 3,
-               values=(2, 3, 4, 5, 6, 7, 8, 10)),
+        Option('JIGSAW_PIECES', _('Pieces'), 9, values=PIECE_LADDER),
         Option('JIGSAW_PUZZLES', _('Puzzles per run'), 3,
                values=(1, 2, 3, 5, 8, 12, 20)),
         Option('JIGSAW_ADAPTIVE',
@@ -502,12 +528,49 @@ JIGSAW = TaskSpec(
     note=jigsaw_note)
 
 
-def video_puzzle_note(chosen: Dict[str, Any]) -> str:
+def video_jigsaw_note(chosen: Dict[str, Any]) -> str:
+    """What the chosen grid amounts to, and whether it can be played."""
+    from .. import datasets, videoclips
+    said = [_pieces_said(int(chosen['VIDEO_JIGSAW_PIECES']), 4 / 3.,
+                         _('playing clip'))]
+    if chosen['VIDEO_JIGSAW_ADAPTIVE']:
+        said.append(_('Solve near the minimum swap count and the grid '
+                      'grows; flail and it shrinks.'))
+    said.append(_('Any number of pieces can be set as '
+                  'VIDEO_JIGSAW_PIECES in the config file.'))
+    stocked = datasets.have(datasets.UCF101)
+    if stocked:
+        said.append(_('%d clips downloaded.') % stocked)
+    else:
+        said.append(_('The video library is not downloaded yet — '
+                      'see the Readme.'))
+    if not videoclips.have_ffmpeg():
+        said.append(_('The ffmpeg program was not found.'))
+    return '  '.join(said)
+
+
+VIDEO_JIGSAW = TaskSpec(
+    title=_('Video Jigsaw options'),
+    options=(
+        Option('VIDEO_JIGSAW_PIECES', _('Pieces'), 6, values=PIECE_LADDER),
+        Option('VIDEO_JIGSAW_PUZZLES', _('Clips per run'), 3,
+               values=(1, 2, 3, 5, 8, 12, 20)),
+        Option('VIDEO_JIGSAW_ADAPTIVE',
+               _('Grow the grid when you solve near the minimum'), True),
+        Option('VIDEO_JIGSAW_PREVIEW',
+               _('Show the whole clip playing beside the board'), False),
+        Option('VIDEO_JIGSAW_MARK_PLACED',
+               _('Outline tiles already in their place'), False),
+    ),
+    note=video_jigsaw_note)
+
+
+def video_sequence_note(chosen: Dict[str, Any]) -> str:
     """What the chosen cut amounts to, and whether it can be played."""
     from .. import datasets, videoclips
-    pieces = int(chosen['VIDEO_PUZZLE_PIECES'])
+    pieces = int(chosen['VIDEO_SEQUENCE_PIECES'])
     said = [_('Each clip is cut into %d stretches of time.') % pieces]
-    if chosen['VIDEO_PUZZLE_ADAPTIVE']:
+    if chosen['VIDEO_SEQUENCE_ADAPTIVE']:
         said.append(_('Solve near the minimum swap count and the next '
                       'clip has one piece more; flail and one fewer.'))
     stocked = datasets.have(datasets.UCF101)
@@ -521,19 +584,19 @@ def video_puzzle_note(chosen: Dict[str, Any]) -> str:
     return '  '.join(said)
 
 
-VIDEO_PUZZLE = TaskSpec(
-    title=_('Video Puzzle options'),
+VIDEO_SEQUENCE = TaskSpec(
+    title=_('Video Sequence options'),
     options=(
-        Option('VIDEO_PUZZLE_PIECES', _('Pieces per clip'), 4,
+        Option('VIDEO_SEQUENCE_PIECES', _('Pieces per clip'), 4,
                values=(3, 4, 5, 6, 7, 8, 9)),
-        Option('VIDEO_PUZZLE_PUZZLES', _('Clips per run'), 5,
+        Option('VIDEO_SEQUENCE_PUZZLES', _('Clips per run'), 5,
                values=(1, 3, 5, 8, 12, 20)),
-        Option('VIDEO_PUZZLE_ADAPTIVE',
+        Option('VIDEO_SEQUENCE_ADAPTIVE',
                _('Add a piece when you solve near the minimum'), True),
-        Option('VIDEO_PUZZLE_MARK_PLACED',
+        Option('VIDEO_SEQUENCE_MARK_PLACED',
                _('Outline pieces already in their place'), False),
     ),
-    note=video_puzzle_note)
+    note=video_sequence_note)
 
 
 def camera_note(chosen: Dict[str, Any]) -> str:
@@ -2512,6 +2575,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'matrix_reasoning': MATRIX_REASONING,
     'hidden_rule': HIDDEN_RULE,
     'jigsaw': JIGSAW,
+    'video_jigsaw': VIDEO_JIGSAW,
     'camera': CAMERA,
     'sonar': SONAR,
     'dispatch': DISPATCH,
@@ -2520,7 +2584,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'forms': FORMS,
     'wiring': WIRING,
     'gamble': GAMBLE,
-    'video_puzzle': VIDEO_PUZZLE,
+    'video_sequence': VIDEO_SEQUENCE,
     'tower_of_hanoi': HANOI,
     'salesman': SALESMAN,
     'sokoban': SOKOBAN,

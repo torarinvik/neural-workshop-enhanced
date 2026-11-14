@@ -700,8 +700,9 @@ RAVENS_FEEDBACK = True
 RAVENS_EXPLAIN = False
 RAVENS_COLOR = True
 
-# Jigsaw Puzzle: a photograph cut into JIGSAW_SIDE x JIGSAW_SIDE tiles
-# and shuffled; clicking two tiles swaps them, and the puzzle is done
+# Jigsaw Puzzle: a photograph cut into about JIGSAW_PIECES tiles -- any
+# whole number from 2 up, with no ceiling: 2 is the picture cut in
+# half, 1000 is a grid of 32 by 32 -- and shuffled; clicking two tiles swaps them, and the puzzle is done
 # when the picture is whole. Any shuffle has a knowable minimum number
 # of swaps, and the run scores how close each solution came to it.
 # With JIGSAW_ADAPTIVE the grid grows when a solve lands near that
@@ -710,7 +711,7 @@ RAVENS_COLOR = True
 # JIGSAW_MARK_PLACED outlines tiles already where they belong, which
 # makes the search easier and is off by default. The photographs are
 # the DIV2K library, downloaded separately — see the Readme.
-JIGSAW_SIDE = 3
+JIGSAW_PIECES = 9
 JIGSAW_PUZZLES = 3
 JIGSAW_ADAPTIVE = True
 JIGSAW_PREVIEW = True
@@ -827,22 +828,33 @@ DISPATCH_ADAPTIVE = True
 # is beyond any human hand. The field grows, fills and gets harder to
 # tell apart as it climbs. With CAMERA_ADAPTIVE a match climbs a rung
 # and a miss drops one.
+# Video Jigsaw: the jigsaw again, cut from a playing video clip. Every
+# tile shows its own part of the picture, all of them in step, so what
+# joins two tiles is not only an edge that lines up but a movement that
+# carries across it. VIDEO_JIGSAW_PIECES is any whole number from 2 up,
+# as above. The clips are the UCF-101 library, decoded with ffmpeg.
+VIDEO_JIGSAW_PIECES = 6
+VIDEO_JIGSAW_PUZZLES = 3
+VIDEO_JIGSAW_ADAPTIVE = True
+VIDEO_JIGSAW_PREVIEW = False
+VIDEO_JIGSAW_MARK_PLACED = False
+
 CAMERA_RUNG = 1
 CAMERA_TRIALS = 8
 CAMERA_ADAPTIVE = True
 
-# Video Puzzle: a short action clip cut into VIDEO_PUZZLE_PIECES equal
+# Video Sequence: a short action clip cut into VIDEO_SEQUENCE_PIECES equal
 # stretches of time, shown shuffled and all playing at once; click two
 # to swap them, and the puzzle is done when they read in the order they
 # happened. Scored against the minimum swap count, as the jigsaw is,
-# and with VIDEO_PUZZLE_ADAPTIVE the cut gains a piece after a solve
+# and with VIDEO_SEQUENCE_ADAPTIVE the cut gains a piece after a solve
 # near the minimum and loses one after a loose one. The clips are the
 # UCF-101 library, downloaded separately, and decoded with ffmpeg —
 # see the Readme.
-VIDEO_PUZZLE_PIECES = 4
-VIDEO_PUZZLE_PUZZLES = 5
-VIDEO_PUZZLE_ADAPTIVE = True
-VIDEO_PUZZLE_MARK_PLACED = False
+VIDEO_SEQUENCE_PIECES = 4
+VIDEO_SEQUENCE_PUZZLES = 5
+VIDEO_SEQUENCE_ADAPTIVE = True
+VIDEO_SEQUENCE_MARK_PLACED = False
 
 # Tower of Hanoi: rebuild a tower of HANOI_DISKS disks on another peg,
 # one disk at a time, never a disk on a smaller one. The minimum is

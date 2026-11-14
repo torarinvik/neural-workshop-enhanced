@@ -72,7 +72,8 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('hidden_rule', _('Hidden Rule')),
         ('wiring', _('Hidden Wiring')),
         ('jigsaw', _('Jigsaw Puzzle')),
-        ('video_puzzle', _('Video Puzzle')),
+        ('video_jigsaw', _('Video Jigsaw')),
+        ('video_sequence', _('Video Sequence')),
         ('sudoku', _('Sudoku')),
         ('go_winning_move', _('Find the Winning Move')),
         ('crossed_wires', _('Crossed Wires')),
@@ -615,9 +616,13 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
         from .camera import CameraTask
         CameraTask()
         return
-    if task_id == 'video_puzzle':
-        from .videopuzzle import VideoPuzzle
-        VideoPuzzle()
+    if task_id == 'video_jigsaw':
+        from .videojigsaw import VideoJigsaw
+        VideoJigsaw()
+        return
+    if task_id == 'video_sequence':
+        from .videosequence import VideoSequence
+        VideoSequence()
         return
     if task_id == 'tower_of_hanoi':
         from .hanoi import TowerOfHanoi

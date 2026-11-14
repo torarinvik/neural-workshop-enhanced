@@ -128,7 +128,7 @@ download resumes where it left off if interrupted. DIV2K is published
 for academic research use; the images are collected from the Internet
 and their copyright stays with their owners.
 
-The `ucf101` library feeds the video puzzles. Hugging Face holds it
+The `ucf101` library feeds Video Jigsaw and Video Sequence. Hugging Face holds it
 (`quchenyuan/UCF101-ZIP`) as a single 7 GB zip, and the fetch never
 downloads that whole: it reads the zip in place with HTTP range
 requests and pulls only the clips it unpacks, spread across all 101
@@ -1364,9 +1364,15 @@ Answer. Turn-based, so it takes the think clock.
 
 #### Jigsaw Puzzle
 
-A photograph is cut into a square grid of tiles and shuffled; click
-two tiles to swap them, and the puzzle is done when the picture is
-whole. The photographs are the DIV2K set at 2K resolution — detailed
+A photograph is cut into a grid of tiles and shuffled; click two
+tiles to swap them (or walk the cursor with the arrow keys and press
+Enter), and the puzzle is done when the picture is whole. The grid is
+whatever size you ask for: *Pieces* runs from 2 — the picture cut in
+half — up through the hundreds to 2500 on the options screen, and
+`JIGSAW_PIECES` in the config file takes any whole number at all. The
+only ceiling is the photograph's own pixels. The count dealt is the
+nearest grid of near-square tiles holding at least what was asked, so
+300 pieces of a square picture is 17 by 18. The photographs are the DIV2K set at 2K resolution — detailed
 enough that a tile of sky and a tile of sea genuinely take looking at
 — fetched once with:
 
@@ -1380,8 +1386,8 @@ the shuffle, summed — and the run reports how close each solution
 came to that minimum. Swapping at random finishes eventually; seeing
 where each tile belongs before touching it finishes at the minimum,
 and the gap between the two is what is measured. With *Grow the grid*
-a solve near the minimum takes the next puzzle up a size, from
-two-by-two to ten-by-ten. The finished picture is shown beside the
+a solve near the minimum takes the next puzzle up one grid size and a
+loose one takes it down one, with no top to the ladder. The finished picture is shown beside the
 board like the lid of the box; turn it off and the tiles are all
 there is.
 
@@ -1391,7 +1397,28 @@ you have already assembled is a memory task, not a reasoning one. A
 larger library therefore means longer before anything comes round
 again; the default hundred images is a hundred fresh puzzles.
 
-#### Video Puzzle
+#### Video Jigsaw
+
+The jigsaw with a moving picture. A short clip is cut into a grid of
+tiles and shuffled, and every tile goes on playing its own part of the
+picture, all of them in step, while you swap them back into place.
+Everything else is the Jigsaw Puzzle's: two clicks to a swap, the
+score against the knowable minimum, the grid that grows after a clean
+solve, and the same range — from 2 pieces to as many as you like
+(`VIDEO_JIGSAW_PIECES`), up to the clip's 320 by 240 pixels.
+
+What moving adds is a second kind of evidence. An edge still has to
+meet an edge, but things also cross the seams: an arm leaves one tile
+and has to arrive in its neighbour on the same frame, and a tile of
+blank wall that no still frame could place is placed by the shadow
+that sweeps through it. The whole clip playing beside the board is off
+by default, because with it on the puzzle is mostly matching.
+
+The clips are the `ucf101` library and need `ffmpeg`, as Video
+Sequence does, but the two keep separate rotations: a clip you have
+put in order there is still new here.
+
+#### Video Sequence
 
 The jigsaw in time instead of space. A short clip of someone doing
 something — a dive, a serve, a lift — is cut into equal stretches,
