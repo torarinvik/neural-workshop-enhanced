@@ -751,6 +751,34 @@ GAMBLE_RUNG = 1
 GAMBLE_TRIALS = 5
 GAMBLE_ADAPTIVE = True
 
+# Errands: Mail, Shop and Expenses on one small computer. Read what the
+# mail asks, buy it in the shop, claim the order back with its number,
+# total and category, press Done -- within a click par. A receipt only at
+# rung 1, buying from 3, categories from a policy mail from 9, a request
+# changed by a later mail from 12, two errands from 15 and three from 21.
+ERRANDS_RUNG = 1
+ERRANDS_TRIALS = 3
+ERRANDS_ADAPTIVE = True
+
+# Signals: a partner, a row of coloured shapes, and eight glyphs whose
+# meanings are never said. Listen and pick what the partner means, or
+# speak and make the partner pick what is outlined; learn its code from
+# what happens. Speaking from rung 4, turns and shapes from 8, two-glyph
+# signals from 12, a code that changes partway from 16. Par comes from a
+# learner on the same game; past rung 20 it asks for more.
+SIGNALS_RUNG = 1
+SIGNALS_TRIALS = 3
+SIGNALS_ADAPTIVE = True
+
+# Will It Fall?: a still physical scene and what it does next -- whether
+# a tower of blocks stands, which way a plank on a pivot tips (from rung
+# 4), which bin a ball rolling off a table lands in (from 8), which
+# block of a tower topples first (from 12), and where the ball lands
+# after one bounce (from 16). The deciding margin shrinks every rung.
+WILL_IT_FALL_RUNG = 1
+WILL_IT_FALL_TRIALS = 10
+WILL_IT_FALL_ADAPTIVE = True
+
 # Browser: a drawn web shop and a shopping list; point, click, scroll,
 # go back, add to the cart and check out. Right means the cart holds
 # exactly what the list asks for, in no more clicks than par. Sorting

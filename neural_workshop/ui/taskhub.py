@@ -67,6 +67,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('mr_time', _('Mr. Time')),
         ('camera', _('Camera')),
         ('what_next', _('What Happens Next')),
+        ('will_it_fall', _('Will It Fall?')),
     ],
     'reasoning': [
         ('graph_mapping', _('Graph Mapping')),
@@ -87,6 +88,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('syllogism', _('Syllogisms')),
         ('chess', _('Winning Move')),
         ('verbal_reasoning', _('Verbal Reasoning')),
+        ('signals', _('Signals')),
     ],
     'planning': [
         ('tower_of_hanoi', _('Tower of Hanoi')),
@@ -122,6 +124,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('forms', _('Forms')),
         ('manual', _('Manual')),
         ('browser', _('Browser')),
+        ('errands', _('Errands')),
     ],
 }
 
@@ -608,6 +611,18 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'browser':
         from .browser import Browser
         Browser()
+        return
+    if task_id == 'will_it_fall':
+        from .falls import WillItFall
+        WillItFall()
+        return
+    if task_id == 'signals':
+        from .signals import Signals
+        Signals()
+        return
+    if task_id == 'errands':
+        from .errands import Errands
+        Errands()
         return
     if task_id == 'gamble':
         from .gamble import Gamble

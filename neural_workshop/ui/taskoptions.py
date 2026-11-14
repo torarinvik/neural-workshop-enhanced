@@ -957,6 +957,102 @@ BROWSER = TaskSpec(
     note=browser_note)
 
 
+def will_it_fall_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung asks about."""
+    from .. import falls
+    level = falls.grade(int(chosen['WILL_IT_FALL_RUNG']))
+    words = {'stand': _('towers that stand or fall'),
+             'lever': _('planks on a pivot'),
+             'land': _('where a ball lands'),
+             'first': _('which block topples first'),
+             'bounce': _('where a ball lands after a bounce')}
+    said = [_('Rung %d: %s.') % (level.rung, ', '.join(
+        words[k] for k in level.kinds))]
+    said.append(_('Deciding margin %d%% of a support.')
+                % int(round(level.margin * 100)))
+    if level.offset_pivot:
+        said.append(_('Pivots off the middle, so the plank weighs in.'))
+    return '  '.join(said)
+
+
+WILL_IT_FALL = TaskSpec(
+    title=_('Will It Fall? options'),
+    options=(
+        Option('WILL_IT_FALL_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 8, 12, 16, 20, 25, 30)),
+        Option('WILL_IT_FALL_TRIALS', _('Scenes per run'), 10,
+               values=(1, 5, 10, 20, 40)),
+        Option('WILL_IT_FALL_ADAPTIVE',
+               _('Climb a rung when right, drop one when wrong'), True),
+    ),
+    note=will_it_fall_note)
+
+
+def signals_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung's partner and code are like."""
+    from .. import signals
+    level = signals.grade(int(chosen['SIGNALS_RUNG']))
+    role = {'listen': _('you listen'), 'speak': _('you speak'),
+            'both': _('you take turns')}[level.roles]
+    said = [_('Rung %d: %d exchanges, %d objects, %s; glyphs name %s, %d '
+              'to a signal.')
+            % (level.rung, level.exchanges, level.objects, role,
+               _('colours and shapes') if level.shapes else _('colours'),
+               level.length)]
+    if level.swaps:
+        said.append(_('The partner changes its code partway.'))
+    if level.rung > 20:
+        said.append(_('You must beat the reference.'))
+    return '  '.join(said)
+
+
+SIGNALS = TaskSpec(
+    title=_('Signals options'),
+    options=(
+        Option('SIGNALS_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 8, 12, 16, 20, 21, 25, 30)),
+        Option('SIGNALS_TRIALS', _('Games per run'), 3,
+               values=(1, 3, 5, 8)),
+        Option('SIGNALS_ADAPTIVE',
+               _('Climb a rung at par, drop one under'), True),
+    ),
+    note=signals_note)
+
+
+def errands_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung's mail asks for."""
+    from .. import errands
+    level = errands.grade(int(chosen['ERRANDS_RUNG']))
+    said = [_('Rung %d: %d errand%s, %d other mails.')
+            % (level.rung, level.errands, '' if level.errands == 1 else 's',
+               level.noise)]
+    found = []
+    if not level.shopping:
+        found.append(_('a receipt to claim, no shopping'))
+    if level.policy:
+        found.append(_('categories from a policy mail'))
+    if level.amend:
+        found.append(_('a request changed by a later mail'))
+    if found:
+        said.append(_('With %s.') % ', '.join(found))
+    said.append(_('Par allows %d%% of a thorough worker\'s extra clicks.')
+                % int(round(level.slack * 100)))
+    return '  '.join(said)
+
+
+ERRANDS = TaskSpec(
+    title=_('Errands options'),
+    options=(
+        Option('ERRANDS_RUNG', _('Starting rung'), 1,
+               values=(1, 3, 6, 9, 12, 15, 18, 21, 25, 30)),
+        Option('ERRANDS_TRIALS', _('Errand days per run'), 3,
+               values=(1, 3, 5, 8)),
+        Option('ERRANDS_ADAPTIVE',
+               _('Climb a rung at par, drop one under'), True),
+    ),
+    note=errands_note)
+
+
 def wiring_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung wires up."""
     from .. import wiring
@@ -2756,6 +2852,9 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'forms': FORMS,
     'wiring': WIRING,
     'gamble': GAMBLE,
+    'errands': ERRANDS,
+    'signals': SIGNALS,
+    'will_it_fall': WILL_IT_FALL,
     'browser': BROWSER,
     'notebook': NOTEBOOK,
     'manual': MANUAL,

@@ -1486,6 +1486,32 @@ library and need `ffmpeg`, as Video Sequence does, with a rotation of
 their own. Six agent ports, one per option. Clocked, because the
 evidence is motion.
 
+#### Will It Fall?
+
+A small scene of plain rigid-body physics, a question, and a row of
+answer buttons. Every answer is exact -- worked out from centres of
+mass and the equations of a thrown ball -- so how close a call is can
+be set to the millimetre.
+
+| Rung | The question |
+| --- | --- |
+| 1 | A tower of blocks: *does it stand or fall?* |
+| 4+ | A plank on a pivot with weights on it: *tips left, tips right, or stays level?* |
+| 8+ | A ball rolls off a ledge: *which bin does it land in?* |
+| 10+ | The plank's pivot is off its middle, so the plank's own weight counts. |
+| 12+ | A taller tower: *which block is the first to topple*, or nothing? |
+| 16+ | The ball bounces once, losing some speed: *where does it land the second time?* |
+
+The margin -- how far a centre of mass sits from an edge, or a ball
+from a bin wall -- shrinks from a third of a block at rung one to two
+hundredths by rung twenty-one; blocks grow to seven, bins to six, and
+past twenty the flight's dotted start shows fewer dots to read its
+speed from. Answers are dealt evenly, so no button is a safe guess.
+A trial is right or wrong. Eight agent ports, one per answer button.
+Turn-based, so it takes the think clock. After the verdict the truth is
+drawn in -- the block that topples outlined, the plank tilted, the
+ball's whole path traced -- so a wrong answer shows why.
+
 #### Winning Move
 
 One legal chess position is dealt and the side to move has exactly one
@@ -1947,6 +1973,34 @@ export NW_VERBAL_IQ_DATASET=/path/to/VerbalIQDataset
 Only displayable English questions with two to five indexed choices are
 offered. Choices are shuffled on every deal while the gold answer follows its
 text, so a source's answer-position distribution is not a shortcut.
+
+#### Signals
+
+A partner across the table, a row of objects -- each a colour and a
+shape -- and a code nobody explains. When the partner speaks it thinks
+of one object and sends one or two glyphs from an alphabet of eight
+abstract marks; pick the object it meant. When you speak an object is
+outlined; send glyphs (keys Q to I, or click them) and the partner
+picks. The answer is shown afterwards either way. Which glyph means
+which colour or shape is the partner's own convention and has to be
+worked out from what happens, and then used. Each game is a new partner
+with a new code.
+
+| Rung | What it adds |
+| --- | --- |
+| 1 | Only listening; glyphs name colours, every object a different colour. |
+| 4+ | Only speaking: find which glyph makes the partner pick the colour wanted. |
+| 8+ | Listening and speaking by turns, and glyphs for shapes as well as colours. |
+| 12+ | Two glyphs a signal, and objects that only colour and shape *together* tell apart. |
+| 16+ | The partner **changes** its code partway through, without a word: two glyphs swap meanings, three from 20. |
+| 21+ | Fewer exchanges to learn in than sixteen, and more objects. |
+
+A game passes at par: what a reference learner scores on the identical
+game -- a Bayesian count of which glyph went with which colour or
+shape, forgetting slowly where codes can change -- with ground given
+below rung twenty and, past it, par set halfway between that learner
+and a perfect game. Sixteen agent ports: eight to pick an object, eight
+to send a glyph. Turn-based, so it takes the think clock.
 
 #### Algebra
 
@@ -3231,6 +3285,38 @@ to be read well enough to open little but the answer. Fifteen agent
 ports, Desktop's pointer and two more: move up, down, left or right by
 80, 20 or 5 units of a 1000 by 640 window, click, scroll up, scroll
 down. Turn-based, so it takes the think clock.
+
+#### Errands
+
+A small computer: an app strip with **Mail**, **Shop** and
+**Expenses**, and a **Done** button. The mail says what is wanted --
+*could you order the cheapest kettle in stock and claim it back?* --
+among mail that wants nothing. Buy it in the shop (Browser's shop,
+drawn by the same code), each errand as an order of its own; then in
+Expenses file a claim per order: its order number and total typed from
+an on-screen keypad (or the digit keys), and a category. Press Done.
+The round passes if exactly what was asked was bought, every order has
+one right claim and nothing else was claimed, in no more clicks than
+par.
+
+| Rung | What it adds |
+| --- | --- |
+| 1 | A receipt mail: claim it, no shopping. |
+| 2+ | Mail that wants nothing, up to six. |
+| 3+ | Something to buy first; the order's number and total are on its confirmation page. |
+| 6+ | Browser's harder shops, climbing its ladder from its rung 3. |
+| 9+ | The category is no longer said in the request but in a policy mail from Accounts, by department. |
+| 12+ | A request followed by a **change of plan** that scraps it and asks for something else. |
+| 15+ | Two errands from different people; three from 21. |
+
+Clicks count, a keypad press or a typed digit included; moving and
+scrolling are free. Par is the fewest clicks the round could take plus
+a share of what a thorough worker spends -- every mail read, every
+product looked at -- and of a margin for slips: all of it at rung one,
+under a third by rung twenty, a twentieth by thirty. Fifteen agent
+ports, Browser's: move the pointer by 80, 20 or 5 units in four
+directions, click, scroll up, scroll down. Turn-based, so it takes the
+think clock.
 
 ### Window size, full screen, and the two coordinate spaces
 

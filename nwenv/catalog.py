@@ -115,6 +115,9 @@ CATALOG: Tuple[Wrapped, ...] = (
     Wrapped('what_next', 'What Happens Next',
             'nwenv.whatnext', 'WhatNextEnv',
             'neural_workshop.ui.whatnext', 'WhatNext'),
+    Wrapped('will_it_fall', 'Will It Fall?',
+            'nwenv.falls', 'WillItFallEnv',
+            'neural_workshop.ui.falls', 'WillItFall'),
     Wrapped('graph_mapping', 'Graph Mapping',
             'nwenv.graphmapping', 'GraphMappingEnv',
             'neural_workshop.ui.graphmapping', 'GraphMapping'),
@@ -169,6 +172,9 @@ CATALOG: Tuple[Wrapped, ...] = (
     Wrapped('verbal_reasoning', 'Verbal Reasoning',
             'nwenv.verbal', 'VerbalReasoningEnv',
             'neural_workshop.ui.verbal', 'VerbalReasoning'),
+    Wrapped('signals', 'Signals',
+            'nwenv.signals', 'SignalsEnv',
+            'neural_workshop.ui.signals', 'Signals'),
     Wrapped('tower_of_hanoi', 'Tower of Hanoi',
             'nwenv.hanoi', 'HanoiEnv',
             'neural_workshop.ui.hanoi', 'TowerOfHanoi'),
@@ -223,6 +229,9 @@ CATALOG: Tuple[Wrapped, ...] = (
     Wrapped('browser', 'Browser',
             'nwenv.browser', 'BrowserEnv',
             'neural_workshop.ui.browser', 'Browser'),
+    Wrapped('errands', 'Errands',
+            'nwenv.errands', 'ErrandsEnv',
+            'neural_workshop.ui.errands', 'Errands'),
 )
 
 BY_ID: Dict[str, Wrapped] = {row.task_id: row for row in CATALOG}

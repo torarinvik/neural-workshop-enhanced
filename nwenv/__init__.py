@@ -110,6 +110,9 @@ from .sonar import SonarEnv  # noqa: E402
 from .hiddenrule import HiddenRuleEnv  # noqa: E402
 from .dispatch import DispatchEnv  # noqa: E402
 from .gamble import GambleEnv  # noqa: E402
+from .errands import ErrandsEnv  # noqa: E402
+from .signals import SignalsEnv  # noqa: E402
+from .falls import WillItFallEnv  # noqa: E402
 from .browser import BrowserEnv  # noqa: E402
 from .notebook import NotebookEnv  # noqa: E402
 from .manual import ManualEnv  # noqa: E402
@@ -190,7 +193,7 @@ __all__ = [
     'CrossedWiresEnv', 'CrosswordEnv', 'CustodyEnv', 'DonkeyEnv',
     'GraphMappingEnv',
     'GoEnv', 'make_go_env', 'verify_go_outcome',
-    'HanoiEnv', 'InTheDarkEnv', 'JigsawEnv', 'VideoSequenceEnv', 'VideoJigsawEnv', 'CameraEnv', 'SonarEnv', 'BluffEnv', 'FormsEnv', 'WiringEnv', 'GambleEnv', 'BrowserEnv', 'NotebookEnv', 'ManualEnv', 'WhatNextEnv', 'TriageEnv', 'HiddenRuleEnv', 'DispatchEnv', 'DesktopEnv', 'LookoutEnv',
+    'HanoiEnv', 'InTheDarkEnv', 'JigsawEnv', 'VideoSequenceEnv', 'VideoJigsawEnv', 'CameraEnv', 'SonarEnv', 'BluffEnv', 'FormsEnv', 'WiringEnv', 'GambleEnv', 'ErrandsEnv', 'SignalsEnv', 'WillItFallEnv', 'BrowserEnv', 'NotebookEnv', 'ManualEnv', 'WhatNextEnv', 'TriageEnv', 'HiddenRuleEnv', 'DispatchEnv', 'DesktopEnv', 'LookoutEnv',
     'MatrixReasoningEnv', 'MazeEnv', 'MovingTargetsEnv', 'MrTimeEnv',
     'NCupMonteEnv',
     'PursuitEnv', 'RecognitionEnv', 'ReflexEnv', 'RemovalsEnv',

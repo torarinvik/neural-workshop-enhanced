@@ -179,26 +179,28 @@ class Browser(RungTask):
         return label
 
     def _draw(self, left, bottom, width, height) -> None:
-        session = self.session
+        self._draw_shop(self.session)
+
+    def _draw_shop(self, session) -> None:
+        """The browser window, from the session's offset down."""
         dealt = session.deal
+        o = session.offset
         W, H = model.SCREEN_W, model.SCREEN_H
-        self._rect(0, 0, W, H, PAGE, EDGE)
+        self._rect(0, o, W, H - o, PAGE, EDGE)
         # Tab strip and toolbar.
-        self._rect(0, 0, W, 32, TABS)
-        self._rect(10, 4, 300, 28, TAB, EDGE)
-        self._words(_page_title(dealt, session.page), 22, 18, 12,
+        self._rect(0, o, W, 32, TABS)
+        self._rect(10, o + 4, 300, 28, TAB, EDGE)
+        self._words(_page_title(dealt, session.page), 22, o + 18, 12,
                     width=280)
-        self._rect(0, 32, W, model.VIEW_TOP - 32, TOOLBAR)
-        for (x, y, w, h), words in ((model.BACK, _('Back')),
-                                    (model.HOME, _('Home')),
-                                    (model.CART, _('Cart (%d)')
-                                     % len(session.cart))):
+        self._rect(0, o + 32, W, model.VIEW_TOP - 32, TOOLBAR)
+        words = (_('Back'), _('Home'), _('Cart (%d)') % len(session.cart))
+        for ((x, y, w, h), _action), label in zip(session.chrome(), words):
             self._rect(x, y, w, h, BUTTON, EDGE)
-            self._words(words, x + w / 2, y + h / 2, 12, anchor='center',
+            self._words(label, x + w / 2, y + h / 2, 12, anchor='center',
                         bold=True)
-        self._rect(170, 38, 700, 30, FIELD, EDGE)
-        self._words(model.address(dealt, session.page), 180, 53, 12,
-                    colour=MUTED, width=680)
+        self._rect(170, o + 38, 700, 30, FIELD, EDGE)
+        self._words(_address(session), 180, o + 53, 12, colour=MUTED,
+                    width=680)
         # The page.
         for element in session.elements():
             if not session.visible(element):
@@ -240,10 +242,11 @@ class Browser(RungTask):
         most = session.max_scroll()
         if most <= 0:
             return
-        total = model.VIEW_H + most
-        bar = model.VIEW_H * model.VIEW_H / total
-        top = model.VIEW_TOP + session.scroll / total * model.VIEW_H
-        self._rect(988, model.VIEW_TOP, 10, model.VIEW_H, TABS)
+        view_h, view_top = session.view_h, session.view_top
+        total = view_h + most
+        bar = view_h * view_h / total
+        top = view_top + session.scroll / total * view_h
+        self._rect(988, view_top, 10, view_h, TABS)
         self._rect(989, top, 8, bar, MUTED)
 
     def _pointer(self, session) -> None:
@@ -268,6 +271,13 @@ class Browser(RungTask):
             self.par)
 
 
+def _address(session) -> str:
+    page = session.page
+    if page[0] in ('home', 'list', 'item', 'cart'):
+        return model.address(session.deal, page)
+    return '%s.example/%s' % (session.deal.shop, page[0])
+
+
 def _page_title(dealt, page) -> str:
     if page[0] == 'home':
         return dealt.shop.capitalize()
@@ -275,7 +285,9 @@ def _page_title(dealt, page) -> str:
         return dealt.departments[page[1]]
     if page[0] == 'item':
         return dealt.products[page[1]].name
-    return _('Your cart')
+    if page[0] == 'cart':
+        return _('Your cart')
+    return _('Order placed')
 
 
 def reference_ports(task) -> list:
@@ -288,12 +300,12 @@ def reference_ports(task) -> list:
     ports = []
     for action in path:
         if action[0] in ('home', 'cart'):
-            rect = model.HOME if action[0] == 'home' else model.CART
+            rect = dict((a[0], r) for r, a in session.chrome())[action[0]]
         else:
             element = next(e for e in session.elements()
                            if e.action == action)
             while not session.visible(element):
-                top = model.VIEW_TOP + element.y - session.scroll
+                top = session.view_top + element.y - session.scroll
                 way = 1 if top + element.h > model.SCREEN_H else -1
                 session.wheel(way)
                 ports.append(SCROLL_DOWN if way > 0 else SCROLL_UP)

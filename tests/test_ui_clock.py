@@ -115,6 +115,17 @@ class NoTaskReadsTheWallClock(unittest.TestCase):
             if INSTALLING in text:
                 installers.update(re.findall(r'^class (\w+)', text,
                                              re.MULTILINE))
+        # Through any depth of subclassing: Errands is a Browser, which
+        # is a RungTask.
+        grown = True
+        while grown:
+            grown = False
+            for text in sources.values():
+                for child, base in re.findall(r'^class (\w+)\((\w+)\)',
+                                              text, re.MULTILINE):
+                    if base in installers and child not in installers:
+                        installers.add(child)
+                        grown = True
         missing = []
         for name in task_files():
             text = sources[name]

@@ -170,32 +170,37 @@ def _score(criterion: str, product: Product) -> float:
             'best_rated': -product.rating}[criterion]
 
 
+def phrase(dealt: Deal, criterion: str, department: int,
+           target: int) -> str:
+    """One thing to buy, in words: *the cheapest kettle in stock*."""
+    kind = dealt.departments[department].lower()[:-1]
+    if criterion == 'named':
+        return _('the %s') % dealt.products[target].name
+    if criterion == 'cheapest':
+        return _('the cheapest %s') % kind
+    if criterion == 'cheapest_in_stock':
+        return _('the cheapest %s in stock') % kind
+    if criterion == 'lowest_total':
+        return _('the %s in stock with the lowest price plus shipping') \
+            % kind
+    if criterion == 'rated':
+        return _('the cheapest %s in stock rated 4 or more') % kind
+    return _('the best-rated %s in stock') % kind
+
+
 def goal_words(dealt: Deal) -> str:
-    parts = []
-    for (criterion, department), target in zip(dealt.goals, dealt.targets):
-        kind = dealt.departments[department].lower()[:-1]
-        if criterion == 'named':
-            parts.append(_('the %s') % dealt.products[target].name)
-        elif criterion == 'cheapest':
-            parts.append(_('the cheapest %s') % kind)
-        elif criterion == 'cheapest_in_stock':
-            parts.append(_('the cheapest %s in stock') % kind)
-        elif criterion == 'lowest_total':
-            parts.append(_('the %s in stock with the lowest price plus '
-                           'shipping') % kind)
-        elif criterion == 'rated':
-            parts.append(_('the cheapest %s in stock rated 4 or more')
-                         % kind)
-        else:
-            parts.append(_('the best-rated %s in stock') % kind)
+    parts = [phrase(dealt, criterion, department, target)
+             for (criterion, department), target in zip(dealt.goals,
+                                                        dealt.targets)]
     return _('Buy %s, then check out.') % _(' and ').join(parts)
 
 
 def deal(rung: int, seed: Optional[int] = None,
-         rng: Optional[random.Random] = None) -> Deal:
+         rng: Optional[random.Random] = None,
+         level: Optional[Grade] = None) -> Deal:
     if seed is None:
         seed = (rng or random).randrange(1 << 30)
-    level = grade(rung)
+    level = level or grade(rung)
     draw = random.Random(seed)
     for _attempt in range(500):
         found = _try_deal(level, seed, draw)
@@ -439,8 +444,13 @@ CART = (880, 38, 110, 30)
 class Session:
     """A browser on a deal: the page, the history, the cart, the pointer."""
 
-    def __init__(self, dealt: Deal) -> None:
+    def __init__(self, dealt: Deal, offset: float = 0.0) -> None:
         self.deal = dealt
+        #: How far down the screen the browser starts: 0 when it is the
+        #: whole screen, more when it is one app among others.
+        self.offset = offset
+        self.view_top = VIEW_TOP + offset
+        self.view_h = SCREEN_H - self.view_top
         self.page: Page = ('home',)
         self.history: List[Page] = []
         self.cart: List[int] = []
@@ -456,26 +466,29 @@ class Session:
         return layout(self.deal, self.page, self.cart, self.notice)
 
     def max_scroll(self) -> float:
-        return max(0.0, page_height(self.elements()) - VIEW_H)
+        return max(0.0, page_height(self.elements()) - self.view_h)
 
     def visible(self, element: Element) -> bool:
-        top = VIEW_TOP + element.y - self.scroll
-        return top >= VIEW_TOP and top + element.h <= SCREEN_H
+        top = self.view_top + element.y - self.scroll
+        return top >= self.view_top and top + element.h <= SCREEN_H
 
     def on_screen(self, element: Element) -> Tuple[float, float, float,
                                                    float]:
-        return (element.x, VIEW_TOP + element.y - self.scroll, element.w,
+        return (element.x, self.view_top + element.y - self.scroll,
+                element.w,
                 element.h)
 
     def chrome(self) -> List[Tuple[Tuple, Tuple]]:
         """Toolbar buttons: (rect, action)."""
-        return [(BACK, ('back',)), (HOME, ('home',)), (CART, ('cart',))]
+        o = self.offset
+        return [((x, y + o, w, h), action) for (x, y, w, h), action in
+                ((BACK, ('back',)), (HOME, ('home',)), (CART, ('cart',)))]
 
     def target_at(self, x: float, y: float) -> Optional[Tuple]:
         for (bx, by, bw, bh), action in self.chrome():
             if bx <= x <= bx + bw and by <= y <= by + bh:
                 return action
-        if y < VIEW_TOP:
+        if y < self.view_top:
             return None
         for element in self.elements():
             if element.action is None or not self.visible(element):

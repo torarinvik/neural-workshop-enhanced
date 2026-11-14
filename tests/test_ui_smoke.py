@@ -31,6 +31,9 @@ if __name__ == '__main__':
     from test_sonar import *           # noqa: F401,F403,E402
     from test_hiddenrule import *      # noqa: F401,F403,E402
     from test_gamble import *  # noqa: F401,F403,E402
+    from test_errands import *  # noqa: F401,F403,E402
+    from test_signals import *  # noqa: F401,F403,E402
+    from test_falls import *  # noqa: F401,F403,E402
     from test_browser import *  # noqa: F401,F403,E402
     from test_notebook import *  # noqa: F401,F403,E402
     from test_manual import *  # noqa: F401,F403,E402
