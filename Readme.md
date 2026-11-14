@@ -2812,6 +2812,57 @@ one way: it does not count how long an incident waited. A finished
 refit is not paid: whether it was worth its twelve seconds is what the
 round's verdict is for.
 
+### Computer use
+
+#### Desktop
+
+A small computer, drawn by the task itself: windows with title bars,
+switches, rows of choices, sliders with notches and dropdown lists, and
+a taskbar with a Done button. A card beside the screen lists settings
+to reach, each named by its window (or dialog) and ticked once it
+holds. Moving the pointer is free; **every click costs one**, whatever
+it hits. Press Done when the card is all ticked. The round passes if
+it is, and the clicks came in at or under par.
+
+Every other task gives its controls a fixed meaning. Here the only
+controls are a pointer and a click, and what a click does depends on
+what is under it: which window is on top, which tab is open, whether a
+menu, a list or a dialog is in the way. That is the skill.
+
+| Rung | What it adds |
+| --- | --- |
+| 1 | One window, one switch, one setting. |
+| 2–4 | Rows of choices, then sliders, then dropdown lists; more controls and more settings. |
+| 5+ | **Tabs**: only the open tab's controls are there. |
+| 6+ | **Scrolling**: a tab holds more rows than the window shows. |
+| 8+ | **Menus and dialogs**: some settings live in a dialog opened from the menu bar, kept only by OK. Cancel throws them away. |
+| 11+ | **Overlapping windows**: only what is on top takes a click, and a click raises its window. More windows every three rungs, up to six. |
+| 15+ | **Greyed-out controls**, with a note saying which other setting they need. |
+| 16+ | **Apply**: a window that keeps its changes pending until Apply is pressed. |
+| 21+ | Par is below the reference, by more at every rung. |
+
+The reference is deliberately plain. It takes the card in the order
+listed and sees each setting all the way home, an OK for every dialog
+setting and an Apply for every pending one, before looking at the
+next. A player who groups the work by window and dialog saves 12 to
+18% of its clicks, so below rung twenty par is generous and past it
+the only way under par is to plan the order. Measured over forty
+desktops a rung, the reference takes about 2 clicks at rung 3, 17 at
+rung 10, 41 at rung 16 and 72 at rung 24. It solves every desktop on
+every rung tested.
+
+People use the mouse. The arrow keys also move the drawn pointer (Shift
+for a long step, Alt for a short one), Space clicks and Enter is Done,
+which is how the agent plays: fourteen ports, twelve moving the pointer
+by 80, 20 or 5 units of a 1000 by 640 screen in each direction, one
+click and one Done. Every point the reference clicks is on that grid.
+It is turn-based, so it takes the think clock.
+
+This is stage one. Still to come: a card that is shown and then
+hidden, Reset next to Apply, pop-ups that interrupt, controls with no
+labels whose effect has to be worked out by trying them, dragging, and
+typing.
+
 ### Window size, full screen, and the two coordinate spaces
 
 The window is resizable, and **F11** switches to and from full screen

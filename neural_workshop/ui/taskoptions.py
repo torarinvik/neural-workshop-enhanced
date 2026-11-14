@@ -632,6 +632,46 @@ HIDDEN_RULE = TaskSpec(
     note=hidden_rule_note)
 
 
+def desktop_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung puts on the screen."""
+    from .. import desktop
+    level = desktop.grade(int(chosen['DESKTOP_RUNG']))
+    said = [_('Rung %d: %d window(s), %d setting(s) to reach.')
+            % (level.rung, level.windows, level.goals)]
+    found = []
+    if level.tabs > 1:
+        found.append(_('tabs'))
+    if level.rows < level.per_tab:
+        found.append(_('scrolling'))
+    if level.dialogs:
+        found.append(_('menus and dialogs'))
+    if level.windows > 1:
+        found.append(_('overlapping windows'))
+    if level.depends:
+        found.append(_('greyed-out controls'))
+    if level.applies:
+        found.append(_('Apply buttons'))
+    if found:
+        said.append(_('With %s.') % ', '.join(found))
+    if level.factor < 1.0:
+        said.append(_('You must beat the reference.'))
+    return '  '.join(said)
+
+
+DESKTOP = TaskSpec(
+    title=_('Desktop options'),
+    options=(
+        Option('DESKTOP_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 8, 11, 13, 15, 16, 18, 20, 25,
+                       30)),
+        Option('DESKTOP_TRIALS', _('Rounds per run'), 5,
+               values=(1, 3, 5, 8, 12)),
+        Option('DESKTOP_ADAPTIVE',
+               _('Climb a rung under par, drop one over'), True),
+    ),
+    note=desktop_note)
+
+
 def dispatch_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung puts on the map."""
     from .. import dispatch
@@ -2307,6 +2347,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'camera': CAMERA,
     'sonar': SONAR,
     'dispatch': DISPATCH,
+    'desktop': DESKTOP,
     'video_puzzle': VIDEO_PUZZLE,
     'tower_of_hanoi': HANOI,
     'salesman': SALESMAN,

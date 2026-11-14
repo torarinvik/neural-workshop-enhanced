@@ -30,6 +30,7 @@ if __name__ == '__main__':
     from test_sonar import *           # noqa: F401,F403,E402
     from test_hiddenrule import *      # noqa: F401,F403,E402
     from test_dispatch import *        # noqa: F401,F403,E402
+    from test_desktop import *         # noqa: F401,F403,E402
     from test_ui_longterm import *    # noqa: F401,F403,E402
     from test_ui_matrices import *    # noqa: F401,F403,E402
     from test_ui_menus import *       # noqa: F401,F403,E402

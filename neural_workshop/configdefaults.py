@@ -738,6 +738,17 @@ HIDDEN_RULE_RUNG = 1
 HIDDEN_RULE_TRIALS = 5
 HIDDEN_RULE_ADAPTIVE = True
 
+# Desktop: a small computer drawn by the task -- windows, switches,
+# choices, sliders, dropdowns, tabs, scrolling, menus and dialogs,
+# overlapping windows, greyed-out controls and Apply buttons, more of
+# them with every rung. A card lists settings to reach. Moving the
+# pointer is free, every click costs one, and a round passes if the
+# settings hold at Done in no more clicks than par: what a plain
+# reference took on the identical screen, below it past rung 20.
+DESKTOP_RUNG = 1
+DESKTOP_TRIALS = 5
+DESKTOP_ADAPTIVE = True
+
 # Dispatch: incidents appear on a town map in real time and grow until
 # a crew deals with them or they burn out. Click a crew, then where to
 # send it; any crew can be redirected at any moment. A round passes if

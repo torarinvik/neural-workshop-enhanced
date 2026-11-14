@@ -30,6 +30,7 @@ CATEGORIES: Sequence[Tuple[str, str]] = (
     ('planning', _('Planning')),
     ('self_control', _('Self-control')),
     ('decisions', _('Decision making')),
+    ('computer', _('Computer use')),
 )
 
 #: Category id → list of (task id, label).
@@ -106,6 +107,11 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
     'decisions': [
         ('sonar', _('Sonar')),
         ('dispatch', _('Dispatch')),
+    ],
+    # Operating an interface: a pointer, a screen, and controls that
+    # have to be found, uncovered and understood before they can be used.
+    'computer': [
+        ('desktop', _('Desktop')),
     ],
 }
 
@@ -572,6 +578,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'jigsaw':
         from .jigsaw import JigsawPuzzle
         JigsawPuzzle()
+        return
+    if task_id == 'desktop':
+        from .desktop import Desktop
+        Desktop()
         return
     if task_id == 'dispatch':
         from .dispatch import Dispatch

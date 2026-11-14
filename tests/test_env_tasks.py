@@ -743,7 +743,7 @@ class TheBoundaryKnowsWhichTasksHaveAClock(unittest.TestCase):
                         'you_are_here', 'sokoban_3d', 'crossword',
                         'scrabble', 'scramble', 'algebra',
                         'n_in_a_row', 'verbal_reasoning', 'camera',
-                        'sonar', 'hidden_rule'):
+                        'sonar', 'hidden_rule', 'desktop'):
             self.assertFalse(self.clocked(task_id), task_id)
 
     def test_the_ones_that_move_on_their_own_are(self):
