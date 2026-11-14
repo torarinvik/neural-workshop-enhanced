@@ -62,6 +62,9 @@ BUTTON = (222, 226, 234)
 NOTE = (250, 226, 120)
 FOLDER = (236, 190, 70)
 SELECTED = (196, 216, 250)
+DRAG_EDGE = (40, 110, 220)
+DROP_OK = (52, 168, 83)
+DROP_NO = (200, 70, 60)
 #: The band of colour across a file's page, by what it holds.
 FILE_BANDS = {'doc': (52, 110, 220), 'sheet': (60, 150, 80),
               'image': (200, 90, 150), 'music': (150, 90, 200)}
@@ -224,7 +227,10 @@ class Desktop:
             dx, dy = DIRECTIONS[port // 3]
             step = model.STEPS[port % 3]
             self.desk.move(dx * step, dy * step)
-            self._place_pointer()
+            if self.desk.held is not None:
+                self._redraw()        # the drag follows the pointer
+            else:
+                self._place_pointer()
         elif port == CLICK:
             self.click()
         elif port == PRESS:
@@ -305,6 +311,9 @@ class Desktop:
         }
 
     def update(self, dt: float) -> None:
+        if getattr(self, '_drag_dirty', False) and self.phase == 'working':
+            self._drag_dirty = False
+            self._redraw()
         if self.phase == 'judged' and self.clock() >= self.feedback_until:
             self._next_trial()
 
@@ -390,6 +399,9 @@ class Desktop:
                 if win.shown:
                     self._draw_window(win, 10 + depth * 4)
             self._draw_taskbar(600)
+            preview = desk.drag_preview()
+            if preview is not None:
+                self._draw_drag(preview, 650)
             if desk.menu is not None:
                 self._draw_menu(700)
             if desk.start_open:
@@ -403,6 +415,40 @@ class Desktop:
             self._draw_card()
         self._place_pointer()
         self._update_labels()
+
+    def _outline(self, rect, colour, group, width: float = 3.0) -> None:
+        x, y, w, h = rect
+        for side in ((x, y, w, width), (x, y + h - width, w, width),
+                     (x, y, width, h), (x + w - width, y, width, h)):
+            self._rect(side, colour, group)
+
+    def _draw_drag(self, preview, base: int) -> None:
+        """What a drag carries and where it would land, as it goes."""
+        under, over, text = (self._group(base), self._group(base + 1),
+                             self._group(base + 2))
+        if preview[0] in ('move', 'resize'):
+            self._outline(preview[2], DRAG_EDGE, over)
+            return
+        _kind, node, dest, rect = preview
+        if rect is not None:
+            whole = rect == (0, 0, model.SCREEN_W, model.WORK_H)
+            self._outline(rect, DROP_OK if dest is not None else DROP_NO,
+                          under, 4.0 if whole else 3.0)
+        # The icon itself rides under the pointer, lifted and picked.
+        px, py = self.desk.pointer
+        size = model.ICON_W * 0.8
+        ghost = (px - size * 0.3, py - size * 0.2, size, size)
+        self._rect(ghost, SELECTED, over, DROP_OK if dest else PANEL_EDGE)
+        self._glyph('folder' if node.folder else 'file', ghost, over, text,
+                    node.name, file_kind=node.kind)
+        if dest is not None:
+            # A tag beside it, as a real desktop says where it is going.
+            words = _('Move to %s') % dest.name
+            tag = (px + size * 0.7, py + size * 0.7, 14 + 7.5 * len(words),
+                   22)
+            self._rect(tag, DROP_OK, over)
+            self._words(words, tag[0] + 7, tag[1] + 11, text, size=10.0,
+                        colour=WHITE, bold=True)
 
     def _title_bar(self, win, colour, parts, text) -> None:
         self._rect(model.title_rect(win), colour, parts)
@@ -865,6 +911,8 @@ class Desktop:
             if point is not None:
                 self.desk.pointer = point
                 self._place_pointer()
+                if self.desk.held is not None:
+                    self._drag_dirty = True
 
     def on_mouse_drag(self, x: int, y: int, dx: int, dy: int,
                       buttons: int, modifiers: int) -> None:

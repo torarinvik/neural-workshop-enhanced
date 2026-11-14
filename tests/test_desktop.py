@@ -582,6 +582,47 @@ class TheFiles(unittest.TestCase):
         self.assertIs(ex.places[ex.place].path, desk.nodes[D.TRASH])
 
 
+    def test_an_icon_is_picked_the_moment_it_is_pressed(self):
+        desk, ex = explorer_desk()
+        hit(desk, D.sidebar_rects(ex)[D.DOCUMENTS], ex)
+        node, rect = next((n, r) for n, r in desk.icon_rects(ex)
+                          if not n.folder)
+        clicks = desk.clicks
+        desk.press(*desk.reachable(rect, ex))
+        self.assertIs(ex.places[ex.place].selected, node)
+        self.assertEqual(desk.clicks, clicks)
+
+    def test_a_drag_shows_what_it_carries_and_where_it_lands(self):
+        desk, ex = explorer_desk()
+        hit(desk, D.sidebar_rects(ex)[D.DOCUMENTS], ex)
+        node, rect = next((n, r) for n, r in desk.icon_rects(ex)
+                          if not n.folder)
+        desk.press(*desk.reachable(rect, ex))
+        self.assertIsNone(desk.drag_preview())      # not moved yet
+        trash = D.sidebar_rects(ex)[D.TRASH]
+        desk.pointer = desk.reachable(trash, ex)
+        kind, carried, dest, where = desk.drag_preview()
+        self.assertEqual(kind, 'icon')
+        self.assertIs(carried, node)
+        self.assertIs(dest, desk.nodes[D.TRASH])
+        self.assertEqual(where, trash)
+        desk.pointer = D.centre(D.title_rect(desk.windows[0]))
+        if desk.window_at(*desk.pointer) is desk.windows[0]:
+            self.assertIsNone(desk.drag_preview()[2])
+        desk.release(*desk.reachable(trash, ex))
+        self.assertIs(node.parent, desk.nodes[D.TRASH])
+
+    def test_a_title_drag_shows_the_outline_it_will_take(self):
+        desk = D.Desktop(D.deal(3, seed=0))
+        win = desk.windows[0]
+        grip = (win.x + 60, win.y + 15)
+        desk.press(*grip)
+        desk.pointer = (grip[0] - 100, grip[1] + 40)
+        kind, owner, rect = desk.drag_preview()
+        self.assertEqual((kind, rect[:2]), ('move', (win.x - 100, win.y + 40)))
+        desk.release(*desk.pointer)
+        self.assertEqual((win.x, win.y), rect[:2])
+
 class TheStartPanel(unittest.TestCase):
 
     def test_pinned_tiles_open_their_app(self):

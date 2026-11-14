@@ -820,6 +820,64 @@ class Desktop:
             x, y = self.pointer
         self.pointer = (x, y)
         self.held = (x, y)
+        self._select_on_press(x, y)
+
+    def _select_on_press(self, x: float, y: float) -> None:
+        """An icon is picked the moment the button goes down, as on a
+        real desktop, so a drag shows what it carries before it moves."""
+        if self._overlay_open() or y >= WORK_H:
+            return
+        win = self.window_at(x, y)
+        if win is not None:
+            if win.kind != 'explorer' or win is not self.order[-1]:
+                return
+            for node, rect in self.icon_rects(win):
+                if inside(rect, x, y):
+                    win.places[win.place].selected = node
+            return
+        item = self.icon_at(x, y)
+        if item is not None:
+            self.picked = _icon_key(item)
+
+    def drag_preview(self) -> Optional[Tuple]:
+        """What letting go here would do, while the button is held and
+        the pointer has moved: ('icon', node, dest, rect) with the folder
+        it would land in (None if it would not) and the target's rect;
+        ('move', win, rect) or ('resize', win, rect) with the window's
+        outline after. None for anything else."""
+        if self.held is None or self._overlay_open():
+            return None
+        sx, sy = self.held
+        x, y = self.pointer
+        if abs(x - sx) <= STILL and abs(y - sy) <= STILL:
+            return None
+        if not self.draggable(sx, sy):
+            return None
+        win = self.window_at(sx, sy)
+        node = None
+        if win is None:
+            item = self.icon_at(sx, sy)
+            node = item[1]
+        elif win.kind == 'explorer':
+            node = next((n for n, r in self.icon_rects(win)
+                         if inside(r, sx, sy)), None)
+        if node is not None:
+            dest, rect = self.drop_target(x, y)
+            if dest is not None and (dest.within(node) or node.parent is dest
+                                     or not dest.folder):
+                dest = None
+            return ('icon', node, dest, rect)
+        dx = int(round((x - sx) / GRID)) * GRID
+        dy = int(round((y - sy) / GRID)) * GRID
+        if win.kind == 'app' and inside(grip_rect(win), sx, sy):
+            rows = max(1, min(win.most_rows,
+                              win.rows + int(round(dy / float(ROW_H)))))
+            return ('resize', win, (win.x, win.y, win.w,
+                                    win.h + (rows - win.rows) * ROW_H))
+        nx = max(60 - win.w, min(SCREEN_W - 60, win.x + dx))
+        ny = max(0, min(WORK_H - TITLE_H, win.y + dy))
+        # A window dragged low keeps what fits, as letting go will.
+        return ('move', win, (nx, ny, win.w, min(win.h, WORK_H - ny)))
 
     def release(self, x: Optional[float] = None,
                 y: Optional[float] = None) -> None:
@@ -1208,32 +1266,39 @@ class Desktop:
 
     def _dropped_on(self, x: float, y: float) -> Optional[Node]:
         """The folder a drop at (x, y) puts things in, if any."""
+        return self.drop_target(x, y)[0]
+
+    def drop_target(self, x: float, y: float
+                    ) -> Tuple[Optional[Node], Optional[Rect]]:
+        """The folder a drop at (x, y) puts things in, if any, and the
+        rect of what it was dropped on (the whole desktop for bare
+        desktop)."""
         if y >= WORK_H:
-            return None
+            return None, None
         win = self.window_at(x, y)
         if win is not None:
             if win.kind != 'explorer':
-                return None
+                return None, None
             for node, rect in self.icon_rects(win):
                 if inside(rect, x, y):
-                    return node if node.folder else None
+                    return (node if node.folder else None), rect
             for index, rect in enumerate(sidebar_rects(win)):
                 if inside(rect, x, y):
-                    return self.nodes[index]
+                    return self.nodes[index], rect
             for index, rect in enumerate(place_tab_rects(win)):
                 if inside(rect, x, y):
-                    return win.places[index].path
+                    return win.places[index].path, rect
             if inside(grid_area(win), x, y):
-                return win.places[win.place].path
-            return None
-        item = self.icon_at(x, y)
-        if item is None:
-            return self.nodes[DESKTOP_DIR]
-        if item[0] == 'trash':
-            return self.nodes[TRASH]
-        if item[0] == 'node' and item[1].folder:
-            return item[1]
-        return None
+                return win.places[win.place].path, grid_area(win)
+            return None, None
+        for item, rect in self.desktop_icons():
+            if inside(rect, x, y):
+                if item[0] == 'trash':
+                    return self.nodes[TRASH], rect
+                if item[0] == 'node' and item[1].folder:
+                    return item[1], rect
+                return None, rect
+        return self.nodes[DESKTOP_DIR], (0, 0, SCREEN_W, WORK_H)
 
     # --- the verdict -----------------------------------------------------
 
