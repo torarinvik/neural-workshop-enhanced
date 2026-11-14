@@ -60,6 +60,12 @@ from .outcome import PUBLIC_OUTCOME_KEYS
 
 Ports = Union[None, int, Mapping[int, bool], Iterable[int]]
 
+#: The think clock's bar: how tall, along the top edge, and its colour.
+#: A slate blue, nowhere near either verdict colour, and drawn at the top
+#: of the frame where the verdict reader never looks.
+THINK_BAR_PX = 6
+THINK_BAR_COLOR = (96, 120, 168)
+
 #: Methods a task may never redefine. Each one is load-bearing for a claim
 #: the programme makes about its own results, and each would fail silently
 #: rather than loudly if a subclass weakened it.
@@ -520,6 +526,8 @@ class TaskEnv:
                  frame_hz: float = 60.0,
                  visible: bool = False,
                  autostart: bool = True,
+                 think_seconds: float = 0.0,
+                 refill_seconds: Optional[float] = None,
                  **dials: Any) -> None:
         # A window on every tick and a verdict for every action, the ones
         # outside a trial worth nothing. A runtime acting on a fixed clock
@@ -538,6 +546,7 @@ class TaskEnv:
             raise ValueError('frame_hz must be at least %g'
                              % self.slowest_frame_hz)
         self._dt = 1. / self._hz
+        self._setup_think_clock(think_seconds, refill_seconds)
         self._asked = dict(dials)
         # A declared knob is a constructor keyword. One that is not
         # declared is refused rather than ignored: a run started with
@@ -585,6 +594,9 @@ class TaskEnv:
         self._delivered: Set[Any] = set()
         self._cached_outcome: Optional[Dict[str, Any]] = None
         self._settled_seen = False
+        self._bank = self._think_capacity
+        self._flagged = False
+        self.forfeits = 0
 
     def reset(self, seed: int = 0) -> Dict[str, Any]:
         """Start a fresh run under *seed* and return the first frame."""
@@ -690,16 +702,25 @@ class TaskEnv:
         if self._done:
             return self.observe()
 
-        was_open = self.trial_open(self.task)
+        was_open = self._on_move()
         self._virtual_now += self._dt
-        self.tick(self.task, self._dt)
+        if self._flagged:
+            self._deal_forfeit(self.task)
+        else:
+            if was_open and self._think_capacity:
+                self._bank -= self._dt
+                if self._bank <= 1e-9:
+                    self._flag_falls(self.task)
+            self.tick(self.task, self._dt)
         self._publish()
 
-        now_open = self.trial_open(self.task)
+        now_open = self._on_move()
         if now_open and not was_open:
             self._trial_digests = [self._digest]
             self._trial_seq += 1
             self.accounting.logical_trials += 1
+            self._bank = min(self._think_capacity,
+                             self._bank + self._think_refill)
         if was_open and not now_open:
             self._response_open = False
         if now_open and (self._action_finalized or not self._response_open):
@@ -711,6 +732,7 @@ class TaskEnv:
         if self._closed:
             return
         self._closed = True
+        self._drop_think_clock()
         if self.task is not None:
             try:
                 self.task.close()
@@ -718,6 +740,117 @@ class TaskEnv:
                 pass
             self.task = None
         self._export.close()
+
+    # --- the think clock ----------------------------------------------------
+    #
+    # A turn-based task waits for ever. The virtual clock moves on every
+    # step, but nothing in the task reads it as a cost, so a learner that
+    # ponders for a thousand steps is paid exactly what one that answers
+    # in ten is. That makes the one skill this programme most wants to
+    # see -- choosing how much to think -- impossible to measure on two
+    # dozen tasks, because on them thinking is free.
+    #
+    # The think clock gives thinking a price without touching any task.
+    # The learner holds a bank of seconds. It drains while a trial is
+    # open, at the boundary's own frame rate, whether the learner acts or
+    # not -- a step with no action *is* the think action. Each new trial
+    # pays a refill into the bank, up to its capacity. If the bank runs
+    # dry the trial is forfeit: the boundary paints the standard red
+    # verdict over the task, shows it for one published frame, and deals
+    # the next trial exactly as a settled one would be dealt.
+    #
+    # The two numbers span the cases worth having. A refill equal to the
+    # capacity is a deadline per trial. A refill of zero is one bank for
+    # the whole run, so time spent on a hard trial is time taken from
+    # every later one. Anything between is a chess clock with an
+    # increment: what an easy trial does not use is saved for a hard one,
+    # which is "pay for what you use" written as a rule.
+    #
+    # Everything stays derivable. The bank is drawn as a bar along the
+    # top edge, so the learner can see what it has left, and a forfeit is
+    # the same red label every other loss is, read by the same reader.
+
+    def _setup_think_clock(self, think_seconds: float,
+                           refill_seconds: Optional[float]) -> None:
+        capacity = max(0.0, float(think_seconds or 0.0))
+        refill = capacity if refill_seconds is None else float(refill_seconds)
+        if capacity:
+            if self.clocked:
+                raise ValueError(
+                    '%s is clocked: its world already moves while the '
+                    'learner thinks, so a think clock would charge for '
+                    'time twice' % type(self).__name__)
+            if not self.settled_phase:
+                raise ValueError(
+                    '%s deals its own trials, so the boundary has no way to '
+                    'forfeit one; a think clock needs a declared '
+                    'settled_phase and deal' % type(self).__name__)
+            if refill < 0:
+                raise ValueError('refill_seconds cannot be negative')
+        self._think_capacity = capacity
+        self._think_refill = min(refill, capacity)
+        self._clock_batch: Any = None
+        self._clock_bar: Any = None
+        self._clock_verdict: Any = None
+
+    @property
+    def think_left(self) -> float:
+        """Seconds left in the think bank, or 0.0 with no clock set."""
+        return max(0.0, self._bank) if self._think_capacity else 0.0
+
+    def _on_move(self) -> bool:
+        """Whether the learner is on move: a trial is open and its flag
+        has not fallen."""
+        return self.trial_open(self.task) and not self._flagged
+
+    def _flag_falls(self, task: Any) -> None:
+        """The bank ran dry with the trial still open: forfeit it."""
+        self._bank = 0.0
+        self._flagged = True
+        self.forfeits += 1
+        # A per-move coach label in the same band would mix with the red
+        # and leave the reader a colour that is neither.
+        own = getattr(task, 'verdict', None)
+        if own is not None and hasattr(own, 'clear'):
+            own.clear()
+
+    def _deal_forfeit(self, task: Any) -> None:
+        """One frame of red has been published: deal the next trial."""
+        self._flagged = False
+        if self._clock_verdict is not None:
+            self._clock_verdict.clear()
+        getattr(task, self.deal)()
+
+    def _draw_think_clock(self, window: Any) -> None:
+        if not self._think_capacity:
+            return
+        if self._clock_batch is None:
+            from neural_workshop.ui.verdict import VerdictLabel
+            self._clock_batch = pyglet.graphics.Batch()
+            self._clock_bar = pyglet.shapes.Rectangle(
+                0, 0, 1, THINK_BAR_PX, color=THINK_BAR_COLOR,
+                batch=self._clock_batch)
+            self._clock_verdict = VerdictLabel(batch=self._clock_batch,
+                                               y_from_bottom=60)
+        share = max(0.0, min(1.0, self._bank / self._think_capacity))
+        self._clock_bar.x = 0
+        self._clock_bar.y = window.height - THINK_BAR_PX
+        self._clock_bar.width = max(0.0, window.width * share)
+        self._clock_bar.visible = share > 0
+        if self._flagged:
+            self._clock_verdict.show(False, 'Out of time')
+        else:
+            self._clock_verdict.clear()
+        self._clock_batch.draw()
+
+    def _drop_think_clock(self) -> None:
+        for item in (self._clock_bar, self._clock_verdict):
+            try:
+                if item is not None:
+                    item.delete()
+            except Exception:
+                pass
+        self._clock_batch = self._clock_bar = self._clock_verdict = None
 
     def _open_trial(self) -> None:
         """Open the action window and pre-register its receipt."""
@@ -761,6 +894,7 @@ class TaskEnv:
         window.switch_to()
         window.dispatch_events()
         self.task.on_draw()
+        self._draw_think_clock(window)
         width, height, rgba = capture_rgba(window)
         window.flip()
 

@@ -203,6 +203,22 @@ more risk than the verdict rewards. Say which of the two you built. The
 first two rules still apply to both; the telescoping one is specific to
 shaping.
 
+## The think clock comes free
+
+A turn-based wrapper that declares `settled_phase` and `deal` can be run
+with `think_seconds=` and `refill_seconds=`: a bank of time that drains
+while a trial is open and forfeits it, with the standard red verdict,
+when it runs dry. There is nothing to write for it. The boundary paints
+the verdict and deals the next trial with the task's own `deal`, so all
+it needs from the task is that dealing mid-trial is safe — that `deal`
+starts a fresh trial whatever state the last one was left in, and counts
+it towards the run so a run of forfeits still ends.
+`tests/test_env_think_clock.py` checks exactly that for every eligible
+task, by never acting and expecting every trial to be a paid loss.
+
+A task that deals itself (no `settled_phase`) or moves on its own
+(`clocked = True`) is refused, with the reason.
+
 ## Read the clock the driver owns
 
 ```python

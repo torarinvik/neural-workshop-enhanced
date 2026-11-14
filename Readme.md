@@ -2920,6 +2920,53 @@ cd tests && PYTHONPATH=.. ../.venv/bin/python drive_env.py --all 1500
 One environment at a time: these bind shared-memory segments, and two
 workshop instances at once risk a name collision.
 
+#### The think clock: making thinking cost something
+
+A turn-based task waits for ever. The boundary's clock moves on every
+step, but nothing reads it as a cost, so a learner that ponders for a
+thousand steps is paid what one that answers in ten is — and choosing
+*how long to think*, the skill an agent that has to act in real time
+needs most, cannot be measured on any of them. The think clock puts a
+price on it without changing a single task:
+
+```python
+env = catalog.env_class('sokoban')(seed=0, think_seconds=2.0,
+                                   refill_seconds=0.5)
+```
+
+The learner holds a bank of `think_seconds`. It drains at the
+boundary's frame rate while a trial is open — whether the learner acts
+or not, because a step with no port *is* thinking — and each new trial
+pays `refill_seconds` back into it, up to the full bank. If it runs dry
+the trial is forfeit: the boundary paints the standard red verdict over
+the task, shows it for one frame, and deals the next trial. A forfeit is
+read and verified by the same reader as any other loss.
+
+The two numbers cover the cases worth having:
+
+| `refill_seconds` | What it is |
+| --- | --- |
+| omitted, or equal to the bank | a deadline per trial |
+| `0` | one bank for the whole run: time spent on a hard trial is taken from every later one |
+| anything between | a chess clock with an increment: what an easy trial leaves unused pays for a hard one |
+
+The last is "pay for what you use" written as a rule: the policy that
+does best answers easy trials at once and spends the savings where
+thinking pays. Seconds are the boundary's, not the wall's — at the
+default `frame_hz=60` a second is sixty steps.
+
+The bank is drawn as a slate bar along the top edge, so the learner can
+see what it has left, and the verdict reader never looks there.
+`env.think_left` gives the same number to a caller, and `env.forfeits`
+counts the trials lost to it.
+
+It applies to the nineteen turn-based tasks that declare when a trial
+is over — the puzzles, the word games, the board positions, Sokoban,
+Hanoi, the Maze — and is refused, with the reason, on the rest. A
+clocked task already does not wait: its world moves while the learner
+thinks, and charging for that time again would charge twice. The 3D Maze
+deals its own trials, so the boundary has nothing to forfeit.
+
 ### Grid size
 
 The board is `GRID_SIZE` × `GRID_SIZE`. Squares, letters, and images
