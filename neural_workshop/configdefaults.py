@@ -733,6 +733,9 @@ SONAR_ADAPTIVE = True
 # lost) is no more than par, which is what a reference dispatcher took
 # on the identical round. From rung 4 some reports are false alarms and
 # a scout can check them; from rung 6 reported sizes are estimates;
+# from rung 8 a crew can be sent to a station for a refit (Shift with
+# the station), which takes it off the road for 12 seconds and doubles
+# its work rate for the rest of the round, and is lost if broken off;
 # past rung 20 par is below the reference's own damage.
 DISPATCH_RUNG = 1
 DISPATCH_TRIALS = 3

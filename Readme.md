@@ -2712,6 +2712,7 @@ the reference faces exactly what you do.
 | 3+ | **Bursts and lulls.** Several incidents at once, then quiet. A burst wants the nearest free crew sent now; a lull is the only time to move crews to where the next burst will need them. |
 | 4+ | **False alarms.** A pale disc with a question mark is unconfirmed; a **scout** is three times as fast as a crew and can go and look, but looking takes time the incident keeps growing through. |
 | 6+ | **Estimates.** An unconfirmed report's size is off by a margin that widens with the rung. |
+| 8+ | **Refits.** A crew sent to a station with Shift held stands there twelve seconds and works twice as fast for the rest of the round. Sent anywhere before the arc round it closes, it loses the refit whole. |
 | 12+ | No allowance: match the reference. |
 | 21+ | Par is *below* the reference's damage, by more at every rung. |
 
@@ -2721,22 +2722,47 @@ once can reach it, and where the crews were standing when it appeared
 decides it. The reference itself starts losing incidents around rung
 sixteen.
 
+The refit is the town's one investment, and it is there for the
+decision every other rung leaves out: weaker now for stronger later.
+Twelve seconds of a three-crew town is a third of its hands, taken out
+of whatever those twelve seconds turn out to hold, and what it buys is
+worth less the later in the round it is bought. So there is a question
+of when, of which crew, of how many at once, and — when a burst lands
+on a refit that is ten seconds in — of whether the incident is worth
+the ten seconds. Shift-click a station, or hold Shift with J, K or L,
+to send the selected crew in; a refitted crew is drawn larger and
+violet.
+
+What a refit buys was chosen by measurement, not taste. Handed to the
+reference free at the start of a round, two extra crews cut its damage
+by about an eighth at best and by nothing at all up to rung ten: it is
+the road and the job that take the time, not the wait for a free crew.
+Every crew working twice as fast cuts it by a quarter to a third on
+every rung. An investment that is not worth much is not a decision, so
+the refit buys work rate.
+
 The reference is deliberately plain: each idle crew goes to the most
 urgent incident it can still save, the scout to the nearest unconfirmed
-report. It never moves an idle crew, never puts two crews on one job
-and never changes its mind — which are the three ways to beat it.
+report, and a crew with nothing to do goes in for its refit — one crew
+at a time, and seen through whatever comes up. Over sixty rounds a rung
+that takes 13 to 21% less damage than never refitting, while sending
+every idle crew in at once gives two thirds of the gain back at rung
+eight and a third at rung sixteen, and from rung twenty loses most of
+an incident more a round. It never moves an idle crew to where the next
+burst will be, never puts two crews on one job, never times a refit to
+a lull and never changes its mind — which are the ways to beat it.
 
-The agent plays through seventeen ports: one per unit, one per incident
-letter, one per station, and an order is a unit then a place. The task
+The agent plays through eighteen ports: one per unit, one per incident
+letter, one per station to wait at and one per station to be refitted
+at, and an order is a unit then a place. The task
 is clocked, so it refuses the think clock; it already has one. Built
 for a runtime it also pays per incident, green when one is saved and
 red when one is lost, on top of the round's verdict, because one bit a
 minute is very little to learn from. That is the round's own result
 taken apart, not shaping, and it differs from the round's verdict in
-one way: it does not count how long an incident waited.
-
-Stage two — investing in stations during a lull, at the price of a
-crew out of service — is not built yet.
+one way: it does not count how long an incident waited. A finished
+refit is not paid: whether it was worth its twelve seconds is what the
+round's verdict is for.
 
 ### Window size, full screen, and the two coordinate spaces
 

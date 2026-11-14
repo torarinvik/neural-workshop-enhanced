@@ -608,6 +608,10 @@ def dispatch_note(chosen: Dict[str, Any]) -> str:
     if level.error:
         said.append(_('Reported sizes are off by up to %d%%.')
                     % round(level.error * 100))
+    if level.refit:
+        said.append(_('A crew can stand %d seconds at a station for a '
+                      'refit and work twice as fast after.')
+                    % round(level.refit))
     if level.factor < 1.0:
         said.append(_('You must do better than the reference dispatcher.'))
     return '  '.join(said)

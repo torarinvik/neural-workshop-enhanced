@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 """The stepped agent boundary for Dispatch.
 
-Seventeen ports. Six name a unit -- the crews, then the scout; a rung
-fields at most four of them and the rest do nothing. Eight name an
-incident slot, the letters on the map. Three name a station. An order
-is two ports, as a swap is in the jigsaw: a unit, then where it goes.
-Naming a unit twice puts it down again.
+Eighteen ports. Four name a unit -- the crews, then the scout; a low
+rung fields fewer and the rest do nothing. Eight name an incident
+slot, the letters on the map. Three name a station to wait at, and
+three more name the same stations as somewhere to be refitted, which
+does nothing below rung eight, to the scout, or to a crew that has had
+its refit. An order is two ports, as a swap is in the jigsaw: a unit,
+then where it goes. Naming a unit twice puts it down again.
 
 The task is **clocked**, and here that is the subject rather than a
 detail. Incidents grow and crews drive whether or not a port is
@@ -31,6 +33,11 @@ not, so a learner paid this way is indifferent between saving an
 incident early and saving it at the last moment. The round verdict,
 which is still paid at the end, is what tells it otherwise.
 
+A finished refit is deliberately not one of the events paid. Whether
+the twelve seconds were well spent is exactly what the round's verdict
+is there to say, and paying for the refit itself would teach a learner
+to refit whether or not the town could spare the crew.
+
 The dense reward only arrives under ``neutral_outcomes=True``. Built
 the plain way this task pays once a round.
 
@@ -42,11 +49,13 @@ from typing import Any, Optional
 
 from .taskenv import TaskEnv
 
-#: Units, then incident slots, then stations.
-UNITS, SLOTS, STATIONS = 6, 8, 3
+#: Units, then incident slots, then stations to wait at, then the same
+#: stations to be refitted at.
+UNITS, SLOTS, STATIONS = 4, 8, 3
 FIRST_SLOT = UNITS
 FIRST_STATION = UNITS + SLOTS
-PORTS = FIRST_STATION + STATIONS
+FIRST_REFIT = FIRST_STATION + STATIONS
+PORTS = FIRST_REFIT + STATIONS
 
 
 class DispatchEnv(TaskEnv):
@@ -89,5 +98,5 @@ def make_dispatch_env(seed: int = 0,
 #: The verifier, generated from the inherited deriver so the two cannot drift.
 verify_dispatch_outcome = DispatchEnv.verifier()
 
-__all__ = ['DispatchEnv', 'FIRST_SLOT', 'FIRST_STATION', 'PORTS',
-           'make_dispatch_env', 'verify_dispatch_outcome']
+__all__ = ['DispatchEnv', 'FIRST_REFIT', 'FIRST_SLOT', 'FIRST_STATION',
+           'PORTS', 'make_dispatch_env', 'verify_dispatch_outcome']

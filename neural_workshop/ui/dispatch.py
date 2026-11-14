@@ -13,6 +13,12 @@ false alarm, and its size may be wrong. It turns solid when a crew or
 the scout reaches it and it turns out to be real, and vanishes if it
 was not. The round passes if the town took no more damage than it did
 under the reference dispatcher on the identical round.
+
+From rung eight a crew can be sent to a station for a refit: hold
+Shift and click the station, or Shift with its key. An arc closes
+round the crew while it stands there; when it closes the crew turns
+violet and works twice as fast for the rest of the round. Send it
+anywhere before the arc closes and the refit is lost.
 :mod:`neural_workshop.dispatch` holds the town, the schedule and the
 reference; this module draws them and takes the orders.
 
@@ -21,7 +27,8 @@ changes on every frame, and allocating forty shapes sixty times a
 second is the slow part of drawing them.
 
 For the agent boundary an order is two ports, as a swap is in the
-jigsaw: one names a unit, the next names an incident slot or a station.
+jigsaw: one names a unit, the next names an incident slot, a station to
+wait at, or a station to be refitted at.
 
 SPDX-License-Identifier: GPL-2.0-or-later
 """
@@ -47,13 +54,16 @@ from .verdict import VerdictLabel, above_the_band
 #: Seconds the round's verdict stays up before the next round.
 FEEDBACK = 2.2
 
-#: The most units a rung fields, and so how many unit ports there are.
-UNITS = 6
+#: The most units a rung fields -- three crews and the scout -- and so
+#: how many unit ports there are.
+UNITS = 4
 
-#: Ports: units first, then incident slots, then stations.
+#: Ports: units first, then incident slots, then stations to wait at,
+#: then the same stations to be refitted at.
 FIRST_SLOT = UNITS
 FIRST_STATION = UNITS + town.SLOTS
-PORTS = FIRST_STATION + len(town.STATIONS)
+FIRST_REFIT = FIRST_STATION + len(town.STATIONS)
+PORTS = FIRST_REFIT + len(town.STATIONS)
 
 LETTERS = 'ABCDEFGH'
 STATION_KEYS = (key.J, key.K, key.L)
@@ -62,6 +72,8 @@ STATION_NAMES = 'JKL'
 UNCONFIRMED = (236, 174, 64)
 CONFIRMED = (212, 98, 52)
 CREW = (44, 112, 222)
+#: A crew that has had its refit.
+HEAVY = (132, 72, 214)
 SCOUT = (20, 158, 168)
 STATION = (128, 132, 140)
 SELECT = (250, 250, 250)
@@ -166,8 +178,8 @@ class Dispatch:
         self.facts = label('', calc_fontsize(12), width_center(),
                            from_top_edge(96))
         self.footnote = label(
-            _('click a unit, then where to send it    keys: 1-4 unit, '
-              'A-H incident, J K L station    Esc: menu'),
+            _('click a unit, then a place   keys: 1-4, A-H, J K L   '
+              'Shift with a station: refit   Esc: menu'),
             calc_fontsize(12), width_center(), from_bottom_edge(26))
         self.verdict = VerdictLabel(batch=self.batch, y_from_bottom=60)
         if self.verdict_shown is not None:
@@ -200,10 +212,15 @@ class Dispatch:
                                        max(7.0, size * 0.02), 0, 0,
                                        group=text, bold=True))
         self._routes, self._bodies, self._numbers = [], [], []
+        self._refits = []
         for index in range(UNITS):
             self._routes.append(pyglet.shapes.Line(
                 0, 0, 0, 0, thickness=max(1.0, size * 0.002),
                 color=(150, 156, 170), batch=self.batch, group=lines))
+            self._refits.append(pyglet.shapes.Arc(
+                0, 0, size * 0.037, angle=0.0, start_angle=90.0,
+                thickness=max(2.5, size * 0.007), color=HEAVY,
+                batch=self.batch, group=movers))
             self._bodies.append(pyglet.shapes.Circle(
                 0, 0, size * 0.019, color=CREW, batch=self.batch,
                 group=movers))
@@ -261,7 +278,8 @@ class Dispatch:
     # --- orders ----------------------------------------------------------
 
     def press(self, port: int) -> None:
-        """One agent port: a unit, then an incident slot or a station."""
+        """One agent port: a unit, then an incident slot, a station to
+        wait at or a station to be refitted at."""
         if self.phase != 'running' or self.world is None:
             return
         if port < FIRST_SLOT:
@@ -271,9 +289,12 @@ class Dispatch:
             if port < FIRST_STATION:
                 sent = self.world.send(self.selected, 'incident',
                                        port - FIRST_SLOT)
-            else:
+            elif port < FIRST_REFIT:
                 sent = self.world.send(self.selected, 'station',
                                        port - FIRST_STATION)
+            else:
+                sent = self.world.send(self.selected, 'refit',
+                                       port - FIRST_REFIT)
             if sent:
                 self.selected = None
         self._sync()
@@ -296,6 +317,8 @@ class Dispatch:
                 self._coach_queue.append((False, _('Lost one')))
             elif kind == 'false':
                 self._note(_('false alarm'), x, y)
+            elif kind == 'refit':
+                self._note(_('refitted'), x, y)
         waiting = False
         if self.coach:
             # One event a tick, up for exactly that tick: a label left up
@@ -405,23 +428,32 @@ class Dispatch:
             letter.x, letter.y = px, py
         units = world.units if live else []
         for index in range(UNITS):
-            route, body, number = (self._routes[index],
-                                   self._bodies[index],
-                                   self._numbers[index])
+            route, body, number, refit = (
+                self._routes[index], self._bodies[index],
+                self._numbers[index], self._refits[index])
             shown = index < len(units)
             body.visible = number.visible = shown
-            route.visible = False
+            route.visible = refit.visible = False
             if not shown:
                 continue
             unit = units[index]
             px, py = self._unit_at(unit)
             body.position = (px, py)
-            body.color = SCOUT if unit.scout else CREW
-            body.radius = size * (0.014 if unit.scout else 0.019)
+            body.color = (SCOUT if unit.scout
+                          else HEAVY if unit.heavy else CREW)
+            body.radius = size * (0.014 if unit.scout
+                                  else 0.023 if unit.heavy else 0.019)
             number.x, number.y = px, py
+            if unit.working and unit.target[0] == 'refit':
+                # The arc closes clockwise from the top as the refit
+                # goes; it is gone the moment the crew is sent away.
+                refit.position = (px, py)
+                refit.angle = -360.0 * min(
+                    1.0, unit.refit / world.level.refit)
+                refit.visible = True
             if unit.target is not None and not unit.working:
                 kind, where = unit.target
-                if kind == 'station':
+                if kind != 'incident':
                     tx, ty = self._at(*town.STATIONS[where])
                 else:
                     target = world.incidents.get(where)
@@ -469,7 +501,13 @@ class Dispatch:
                          % round(level.false_rate * 100))
         if level.error:
             parts.append(_('sizes ±%d%%') % round(level.error * 100))
-        self.facts.text = '   '.join(parts)
+        if level.refit:
+            crews = [unit for unit in world.units if not unit.scout]
+            parts.append(_('refits %d/%d')
+                         % (sum(unit.heavy for unit in crews), len(crews)))
+        # Two spaces and no more: on the top rungs this line is the
+        # widest thing on the screen, and a 4:3 window has to hold it.
+        self.facts.text = '  '.join(parts)
 
     # --- lifecycle -------------------------------------------------------
 
@@ -503,12 +541,14 @@ class Dispatch:
         elif symbol == key.F11:
             display.toggle_fullscreen()
         elif self.phase == 'running':
-            if key._1 <= symbol <= key._6:
+            if key._1 <= symbol < key._1 + UNITS:
                 self.press(symbol - key._1)
             elif key.A <= symbol <= key.H:
                 self.press(FIRST_SLOT + symbol - key.A)
             elif symbol in STATION_KEYS:
-                self.press(FIRST_STATION + STATION_KEYS.index(symbol))
+                first = (FIRST_REFIT if modifiers & key.MOD_SHIFT
+                         else FIRST_STATION)
+                self.press(first + STATION_KEYS.index(symbol))
         return pyglet.event.EVENT_HANDLED
 
     def on_mouse_press(self, x: int, y: int, button: int,
@@ -520,6 +560,9 @@ class Dispatch:
             self.selected = None
             self._sync()
         else:
+            if (FIRST_STATION <= port < FIRST_REFIT
+                    and modifiers & key.MOD_SHIFT):
+                port += FIRST_REFIT - FIRST_STATION
             self.press(port)
         return pyglet.event.EVENT_HANDLED
 
