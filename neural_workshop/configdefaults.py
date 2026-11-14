@@ -716,6 +716,16 @@ JIGSAW_ADAPTIVE = True
 JIGSAW_PREVIEW = True
 JIGSAW_MARK_PLACED = False
 
+# Sonar: one target hidden on a grid. A ping costs a point and reads how
+# far away it is in bands; a dig claims a cell and costs the rung's
+# penalty if wrong. A round passes if it costs no more than par, which
+# is what a Bayesian reference player paid on the identical deal, plus
+# the rung's slack. Higher rungs make readings noisy and the target
+# drift; past rung 20 par is below the reference's own cost.
+SONAR_RUNG = 1
+SONAR_TRIALS = 8
+SONAR_ADAPTIVE = True
+
 # Camera: stand in a field of objects and find the spot a photograph
 # of it was taken from, then press Enter. It matches when the eye is
 # within the rung's distance and the line of sight within its angle.

@@ -2648,6 +2648,47 @@ of a cookie rather than a cookie. The momentum is in the door now
 instead of in the boy: it is the room that fills up rather than the
 thief who has to slow down, and the thief himself is instantaneous.
 
+### Decision making
+
+Choosing under uncertainty: what to find out, when to stop finding out
+and commit, what a wrong commitment costs, and what waiting costs while
+the world moves on.
+
+#### Sonar
+
+One target is hidden on a grid. Click a cell to **ping** it: it costs
+one point and shows how far away the target is, in bands of distance.
+Shift-click or right-click to **dig**: if the target is there the round
+is won; if not, it costs the rung's penalty. The round passes if it
+cost no more than **par** — what a Bayesian reference player paid on
+the identical deal, give or take the rung's slack.
+
+Every move is a trade, and the ladder adds the trades one at a time:
+
+| Rung | What it adds |
+| --- | --- |
+| 1–2 | Readings are exact distances. Which cell to ping is the whole question. |
+| 3–4 | Readings come in coarse bands, so a ping says less and choosing it well matters more. |
+| 5+ | **Noise**: some readings are off by a band. One ping is no longer proof, and a contradiction is something to resolve. |
+| 8+ | **Drift**: the target sometimes steps to a neighbouring cell with each action. Waiting is no longer free, and the risk of a wrong dig trades against the risk of losing the trail. |
+| 13+ | No slack: match the reference or better. |
+| 21+ | Par is *below* the reference's cost, by more at every rung. The top of the ladder is out-planning it. |
+
+The wrong-dig penalty rises at every rung, so the right moment to stop
+asking and commit keeps moving.
+
+Par is fair because the reference plays the same deal: noise and drift
+are drawn by action number, not by which action was taken, so the
+reference meets the same lie on its third ping and the same drift after
+its fifth action as you do. It keeps an exact posterior over the grid,
+pings where it expects to learn the most, and digs when the expected
+penalty is about one ping, or, on a drifting target, when a ping can no
+longer learn faster than the drift forgets. It is strong but greedy:
+planning further ahead can beat it.
+
+The agent plays it through six ports: four move a cursor (free), one
+pings and one digs. It is turn-based, so it takes the think clock.
+
 ### Window size, full screen, and the two coordinate spaces
 
 The window is resizable, and **F11** switches to and from full screen

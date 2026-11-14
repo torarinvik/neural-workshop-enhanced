@@ -29,6 +29,7 @@ CATEGORIES: Sequence[Tuple[str, str]] = (
     ('reasoning', _('Reasoning')),
     ('planning', _('Planning')),
     ('self_control', _('Self-control')),
+    ('decisions', _('Decision making')),
 )
 
 #: Category id → list of (task id, label).
@@ -97,6 +98,12 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
     # doing. Reflex would fail every rung of it by being fast.
     'self_control': [
         ('cookie_thief', _('Cookie Thief')),
+    ],
+    # Choosing under uncertainty: what to find out, when to stop finding
+    # out and commit, what a wrong commitment costs, and what waiting
+    # costs while the world moves.
+    'decisions': [
+        ('sonar', _('Sonar')),
     ],
 }
 
@@ -559,6 +566,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'jigsaw':
         from .jigsaw import JigsawPuzzle
         JigsawPuzzle()
+        return
+    if task_id == 'sonar':
+        from .sonar import Sonar
+        Sonar()
         return
     if task_id == 'camera':
         from .camera import CameraTask

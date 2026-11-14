@@ -567,6 +567,35 @@ CAMERA = TaskSpec(
     note=camera_note)
 
 
+def sonar_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung adds to the decisions."""
+    from .. import sonar
+    level = sonar.grade(int(chosen['SONAR_RUNG']))
+    said = [_('Rung %d: a %dx%d grid, a wrong dig costs %d pings.')
+            % (level.rung, level.side, level.side, level.penalty)]
+    if level.noise:
+        said.append(_('%d%% of readings are off by one band.')
+                    % round(level.noise * 100))
+    if level.drift:
+        said.append(_('The target drifts.'))
+    if level.slack < 0:
+        said.append(_('You must beat the reference player.'))
+    return '  '.join(said)
+
+
+SONAR = TaskSpec(
+    title=_('Sonar options'),
+    options=(
+        Option('SONAR_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30)),
+        Option('SONAR_TRIALS', _('Rounds per run'), 8,
+               values=(1, 3, 5, 8, 12, 20)),
+        Option('SONAR_ADAPTIVE',
+               _('Climb a rung under par, drop one over'), True),
+    ),
+    note=sonar_note)
+
+
 def hanoi_note(chosen: Dict[str, Any]) -> str:
     """The minimum, spelled out — 2^n - 1 grows faster than a row of
     numbers suggests, and the difference between five disks and eight
@@ -2205,6 +2234,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'matrix_reasoning': MATRIX_REASONING,
     'jigsaw': JIGSAW,
     'camera': CAMERA,
+    'sonar': SONAR,
     'video_puzzle': VIDEO_PUZZLE,
     'tower_of_hanoi': HANOI,
     'salesman': SALESMAN,
