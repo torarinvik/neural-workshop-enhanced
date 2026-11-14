@@ -67,6 +67,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('graph_mapping', _('Graph Mapping')),
         ('matrix_reasoning', _('Matrix Reasoning')),
         ('jigsaw', _('Jigsaw Puzzle')),
+        ('video_puzzle', _('Video Puzzle')),
         ('sudoku', _('Sudoku')),
         ('go_winning_move', _('Find the Winning Move')),
         ('crossed_wires', _('Crossed Wires')),
@@ -557,6 +558,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'jigsaw':
         from .jigsaw import JigsawPuzzle
         JigsawPuzzle()
+        return
+    if task_id == 'video_puzzle':
+        from .videopuzzle import VideoPuzzle
+        VideoPuzzle()
         return
     if task_id == 'tower_of_hanoi':
         from .hanoi import TowerOfHanoi

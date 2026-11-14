@@ -25,6 +25,7 @@ if __name__ == '__main__':
     from test_ui_attention import *   # noqa: F401,F403,E402
     from test_ui_display import *     # noqa: F401,F403,E402
     from test_ui_jigsaw import *      # noqa: F401,F403,E402
+    from test_ui_videopuzzle import *  # noqa: F401,F403,E402
     from test_ui_longterm import *    # noqa: F401,F403,E402
     from test_ui_matrices import *    # noqa: F401,F403,E402
     from test_ui_menus import *       # noqa: F401,F403,E402

@@ -26,6 +26,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 """
 from __future__ import annotations
 
+import io
 import json
 import os
 import random
@@ -80,6 +81,14 @@ class Dataset(NamedTuple):
     #: fetching goes through :func:`fetch_archives` instead of
     #: the row and parquet routes.
     archives: Tuple[str, ...] = ()
+    #: Read the archives in place over HTTP range requests instead of
+    #: downloading them whole. For an archive far larger than the
+    #: share of it a player wants, this is the difference between
+    #: pulling the items and pulling everything.
+    remote: bool = False
+    #: The most this library may ever occupy on disk, in bytes, with
+    #: any scratch archive counted. Zero means no ceiling.
+    budget_bytes: int = 0
 
 
 #: Photographs, 64x64. Recognisable, numerous, and none of them are
@@ -111,11 +120,28 @@ DIV2K = Dataset(
         'https://data.vision.ee.ethz.ch/cvl/DIV2K/DIV2K_train_HR.zip',
     ))
 
+#: Action clips, for the video puzzles: UCF-101, 13,320 short videos
+#: of 101 kinds of human action at 320x240, a few seconds each. Things
+#: happen in them in an order — a ball is thrown before it is caught —
+#: which is the whole of what the puzzle asks about. Hugging Face holds
+#: the original release as one 7 GB zip; it is read in place with range
+#: requests, so a library of a thousand clips costs about half a
+#: gigabyte and the whole split under seven, inside a fifty-gigabyte
+#: ceiling that :func:`fetch_archives` enforces rather than trusts.
+UCF101 = Dataset(
+    key='ucf101', repo='quchenyuan/UCF101-ZIP', split='train',
+    column='video', kind='video', suffix='.avi', rows=13320,
+    approx_bytes=520000,
+    archives=('https://huggingface.co/datasets/quchenyuan/UCF101-ZIP'
+              '/resolve/main/UCF-101.zip',),
+    remote=True, budget_bytes=50 * 10 ** 9)
+
 #: Everything a game may ask for, by key.
 CATALOGUE: Dict[str, Dataset] = {
     TINY_IMAGENET.key: TINY_IMAGENET,
     ESC50.key: ESC50,
     DIV2K.key: DIV2K,
+    UCF101.key: UCF101,
 }
 
 
@@ -415,51 +441,195 @@ def _resume_to_file(url: str, path: str) -> None:
                 handle.write(chunk)
 
 
+class _RangeFile(io.RawIOBase):
+    """A remote file opened for reading, one HTTP range at a time.
+
+    Enough of a file for :mod:`zipfile`: it seeks to the central
+    directory at the end, then to each member it is asked for, and
+    only those bytes cross the network. Reads are buffered in blocks so
+    the zip parser's many small header reads cost one request, not
+    dozens.
+    """
+
+    _BLOCK = 1 << 20
+
+    def __init__(self, url: str, size: int) -> None:
+        super().__init__()
+        self.url = url
+        self.size = size
+        self.at = 0
+        self._block_at = -1
+        self._block = b''
+
+    @classmethod
+    def open(cls, url: str) -> '_RangeFile':
+        request = urllib.request.Request(
+            url, headers=dict(_HEADERS, Range='bytes=0-0'))
+        with urllib.request.urlopen(request, timeout=_TIMEOUT) as response:
+            span = response.headers.get('Content-Range', '')
+            final = response.geturl()
+        if '/' not in span:
+            raise OSError('%s does not serve byte ranges' % url)
+        # The redirect target is signed and stable for hours; asking the
+        # hub to redirect again for every block would double the trips.
+        return cls(final, int(span.rsplit('/', 1)[1]))
+
+    def readable(self) -> bool:
+        return True
+
+    def seekable(self) -> bool:
+        return True
+
+    def tell(self) -> int:
+        return self.at
+
+    def seek(self, offset: int, whence: int = 0) -> int:
+        base = {0: 0, 1: self.at, 2: self.size}[whence]
+        self.at = max(0, base + offset)
+        return self.at
+
+    def _fetch(self, start: int, end: int) -> bytes:
+        request = urllib.request.Request(
+            self.url, headers=dict(_HEADERS,
+                                   Range='bytes=%d-%d' % (start, end - 1)))
+        with urllib.request.urlopen(request, timeout=_TIMEOUT) as response:
+            return response.read()
+
+    def read(self, count: int = -1) -> bytes:
+        if count is None or count < 0:
+            count = self.size - self.at
+        count = min(count, self.size - self.at)
+        if count <= 0:
+            return b''
+        start = self.at
+        if count > self._BLOCK:
+            data = self._fetch(start, start + count)
+        else:
+            if not (self._block_at <= start
+                    and start + count <= self._block_at + len(self._block)):
+                self._block_at = start
+                self._block = self._fetch(
+                    start, min(self.size, start + self._BLOCK))
+            offset = start - self._block_at
+            data = self._block[offset:offset + count]
+        self.at += len(data)
+        return data
+
+    def readinto(self, buffer) -> int:
+        data = self.read(len(buffer))
+        buffer[:len(data)] = data
+        return len(data)
+
+
+def _remote_size(url: str) -> int:
+    """Bytes behind *url*, or 0 if the server will not say."""
+    request = urllib.request.Request(url, headers=_HEADERS, method='HEAD')
+    try:
+        with urllib.request.urlopen(request, timeout=_TIMEOUT) as response:
+            return int(response.headers.get('Content-Length') or 0)
+    except (urllib.error.URLError, OSError, ValueError):
+        return 0
+
+
+def library_bytes(dataset: Dataset) -> int:
+    """Bytes *dataset* occupies on disk now, scratch included."""
+    path = os.path.join(datasets_dir(), dataset.key)
+    if not os.path.isdir(path):
+        return 0
+    return sum(os.path.getsize(os.path.join(path, name))
+               for name in os.listdir(path)
+               if os.path.isfile(os.path.join(path, name)))
+
+
+def _spread(names: List[str], seed: int) -> List[str]:
+    """*names* in a fixed shuffled order.
+
+    Archives are sorted by class, so the first few hundred entries of
+    UCF-101 are three kinds of action. A library taken from the front
+    would be all eye make-up and archery; taken in this order it is
+    spread over every class, and the same order every run keeps the
+    fetch idempotent.
+    """
+    spread = list(names)
+    random.Random(seed).shuffle(spread)
+    return spread
+
+
 def fetch_archives(dataset: Dataset, wanted: int,
                    progress: Optional[Progress] = None,
                    should_stop: Optional[Callable[[], bool]] = None) -> int:
     """Fill the library from the dataset's zip archives.
 
     Each archive is downloaded whole — that is the unit the source
-    offers — and its images are unpacked to the same numbered names
+    offers — and its items are unpacked to the same numbered names
     the other routes use, so :func:`local_files` and the pools need
     not know how anything arrived. Item numbering is the archive's
-    position times ten thousand plus the entry's position in name
-    order, which is stable across runs, so unpacking is idempotent
-    and a later archive never collides with an earlier one.
+    position times ten thousand plus the entry's position in
+    name order, which is stable across runs, so unpacking is
+    idempotent and a later archive never collides with an earlier one.
 
     Archives are taken in order until *wanted* is met: asking for a
     hundred DIV2K images downloads the validation archive only, and
-    asking for more pulls the training archive too.
+    asking for more pulls the training archive too. A *remote* dataset
+    is never downloaded whole: its zip is read in place and only the
+    members unpacked cross the network.
+
+    A dataset with a byte budget is never let past it. A whole-archive
+    download that would not fit beside the library is refused before
+    it starts, and unpacking stops at the item that would cross the
+    line.
     """
     import zipfile
 
     folder = local_dir(dataset)
     count = have(dataset)
+    budget = dataset.budget_bytes
+    used = library_bytes(dataset)
     for position, url in enumerate(dataset.archives):
         if count >= wanted or (should_stop is not None and should_stop()):
             break
         base = position * 10000
         scratch = os.path.join(folder, '_archive%d.zip' % position)
         try:
-            _resume_to_file(url, scratch)
-            with zipfile.ZipFile(scratch) as archive:
-                names = sorted(name for name in archive.namelist()
+            if dataset.remote:
+                source = _RangeFile.open(url)
+            else:
+                if budget:
+                    size = _remote_size(url)
+                    if size and used + size > budget:
+                        runtime.debug_msg('%s: %s would pass the %d byte '
+                                          'budget' % (dataset.key, url,
+                                                      budget))
+                        break
+                _resume_to_file(url, scratch)
+                used = library_bytes(dataset)
+                source = scratch
+            with zipfile.ZipFile(source) as archive:
+                infos = {info.filename: info for info in archive.infolist()}
+                names = sorted(name for name in infos
                                if name.lower().endswith(dataset.suffix))
-                for offset, name in enumerate(names):
+                numbered = {name: offset for offset, name in enumerate(names)}
+                for name in _spread(names, position):
+                    if count >= wanted:
+                        break
                     path = os.path.join(
-                        folder, '%07d%s' % (base + offset, dataset.suffix))
+                        folder, '%07d%s' % (base + numbered[name],
+                                            dataset.suffix))
                     if not os.path.exists(path):
+                        if budget and used + infos[name].file_size > budget:
+                            break
                         partial = path + '.part'
                         with open(partial, 'wb') as out:
                             out.write(archive.read(name))
                         os.replace(partial, path)
+                        used += infos[name].file_size
                         count += 1
                     if progress:
                         progress(min(count, wanted), wanted)
                     if should_stop is not None and should_stop():
                         break
-            os.remove(scratch)
+            if os.path.exists(scratch):
+                os.remove(scratch)
         except (urllib.error.URLError, OSError,
                 zipfile.BadZipFile) as exc:
             runtime.debug_msg('%s archive %s: %s' % (dataset.key, url, exc))
@@ -484,6 +654,7 @@ DEFAULT_COUNTS: Dict[str, int] = {
     TINY_IMAGENET.key: 5000,
     ESC50.key: 500,
     DIV2K.key: 100,
+    UCF101.key: 1000,
 }
 
 

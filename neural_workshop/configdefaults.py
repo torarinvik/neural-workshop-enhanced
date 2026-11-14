@@ -716,6 +716,19 @@ JIGSAW_ADAPTIVE = True
 JIGSAW_PREVIEW = True
 JIGSAW_MARK_PLACED = False
 
+# Video Puzzle: a short action clip cut into VIDEO_PUZZLE_PIECES equal
+# stretches of time, shown shuffled and all playing at once; click two
+# to swap them, and the puzzle is done when they read in the order they
+# happened. Scored against the minimum swap count, as the jigsaw is,
+# and with VIDEO_PUZZLE_ADAPTIVE the cut gains a piece after a solve
+# near the minimum and loses one after a loose one. The clips are the
+# UCF-101 library, downloaded separately, and decoded with ffmpeg —
+# see the Readme.
+VIDEO_PUZZLE_PIECES = 4
+VIDEO_PUZZLE_PUZZLES = 5
+VIDEO_PUZZLE_ADAPTIVE = True
+VIDEO_PUZZLE_MARK_PLACED = False
+
 # Tower of Hanoi: rebuild a tower of HANOI_DISKS disks on another peg,
 # one disk at a time, never a disk on a smaller one. The minimum is
 # exactly 2^n - 1 moves and each solve is scored against it; with

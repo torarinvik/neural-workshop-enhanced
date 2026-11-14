@@ -116,6 +116,7 @@ the whole of either split, if you have the room:
 | `tiny-imagenet` | 100,000 photographs, 64x64 | ~194 MB |
 | `esc50` | 2,000 clips, 5s, 50 classes | ~882 MB |
 | `div2k` | 900 photographs, 2K resolution | ~4 GB |
+| `ucf101` | 13,320 action clips, 320x240, a few seconds each | ~7 GB |
 
 The `div2k` library feeds the jigsaw puzzles and comes by a different
 route: the Hugging Face dataset (`eugenesiow/Div2k`) is a loading
@@ -126,6 +127,23 @@ them. The default hundred images is the validation archive alone
 download resumes where it left off if interrupted. DIV2K is published
 for academic research use; the images are collected from the Internet
 and their copyright stays with their owners.
+
+The `ucf101` library feeds the video puzzles. Hugging Face holds it
+(`quchenyuan/UCF101-ZIP`) as a single 7 GB zip, and the fetch never
+downloads that whole: it reads the zip in place with HTTP range
+requests and pulls only the clips it unpacks, spread across all 101
+action classes. The default thousand clips is about half a gigabyte:
+
+```bash
+.venv/bin/python -m neural_workshop.datasets ucf101
+```
+
+Asking for all 13,320 tops out under 7 GB, and the library carries a
+hard 50 GB ceiling that the fetch checks clip by clip. Playing the
+clips needs the `ffmpeg` program on the path (`brew install ffmpeg`,
+`apt install ffmpeg`). UCF-101 is published for research use by the
+University of Central Florida; the clips come from YouTube and their
+copyright stays with their owners.
 
 The full ESC-50 is worth having if you play the sound modes: it is 50
 classes of 40 clips each, so a complete set gives many different
@@ -1244,6 +1262,23 @@ the rotation is remembered across sessions — a jigsaw of a picture
 you have already assembled is a memory task, not a reasoning one. A
 larger library therefore means longer before anything comes round
 again; the default hundred images is a hundred fresh puzzles.
+
+#### Video Puzzle
+
+The jigsaw in time instead of space. A short clip of someone doing
+something — a dive, a serve, a lift — is cut into equal stretches,
+and the stretches are shown shuffled, all playing at once on a loop.
+Click two to swap them; the puzzle is done when they read left to
+right, top to bottom, in the order they happened. No edge of one piece
+meets another, so the evidence is cause and consequence instead: the
+ball is in the hand before it is in the air, the arm draws back before
+it swings.
+
+Scoring is the jigsaw's — swaps against the knowable minimum — and
+with *Add a piece* a clean solve cuts the next clip one piece finer,
+from three up to nine. Clips whose pieces look too alike to order are
+passed over, and every clip is used before any comes round again. The
+clips are the `ucf101` library above, and need `ffmpeg` to play.
 
 #### Winning Move
 

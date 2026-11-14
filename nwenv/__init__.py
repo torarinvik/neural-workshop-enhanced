@@ -103,6 +103,7 @@ from .go import GoEnv, make_go_env, verify_go_outcome  # noqa: E402
 from .mrtime import MrTimeEnv  # noqa: E402
 from .hanoi import HanoiEnv  # noqa: E402
 from .jigsaw import JigsawEnv  # noqa: E402
+from .videopuzzle import VideoPuzzleEnv  # noqa: E402
 from .lookout import LookoutEnv  # noqa: E402
 from .ncupmonte import NCupMonteEnv  # noqa: E402
 from .pursuit import PursuitEnv  # noqa: E402
@@ -174,7 +175,7 @@ __all__ = [
     'CrossedWiresEnv', 'CrosswordEnv', 'CustodyEnv', 'DonkeyEnv',
     'GraphMappingEnv',
     'GoEnv', 'make_go_env', 'verify_go_outcome',
-    'HanoiEnv', 'InTheDarkEnv', 'JigsawEnv', 'LookoutEnv',
+    'HanoiEnv', 'InTheDarkEnv', 'JigsawEnv', 'VideoPuzzleEnv', 'LookoutEnv',
     'MatrixReasoningEnv', 'MazeEnv', 'MovingTargetsEnv', 'MrTimeEnv',
     'NCupMonteEnv',
     'PursuitEnv', 'RecognitionEnv', 'ReflexEnv', 'RemovalsEnv',

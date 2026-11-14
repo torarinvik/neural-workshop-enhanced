@@ -502,6 +502,40 @@ JIGSAW = TaskSpec(
     note=jigsaw_note)
 
 
+def video_puzzle_note(chosen: Dict[str, Any]) -> str:
+    """What the chosen cut amounts to, and whether it can be played."""
+    from .. import datasets, videoclips
+    pieces = int(chosen['VIDEO_PUZZLE_PIECES'])
+    said = [_('Each clip is cut into %d stretches of time.') % pieces]
+    if chosen['VIDEO_PUZZLE_ADAPTIVE']:
+        said.append(_('Solve near the minimum swap count and the next '
+                      'clip has one piece more; flail and one fewer.'))
+    stocked = datasets.have(datasets.UCF101)
+    if stocked:
+        said.append(_('%d clips downloaded.') % stocked)
+    else:
+        said.append(_('The video library is not downloaded yet — '
+                      'see the Readme.'))
+    if not videoclips.have_ffmpeg():
+        said.append(_('The ffmpeg program was not found.'))
+    return '  '.join(said)
+
+
+VIDEO_PUZZLE = TaskSpec(
+    title=_('Video Puzzle options'),
+    options=(
+        Option('VIDEO_PUZZLE_PIECES', _('Pieces per clip'), 4,
+               values=(3, 4, 5, 6, 7, 8, 9)),
+        Option('VIDEO_PUZZLE_PUZZLES', _('Clips per run'), 5,
+               values=(1, 3, 5, 8, 12, 20)),
+        Option('VIDEO_PUZZLE_ADAPTIVE',
+               _('Add a piece when you solve near the minimum'), True),
+        Option('VIDEO_PUZZLE_MARK_PLACED',
+               _('Outline pieces already in their place'), False),
+    ),
+    note=video_puzzle_note)
+
+
 def hanoi_note(chosen: Dict[str, Any]) -> str:
     """The minimum, spelled out — 2^n - 1 grows faster than a row of
     numbers suggests, and the difference between five disks and eight
@@ -2139,6 +2173,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'graph_mapping': GRAPH_MAPPING,
     'matrix_reasoning': MATRIX_REASONING,
     'jigsaw': JIGSAW,
+    'video_puzzle': VIDEO_PUZZLE,
     'tower_of_hanoi': HANOI,
     'salesman': SALESMAN,
     'sokoban': SOKOBAN,
