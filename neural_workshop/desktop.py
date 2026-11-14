@@ -4,36 +4,45 @@
 The workshop's other tasks hand the player controls with a fixed
 meaning. This one hands them a pointer and a screen. Windows hold
 controls -- switches, rows of choices, sliders with notches, dropdown
-lists -- and a card beside the screen shows the settings to reach. The
-player moves the pointer and clicks. Moving is free; every click costs
-a point, whatever it does or fails to do, and the round passes if the
-card's settings hold when Done is pressed and the clicks came in at or
-under par.
+lists, colour swatches, steppers -- and a card beside the screen shows
+the settings to reach. The player moves the pointer, clicks and drags.
+Moving is free; every click and every drag costs a point, whatever it
+does or fails to do, and the round passes if the card's settings hold
+when Done is pressed and the clicks came in at or under par.
 
 What has to be learned is what operating any computer asks:
 
-* **Widget grammars.** A switch flips; a row of choices takes the one
-  clicked; a slider takes the notch; a dropdown opens a list and takes
-  the item. The same handful of shapes, in every window.
-* **Finding the control.** From rung five a window has tabs and only
-  the open tab's controls are there; from six a long tab scrolls; from
-  eight some settings live in dialogs opened from a menu bar, and a
-  dialog's changes are kept only by OK -- Cancel throws them away.
-* **Overlap.** From rung eleven windows overlap. Only what is on top
-  takes a click, a click on a window brings it to the top, and a
-  control under another window has to be uncovered first.
-* **Prerequisites.** From rung fifteen a control can be greyed out,
-  with a note saying which other setting it needs; from sixteen some
-  windows keep changes pending until Apply is pressed.
+* **Widget grammars.** A switch flips; a row of choices or colours
+  takes the one clicked; a slider takes the notch; a dropdown opens a
+  list and takes the item; a stepper goes up and down one at a time.
+* **Finding the control.** Tabs, scrolling, menu bars whose items open
+  dialogs -- kept by OK, thrown away by Cancel -- and from rung nineteen
+  menus that cascade into submenus.
+* **The window manager.** Windows overlap, and only what is on top
+  takes a click. They can be raised, moved by their title bar, resized
+  by their corner, minimised to the taskbar and closed; a closed one
+  comes back from the Start menu, and closing it throws away whatever
+  it had not applied. Some start minimised, some closed, some small,
+  one hanging off the edge of the screen, and sticky notes sit on top
+  of everything until they are moved or put away.
+* **Prerequisites and interruptions.** Controls greyed out until some
+  other setting holds; windows that keep changes until Apply; popups
+  that arrive mid-task, take every click until they are answered, and
+  offer a button that undoes a window's work next to one that does not.
 
 **The reference is deliberately plain.** It works through the card in
 the order the card lists it, one setting at a time, and sees each one
 all the way home -- an OK for every dialog setting, an Apply for every
-pending one -- before it looks at the next. It never reorders the card
-to keep a dialog open or a tab showing, and it never saves an Apply.
+pending one -- before it looks at the next. It scrolls rather than
+resizes, raises rather than rearranges, and never reorders the card.
 Below rung twenty that is generous; past it the clicks have to come in
 under the reference's, by more at every rung, and the only way there
-is to plan the order of the work.
+is to plan the work.
+
+**Everything that happens to the screen is fixed by the deal.** Where
+the windows are, which start minimised or closed, and on which click a
+popup arrives are dealt before the round starts, so the reference meets
+the same desktop and the same interruptions on the same numbered click.
 
 Everything is in logical units on a 1000 by 640 screen, origin at the
 top left, so the model, the reference and the screen agree about where
@@ -44,22 +53,30 @@ SPDX-License-Identifier: GPL-2.0-or-later
 from __future__ import annotations
 
 import random
-from typing import Dict, List, NamedTuple, Optional, Sequence, Tuple
+from typing import List, NamedTuple, Optional, Sequence, Tuple, Union
 
 SCREEN_W, SCREEN_H = 1000, 640
 TASKBAR_H = 40
+#: Where windows may be: everything above the taskbar.
+WORK_H = SCREEN_H - TASKBAR_H
 TITLE_H, MENU_H, TAB_H, ROW_H, APPLY_H = 30, 26, 28, 36, 38
 WINDOW_W = 440
+NOTE_W = 220
 DIALOG_W = 400
+ITEM_W, ITEM_H = 160, 30
 #: Pointer steps, logical units: coarse, medium, fine.
 STEPS = (80, 20, 5)
-#: Every point the reference clicks is on this grid, which is the grid
+#: Every point the reference presses is on this grid, which is the grid
 #: the pointer moves on from its start, so the agent can reach it too.
 GRID = 5
 START = (500, 320)
-DONE_RECT = (SCREEN_W - 130, SCREEN_H - TASKBAR_H + 6, 120, TASKBAR_H - 12)
+#: A press and release closer than this is a click, not a drag.
+STILL = 3
+DONE_RECT = (SCREEN_W - 130, WORK_H + 6, 120, TASKBAR_H - 12)
+START_RECT = (6, WORK_H + 6, 70, TASKBAR_H - 12)
+POPUP_RECT = (300, 180, 400, 150)
 
-KINDS = ('toggle', 'choice', 'slider', 'dropdown')
+KINDS = ('toggle', 'choice', 'slider', 'dropdown', 'colour', 'stepper')
 
 LABELS = ('Sound', 'Wi-Fi', 'Bluetooth', 'Night mode', 'Brightness',
           'Volume', 'Font', 'Theme', 'Sync', 'Backup', 'Alerts', 'Zoom',
@@ -77,8 +94,52 @@ TABS = ('General', 'Advanced', 'Extra', 'View')
 MENUS = ('Edit', 'Tools', 'View')
 DIALOGS = ('Preferences', 'Options', 'Format', 'Filters', 'Colours',
            'Behaviour', 'Network', 'Storage', 'Startup', 'Privacy',
-           'Fonts', 'Export')
+           'Fonts', 'Export', 'Sharing', 'Layout', 'Accounts', 'Sounds',
+           'Shortcuts', 'Language')
 WORDS = ('Off', 'Low', 'Mid', 'High', 'Auto', 'Max')
+#: Colour swatches: a name each, for the card and for the screen.
+COLOURS = (('red', (214, 64, 58)), ('orange', (236, 136, 40)),
+           ('yellow', (236, 200, 40)), ('green', (60, 160, 80)),
+           ('teal', (30, 150, 150)), ('blue', (52, 110, 220)),
+           ('purple', (130, 80, 190)), ('pink', (226, 110, 170)))
+NOTES = ('Call the bank', 'Milk, eggs', 'Meeting at 3', 'Back up photos',
+         'Water plants', 'Pay rent')
+SUBMENU = 'More'
+
+#: The file explorer, its toolbar, and the places down its side. The
+#: places are also the first seven folders of every file system, in
+#: this order: Home, its five folders, and the Trash.
+EXPLORER = 'Explorer'
+EXPLORER_W, EXPLORER_H = 600, 400
+TOOLS = ('Back', 'Up', 'Cut', 'Paste', 'Delete')
+TOOL_W = (52, 40, 44, 56, 62)
+PLACES = ('Home', 'Desktop', 'Documents', 'Downloads', 'Music', 'Pictures',
+          'Trash')
+HOME, DESKTOP_DIR, DOCUMENTS, TRASH = 0, 1, 2, 6
+#: Explorer tabs open at most.
+MOST_TABS = 4
+#: Icons per row of the explorer's grid.
+COLUMNS = 5
+FOLDERS = ('Work', 'Old', '2023', '2024', 'Trips', 'Taxes', 'Drafts',
+           'Projects', 'School', 'Recipes', 'Archive', 'Family', 'Mixes',
+           'Invoices', 'Backup', 'Ideas', 'Garden', 'Car', 'Clients',
+           'Scans', 'Live', 'Covers', 'Notes', 'Misc')
+FILE_WORDS = ('budget', 'report', 'notes', 'letter', 'plan', 'photo',
+              'song', 'invoice', 'resume', 'draft', 'list', 'map', 'poster',
+              'recipe', 'scan', 'memo', 'beach', 'party', 'demo', 'score',
+              'lease', 'quote', 'agenda', 'cover', 'sketch', 'intro',
+              'payslip', 'ticket', 'garden', 'minutes')
+EXTENSIONS = {'doc': ('.txt', '.doc'), 'sheet': ('.xls',),
+              'image': ('.png', '.jpg'), 'music': ('.mp3',)}
+#: What a folder in each place mostly holds.
+HOLDS = {2: ('doc', 'sheet'), 3: ('doc', 'sheet', 'image', 'music'),
+         4: ('music',), 5: ('image',), 1: ('doc', 'image', 'sheet')}
+#: Desktop icons, in columns down the left of the screen.
+ICON_W, ICON_H = 84, 84
+ICONS_PER_COLUMN = 6
+#: The Start panel: pinned tiles, or the list of every app.
+START_PANEL = (6, WORK_H - 330, 360, 330)
+TILE_W, TILE_H = 104, 84
 
 
 class Grade(NamedTuple):
@@ -89,11 +150,33 @@ class Grade(NamedTuple):
     per_tab: int
     rows: int
     kinds: Tuple[str, ...]
-    #: Dialogs behind each window's menu bar.
+    #: Dialogs behind each window's menu bar, and whether some sit in
+    #: a submenu.
     dialogs: int
+    submenus: bool
     #: Greyed-out controls, and windows that keep changes until Apply.
     depends: int
     applies: int
+    #: Popups that interrupt, windows that start minimised or closed,
+    #: sticky notes, and windows hanging off the screen.
+    popups: int
+    minimised: int
+    closed: int
+    notes: int
+    offscreen: int
+    #: The file explorer; files to move, to delete, and to bring back
+    #: from the Trash; how deep the folders go; files on the desktop;
+    #: explorer tabs open at the start; apps pinned to Start; and
+    #: whether the explorer starts closed.
+    explorer: bool
+    moves: int
+    deletes: int
+    restores: int
+    depth: int
+    desktop_files: int
+    ex_tabs: int
+    pinned: int
+    explorer_closed: bool
     goals: int
     factor: float
     slack: float
@@ -102,19 +185,49 @@ class Grade(NamedTuple):
 def grade(rung: int) -> Grade:
     r = max(1, int(rung))
     per_tab = min(8, 1 + r // 2)
+    windows = 1 if r < 11 else min(6, 2 + (r - 11) // 3)
+    kinds = KINDS[:min(4, r)]
+    if r >= 7:
+        kinds += ('colour',)
+    if r >= 9:
+        kinds += ('stepper',)
     return Grade(
         rung=r,
-        windows=1 if r < 11 else min(6, 2 + (r - 11) // 3),
+        windows=windows,
         tabs=1 if r < 5 else (2 if r < 10 else 3),
         per_tab=per_tab,
-        rows=per_tab if r < 6 else (3 if r < 8 else 4),
-        kinds=KINDS[:min(4, r)],
-        dialogs=0 if r < 8 else (1 if r < 12 else 2),
+        # From rung thirteen windows open small: scrolling still works,
+        # and one drag of the corner can save a run of scroll clicks.
+        rows=(per_tab if r < 6 else 3 if r < 8 else 4 if r < 13 else 2),
+        kinds=kinds,
+        dialogs=0 if r < 8 else (1 if r < 12 else 2 if r < 19 else 3),
+        submenus=r >= 19,
         depends=0 if r < 15 else min(4, 1 + (r - 15) // 3),
         applies=0 if r < 16 else (1 if r < 19 else 2),
+        popups=0 if r < 10 else min(4, 1 + (r - 10) // 5),
+        minimised=0 if r < 12 else min(windows - 1, 1 + (r - 12) // 4),
+        closed=0 if r < 18 else min(2, 1 + (r - 18) // 6),
+        notes=0 if r < 14 else (1 if r < 20 else 2),
+        offscreen=0 if r < 17 else 1,
+        explorer=r >= 6,
+        moves=0 if r < 6 else min(8, 1 + (r - 6) // 3),
+        deletes=0 if r < 14 else min(3, 1 + (r - 14) // 6),
+        restores=0 if r < 18 else min(3, 1 + (r - 18) // 8),
+        # Folders nest deeper without end: the long horizon of the task.
+        depth=1 if r < 9 else 2 if r < 16 else min(8, 3 + (r - 16) // 4),
+        desktop_files=0 if r < 14 else 3,
+        ex_tabs=1 if r < 12 else 2,
+        pinned=5 if r < 18 else 2,
+        explorer_closed=r >= 15,
         goals=1 if r <= 2 else min(14, r // 2 + 1),
         factor=(max(1.0, 2.0 - (r - 1) / 11.0) if r <= 20
-                else 1.0 / (1.0 + 0.04 * (r - 20))),
+                # Gentler than the other tasks' four per cent: measured,
+                # planners that resize, drag and take shorter routes
+                # save two to seven per cent of the reference's clicks
+                # once files are on the card, so the first rungs past
+                # twenty are within reach of planning and the later
+                # ones ask for more than any planner tried has found.
+                else 1.0 / (1.0 + 0.01 * (r - 20))),
         slack=2.0 if r < 12 else 0.0,
     )
 
@@ -132,6 +245,7 @@ class Control:
         #: a control in an open dialog or a window waiting for Apply.
         self.value = value
         self.shown = value
+        self.start = value
         self.words = words
         #: (control, value) it needs to hold before this one works.
         self.requires: Optional[Tuple['Control', int]] = None
@@ -144,7 +258,7 @@ class Control:
     def word(self, value: int) -> str:
         if self.kind == 'toggle':
             return ('off', 'on')[value]
-        if self.kind == 'slider':
+        if self.kind in ('slider', 'stepper'):
             return str(value + 1)
         return self.words[value]
 
@@ -161,27 +275,124 @@ class Dialog:
         self.title = title
         self.controls = controls
         self.window: Optional['Window'] = None
+        #: Which menu, which item in it, and which item of the submenu
+        #: that item opens -- or None when the item opens it directly.
         self.menu = 0
+        self.item = 0
+        self.sub: Optional[int] = None
+
+
+class Submenu:
+    def __init__(self, name: str, dialogs: List[Dialog]) -> None:
+        self.name = name
+        self.dialogs = dialogs
+
+
+Item = Union[Dialog, Submenu]
+
+
+class Node:
+    """A folder or a file."""
+
+    def __init__(self, ident: int, name: str, folder: bool, kind: str,
+                 parent: Optional['Node']) -> None:
+        self.ident = ident
+        self.name = name
+        self.folder = folder
+        self.kind = kind
+        self.parent = parent
+        self.children: List['Node'] = []
+
+    def within(self, other: 'Node') -> bool:
+        """Whether this is *other* or somewhere inside it."""
+        node: Optional[Node] = self
+        while node is not None:
+            if node is other:
+                return True
+            node = node.parent
+        return False
+
+    def chain(self) -> List['Node']:
+        """From the top folder down to this one."""
+        found, node = [], self
+        while node is not None:
+            found.append(node)
+            node = node.parent
+        return found[::-1]
+
+    def path(self) -> str:
+        return ' › '.join(node.name for node in self.chain())
+
+    def listing(self) -> List['Node']:
+        """Folders first, then files, each by name."""
+        return (sorted((c for c in self.children if c.folder),
+                       key=lambda c: c.name)
+                + sorted((c for c in self.children if not c.folder),
+                         key=lambda c: c.name))
+
+
+class Place:
+    """One explorer tab: where it is, where it has been, what is picked."""
+
+    def __init__(self, path: Node) -> None:
+        self.path = path
+        self.history: List[Node] = []
+        self.scroll = 0
+        self.selected: Optional[Node] = None
 
 
 class Window:
     def __init__(self, ident: int, title: str, tabs: List[List[Control]],
-                 rows: int, menus: List[Tuple[str, List[Dialog]]],
-                 apply: bool) -> None:
+                 rows: int, menus: List[Tuple[str, List[Item]]],
+                 apply: bool, note: str = '') -> None:
         self.ident = ident
         self.title = title
         self.tabs = tabs
         self.rows = rows
         self.menus = menus
         self.apply = apply
+        #: A sticky note: no controls, and always on top.
+        self.note = note
         self.active = 0
         #: Rows scrolled past, per tab.
         self.scroll = [0] * len(tabs)
         self.x = self.y = 0
-        self.w = WINDOW_W
-        self.h = (TITLE_H + (MENU_H if menus else 0)
-                  + (TAB_H if len(tabs) > 1 else 0) + rows * ROW_H
-                  + (APPLY_H if apply else 0) + 8)
+        self.w = NOTE_W if note else WINDOW_W
+        self.minimised = False
+        self.closed = False
+        #: 'app', 'note' or 'explorer'.
+        self.kind = 'note' if note else 'app'
+        #: The explorer's tabs, and which is showing.
+        self.places: List[Place] = []
+        self.place = 0
+
+    @property
+    def pinned(self) -> bool:
+        return bool(self.note)
+
+    @property
+    def shown(self) -> bool:
+        return not (self.minimised or self.closed)
+
+    @property
+    def chrome(self) -> int:
+        """Height of everything but the rows."""
+        return (TITLE_H + (MENU_H if self.menus else 0)
+                + (TAB_H if len(self.tabs) > 1 else 0)
+                + (APPLY_H if self.apply else 0) + 8)
+
+    @property
+    def h(self) -> int:
+        if self.kind == 'explorer':
+            return EXPLORER_H
+        return self.chrome + self.rows * ROW_H
+
+    @property
+    def most_rows(self) -> int:
+        """The most rows it can be resized to show."""
+        longest = max(1, max(len(page) for page in self.tabs))
+        room = (WORK_H - self.y - self.chrome) // ROW_H
+        return max(1, min(longest, room))
 
     @property
     def content_top(self) -> int:
@@ -191,8 +402,18 @@ class Window:
     def scrolls(self, tab: int) -> bool:
         return len(self.tabs[tab]) > self.rows
 
+    def controls(self) -> List[Control]:
+        found = [c for page in self.tabs for c in page]
+        for _name, items in self.menus:
+            for item in items:
+                for dialog in (item.dialogs if isinstance(item, Submenu)
+                               else [item]):
+                    found += dialog.controls
+        return found
+
 
 Rect = Tuple[float, float, float, float]       # x, y, w, h; y down
+Action = Tuple  # ('click', point) or ('drag', from, to)
 
 
 def inside(rect: Rect, x: float, y: float) -> bool:
@@ -200,10 +421,27 @@ def inside(rect: Rect, x: float, y: float) -> bool:
     return rx <= x < rx + rw and ry <= y < ry + rh
 
 
+def centre(rect: Rect) -> Tuple[float, float]:
+    x, y, w, h = rect
+    return x + w / 2, y + h / 2
+
+
 # --- layout: where everything is, for the model and the screen alike --------
 
 def title_rect(win: Window) -> Rect:
     return (win.x, win.y, win.w, TITLE_H)
+
+
+def close_rect(win: Window) -> Rect:
+    return (win.x + win.w - 30, win.y + 4, 24, TITLE_H - 8)
+
+
+def minimise_rect(win: Window) -> Rect:
+    return (win.x + win.w - 58, win.y + 4, 24, TITLE_H - 8)
+
+
+def grip_rect(win: Window) -> Rect:
+    return (win.x + win.w - 18, win.y + win.h - 18, 18, 18)
 
 
 def menu_rects(win: Window) -> List[Rect]:
@@ -222,6 +460,8 @@ def tab_rects(win: Window) -> List[Rect]:
 def scroll_rects(win: Window) -> Tuple[Rect, Rect]:
     top = win.content_top
     x = win.x + win.w - 30
+    if win.rows == 1:
+        return ((x - 28, top + 6, 24, 24), (x, top + 6, 24, 24))
     return ((x, top + 2, 24, 24),
             (x, top + win.rows * ROW_H - 26, 24, 24))
 
@@ -237,24 +477,110 @@ def widget_rect(left: float, top: float, width: float) -> Rect:
 
 
 def parts(control: Control, rect: Rect) -> List[Rect]:
-    """For each value, where clicking sets it -- or, for a switch and a
-    dropdown, the one place to click."""
+    """Where clicking does something: for a row of choices, colours or
+    notches one place per value; for a stepper its minus and its plus;
+    for a switch and a dropdown the one place."""
     x, y, w, h = rect
     if control.kind == 'toggle':
         return [(x, y, 56, h)]
     if control.kind == 'dropdown':
         return [(x, y, w * 0.7, h)]
+    if control.kind == 'stepper':
+        return [(x, y, 28, h), (x + 84, y, 28, h)]
     cell = w / control.count
     return [(x + i * cell, y, cell, h) for i in range(control.count)]
 
 
 def dropdown_items(rect: Rect, control: Control) -> List[Rect]:
     x, y, w, h = parts(control, rect)[0]
-    if y + h + control.count * 28 > SCREEN_H - TASKBAR_H:
+    if y + h + control.count * 28 > WORK_H:
         # No room below: the list opens upwards, as a real one does.
         return [(x, y - (control.count - i) * 28, w, 28)
                 for i in range(control.count)]
     return [(x, y + h + i * 28, w, 28) for i in range(control.count)]
+
+
+def tool_rects(win: Window) -> List[Tuple[str, Rect]]:
+    found, x = [], win.x + 8
+    for name, width in zip(TOOLS, TOOL_W):
+        found.append((name, (x, win.y + TITLE_H + 3, width, 24)))
+        x += width + 6
+    return found
+
+
+def place_tab_rects(win: Window) -> List[Rect]:
+    return [(win.x + 8 + i * 124, win.y + TITLE_H + 31, 120, 26)
+            for i in range(len(win.places))]
+
+
+def plus_rect(win: Window) -> Rect:
+    return (win.x + 8 + len(win.places) * 124, win.y + TITLE_H + 31, 26, 26)
+
+
+def path_rect(win: Window) -> Rect:
+    return (win.x + 136, win.y + TITLE_H + 60, win.w - 144, 22)
+
+
+def sidebar_rects(win: Window) -> List[Rect]:
+    return [(win.x + 8, win.y + TITLE_H + 86 + i * 30, 120, 28)
+            for i in range(len(PLACES))]
+
+
+def grid_area(win: Window) -> Rect:
+    top = win.y + TITLE_H + 86
+    return (win.x + 136, top, win.w - 136 - 36, win.y + win.h - 8 - top)
+
+
+def cell_size(win: Window) -> float:
+    return grid_area(win)[2] / COLUMNS
+
+
+def grid_rows(win: Window) -> int:
+    return max(1, int(grid_area(win)[3] // cell_size(win)))
+
+
+def ex_scroll_rects(win: Window) -> Tuple[Rect, Rect]:
+    gx, gy, gw, gh = grid_area(win)
+    x = win.x + win.w - 30
+    return ((x, gy + 2, 24, 24), (x, gy + gh - 26, 24, 24))
+
+
+def start_tiles() -> List[Rect]:
+    px, py, _pw, _ph = START_PANEL
+    return [(px + 12 + (i % 3) * (TILE_W + 8),
+             py + 44 + (i // 3) * (TILE_H + 8), TILE_W, TILE_H)
+            for i in range(6)]
+
+
+def all_apps_rect() -> Rect:
+    px, py, pw, _ph = START_PANEL
+    return (px + pw - 130, py + 8, 120, 28)
+
+
+def start_rows(count: int) -> List[Rect]:
+    px, py, pw, _ph = START_PANEL
+    return [(px + 10, py + 44 + i * ITEM_H, pw - 20, ITEM_H)
+            for i in range(count)]
+
+
+def desktop_icon_rect(index: int) -> Rect:
+    column, row = divmod(index, ICONS_PER_COLUMN)
+    return (8 + column * ICON_W, 8 + row * ICON_H, ICON_W - 4, ICON_H - 4)
+
+
+def popup_buttons(safe_left: bool) -> Tuple[Rect, Rect]:
+    """The safe button, then the one that resets the window."""
+    x, y, w, h = POPUP_RECT
+    left = (x + 40, y + h - 46, 140, 34)
+    right = (x + w - 180, y + h - 46, 140, 34)
+    return (left, right) if safe_left else (right, left)
+
+
+class Popup(NamedTuple):
+    #: The click after which it arrives.
+    at: int
+    window: int
+    safe_left: bool
 
 
 class Desktop:
@@ -262,15 +588,53 @@ class Desktop:
 
     def __init__(self, dealt: 'Deal') -> None:
         self.level = dealt.level
-        self.windows, self.controls = build(dealt)
-        #: Bottom first.
-        self.order: List[Window] = [self.windows[i] for i in dealt.order]
+        self.windows, self.notes, self.controls = build(dealt)
+        self.nodes = build_files(dealt)
+        #: The file explorer, if this rung has one.
+        self.explorer: Optional[Window] = None
+        if dealt.level.explorer:
+            ex = Window(len(self.windows), EXPLORER, [[]], 1, [], False)
+            ex.kind, ex.w = 'explorer', EXPLORER_W
+            ex.x, ex.y = dealt.explorer_at
+            ex.closed = dealt.level.explorer_closed
+            ex.places = [Place(self.nodes[HOME])
+                         for _t in range(dealt.level.ex_tabs)]
+            if len(ex.places) > 1:
+                ex.places[1].path = self.nodes[DOCUMENTS]
+            self.explorer = ex
+        #: Every app: the settings windows, then the explorer.
+        self.apps: List[Window] = self.windows + (
+            [self.explorer] if self.explorer else [])
+        self.pinned: List[Window] = [self.windows[i] for i in dealt.pinned]
+        if self.explorer:
+            self.pinned.insert(0, self.explorer)
+        self.shortcuts: List[Window] = [self.windows[i]
+                                        for i in dealt.shortcuts]
+        #: Bottom first; sticky notes always last.
+        self.order: List[Window] = [self.apps[i] for i in dealt.order]
+        self.order += self.notes
+        #: (file, folder it has to end up in), in the order the card
+        #: lists them.
+        self.moves: List[Tuple[Node, Node]] = [
+            (self.nodes[a], self.nodes[b]) for a, b in dealt.moves]
+        self.clipboard: Optional[Node] = None
+        #: What is picked on the desktop, and what the last click hit:
+        #: a second click on the same icon right after the first opens it.
+        self.picked: Optional[Tuple] = None
+        self.last: Optional[Tuple] = None
+        self.start_all = False
         self.goals: Tuple[Tuple[int, int], ...] = dealt.goals
+        self.popups: Tuple[Popup, ...] = dealt.popups
         self.pointer = START
         self.clicks = 0
         self.dialog: Optional[Dialog] = None
-        self.menu: Optional[Tuple[Window, int]] = None
+        #: (window, menu, open submenu item or None).
+        self.menu: Optional[Tuple[Window, int, Optional[int]]] = None
         self.dropdown: Optional[Control] = None
+        self.start_open = False
+        self.popup: Optional[Popup] = None
+        self.next_popup = 0
+        self.held: Optional[Tuple[float, float]] = None
         self.done = False
 
     # --- where things are ------------------------------------------------
@@ -283,7 +647,7 @@ class Desktop:
             x, y, _w, _h = self.dialog_rect()
             return (x, y + TITLE_H + control.row * ROW_H, DIALOG_W, ROW_H)
         win = control.window
-        if win.active != control.tab:
+        if not win.shown or win.active != control.tab:
             return None
         shown = control.row - win.scroll[control.tab]
         if not 0 <= shown < win.rows:
@@ -300,8 +664,7 @@ class Desktop:
     def dialog_rect(self) -> Rect:
         rows = len(self.dialog.controls)
         h = TITLE_H + rows * ROW_H + 50
-        return ((SCREEN_W - DIALOG_W) / 2, (SCREEN_H - TASKBAR_H - h) / 2,
-                DIALOG_W, h)
+        return ((SCREEN_W - DIALOG_W) / 2, (WORK_H - h) / 2, DIALOG_W, h)
 
     def dialog_buttons(self) -> Tuple[Rect, Rect]:
         x, y, w, h = self.dialog_rect()
@@ -311,22 +674,98 @@ class Desktop:
     def menu_items(self) -> List[Rect]:
         if self.menu is None:
             return []
-        win, index = self.menu
+        win, index, _sub = self.menu
         mx, my, _mw, mh = menu_rects(win)[index]
-        return [(mx, my + mh + i * 30, 150, 30)
+        return [(mx, my + mh + i * ITEM_H, ITEM_W, ITEM_H)
                 for i in range(len(win.menus[index][1]))]
 
+    def submenu_items(self) -> List[Rect]:
+        if self.menu is None or self.menu[2] is None:
+            return []
+        win, index, sub = self.menu
+        ix, iy, iw, _ih = self.menu_items()[sub]
+        item = win.menus[index][1][sub]
+        return [(ix + iw, iy + i * ITEM_H, ITEM_W, ITEM_H)
+                for i in range(len(item.dialogs))]
+
+    def taskbar_buttons(self) -> List[Tuple[Window, Rect]]:
+        """A button for each window that is open, minimised or not."""
+        found = []
+        for win in self.apps:
+            if not win.closed:
+                found.append((win, (84 + len(found) * 112, WORK_H + 6, 106,
+                                    TASKBAR_H - 12)))
+        return found
+
+    def start_items(self) -> List[Tuple[Window, Rect]]:
+        """The Start panel's apps where they are: pinned tiles, or the
+        list of every app by name once All apps is open."""
+        if not self.start_open:
+            return []
+        if self.start_all:
+            apps = sorted(self.apps, key=lambda w: w.title)
+            return list(zip(apps, start_rows(len(apps))))
+        return list(zip(self.pinned, start_tiles()))
+
+    def desktop_icons(self) -> List[Tuple[Tuple, Rect]]:
+        """What lies on the desktop: ('explorer',), ('trash',),
+        ('app', window) for a shortcut, ('node', node) for a file or
+        folder saved there."""
+        items: List[Tuple] = []
+        if self.explorer is not None:
+            items += [('explorer',), ('trash',)]
+            items += [('app', win) for win in self.shortcuts]
+            items += [('node', node)
+                      for node in self.nodes[DESKTOP_DIR].listing()]
+        return [(item, desktop_icon_rect(i)) for i, item in enumerate(items)]
+
+    def icon_at(self, x: float, y: float) -> Optional[Tuple]:
+        if y >= WORK_H or self.window_at(x, y) is not None:
+            return None
+        for item, rect in self.desktop_icons():
+            if inside(rect, x, y):
+                return item
+        return None
+
+    def icon_rects(self, win: Window) -> List[Tuple[Node, Rect]]:
+        """The explorer's icons that are showing, and where."""
+        place = win.places[win.place]
+        listing = place.path.listing()
+        rows = grid_rows(win)
+        most = max(0, -(-len(listing) // COLUMNS) - rows)
+        place.scroll = max(0, min(place.scroll, most))
+        gx, gy, _gw, _gh = grid_area(win)
+        size = cell_size(win)
+        found = []
+        first = place.scroll * COLUMNS
+        for index, node in enumerate(listing[first:first + rows * COLUMNS]):
+            row, column = divmod(index, COLUMNS)
+            found.append((node, (gx + column * size, gy + row * size,
+                                 size, size)))
+        return found
+
+    def ex_scrolls(self, win: Window) -> bool:
+        place = win.places[win.place]
+        return -(-len(place.path.listing()) // COLUMNS) > grid_rows(win)
+
     def window_at(self, x: float, y: float) -> Optional[Window]:
+        if y >= WORK_H:
+            return None
         for win in reversed(self.order):
-            if inside((win.x, win.y, win.w, win.h), x, y):
+            if win.shown and inside((win.x, win.y, win.w, win.h), x, y):
                 return win
         return None
 
     def overlay_at(self, x: float, y: float) -> bool:
-        """Whether a menu, a list or a dialog is over this point."""
+        """Whether a popup, menu, list or dialog is over this point."""
+        if self.popup is not None and inside(POPUP_RECT, x, y):
+            return True
         if self.dialog is not None and inside(self.dialog_rect(), x, y):
             return True
-        if any(inside(r, x, y) for r in self.menu_items()):
+        if any(inside(r, x, y) for r in
+               self.menu_items() + self.submenu_items()):
+            return True
+        if self.start_open and inside(START_PANEL, x, y):
             return True
         if self.dropdown is not None:
             rect = self.control_rect(self.dropdown)
@@ -335,17 +774,18 @@ class Desktop:
                 return True
         return False
 
-    def reachable(self, rect: Rect, win: Optional[Window]) -> Optional[
-            Tuple[int, int]]:
-        """A grid point in *rect* that a click would reach -- on *win*,
-        not under anything -- nearest the rect's middle."""
+    def reachable(self, rect: Rect, win: Optional[Window]
+                  ) -> Optional[Tuple[int, int]]:
+        """A grid point in *rect* that a click would reach -- on screen,
+        on *win* and not under anything when *win* is given -- nearest
+        the rect's middle."""
         x, y, w, h = rect
         cx, cy = x + w / 2, y + h / 2
         best = None
-        gx0 = int((x + GRID - 1) // GRID) * GRID
-        gy0 = int((y + GRID - 1) // GRID) * GRID
-        for gy in range(gy0, int(y + h), GRID):
-            for gx in range(gx0, int(x + w), GRID):
+        gx0 = max(0, int((x + GRID - 1) // GRID) * GRID)
+        gy0 = max(0, int((y + GRID - 1) // GRID) * GRID)
+        for gy in range(gy0, int(min(y + h, SCREEN_H)), GRID):
+            for gx in range(gx0, int(min(x + w, SCREEN_W)), GRID):
                 if not inside(rect, gx, gy):
                     continue
                 if win is not None and (self.window_at(gx, gy) is not win
@@ -356,23 +796,96 @@ class Desktop:
                     best = (gap, (gx, gy))
         return None if best is None else best[1]
 
-    # --- clicking --------------------------------------------------------
+    def raise_window(self, win: Window) -> None:
+        self.order.remove(win)
+        if win.pinned:
+            self.order.append(win)
+            return
+        notes = [w for w in self.order if w.pinned]
+        at = self.order.index(notes[0]) if notes else len(self.order)
+        self.order.insert(at, win)
+
+    # --- the pointer ------------------------------------------------------
 
     def move(self, dx: float, dy: float) -> None:
         x, y = self.pointer
         self.pointer = (max(0, min(SCREEN_W - GRID, x + dx)),
                         max(0, min(SCREEN_H - GRID, y + dy)))
 
-    def click(self, x: Optional[float] = None,
+    def press(self, x: Optional[float] = None,
               y: Optional[float] = None) -> None:
-        """A click at (x, y), or where the pointer is. Always a point."""
         if self.done:
             return
         if x is None:
             x, y = self.pointer
-        else:
-            self.pointer = (x, y)
+        self.pointer = (x, y)
+        self.held = (x, y)
+
+    def release(self, x: Optional[float] = None,
+                y: Optional[float] = None) -> None:
+        """Let go: a click where it was pressed, or a drag to here.
+        Either costs one."""
+        if self.held is None or self.done:
+            return
+        if x is None:
+            x, y = self.pointer
+        self.pointer = (x, y)
+        sx, sy = self.held
+        self.held = None
         self.clicks += 1
+        if abs(x - sx) <= STILL and abs(y - sy) <= STILL:
+            self._click_at(sx, sy)
+        elif self._overlay_open() or not self.draggable(sx, sy):
+            # With anything open, or from something that does not move,
+            # a drag is only a click where it began: a hand that slips a
+            # little while clicking a switch still clicks it.
+            self._click_at(sx, sy)
+        else:
+            self._drag(sx, sy, x, y)
+        self._arrive()
+
+    def click(self, x: Optional[float] = None,
+              y: Optional[float] = None) -> None:
+        """A click at (x, y), or where the pointer is. Always a point."""
+        self.press(x, y)
+        self.release()
+
+    def act(self, action: Action) -> None:
+        if action[0] == 'click':
+            self.click(*action[1])
+        else:
+            self.press(*action[1])
+            self.release(*action[2])
+
+    def _overlay_open(self) -> bool:
+        return (self.popup is not None or self.dialog is not None
+                or self.menu is not None or self.dropdown is not None
+                or self.start_open)
+
+    def _arrive(self) -> None:
+        """A popup due by this click arrives now."""
+        if self.popup is None and self.next_popup < len(self.popups) \
+                and self.clicks >= self.popups[self.next_popup].at \
+                and not self.done:
+            self.popup = self.popups[self.next_popup]
+            self.next_popup += 1
+            self.menu = None
+            self.dropdown = None
+            self.start_open = self.start_all = False
+
+    # --- what a click does ----------------------------------------------
+
+    def _click_at(self, x: float, y: float) -> None:
+        self._previous, self.last = self.last, None
+        if self.popup is not None:
+            safe, reset = popup_buttons(self.popup.safe_left)
+            if inside(safe, x, y):
+                self.popup = None
+            elif inside(reset, x, y):
+                for control in self.windows[self.popup.window].controls():
+                    control.value = control.shown = control.start
+                self.popup = None
+            return
         if self.dropdown is not None:
             control, self.dropdown = self.dropdown, None
             rect = self.control_rect(control)
@@ -384,23 +897,34 @@ class Desktop:
             self._click_dialog(x, y)
             return
         if self.menu is not None:
-            win, index = self.menu
-            self.menu = None
-            for item, rect in enumerate(self.menu_items_of(win, index)):
-                if inside(rect, x, y):
-                    self._open(win.menus[index][1][item])
+            self._click_menu(x, y)
             return
-        if inside(DONE_RECT, x, y):
-            self.done = True
+        if self.start_open:
+            self._click_start(x, y)
+            return
+        if y >= WORK_H:
+            self._click_taskbar(x, y)
             return
         win = self.window_at(x, y)
         if win is None:
+            self._click_desktop(x, y)
             return
-        self.order.remove(win)
-        self.order.append(win)
+        self.raise_window(win)
+        if inside(close_rect(win), x, y):
+            # Closing throws away whatever it had not applied.
+            for control in win.controls():
+                control.shown = control.value
+            win.closed = True
+            return
+        if inside(minimise_rect(win), x, y):
+            win.minimised = True
+            return
+        if win.kind == 'explorer':
+            self._click_explorer(win, x, y)
+            return
         for index, rect in enumerate(menu_rects(win)):
             if inside(rect, x, y):
-                self.menu = (win, index)
+                self.menu = (win, index, None)
                 return
         for index, rect in enumerate(tab_rects(win)):
             if inside(rect, x, y):
@@ -424,10 +948,154 @@ class Desktop:
         for control in win.tabs[tab]:
             self._click_control(control, x, y)
 
-    def menu_items_of(self, win: Window, index: int) -> List[Rect]:
-        mx, my, _mw, mh = menu_rects(win)[index]
-        return [(mx, my + mh + i * 30, 150, 30)
-                for i in range(len(win.menus[index][1]))]
+    def open_app(self, win: Window) -> None:
+        win.closed = win.minimised = False
+        self.raise_window(win)
+
+    def _click_start(self, x: float, y: float) -> None:
+        if inside(all_apps_rect(), x, y):
+            self.start_all = not self.start_all
+            return
+        for win, rect in self.start_items():
+            if inside(rect, x, y):
+                self.open_app(win)
+                self.start_open = self.start_all = False
+                return
+        if not inside(START_PANEL, x, y):
+            self.start_open = self.start_all = False
+
+    def _click_desktop(self, x: float, y: float) -> None:
+        item = self.icon_at(x, y)
+        if item is None:
+            self.picked = None
+            return
+        key = _icon_key(item)
+        if self.picked == key and self._previous == key:
+            self._open_icon(item)
+        self.picked = key
+        self.last = key
+
+    def _open_icon(self, item: Tuple) -> None:
+        if item[0] == 'app':
+            self.open_app(item[1])
+            return
+        ex = self.explorer
+        if item[0] == 'node' and not item[1].folder:
+            return
+        self.open_app(ex)
+        place = ex.places[ex.place]
+        if item[0] == 'trash':
+            self.navigate(place, self.nodes[TRASH])
+        elif item[0] == 'node':
+            self.navigate(place, item[1])
+
+    def navigate(self, place: Place, node: Node) -> None:
+        if place.path is node:
+            return
+        place.history.append(place.path)
+        place.path = node
+        place.scroll = 0
+        place.selected = None
+
+    def move_file(self, node: Node, dest: Node) -> bool:
+        """Put *node* in *dest*, unless that is where it is or inside it."""
+        if not dest.folder or dest.within(node) or node.parent is dest \
+                or node.ident in (HOME, TRASH) or node.ident < len(PLACES):
+            return False
+        node.parent.children.remove(node)
+        dest.children.append(node)
+        node.parent = dest
+        if self.clipboard is node:
+            self.clipboard = None
+        if self.explorer is not None:
+            for place in self.explorer.places:
+                if place.selected is node:
+                    place.selected = None
+        return True
+
+    def _click_explorer(self, win: Window, x: float, y: float) -> None:
+        place = win.places[win.place]
+        for name, rect in tool_rects(win):
+            if not inside(rect, x, y):
+                continue
+            if name == 'Back' and place.history:
+                place.path = place.history.pop()
+                place.scroll, place.selected = 0, None
+            elif name == 'Up' and place.path.parent is not None:
+                self.navigate(place, place.path.parent)
+            elif name == 'Cut' and place.selected is not None:
+                self.clipboard = place.selected
+            elif name == 'Paste' and self.clipboard is not None:
+                if self.move_file(self.clipboard, place.path):
+                    self.clipboard = None
+            elif name == 'Delete' and place.selected is not None \
+                    and not place.selected.within(self.nodes[TRASH]):
+                self.move_file(place.selected, self.nodes[TRASH])
+            return
+        for index, rect in enumerate(place_tab_rects(win)):
+            if inside(rect, x, y):
+                win.place = index
+                return
+        if len(win.places) < MOST_TABS and inside(plus_rect(win), x, y):
+            win.places.append(Place(self.nodes[HOME]))
+            win.place = len(win.places) - 1
+            return
+        for index, rect in enumerate(sidebar_rects(win)):
+            if inside(rect, x, y):
+                self.navigate(place, self.nodes[index])
+                return
+        if self.ex_scrolls(win):
+            up, down = ex_scroll_rects(win)
+            if inside(up, x, y):
+                place.scroll = max(0, place.scroll - 1)
+                return
+            if inside(down, x, y):
+                place.scroll += 1
+                self.icon_rects(win)          # clamps it
+                return
+        for node, rect in self.icon_rects(win):
+            if inside(rect, x, y):
+                key = ('ex', node.ident)
+                if place.selected is node and self._previous == key \
+                        and node.folder:
+                    self.navigate(place, node)
+                else:
+                    place.selected = node
+                    self.last = key
+                return
+        if inside(grid_area(win), x, y):
+            place.selected = None
+
+    def _click_taskbar(self, x: float, y: float) -> None:
+        if inside(DONE_RECT, x, y):
+            self.done = True
+            return
+        if inside(START_RECT, x, y):
+            self.start_open, self.start_all = True, False
+            return
+        for win, rect in self.taskbar_buttons():
+            if inside(rect, x, y):
+                win.minimised = False
+                self.raise_window(win)
+                return
+
+    def _click_menu(self, x: float, y: float) -> None:
+        win, index, sub = self.menu
+        items = win.menus[index][1]
+        for which, rect in enumerate(self.submenu_items()):
+            if inside(rect, x, y):
+                self.menu = None
+                self._open(items[sub].dialogs[which])
+                return
+        for which, rect in enumerate(self.menu_items()):
+            if inside(rect, x, y):
+                if isinstance(items[which], Submenu):
+                    self.menu = (win, index, which)
+                else:
+                    self.menu = None
+                    self._open(items[which])
+                return
+        self.menu = None
 
     def _click_dialog(self, x: float, y: float) -> None:
         cancel, ok = self.dialog_buttons()
@@ -459,6 +1127,10 @@ class Desktop:
                 self._set(control, 1 - control.shown)
             elif control.kind == 'dropdown':
                 self.dropdown = control
+            elif control.kind == 'stepper':
+                step = -1 if value == 0 else 1
+                self._set(control, max(0, min(control.count - 1,
+                                              control.shown + step)))
             else:
                 self._set(control, value)
             return
@@ -468,6 +1140,101 @@ class Desktop:
         if control.dialog is None and not control.window.apply:
             control.value = value
 
+    def draggable(self, x: float, y: float) -> bool:
+        """Whether a drag from (x, y) can move anything: a title bar
+        (not its buttons), a window's corner, or a file or folder icon."""
+        if y >= WORK_H:
+            return False
+        win = self.window_at(x, y)
+        if win is None:
+            item = self.icon_at(x, y)
+            return item is not None and item[0] == 'node'
+        if win.kind == 'explorer':
+            if any(inside(rect, x, y) for _n, rect in self.icon_rects(win)):
+                return True
+        elif win.kind == 'app' and inside(grip_rect(win), x, y):
+            return True
+        return inside(title_rect(win), x, y) and not (
+            inside(close_rect(win), x, y)
+            or inside(minimise_rect(win), x, y))
+
+    def _drag(self, sx: float, sy: float, x: float, y: float) -> None:
+        if sy >= WORK_H:
+            return
+        source = self._dragged(sx, sy)
+        if source is not None:
+            dest = self._dropped_on(x, y)
+            if dest is not None:
+                self.move_file(source, dest)
+            return
+        win = self.window_at(sx, sy)
+        if win is None:
+            return
+        self.raise_window(win)
+        dx = int(round((x - sx) / GRID)) * GRID
+        dy = int(round((y - sy) / GRID)) * GRID
+        if win.kind == 'app' and inside(grip_rect(win), sx, sy):
+            rows = win.rows + int(round(dy / float(ROW_H)))
+            win.rows = max(1, min(win.most_rows, rows))
+            for tab, page in enumerate(win.tabs):
+                win.scroll[tab] = max(0, min(win.scroll[tab],
+                                             len(page) - win.rows))
+            return
+        if inside(title_rect(win), sx, sy) and not (
+                inside(close_rect(win), sx, sy)
+                or inside(minimise_rect(win), sx, sy)):
+            win.x = max(60 - win.w, min(SCREEN_W - 60, win.x + dx))
+            win.y = max(0, min(WORK_H - TITLE_H, win.y + dy))
+            if win.y + win.h > WORK_H:
+                # A window dragged low keeps what fits.
+                win.rows = max(1, (WORK_H - win.y - win.chrome) // ROW_H)
+                for tab, page in enumerate(win.tabs):
+                    win.scroll[tab] = max(0, min(win.scroll[tab],
+                                                 len(page) - win.rows))
+
+    def _dragged(self, x: float, y: float) -> Optional[Node]:
+        """The file or folder an icon drag starts from, if any."""
+        win = self.window_at(x, y)
+        if win is not None and win.kind == 'explorer':
+            for node, rect in self.icon_rects(win):
+                if inside(rect, x, y):
+                    self.raise_window(win)
+                    return node
+            return None
+        item = self.icon_at(x, y)
+        if item is not None and item[0] == 'node':
+            return item[1]
+        return None
+
+    def _dropped_on(self, x: float, y: float) -> Optional[Node]:
+        """The folder a drop at (x, y) puts things in, if any."""
+        if y >= WORK_H:
+            return None
+        win = self.window_at(x, y)
+        if win is not None:
+            if win.kind != 'explorer':
+                return None
+            for node, rect in self.icon_rects(win):
+                if inside(rect, x, y):
+                    return node if node.folder else None
+            for index, rect in enumerate(sidebar_rects(win)):
+                if inside(rect, x, y):
+                    return self.nodes[index]
+            for index, rect in enumerate(place_tab_rects(win)):
+                if inside(rect, x, y):
+                    return win.places[index].path
+            if inside(grid_area(win), x, y):
+                return win.places[win.place].path
+            return None
+        item = self.icon_at(x, y)
+        if item is None:
+            return self.nodes[DESKTOP_DIR]
+        if item[0] == 'trash':
+            return self.nodes[TRASH]
+        if item[0] == 'node' and item[1].folder:
+            return item[1]
+        return None
+
     # --- the verdict -----------------------------------------------------
 
     def met(self, goal: Tuple[int, int]) -> bool:
@@ -476,7 +1243,8 @@ class Desktop:
 
     @property
     def solved(self) -> bool:
-        return all(self.met(goal) for goal in self.goals)
+        return (all(self.met(goal) for goal in self.goals)
+                and all(node.parent is dest for node, dest in self.moves))
 
 
 # --- dealing a desktop ------------------------------------------------------
@@ -489,57 +1257,143 @@ class Spec(NamedTuple):
     words: Tuple[str, ...]
 
 
+#: A menu entry: ('dialog', title, controls) or ('sub', name, dialogs).
+MenuEntry = Tuple
+
+
 class Deal(NamedTuple):
     level: Grade
-    #: Window titles, then each window's tabs of controls, its dialogs
-    #: by menu, whether it waits for Apply, and where it stands.
     titles: Tuple[str, ...]
     tabs: Tuple[Tuple[Tuple[int, ...], ...], ...]
-    menus: Tuple[Tuple[Tuple[str, Tuple[Tuple[str, Tuple[int, ...]], ...]],
-                       ...], ...]
+    menus: Tuple[Tuple[Tuple[str, Tuple[MenuEntry, ...]], ...], ...]
     applies: Tuple[bool, ...]
     places: Tuple[Tuple[int, int], ...]
     #: Bottom window first.
     order: Tuple[int, ...]
+    minimised: Tuple[int, ...]
+    closed: Tuple[int, ...]
+    #: (text, x, y) for each sticky note.
+    notes: Tuple[Tuple[str, int, int], ...]
+    popups: Tuple[Popup, ...]
     specs: Tuple[Spec, ...]
     #: (control, (control it needs, value)), for greyed-out controls.
     requires: Tuple[Tuple[int, Tuple[int, int]], ...]
     #: (control, value), in the order the card lists them.
     goals: Tuple[Tuple[int, int], ...]
+    #: Every folder and file: (name, folder, kind, parent index); the
+    #: first seven are :data:`PLACES`.
+    files: Tuple[Tuple[str, bool, str, int], ...]
+    #: (file, folder it must end up in), in card order.
+    moves: Tuple[Tuple[int, int], ...]
+    explorer_at: Tuple[int, int]
+    #: Apps pinned to Start besides the explorer, and apps with a
+    #: shortcut on the desktop.
+    pinned: Tuple[int, ...]
+    shortcuts: Tuple[int, ...]
 
 
-def build(dealt: Deal) -> Tuple[List[Window], List[Control]]:
+def build_files(dealt: Deal) -> List[Node]:
+    nodes: List[Node] = []
+    for ident, (name, folder, kind, parent) in enumerate(dealt.files):
+        node = Node(ident, name, folder, kind,
+                    nodes[parent] if parent >= 0 else None)
+        if node.parent is not None:
+            node.parent.children.append(node)
+        nodes.append(node)
+    return nodes
+
+
+def _grow_files(level: Grade, rng: random.Random
+                ) -> List[Tuple[str, bool, str, int]]:
+    files: List[Tuple[str, bool, str, int]] = [
+        (name, True, 'folder', -1 if name in ('Home', 'Trash') else HOME)
+        for name in PLACES]
+    if not level.explorer:
+        return files
+    used = set()
+
+    def file_in(parent: int, kinds: Tuple[str, ...]) -> None:
+        kind = rng.choice(kinds)
+        ext = rng.choice(EXTENSIONS[kind])
+        base = rng.choice(FILE_WORDS)
+        name, number = base + ext, 2
+        while name in used:
+            name, number = '%s%d%s' % (base, number, ext), number + 1
+        used.add(name)
+        files.append((name, False, kind, parent))
+
+    def grow(parent: int, depth: int, kinds: Tuple[str, ...]) -> None:
+        for _f in range(rng.randint(1, 3)):
+            file_in(parent, kinds)
+        if depth > level.depth:
+            return
+        # Wide near the top, a single thread further down: deep enough
+        # to be a long way, not so bushy that a round has thousands.
+        count = (rng.randint(1, 3) if depth == 1 else
+                 rng.randint(1, 2) if depth == 2 else
+                 2 if rng.random() < 0.25 else 1)
+        for name in rng.sample(FOLDERS, count):
+            files.append((name, True, 'folder', parent))
+            grow(len(files) - 1, depth + 1, kinds)
+
+    for place in range(2, 6):
+        grow(place, 1, HOLDS[place])
+    for _f in range(level.desktop_files):
+        file_in(DESKTOP_DIR, HOLDS[DESKTOP_DIR])
+    return files
+
+
+def build(dealt: Deal) -> Tuple[List[Window], List[Window], List[Control]]:
     controls = [Control(i, s.label, s.kind, s.count, s.value, s.words)
                 for i, s in enumerate(dealt.specs)]
+
+    def dialog_of(title, members, menu, item, sub=None):
+        dialog = Dialog(title, [controls[i] for i in members])
+        dialog.menu, dialog.item, dialog.sub = menu, item, sub
+        for row, control in enumerate(dialog.controls):
+            control.dialog, control.row = dialog, row
+        return dialog
+
     windows = []
     for index, title in enumerate(dealt.titles):
         tabs = [[controls[i] for i in page] for page in dealt.tabs[index]]
         menus = []
-        for menu_index, (name, items) in enumerate(dealt.menus[index]):
-            dialogs = []
-            for dialog_title, members in items:
-                dialog = Dialog(dialog_title, [controls[i] for i in members])
-                dialog.menu = menu_index
-                for row, control in enumerate(dialog.controls):
-                    control.dialog = dialog
-                    control.row = row
-                dialogs.append(dialog)
-            menus.append((name, dialogs))
+        for menu_index, (name, entries) in enumerate(dealt.menus[index]):
+            items: List[Item] = []
+            for item_index, entry in enumerate(entries):
+                if entry[0] == 'dialog':
+                    items.append(dialog_of(entry[1], entry[2], menu_index,
+                                           item_index))
+                else:
+                    items.append(Submenu(entry[1], [
+                        dialog_of(t, m, menu_index, item_index, sub)
+                        for sub, (t, m) in enumerate(entry[2])]))
+            menus.append((name, items))
         win = Window(index, title, tabs, dealt.level.rows, menus,
                      dealt.applies[index])
         win.x, win.y = dealt.places[index]
+        win.minimised = index in dealt.minimised
+        win.closed = index in dealt.closed
         for tab, page in enumerate(tabs):
             for row, control in enumerate(page):
                 control.window, control.tab, control.row = win, tab, row
-        for _name, dialogs in menus:
-            for dialog in dialogs:
-                dialog.window = win
-                for control in dialog.controls:
-                    control.window = win
+        for control in win.controls():
+            control.window = win
+        for _name, items in menus:
+            for item in items:
+                for dialog in (item.dialogs if isinstance(item, Submenu)
+                               else [item]):
+                    dialog.window = win
         windows.append(win)
+    notes = []
+    for number, (text, x, y) in enumerate(dealt.notes):
+        note = Window(len(windows) + number, 'Note', [[]], 2, [], False,
+                      note=text)
+        note.x, note.y = x, y
+        notes.append(note)
     for ident, (other, value) in dealt.requires:
         controls[ident].requires = (controls[other], value)
-    return windows, controls
+    return windows, notes, controls
 
 
 def deal(rung: int, seed: Optional[int] = None,
@@ -551,48 +1405,111 @@ def deal(rung: int, seed: Optional[int] = None,
 
     def make() -> int:
         kind = rng.choice(level.kinds)
-        count = (2 if kind == 'toggle' else
-                 rng.randint(3, 4) if kind == 'choice' else
-                 rng.randint(4, 6) if kind == 'slider' else
-                 rng.randint(3, 6))
-        start = rng.randrange(6 - count + 1) if kind in (
-            'choice', 'dropdown') else 0
+        if kind == 'toggle':
+            count, words = 2, ()
+        elif kind in ('choice', 'dropdown'):
+            count = rng.randint(3, 4) if kind == 'choice' \
+                else rng.randint(3, 6)
+            start = rng.randrange(len(WORDS) - count + 1)
+            words = WORDS[start:start + count]
+        elif kind == 'colour':
+            count = rng.randint(4, 6)
+            words = tuple(name for name, _rgb in
+                          rng.sample(COLOURS, count))
+        elif kind == 'slider':
+            count, words = rng.randint(4, 6), ()
+        else:
+            count, words = rng.randint(5, 9), ()
         specs.append(Spec(labels.pop(), kind, count, rng.randrange(count),
-                          WORDS[start:start + count]))
+                          words))
         return len(specs) - 1
 
     titles = rng.sample(TITLES, level.windows)
     dialog_titles = rng.sample(DIALOGS, level.windows * level.dialogs)
     tabs, menus = [], []
-    for index in range(level.windows):
+    for _index in range(level.windows):
         # Names are unique within a window, which is all the card needs:
         # it names the window, or the dialog, with every setting.
         labels[:] = rng.sample(LABELS, len(LABELS))
         tabs.append(tuple(tuple(make() for _r in range(level.per_tab))
                           for _t in range(level.tabs)))
-        items = []
-        for _d in range(level.dialogs):
-            items.append((dialog_titles.pop(),
-                          tuple(make() for _r in range(3))))
-        names = MENUS[:max(1, (len(items) + 1) // 2)] if items else ()
-        menus.append(tuple((name, tuple(items[i::len(names)]))
-                           for i, name in enumerate(names)))
+        made = [(dialog_titles.pop(), tuple(make() for _r in range(3)))
+                for _d in range(level.dialogs)]
+        if not made:
+            menus.append(())
+        elif level.submenus:
+            # The first dialog opens from the menu; the rest cascade
+            # from its More item.
+            menus.append(((MENUS[0], (('dialog',) + made[0],
+                                      ('sub', SUBMENU,
+                                       tuple(made[1:])))),))
+        else:
+            names = MENUS[:max(1, (len(made) + 1) // 2)]
+            menus.append(tuple(
+                (name, tuple(('dialog',) + d
+                             for d in made[i::len(names)]))
+                for i, name in enumerate(names)))
     applies = [False] * level.windows
     for index in rng.sample(range(level.windows),
                             min(level.applies, level.windows)):
         applies[index] = True
     places = []
     if level.windows == 1:
-        places.append(((SCREEN_W - WINDOW_W) // 2 // GRID * GRID, 60))
+        # Left of middle when the explorer shares the screen, clear of
+        # the desktop icons' first column either way.
+        left = 100 if level.explorer else (SCREEN_W - WINDOW_W) // 2
+        places.append((left // GRID * GRID, 60))
     else:
         for index in range(level.windows):
-            places.append((40 + index * 90, 30 + index * 56))
-    order = list(range(level.windows))
+            places.append((100 + index * 80, 30 + index * 56))
+    apps = level.windows + (1 if level.explorer else 0)
+    order = list(range(apps))
     rng.shuffle(order)
+    explorer_at = (SCREEN_W - EXPLORER_W - 10, 160)
+    hidden = rng.sample(range(level.windows),
+                        min(level.windows - 1,
+                            level.minimised + level.closed))
+    closed = tuple(sorted(hidden[:level.closed]))
+    minimised = tuple(sorted(hidden[level.closed:]))
+    for index in rng.sample([i for i in range(level.windows)
+                             if i not in hidden],
+                            min(level.offscreen,
+                                level.windows - len(hidden))):
+        # Hanging off the right edge: the far half of every row is out
+        # of reach until the window is dragged back.
+        places[index] = (SCREEN_W - 220, places[index][1])
+    pinned = tuple(sorted(rng.sample(range(level.windows),
+                                     min(level.pinned, level.windows))))
+    shortcuts = tuple(sorted(rng.sample(range(level.windows),
+                                        min(2, level.windows))))
+    # Files to move, delete and bring back.
+    files = _grow_files(level, rng)
+    loose = [i for i, f in enumerate(files) if not f[1]]
+    folders = [i for i, f in enumerate(files)
+               if f[1] and i not in (HOME, TRASH)]
+    rng.shuffle(loose)
+    moves = []
+    for _m in range(min(level.moves, len(loose))):
+        node = loose.pop()
+        dest = rng.choice([f for f in folders if f != files[node][3]])
+        moves.append((node, dest))
+    for _d in range(min(level.deletes, len(loose))):
+        moves.append((loose.pop(), TRASH))
+    for _r in range(min(level.restores, len(loose))):
+        node = loose.pop()
+        name, folder, kind, home = files[node]
+        files[node] = (name, folder, kind, TRASH)
+        moves.append((node, home))
+    rng.shuffle(moves)
     # Goals: settings to change, across every window and dialog.
     on_windows = [i for page_set in tabs for page in page_set for i in page]
-    in_dialogs = [i for window_menus in menus for _n, items in window_menus
-                  for _t, members in items for i in members]
+    in_dialogs = []
+    for window_menus in menus:
+        for _name, entries in window_menus:
+            for entry in entries:
+                found = [entry[1:]] if entry[0] == 'dialog' else entry[2]
+                for _title, members in found:
+                    in_dialogs += members
     pool = on_windows + in_dialogs
     chosen = rng.sample(pool, min(level.goals, len(pool)))
     goals = []
@@ -614,27 +1531,123 @@ def deal(rung: int, seed: Optional[int] = None,
         spec = specs[other]
         requires.append((ident, (other, rng.choice(
             [v for v in range(spec.count) if v != spec.value]))))
+    # Sticky notes, over the middle of a window's rows.
+    notes = []
+    for number, index in enumerate(rng.sample(
+            range(level.windows), min(level.notes, level.windows))):
+        x, y = places[index]
+        top = (y + TITLE_H + (MENU_H if menus[index] else 0)
+               + (TAB_H if level.tabs > 1 else 0))
+        notes.append((NOTES[rng.randrange(len(NOTES))],
+                      min(SCREEN_W - NOTE_W, x + 150) // GRID * GRID,
+                      top // GRID * GRID))
+    popups = []
+    at = 0
+    for _p in range(level.popups):
+        at += rng.randint(2, 3 + level.goals)
+        popups.append(Popup(at, rng.randrange(level.windows),
+                            rng.random() < 0.5))
     return Deal(level, tuple(titles), tuple(tabs), tuple(menus),
-                tuple(applies), tuple(places), tuple(order), tuple(specs),
-                tuple(requires), tuple(goals))
+                tuple(applies), tuple(places), tuple(order), minimised,
+                closed, tuple(notes), tuple(popups), tuple(specs),
+                tuple(requires), tuple(goals), tuple(files), tuple(moves),
+                explorer_at, pinned, shortcuts)
 
 
 # --- the reference -----------------------------------------------------------
 
-def reference_click(desk: Desktop) -> Optional[Tuple[int, int]]:
-    """Where the reference clicks next, or None when it would press Done.
+def reference_action(desk: Desktop) -> Optional[Action]:
+    """What the reference does next -- ('click', point) or ('drag', from,
+    to) -- or None when it would press Done.
 
     The first setting on the card that does not hold yet, taken all the
     way home before anything else is looked at.
     """
+    if desk.popup is not None:
+        safe, _reset = popup_buttons(desk.popup.safe_left)
+        return ('click', desk.reachable(safe, None))
     for ident, value in desk.goals:
         if not desk.met((ident, value)):
             return _towards(desk, desk.controls[ident], value)
+    for node, dest in desk.moves:
+        if node.parent is not dest:
+            return _file_towards(desk, node, dest)
     return None
 
 
-def _towards(desk: Desktop, control: Control, value: int
-             ) -> Tuple[int, int]:
+def _open_from_start(desk: Desktop, win: Window) -> Action:
+    """With Start open: the app's tile, or All apps and then its row."""
+    for owner, rect in desk.start_items():
+        if owner is win:
+            return ('click', desk.reachable(rect, None))
+    return ('click', desk.reachable(all_apps_rect(), None))
+
+
+def _file_towards(desk: Desktop, node: Node, dest: Node) -> Action:
+    """Plainly: open the folder it is in one level at a time, pick it,
+    Cut, open the folder it goes to the same way, Paste. A file that is
+    to go to the Trash is picked and Deleted instead."""
+    ex = desk.explorer
+    if desk.dropdown is not None or desk.menu is not None:
+        return ('click', _anywhere_else(desk))
+    if desk.dialog is not None:
+        return ('click', desk.reachable(desk.dialog_buttons()[1], None))
+    if desk.start_open:
+        if ex.closed:
+            return _open_from_start(desk, ex)
+        return ('click', _anywhere_else(desk))
+    if ex.closed:
+        return ('click', desk.reachable(START_RECT, None))
+    if ex.minimised:
+        rect = dict((id(w), r) for w, r in desk.taskbar_buttons())[id(ex)]
+        return ('click', desk.reachable(rect, None))
+    place = ex.places[ex.place]
+    tools = dict(tool_rects(ex))
+    if desk.clipboard is node:
+        if place.path is dest:
+            return _ensure(desk, ex, tools['Paste'])
+        return _navigate(desk, ex, place, dest)
+    if place.path is not node.parent:
+        return _navigate(desk, ex, place, node.parent)
+    if place.selected is not node:
+        return _show(desk, ex, place, node)
+    if dest.ident == TRASH:
+        return _ensure(desk, ex, tools['Delete'])
+    return _ensure(desk, ex, tools['Cut'])
+
+
+def _navigate(desk: Desktop, ex: Window, place: Place,
+              target: Node) -> Action:
+    chain = target.chain()
+    if place.path in chain:
+        return _show(desk, ex, place, chain[chain.index(place.path) + 1])
+    # From the side: the place the target is under, then down.
+    top = chain[1] if len(chain) > 1 and chain[0].ident == HOME else chain[0]
+    return _ensure(desk, ex, sidebar_rects(ex)[top.ident])
+
+
+def _show(desk: Desktop, ex: Window, place: Place, node: Node) -> Action:
+    """Click *node*'s icon -- scrolling to it first if it is not showing.
+    Clicking a folder that is already picked opens it."""
+    index = place.path.listing().index(node)
+    row = index // COLUMNS
+    up, down = ex_scroll_rects(ex)
+    if row < place.scroll:
+        return _ensure(desk, ex, up)
+    if row >= place.scroll + grid_rows(ex):
+        return _ensure(desk, ex, down)
+    rect = dict((id(n), r) for n, r in desk.icon_rects(ex))[id(node)]
+    return _ensure(desk, ex, rect)
+
+
+def reference_click(desk: Desktop) -> Optional[Tuple[int, int]]:
+    """The point of the reference's next action, for callers that only
+    click -- None when it would press Done."""
+    action = reference_action(desk)
+    return None if action is None else action[1]
+
+
+def _towards(desk: Desktop, control: Control, value: int) -> Action:
     if not control.enabled and control.value != value:
         other, wanted = control.requires
         if other.value != wanted:
@@ -644,63 +1657,134 @@ def _towards(desk: Desktop, control: Control, value: int
         if desk.dropdown is control and control.shown != value:
             rect = desk.control_rect(control)
             item = dropdown_items(rect, control)[value]
-            return desk.reachable(item, None)
-        return _anywhere_else(desk)
+            return ('click', desk.reachable(item, None))
+        return ('click', _anywhere_else(desk))
+    if desk.start_open:
+        if win.closed:
+            return _open_from_start(desk, win)
+        return ('click', _anywhere_else(desk))
     if desk.menu is not None:
-        menu_win, index = desk.menu
-        if control.dialog is not None and menu_win is win \
-                and control.dialog.menu == index:
-            item = win.menus[index][1].index(control.dialog)
-            return desk.reachable(desk.menu_items()[item], None)
-        return _anywhere_else(desk)
+        return _in_menu(desk, control)
     if desk.dialog is not None:
-        cancel, ok = desk.dialog_buttons()
+        _cancel, ok = desk.dialog_buttons()
         if desk.dialog is control.dialog and control.shown != value:
             return _click_value(desk, control, value, None)
-        return desk.reachable(ok, None)
+        return ('click', desk.reachable(ok, None))
+    if win.closed:
+        return ('click', desk.reachable(START_RECT, None))
+    if win.minimised:
+        rect = dict((id(w), r) for w, r in desk.taskbar_buttons())[id(win)]
+        return ('click', desk.reachable(rect, None))
     if control.dialog is not None:
-        rect = menu_rects(win)[control.dialog.menu]
-        return desk.reachable(rect, win) or _raise(desk, win)
+        return _ensure(desk, win, menu_rects(win)[control.dialog.menu])
     if control.shown == value:
-        return desk.reachable(apply_rect(win), win) or _raise(desk, win)
+        return _ensure(desk, win, apply_rect(win))
     if win.active != control.tab:
-        rect = tab_rects(win)[control.tab]
-        return desk.reachable(rect, win) or _raise(desk, win)
+        return _ensure(desk, win, tab_rects(win)[control.tab])
     scroll = win.scroll[control.tab]
     if control.row < scroll:
-        return desk.reachable(scroll_rects(win)[0], win) or _raise(desk, win)
+        return _ensure(desk, win, scroll_rects(win)[0])
     if control.row >= scroll + win.rows:
-        return desk.reachable(scroll_rects(win)[1], win) or _raise(desk, win)
-    return _click_value(desk, control, value, win) or _raise(desk, win)
+        return _ensure(desk, win, scroll_rects(win)[1])
+    return _click_value(desk, control, value, win)
+
+
+def _in_menu(desk: Desktop, control: Control) -> Action:
+    win, index, sub = desk.menu
+    dialog = control.dialog
+    if dialog is None or dialog.window is not win or dialog.menu != index:
+        return ('click', _anywhere_else(desk))
+    if dialog.sub is None:
+        return ('click', desk.reachable(desk.menu_items()[dialog.item],
+                                        None))
+    if sub == dialog.item:
+        return ('click', desk.reachable(desk.submenu_items()[dialog.sub],
+                                        None))
+    return ('click', desk.reachable(desk.menu_items()[dialog.item], None))
 
 
 def _click_value(desk: Desktop, control: Control, value: int,
-                 win: Optional[Window]) -> Optional[Tuple[int, int]]:
+                 win: Optional[Window]) -> Action:
     rect = desk.control_rect(control)
     regions = parts(control, rect)
-    part = regions[0] if control.kind in ('toggle', 'dropdown') \
-        else regions[value]
-    return desk.reachable(part, win)
+    if control.kind in ('toggle', 'dropdown'):
+        part = regions[0]
+    elif control.kind == 'stepper':
+        part = regions[1] if control.shown < value else regions[0]
+    else:
+        part = regions[value]
+    if win is None:
+        return ('click', desk.reachable(part, None))
+    return _ensure(desk, win, part)
 
 
-def _raise(desk: Desktop, win: Window) -> Tuple[int, int]:
-    point = desk.reachable(title_rect(win), win)
-    assert point is not None, 'every title bar shows'
-    return point
+def _ensure(desk: Desktop, win: Window, rect: Rect) -> Action:
+    """Click *rect* on *win* -- or first do what makes that possible."""
+    point = desk.reachable(rect, win)
+    if point is not None:
+        return ('click', point)
+    x, y, w, h = rect
+    if x >= SCREEN_W - GRID:
+        # Off the edge of the screen: drag the window back by its title.
+        grip = _title_point(desk, win)
+        tops = [w for w in desk.order if w.shown and not w.pinned]
+        if grip is None and tops and tops[-1] is not win:
+            for owner, button in desk.taskbar_buttons():
+                if owner is win:
+                    return ('click', desk.reachable(button, None))
+        if grip is not None:
+            shift = (win.x + win.w) - (SCREEN_W - 10)
+            to = (max(0, grip[0] - (shift + GRID - 1) // GRID * GRID),
+                  grip[1])
+            return ('drag', grip, to)
+    cx, cy = centre(rect)
+    blocker = desk.window_at(min(cx, SCREEN_W - 1), cy)
+    if blocker is not None and blocker.pinned:
+        point = desk.reachable(minimise_rect(blocker), blocker)
+        if point is not None:
+            return ('click', point)
+    grip = _title_point(desk, win)
+    if grip is not None:
+        return ('click', grip)
+    # The title bar is buried: the taskbar raises it as well.
+    tops = [w for w in desk.order if w.shown and not w.pinned]
+    if tops and tops[-1] is not win:
+        for owner, button in desk.taskbar_buttons():
+            if owner is win:
+                return ('click', desk.reachable(button, None))
+    # What is in the way is a sticky note: put it away.
+    for note in desk.notes:
+        if note.shown:
+            point = desk.reachable(minimise_rect(note), note)
+            if point is not None:
+                return ('click', point)
+    raise AssertionError('nothing the reference can do')
+
+
+def _title_point(desk: Desktop, win: Window) -> Optional[Tuple[int, int]]:
+    """A point on the title bar, clear of its two buttons."""
+    x, y, w, h = title_rect(win)
+    return desk.reachable((x, y, w - 62, h), win)
+
+
+def _icon_key(item: Tuple) -> Tuple:
+    if item[0] in ('app', 'node'):
+        return (item[0], item[1].ident)
+    return item
 
 
 def _anywhere_else(desk: Desktop) -> Tuple[int, int]:
     """A click that only closes what is open: the empty taskbar."""
-    return (40, SCREEN_H - TASKBAR_H // 2 // GRID * GRID)
+    return (SCREEN_W - 200, WORK_H + TASKBAR_H // 2 // GRID * GRID)
 
 
 def reference_round(dealt: Deal) -> Desktop:
     desk = Desktop(dealt)
-    for _step in range(2000):
-        point = reference_click(desk)
-        if point is None:
+    for _step in range(3000):
+        action = reference_action(desk)
+        if action is None:
             break
-        desk.click(*point)
+        desk.act(action)
     desk.done = True
     return desk
 
@@ -716,9 +1800,20 @@ def budget(par_clicks: float) -> int:
     return int(par_clicks * 3) + 20
 
 
-__all__ = ['Control', 'DONE_RECT', 'Deal', 'Desktop', 'Dialog', 'GRID',
-           'Grade', 'KINDS', 'SCREEN_H', 'SCREEN_W', 'START', 'STEPS',
-           'TASKBAR_H', 'Window', 'apply_rect', 'budget', 'deal',
-           'dropdown_items', 'grade', 'inside', 'menu_rects', 'par',
-           'parts', 'reference_click', 'reference_round', 'scroll_rects',
+def colour_of(name: str) -> Tuple[int, int, int]:
+    return dict(COLOURS)[name]
+
+
+__all__ = ['EXPLORER', 'HOME', 'Node', 'PLACES', 'Place', 'START_PANEL',
+           'TOOLS', 'TRASH', 'all_apps_rect', 'desktop_icon_rect',
+           'ex_scroll_rects', 'grid_area', 'place_tab_rects', 'plus_rect',
+           'sidebar_rects', 'start_rows', 'start_tiles', 'tool_rects',
+           'COLOURS', 'Control', 'DONE_RECT', 'Deal', 'Desktop', 'Dialog',
+           'GRID', 'Grade', 'KINDS', 'POPUP_RECT', 'Popup', 'SCREEN_H',
+           'SCREEN_W', 'START', 'START_RECT', 'STEPS', 'Submenu',
+           'TASKBAR_H', 'WORK_H', 'Window', 'apply_rect', 'budget',
+           'centre', 'close_rect', 'colour_of', 'deal', 'dropdown_items',
+           'grade', 'grip_rect', 'inside', 'menu_rects', 'minimise_rect',
+           'par', 'parts', 'popup_buttons', 'reference_action',
+           'reference_click', 'reference_round', 'scroll_rects',
            'tab_rects', 'title_rect', 'widget_rect']

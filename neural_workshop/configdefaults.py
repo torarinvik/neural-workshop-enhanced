@@ -738,11 +738,15 @@ HIDDEN_RULE_RUNG = 1
 HIDDEN_RULE_TRIALS = 5
 HIDDEN_RULE_ADAPTIVE = True
 
-# Desktop: a small computer drawn by the task -- windows, switches,
-# choices, sliders, dropdowns, tabs, scrolling, menus and dialogs,
-# overlapping windows, greyed-out controls and Apply buttons, more of
-# them with every rung. A card lists settings to reach. Moving the
-# pointer is free, every click costs one, and a round passes if the
+# Desktop: a small computer drawn by the task -- windows to raise,
+# move, resize, minimise and close; switches, choices, colours,
+# sliders, steppers and dropdowns; tabs, scrolling, cascading menus,
+# dialogs, popups, sticky notes, greyed-out controls and Apply buttons;
+# from rung 6 a file explorer with tabs, desktop icons, a Start panel
+# and files to move, delete or restore by Cut/Paste or drag-and-drop,
+# more of them with every rung. A card lists what to do. Moving
+# the pointer is free, every click or drag costs one, and a round
+# passes if the
 # settings hold at Done in no more clicks than par: what a plain
 # reference took on the identical screen, below it past rung 20.
 DESKTOP_RUNG = 1

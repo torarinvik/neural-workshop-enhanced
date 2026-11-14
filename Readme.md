@@ -2817,17 +2817,25 @@ round's verdict is for.
 #### Desktop
 
 A small computer, drawn by the task itself: windows with title bars,
-switches, rows of choices, sliders with notches and dropdown lists, and
-a taskbar with a Done button. A card beside the screen lists settings
-to reach, each named by its window (or dialog) and ticked once it
-holds. Moving the pointer is free; **every click costs one**, whatever
-it hits. Press Done when the card is all ticked. The round passes if
-it is, and the clicks came in at or under par.
+switches, rows of choices, colour swatches, sliders with notches,
+steppers, dropdown lists, and a taskbar with a Start menu, a button for
+each open window and Done. A card beside the screen lists settings to
+reach, each named by its window (or dialog) and ticked once it holds.
+Moving the pointer is free; **every click and every drag costs one**,
+whatever it hits. Press Done when the card is all ticked. The round
+passes if it is, and the clicks came in at or under par.
 
 Every other task gives its controls a fixed meaning. Here the only
-controls are a pointer and a click, and what a click does depends on
-what is under it: which window is on top, which tab is open, whether a
-menu, a list or a dialog is in the way. That is the skill.
+controls are a pointer, a click and a drag, and what they do depends on
+what is under the pointer: which window is on top, which tab is open,
+whether a menu, a list, a dialog or a popup is in the way.
+
+The window manager keeps a real one's rules. Only what is on top takes
+a click, and a click raises its window. Drag a title bar to move a
+window and its bottom-right corner to resize it. **–** minimises it to
+the taskbar; **×** closes it, throwing away whatever it had not
+applied, and the Start menu opens it again. Sticky notes stay on top of
+everything until they are moved or put away.
 
 | Rung | What it adds |
 | --- | --- |
@@ -2835,33 +2843,76 @@ menu, a list or a dialog is in the way. That is the skill.
 | 2–4 | Rows of choices, then sliders, then dropdown lists; more controls and more settings. |
 | 5+ | **Tabs**: only the open tab's controls are there. |
 | 6+ | **Scrolling**: a tab holds more rows than the window shows. |
-| 8+ | **Menus and dialogs**: some settings live in a dialog opened from the menu bar, kept only by OK. Cancel throws them away. |
-| 11+ | **Overlapping windows**: only what is on top takes a click, and a click raises its window. More windows every three rungs, up to six. |
+| 7+ | **Colour swatches**; the card shows the colour beside its name. |
+| 8+ | **Menus and dialogs**: settings in a dialog opened from the menu bar, kept by OK, thrown away by Cancel. |
+| 9+ | **Steppers**: − and +, one step a click. |
+| 10+ | **Popups** arrive on a set click, take every click until answered, and offer *Not now* beside *Restore*, which resets a window's settings. The two swap sides. |
+| 11+ | **Overlapping windows**, more every three rungs, up to six. |
+| 12+ | Windows that start **minimised**. |
+| 13+ | Windows that start **small**: scroll, or drag the corner once. |
+| 14+ | **Sticky notes** over the work. |
 | 15+ | **Greyed-out controls**, with a note saying which other setting they need. |
-| 16+ | **Apply**: a window that keeps its changes pending until Apply is pressed. |
-| 21+ | Par is below the reference, by more at every rung. |
+| 16+ | **Apply**: changes pending until it is pressed. |
+| 17+ | A window hanging **off the edge of the screen**, to be dragged back. |
+| 18+ | Windows that start **closed**, reached from the Start menu. |
+| 19+ | **Submenus**: menus that cascade from a *More ▸* item. |
+| 21+ | Par is below the reference, by 1% more at every rung. |
 
-The reference is deliberately plain. It takes the card in the order
-listed and sees each setting all the way home, an OK for every dialog
-setting and an Apply for every pending one, before looking at the
-next. A player who groups the work by window and dialog saves 12 to
-18% of its clicks, so below rung twenty par is generous and past it
-the only way under par is to plan the order. Measured over forty
-desktops a rung, the reference takes about 2 clicks at rung 3, 17 at
-rung 10, 41 at rung 16 and 72 at rung 24. It solves every desktop on
-every rung tested.
+From rung 6 the computer also has **files**. A file explorer window
+has a toolbar (Back, Up, Cut, Paste, Delete), a path bar, a sidebar of
+places (Home, Desktop, Documents, Downloads, Music, Pictures, Trash),
+tabs that each keep their own folder and history, a **+** for another
+tab, and a grid of icons that scrolls. One click selects an icon; two
+clicks on it in a row open a folder. The desktop itself carries icons:
+the Explorer, the Trash, shortcuts to apps, and whatever has been saved
+to the Desktop folder, opened the same way. Start opens a panel of
+pinned tiles with **All apps** behind it, an alphabetical list of
+everything. Files and folders move by Cut and Paste, or by **dragging
+an icon** onto a folder, a sidebar place, another tab's header, the
+open grid, the bare desktop (which saves it to Desktop) or the Trash.
+A folder will not go inside itself. The card asks for files to be
+moved, deleted or restored, each with the path it is at now.
+
+| Rung | What the files add |
+| --- | --- |
+| 6+ | The **explorer** and one file to move; one more every three rungs, up to eight. |
+| 9+ | Folders two deep, then three from 16, deeper every four rungs: the long-horizon end. |
+| 12+ | The explorer opens with **two tabs**. |
+| 14+ | **Deleting** to the Trash, and files saved on the desktop. |
+| 15+ | The explorer starts **closed**: open it from Start, the taskbar or its desktop icon. |
+| 18+ | **Restoring** from the Trash, and only a few apps pinned to Start. |
+
+So a round mixes short reaches (one click on a switch), medium ones (a
+menu, a dialog, OK) and long ones: open the explorer, walk down five
+folders, cut, walk across to another branch, paste, and come back to
+the settings with the windows rearranged on the way.
+
+Where every window starts and on which numbered click each popup
+arrives are fixed by the deal, so the reference meets the same screen
+and the same interruptions. It is deliberately plain: it takes the card
+in the order listed and finishes each setting, OK or Apply included,
+before the next; it scrolls rather than resizes, minimises a note that
+is in the way and drags a window back only when it must. Files it moves
+one at a time by walking the sidebar and double-clicking down, then
+Cut, walk, Paste, or Delete. It solves
+every desktop on every rung tested. Measured over thirty desktops a
+rung, a player who stretches windows instead of scrolling and finishes
+a dialog before its OK saves 5 to 15% of the reference's clicks on the
+settings; with files in the round, dragging icons and shorter folder
+routes save only 2 to 7% more, so the top of the ladder asks for
+planning not yet found.
 
 People use the mouse. The arrow keys also move the drawn pointer (Shift
-for a long step, Alt for a short one), Space clicks and Enter is Done,
-which is how the agent plays: fourteen ports, twelve moving the pointer
-by 80, 20 or 5 units of a 1000 by 640 screen in each direction, one
-click and one Done. Every point the reference clicks is on that grid.
-It is turn-based, so it takes the think clock.
+for a long step, Alt for a short one), Space clicks, D presses and lets
+go, and Enter is Done, which is how the agent plays: sixteen ports,
+twelve moving the pointer by 80, 20 or 5 units of a 1000 by 640 screen
+in each direction, then click, press, release and Done. Every point the
+reference uses is on that grid. It is turn-based, so it takes the think
+clock.
 
-This is stage one. Still to come: a card that is shown and then
-hidden, Reset next to Apply, pop-ups that interrupt, controls with no
-labels whose effect has to be worked out by trying them, dragging, and
-typing.
+Still to come: a card that is shown and then hidden, Reset beside
+Apply, controls with no labels whose effect has to be worked out by
+trying them, renaming files, search, and typing.
 
 ### Window size, full screen, and the two coordinate spaces
 

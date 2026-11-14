@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 """The stepped agent boundary for Desktop.
 
-Fourteen ports. Twelve move the drawn pointer: up, down, left, right,
+Sixteen ports. Twelve move the drawn pointer: up, down, left, right,
 each by a long, a medium or a short step (80, 20 and 5 units of a
-1000 by 640 screen). Moving is free. One clicks where the pointer is,
-and a click always costs a point; one is Done. Every point the
-reference clicks is on the pointer's grid, so anything the reference
+1000 by 640 screen). Moving is free. Then click; press and release,
+which between them drag -- a title bar to move a window, a corner to
+resize it -- or, let go where they were pressed, click; and Done. A
+click costs a point and so does a drag. Every point the reference
+presses or lets go is on the pointer's grid, so anything the reference
 can reach the agent can reach.
 
 This is the one task whose ports carry no meaning of their own. A port
@@ -30,14 +32,14 @@ from typing import Optional
 from .taskenv import TaskEnv
 
 #: Moves are ports 0-11: direction * 3 + step. Then these.
-CLICK, DONE = 12, 13
+CLICK, PRESS, RELEASE, DONE = 12, 13, 14, 15
 
 
 class DesktopEnv(TaskEnv):
     """Deterministic, stepped view of one Desktop run."""
 
     task_class = ('neural_workshop.ui.desktop', 'Desktop')
-    ports = 14
+    ports = 16
     clocked = False
     action = 'steer'
     open_phase = ('working',)
@@ -55,5 +57,5 @@ def make_desktop_env(seed: int = 0,
 #: The verifier, generated from the inherited deriver so the two cannot drift.
 verify_desktop_outcome = DesktopEnv.verifier()
 
-__all__ = ['CLICK', 'DONE', 'DesktopEnv', 'make_desktop_env',
+__all__ = ['CLICK', 'DONE', 'PRESS', 'RELEASE', 'DesktopEnv', 'make_desktop_env',
            'verify_desktop_outcome']

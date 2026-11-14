@@ -651,6 +651,29 @@ def desktop_note(chosen: Dict[str, Any]) -> str:
         found.append(_('greyed-out controls'))
     if level.applies:
         found.append(_('Apply buttons'))
+    if level.popups:
+        found.append(_('popups'))
+    if level.minimised:
+        found.append(_('minimised windows'))
+    if level.notes:
+        found.append(_('sticky notes'))
+    if level.offscreen:
+        found.append(_('a window off the screen'))
+    if level.closed:
+        found.append(_('closed windows'))
+    if level.submenus:
+        found.append(_('submenus'))
+    if level.explorer:
+        found.append(_('a file explorer with %d file(s) to move')
+                     % level.moves)
+    if level.ex_tabs > 1:
+        found.append(_('explorer tabs'))
+    if level.deletes:
+        found.append(_('deleting'))
+    if level.explorer_closed:
+        found.append(_('the explorer closed'))
+    if level.restores:
+        found.append(_('restoring from the Trash'))
     if found:
         said.append(_('With %s.') % ', '.join(found))
     if level.factor < 1.0:
