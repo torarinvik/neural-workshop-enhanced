@@ -743,7 +743,7 @@ class TheBoundaryKnowsWhichTasksHaveAClock(unittest.TestCase):
                         'you_are_here', 'sokoban_3d', 'crossword',
                         'scrabble', 'scramble', 'algebra',
                         'n_in_a_row', 'verbal_reasoning', 'camera',
-                        'sonar', 'hidden_rule', 'bluff', 'forms', 'wiring', 'gamble', 'desktop'):
+                        'sonar', 'hidden_rule', 'bluff', 'forms', 'wiring', 'gamble', 'triage', 'manual', 'notebook', 'browser', 'desktop'):
             self.assertFalse(self.clocked(task_id), task_id)
 
     def test_the_ones_that_move_on_their_own_are(self):
@@ -754,7 +754,7 @@ class TheBoundaryKnowsWhichTasksHaveAClock(unittest.TestCase):
                         'graph_mapping', 'concentration',
                         'chain_of_custody', 'cookie_thief', 'donkey',
                         'two_hands', 'tetris', 'overrun', 'marble_maze',
-                        'video_sequence', 'video_jigsaw', 'dispatch'):
+                        'video_sequence', 'video_jigsaw', 'what_next', 'dispatch'):
             self.assertTrue(self.clocked(task_id), task_id)
 
     def test_the_ports_are_the_ones_the_task_has(self):

@@ -47,6 +47,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('concentration', _('Concentration')),
         ('recognition', _('Seen It Before?')),
         ('trivia', _('Trivia')),
+        ('notebook', _('Notebook')),
     ],
     'attention': [
         ('reflex', _('Reflex')),
@@ -65,6 +66,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('count', _('Count')),
         ('mr_time', _('Mr. Time')),
         ('camera', _('Camera')),
+        ('what_next', _('What Happens Next')),
     ],
     'reasoning': [
         ('graph_mapping', _('Graph Mapping')),
@@ -111,12 +113,15 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('dispatch', _('Dispatch')),
         ('gamble', _('Gamble')),
         ('bluff', _('Bluff')),
+        ('triage', _('Triage')),
     ],
     # Operating an interface: a pointer, a screen, and controls that
     # have to be found, uncovered and understood before they can be used.
     'computer': [
         ('desktop', _('Desktop')),
         ('forms', _('Forms')),
+        ('manual', _('Manual')),
+        ('browser', _('Browser')),
     ],
 }
 
@@ -583,6 +588,26 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'jigsaw':
         from .jigsaw import JigsawPuzzle
         JigsawPuzzle()
+        return
+    if task_id == 'triage':
+        from .triage import Triage
+        Triage()
+        return
+    if task_id == 'what_next':
+        from .whatnext import WhatNext
+        WhatNext()
+        return
+    if task_id == 'manual':
+        from .manual import Manual
+        Manual()
+        return
+    if task_id == 'notebook':
+        from .notebook import Notebook
+        Notebook()
+        return
+    if task_id == 'browser':
+        from .browser import Browser
+        Browser()
         return
     if task_id == 'gamble':
         from .gamble import Gamble

@@ -100,11 +100,27 @@ class NoTaskReadsTheWallClock(unittest.TestCase):
              'makes them undriveable a step at a time:'] + offenders))
 
     def test_every_task_installs_a_clock(self):
+        """Installed in the file, or inherited from a class that is: a
+        task built on RungTask or JigsawPuzzle gets theirs from
+        ``__init__``, and the subclass must not take it away."""
+        import re
+        sources = {}
+        for name in sorted(os.listdir(TASK_DIR)):
+            if name.endswith('.py'):
+                with open(os.path.join(TASK_DIR, name),
+                          encoding='utf-8') as f:
+                    sources[name] = f.read()
+        installers = set()
+        for text in sources.values():
+            if INSTALLING in text:
+                installers.update(re.findall(r'^class (\w+)', text,
+                                             re.MULTILINE))
         missing = []
         for name in task_files():
-            with open(os.path.join(TASK_DIR, name), encoding='utf-8') as f:
-                if INSTALLING not in f.read():
-                    missing.append(name)
+            text = sources[name]
+            bases = re.findall(r'^class \w+\((\w+)\)', text, re.MULTILINE)
+            if INSTALLING not in text and not set(bases) & installers:
+                missing.append(name)
         self.assertEqual(missing, [], 'these have no swappable clock: %s'
                                       % missing)
 

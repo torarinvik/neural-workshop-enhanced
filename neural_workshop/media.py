@@ -154,3 +154,52 @@ def sound_pool(rng: Optional[random.Random] = None) -> MediaPool:
 def pool_for(medium: str, rng: Optional[random.Random] = None) -> MediaPool:
     """The library for ``'sound'`` or anything else, which means images."""
     return sound_pool(rng) if medium == 'sound' else image_pool(rng)
+
+
+class Rotation:
+    """Items of a pool in a rotation remembered on disk.
+
+    Every item gets a turn before any gets a second, across sessions;
+    the file lives beside the library under *name*, so two tasks drawing
+    on one library keep separate turns. Once the library is exhausted
+    the rotation starts over, still holding back what this run has
+    already shown for as long as the library allows.
+    """
+
+    def __init__(self, pool: 'MediaPool', name: str) -> None:
+        self.pool = pool
+        self.name = name
+        self.shown: List[str] = []
+
+    def _file(self) -> str:
+        import os
+        return os.path.join(datasets.local_dir(self.pool.dataset), self.name)
+
+    def _seen(self) -> List[str]:
+        try:
+            with open(self._file()) as handle:
+                return [line.strip() for line in handle if line.strip()]
+        except OSError:
+            return []
+
+    def take(self) -> Optional[str]:
+        import os
+        paths = list(self.pool.paths)
+        if not paths:
+            return None
+        seen = set(self._seen())
+        unseen = [p for p in paths if os.path.basename(p) not in seen]
+        if not unseen:
+            try:
+                os.remove(self._file())
+            except OSError:
+                pass
+            unseen = [p for p in paths if p not in self.shown] or paths
+        path = self.pool.rng.choice(unseen)
+        self.shown.append(path)
+        try:
+            with open(self._file(), 'a') as handle:
+                handle.write(os.path.basename(path) + '\n')
+        except OSError:
+            pass                # a read-only disk only loses rotation
+        return path

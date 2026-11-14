@@ -128,7 +128,8 @@ download resumes where it left off if interrupted. DIV2K is published
 for academic research use; the images are collected from the Internet
 and their copyright stays with their owners.
 
-The `ucf101` library feeds Video Jigsaw and Video Sequence. Hugging Face holds it
+The `ucf101` library feeds Video Jigsaw, Video Sequence and What Happens
+Next. Hugging Face holds it
 (`quchenyuan/UCF101-ZIP`) as a single 7 GB zip, and the fetch never
 downloads that whole: it reads the zip in place with HTTP range
 requests and pulls only the clips it unpacks, spread across all 101
@@ -167,6 +168,33 @@ image or audio library is involved either way.
 ```bash
 .venv/bin/python -m pip install pyarrow   # optional, for bulk fetches
 ```
+
+### Notebook
+
+More to remember than a head can hold, and a few lines of paper. A
+round is a stream of cards: a fact card gives a code (*Gate Maple:
+382*), and some cards later a question card asks for it among a few
+codes. On any fact card, **Write** beside a notebook line copies the
+card onto that line, over whatever was there. The notebook stays in
+view, so a code written down is a code that can be read back. A round
+passes when every question is answered right.
+
+| Rung | What it adds |
+| --- | --- |
+| 1 | One code, asked at once; two lines. |
+| 2+ | More codes, more of them waiting at once (up to eight), and longer between a code and its question. |
+| 3+ | Four codes to choose from. |
+| 6+ | Cards marked *not needed* that waste a line if written. |
+| 8+ | **Updates**: *Gate Maple is now 517*, after which the old code is wrong -- and offered. |
+| 16+ | **Fewer lines** than codes waiting, one fewer every second rung, so the rest is held in the head: by rung 30, all but one. |
+
+What it measures is whether the paper gets used well -- what deserves a
+line, which line to give up, when to rewrite one -- and, past rung
+sixteen, how much is carried besides. A careful keeper that writes
+everything needed onto a free or finished line passes every round up to
+rung fifteen with the notebook alone and almost none after it without a
+head as well. Thirteen agent ports: four answers, write onto lines one
+to eight, Next. Turn-based, so it takes the think clock.
 
 ### Trivia
 
@@ -1434,6 +1462,29 @@ with *Add a piece* a clean solve cuts the next clip one piece finer,
 from three up to nine. Clips whose pieces look too alike to order are
 passed over, and every clip is used before any comes round again. The
 clips are the `ucf101` library above, and need `ffmpeg` to play.
+
+#### What Happens Next
+
+The opening of a short clip plays; then a few short stretches of video
+play side by side, and one of them is what really came next. Click it.
+The opening holds its last frame while the options play, so each is
+seen following on from the moment the opening stopped.
+
+| Rung | The decoys |
+| --- | --- |
+| 1 | A stretch of another clip. Two options. |
+| 4+ | The true continuation **played backwards** -- the same frames, and only the direction of time to tell them apart. |
+| 8+ | A stretch from **later** in the same clip, the end of the opening **again**, and a stretch from the **middle of the opening**. |
+| 12+ | The continuation **skipping ahead** by half its length. |
+| 16+ | No other clips: every option comes from the same clip. |
+| 21+ | Less of the opening is shown, down to a quarter. |
+
+Options grow from two to six, one every three rungs. A choice is right
+or wrong, so there is no par: guessing is right a half of the time at
+rung one and a sixth from rung thirteen. The clips are the `ucf101`
+library and need `ffmpeg`, as Video Sequence does, with a rotation of
+their own. Six agent ports, one per option. Clocked, because the
+evidence is motion.
 
 #### Winning Move
 
@@ -2874,6 +2925,38 @@ one way: it does not count how long an incident waited. A finished
 refit is not paid: whether it was worth its twelve seconds is what the
 round's verdict is for.
 
+#### Triage
+
+A few cards, each a row of digits to sort into order by swapping
+neighbours, each paying something when it is sorted -- and one budget
+of moves for all of them. Not everything on the table can be had, so
+the task is not sorting, which is easy, but deciding what to spend
+effort on: which puzzles are worth their cost, in what order, and when
+to walk away from one that turned out dearer than it looked. A card
+worked on and left unsolved pays nothing, and its moves are gone.
+
+The cost of a row can be read off it: the fewest swaps that sort it is
+the number of pairs of digits standing in the wrong order. Reading that
+is part of the task.
+
+| Rung | What it adds |
+| --- | --- |
+| 1 | Two short rows and moves enough for both. |
+| 2+ | More cards (up to eight), longer rows (up to nine digits), and a budget that covers less of the table -- under a third by rung 20. |
+| 8+ | What a card pays no longer follows what it costs. |
+| 12+ | Rows dealt **face down**: a card shows its length and pay, and turning it over costs a move. |
+| 21+ | Par asks for more than the reference, towards the best any choice of cards could earn. |
+
+Par comes from a reference on the identical deal that keeps taking the
+card paying most per move it is expected to cost, and sorts by the
+shortest route; below rung twenty par gives some of its earnings away,
+and past it par climbs towards four fifths of the gap to the best
+possible choice -- a real plan, not a ratio. Random play passes about a
+third of rung-one rounds and essentially none past rung five. Seventeen agent
+ports: open cards one to eight, swap neighbours one-two to eight-nine
+in the open row, Done. Turn-based, so it takes the think clock, which
+is the point: what is measured is what gets thought about.
+
 #### Gamble
 
 A row of slot machines with hidden odds. A pull pays what that machine
@@ -3086,6 +3169,68 @@ right first time -- with room up to rung twenty and none from it.
 Forty-six agent ports, one per key: a-z, 0-9, space, @ . - /,
 Backspace, Tab, Enter, Up and Down. Clicking a field moves to it for a
 key. Turn-based, so it takes the think clock.
+
+#### Manual
+
+A control panel never seen before -- switches, knobs from 0 to 4,
+buttons, coloured lamps and a one-digit display -- and a written
+procedure to carry out on it, then **Finish**. The lamps and display are
+wired to the controls by hidden sums, never explained and never needed:
+what matters is that *if lamp L2 is red* asks about the panel as the
+steps so far have left it, so the procedure has to be really done, in
+order, looking as it goes. The round passes if every control stands
+exactly where the procedure leaves it -- a button pressed once too often
+fails it -- and the controls that do not are outlined afterwards.
+
+| Rung | What it adds |
+| --- | --- |
+| 1 | One step on two switches. |
+| 2+ | Knobs and buttons; a step more every two rungs, up to ten. |
+| 5+ | Steps that **depend on a lamp**: *if L1 is green, ...; otherwise ...*. |
+| 9+ | **Counts** read off the display, and copying one control onto another. |
+| 13+ | **Loops** (*press P1 until L3 is red*), and putting controls **back as they were at the start**, which nothing on the panel still shows. |
+| 17+ | The controls in **shuffled order** along each row: found by label, not place. |
+| 20+ | Steps that **skip** the next on a condition. |
+
+Every rung asks at least once for the kind of step it adds, and doing
+nothing is never right. There is no par. Twenty-one agent ports that
+name *places* on the panel, not controls -- six switches, two to each of
+four knobs (down, up), six buttons, Finish -- so once the labels are
+shuffled the label has to be read. Turn-based, so it takes the think
+clock.
+
+#### Browser
+
+A web shop drawn by the task -- a home page of departments, product
+lists that sort and run over pages, a page for each product, a cart --
+in a browser with a tab, Back, Home, an address bar and a scrolling
+page, and a shopping list under the title: *buy the cheapest kettle in
+stock, then check out*. Click links and buttons; scroll with the wheel
+or the arrow keys; Backspace goes back. The round passes if the cart at
+checkout holds exactly what the list asks for, in no more clicks than
+par.
+
+| Rung | What it adds |
+| --- | --- |
+| 1 | One department, two products: *buy the Brava K2*. |
+| 3+ | *The cheapest*; the lists can be sorted. |
+| 6+ | *In stock* -- shown only on a product's own page. |
+| 9+ | *The lowest price plus shipping* -- shipping too only on the product page. |
+| 12+ | *Rated 4 or more*, and lists over pages of eight. |
+| 15+ | Two things to buy, in different departments; three from 21. |
+| 18+ | List prices that can be **out of date**: the product page is what is charged. |
+
+Departments and products grow throughout, to five departments of
+twenty-four. Clicks count, a click on nothing included; moving the
+pointer and scrolling are free. Par is the fewest clicks that could do
+it -- found by searching the shop with the answer known -- plus a share
+of what a thorough shopper spends opening every product of the
+departments it needs and coming back: all of it at rung one, under a
+third by rung twenty and almost none by thirty, where a sorted list has
+to be read well enough to open little but the answer. Fifteen agent
+ports, Desktop's pointer and two more: move up, down, left or right by
+80, 20 or 5 units of a 1000 by 640 window, click, scroll up, scroll
+down. Turn-based, so it takes the think clock.
 
 ### Window size, full screen, and the two coordinate spaces
 

@@ -785,6 +785,178 @@ GAMBLE = TaskSpec(
     note=gamble_note)
 
 
+def triage_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung puts on the table."""
+    from .. import triage
+    level = triage.grade(int(chosen['TRIAGE_RUNG']))
+    said = [_('Rung %d: %d cards of %d to %d digits; the moves cover '
+              'about %d%% of the work.')
+            % (level.rung, level.cards, level.shortest, level.longest,
+               min(100, int(round(level.tight * 100))))]
+    found = []
+    if level.traps:
+        found.append(_('pay that does not follow cost'))
+    if level.hidden:
+        found.append(_('face-down cards that cost a move to turn'))
+    if found:
+        said.append(_('With %s.') % ', '.join(found))
+    if level.rung > 20:
+        said.append(_('You must beat the reference.'))
+    return '  '.join(said)
+
+
+TRIAGE = TaskSpec(
+    title=_('Triage options'),
+    options=(
+        Option('TRIAGE_RUNG', _('Starting rung'), 1,
+               values=(1, 3, 5, 8, 12, 16, 20, 21, 25, 30)),
+        Option('TRIAGE_TRIALS', _('Rounds per run'), 5,
+               values=(1, 3, 5, 8, 12)),
+        Option('TRIAGE_ADAPTIVE',
+               _('Climb a rung at par, drop one under'), True),
+    ),
+    note=triage_note)
+
+
+def what_next_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung shows, and whether it can be played."""
+    from .. import datasets, videoclips, whatnext
+    level = whatnext.grade(int(chosen['WHAT_NEXT_RUNG']))
+    kinds = [whatnext.describe(k) for k in level.kinds]
+    said = [_('Rung %d: %d options; the decoys are %s.')
+            % (level.rung, level.choices, ', '.join(kinds))]
+    if level.context < 1.0:
+        said.append(_('Only the last %d%% of the opening is shown.')
+                    % int(round(level.context * 100)))
+    stocked = datasets.have(datasets.UCF101)
+    if stocked:
+        said.append(_('%d clips downloaded.') % stocked)
+    else:
+        said.append(_('The video library is not downloaded yet — '
+                      'see the Readme.'))
+    if not videoclips.have_ffmpeg():
+        said.append(_('The ffmpeg program was not found.'))
+    return '  '.join(said)
+
+
+WHAT_NEXT = TaskSpec(
+    title=_('What Happens Next options'),
+    options=(
+        Option('WHAT_NEXT_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 8, 12, 16, 20, 24, 30)),
+        Option('WHAT_NEXT_TRIALS', _('Clips per run'), 10,
+               values=(1, 5, 10, 20, 40)),
+        Option('WHAT_NEXT_ADAPTIVE',
+               _('Climb a rung when right, drop one when wrong'), True),
+    ),
+    note=what_next_note)
+
+
+def manual_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung's panel and procedure hold."""
+    from .. import manual
+    level = manual.grade(int(chosen['MANUAL_RUNG']))
+    said = [_('Rung %d: %d steps on a panel of %d switches, %d knobs, '
+              '%d buttons and %d lamps.')
+            % (level.rung, level.steps, level.switches, level.knobs,
+               level.buttons, level.lamps)]
+    words = {'if': _('steps that depend on a lamp'),
+             'count': _('counts read off the display'),
+             'copy': _('copying one control to another'),
+             'until': _('pressing until a lamp changes'),
+             'recall': _('putting controls back as they started'),
+             'skip': _('steps that skip the next')}
+    found = [words[k] for k in level.kinds if k in words]
+    if level.shuffled:
+        found.append(_('controls in shuffled order'))
+    if found:
+        said.append(_('With %s.') % ', '.join(found))
+    return '  '.join(said)
+
+
+MANUAL = TaskSpec(
+    title=_('Manual options'),
+    options=(
+        Option('MANUAL_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 5, 9, 13, 17, 20, 25, 30)),
+        Option('MANUAL_TRIALS', _('Procedures per run'), 5,
+               values=(1, 3, 5, 8, 12)),
+        Option('MANUAL_ADAPTIVE',
+               _('Climb a rung when right, drop one when wrong'), True),
+    ),
+    note=manual_note)
+
+
+def notebook_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung asks to be remembered."""
+    from .. import notebook
+    level = notebook.grade(int(chosen['NOTEBOOK_RUNG']))
+    said = [_('Rung %d: %d codes, up to %d waiting at once, at least %d '
+              'cards before each is asked; %d notebook lines.')
+            % (level.rung, level.facts, level.hold, level.gap + 1,
+               level.lines)]
+    found = []
+    if level.noise:
+        found.append(_('cards not needed'))
+    if level.updates:
+        found.append(_('codes that change'))
+    if found:
+        said.append(_('With %s.') % ', '.join(found))
+    if level.lines < level.hold:
+        said.append(_('Some will have to be kept in your head.'))
+    return '  '.join(said)
+
+
+NOTEBOOK = TaskSpec(
+    title=_('Notebook options'),
+    options=(
+        Option('NOTEBOOK_RUNG', _('Starting rung'), 1,
+               values=(1, 3, 6, 8, 12, 16, 20, 25, 30)),
+        Option('NOTEBOOK_TRIALS', _('Rounds per run'), 3,
+               values=(1, 3, 5, 8)),
+        Option('NOTEBOOK_ADAPTIVE',
+               _('Climb a rung when all right, drop one otherwise'), True),
+    ),
+    note=notebook_note)
+
+
+def browser_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung's shop and shopping list hold."""
+    from .. import browser
+    level = browser.grade(int(chosen['BROWSER_RUNG']))
+    said = [_('Rung %d: %d departments of %d products; %d to buy.')
+            % (level.rung, level.departments, level.products, level.buys)]
+    found = []
+    if level.sorting:
+        found.append(_('sortable lists'))
+    if level.stock:
+        found.append(_('stock shown only on product pages'))
+    if level.shipping:
+        found.append(_('shipping costs'))
+    if level.paged:
+        found.append(_('lists over several pages'))
+    if level.stale:
+        found.append(_('list prices that may be out of date'))
+    if found:
+        said.append(_('With %s.') % ', '.join(found))
+    said.append(_('Par allows %d%% of a thorough shopper\'s extra clicks.')
+                % int(round(level.slack * 100)))
+    return '  '.join(said)
+
+
+BROWSER = TaskSpec(
+    title=_('Browser options'),
+    options=(
+        Option('BROWSER_RUNG', _('Starting rung'), 1,
+               values=(1, 3, 6, 9, 12, 15, 18, 21, 25, 30)),
+        Option('BROWSER_TRIALS', _('Shopping trips per run'), 5,
+               values=(1, 3, 5, 8, 12)),
+        Option('BROWSER_ADAPTIVE',
+               _('Climb a rung at par, drop one under'), True),
+    ),
+    note=browser_note)
+
+
 def wiring_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung wires up."""
     from .. import wiring
@@ -2584,6 +2756,11 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'forms': FORMS,
     'wiring': WIRING,
     'gamble': GAMBLE,
+    'browser': BROWSER,
+    'notebook': NOTEBOOK,
+    'manual': MANUAL,
+    'what_next': WHAT_NEXT,
+    'triage': TRIAGE,
     'video_sequence': VIDEO_SEQUENCE,
     'tower_of_hanoi': HANOI,
     'salesman': SALESMAN,

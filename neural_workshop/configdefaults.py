@@ -751,6 +751,56 @@ GAMBLE_RUNG = 1
 GAMBLE_TRIALS = 5
 GAMBLE_ADAPTIVE = True
 
+# Browser: a drawn web shop and a shopping list; point, click, scroll,
+# go back, add to the cart and check out. Right means the cart holds
+# exactly what the list asks for, in no more clicks than par. Sorting
+# from rung 3, stock on product pages from 6, shipping from 9, rating
+# limits and paged lists from 12, two things to buy from 15, list prices
+# out of date from 18, three things to buy from 21.
+BROWSER_RUNG = 1
+BROWSER_TRIALS = 5
+BROWSER_ADAPTIVE = True
+
+# Notebook: a stream of cards giving codes, and questions about them many
+# cards later, with a notebook of a few lines to write cards onto. A round
+# passes when every question is answered right. Cards not needed from
+# rung 6, codes that change from rung 8, and from rung 16 fewer lines
+# than there are codes to keep, so some must be held in the head.
+NOTEBOOK_RUNG = 1
+NOTEBOOK_TRIALS = 3
+NOTEBOOK_ADAPTIVE = True
+
+# Manual: a control panel dealt at random -- switches, knobs, buttons,
+# lamps and a display wired by hidden sums -- and a written procedure to
+# carry out on it, then Finish. Right means every control stands where
+# the procedure leaves it. Steps that depend on lamps from rung 5, read
+# the display and copy controls from 9, loop and recall the start from
+# 13, shuffled labels from 17 and conditional skips from 20.
+MANUAL_RUNG = 1
+MANUAL_TRIALS = 5
+MANUAL_ADAPTIVE = True
+
+# What Happens Next: the opening of a short clip plays, then a few short
+# stretches of video, one of which is what really came next. The decoys
+# climb from other clips to the true ending played backwards, later or
+# earlier stretches of the same clip, and the ending skipping ahead;
+# from rung 16 every option comes from the same clip, and past rung 20
+# less of the opening is shown. The clips are UCF-101, decoded with
+# ffmpeg -- see the Readme.
+WHAT_NEXT_RUNG = 1
+WHAT_NEXT_TRIALS = 10
+WHAT_NEXT_ADAPTIVE = True
+
+# Triage: cards of digit rows to sort by swapping neighbours, each paying
+# something when solved, and one budget of moves for all of them. Choose
+# what is worth the moves, and give up on what is not. From rung 8 pay
+# no longer follows cost; from rung 12 rows are face down and turning
+# one over costs a move. Par is a pays-per-move reference on the same
+# deal; past rung 20 it asks for more than that.
+TRIAGE_RUNG = 1
+TRIAGE_TRIALS = 5
+TRIAGE_ADAPTIVE = True
+
 # Hidden Wiring: switches drive lamps through gates nobody shows. Flipping
 # a switch is free; looking at the lamps costs a point. The exam shows
 # lamp patterns and asks for switches that would make them, and every
