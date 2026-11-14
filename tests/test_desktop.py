@@ -623,6 +623,123 @@ class TheFiles(unittest.TestCase):
         desk.release(*desk.pointer)
         self.assertEqual((win.x, win.y), rect[:2])
 
+
+class RightClicksCopiesAndViews(unittest.TestCase):
+
+    def a_file(self, desk, ex):
+        hit(desk, D.sidebar_rects(ex)[D.DOCUMENTS], ex)
+        return next((n, r) for n, r in desk.icon_rects(ex) if not n.folder)
+
+    def test_a_right_click_opens_a_menu_for_what_is_under_it(self):
+        desk, ex = explorer_desk()
+        node, rect = self.a_file(desk, ex)
+        clicks = desk.clicks
+        desk.right_click(*desk.reachable(rect, ex))
+        self.assertEqual(desk.clicks, clicks + 1)
+        self.assertIs(ex.places[ex.place].selected, node)
+        self.assertEqual([n for n, _r in desk.context_items()],
+                         ['Cut', 'Copy', 'Delete'])
+        desk.click(*centre(dict(desk.context_items())['Delete']))
+        self.assertIs(node.parent, desk.nodes[D.TRASH])
+        self.assertIsNone(desk.context)
+
+    def test_a_click_elsewhere_just_shuts_the_menu(self):
+        desk, ex = explorer_desk()
+        node, rect = self.a_file(desk, ex)
+        desk.right_click(*desk.reachable(rect, ex))
+        desk.click(D.SCREEN_W - 20, 20)
+        self.assertIsNone(desk.context)
+        self.assertIs(node.parent, desk.nodes[D.DOCUMENTS])
+
+    def test_restore_puts_a_file_back_where_it_came_from(self):
+        desk, ex = explorer_desk()
+        node, _rect = self.a_file(desk, ex)
+        desk.move_file(node, desk.nodes[D.TRASH])
+        hit(desk, D.sidebar_rects(ex)[D.TRASH], ex)
+        rect = dict((id(n), r) for n, r in desk.icon_rects(ex))[id(node)]
+        desk.right_click(*desk.reachable(rect, ex))
+        names = [n for n, _r in desk.context_items()]
+        self.assertIn('Restore', names)
+        self.assertNotIn('Delete', names)
+        desk.click(*centre(dict(desk.context_items())['Restore']))
+        self.assertIs(node.parent, desk.nodes[D.DOCUMENTS])
+
+    def test_copy_and_paste_leave_the_original(self):
+        desk, ex = explorer_desk()
+        node, rect = self.a_file(desk, ex)
+        hit(desk, rect, ex)
+        hit(desk, dict(D.tool_rects(ex))['Copy'], ex)
+        hit(desk, D.sidebar_rects(ex)[D.DESKTOP_DIR], ex)
+        hit(desk, dict(D.tool_rects(ex))['Paste'], ex)
+        self.assertIs(node.parent, desk.nodes[D.DOCUMENTS])
+        twins = [c for c in desk.nodes[D.DESKTOP_DIR].children
+                 if c.name == node.name]
+        self.assertEqual(len(twins), 1)
+        self.assertIsNot(twins[0], node)
+        self.assertIs(desk.clipboard, node)        # copy stays to paste again
+        hit(desk, dict(D.tool_rects(ex))['Paste'], ex)
+        self.assertIn(node.name.rpartition('.')[0] + ' - Copy',
+                      [c.name.rpartition('.')[0]
+                       for c in desk.nodes[D.DESKTOP_DIR].children])
+
+    def test_a_copy_goal_needs_the_original_left_in_place(self):
+        for seed in range(10):
+            desk = D.Desktop(D.deal(12, seed=seed))
+            if desk.copies:
+                break
+        goal = desk.copies[0]
+        node, dest, source = goal
+        self.assertFalse(desk.copied(goal))
+        desk.move_file(node, dest)
+        self.assertFalse(desk.copied(goal))
+        desk.move_file(node, source)
+        desk.copy_file(node, dest)
+        self.assertTrue(desk.copied(goal))
+
+    def test_a_folder_copies_with_all_inside_it(self):
+        desk = D.Desktop(D.deal(12, seed=0))
+        folder = next(n for n in desk.nodes[D.DOCUMENTS].children
+                      if n.folder and n.children)
+        twin = desk.copy_file(folder, desk.nodes[4])
+        self.assertEqual(sorted(c.name for c in twin.children),
+                         sorted(c.name for c in folder.children))
+        self.assertIsNone(desk.copy_file(folder, folder))
+
+    def test_view_switches_to_a_list_of_rows(self):
+        desk, ex = explorer_desk()
+        hit(desk, D.sidebar_rects(ex)[D.DOCUMENTS], ex)
+        grid = desk.icon_rects(ex)
+        hit(desk, dict(D.tool_rects(ex))['View'], ex)
+        self.assertTrue(ex.list_view)
+        rows = desk.icon_rects(ex)
+        self.assertEqual([n for n, _r in rows][:len(grid)],
+                         [n for n, _r in grid][:len(rows)])
+        self.assertTrue(all(r[3] == D.LIST_H for _n, r in rows))
+        node, rect = rows[0]
+        hit(desk, rect, ex)
+        self.assertIs(ex.places[ex.place].selected, node)
+
+    def test_the_card_hides_after_the_first_click_and_peeks(self):
+        desk = D.Desktop(D.deal(24, seed=0))
+        desk.popups = []
+        self.assertTrue(desk.card_shown)
+        desk.click(D.SCREEN_W - 20, 20)
+        self.assertFalse(desk.card_shown)
+        desk.click(*centre(D.PEEK_RECT))
+        self.assertTrue(desk.card_shown)
+        desk.click(D.SCREEN_W - 20, 20)
+        self.assertFalse(desk.card_shown)
+        self.assertTrue(D.Desktop(D.deal(23, seed=0)).card_shown)
+
+    def test_the_new_parts_come_in_on_their_rungs(self):
+        self.assertEqual(D.grade(9).copies, 0)
+        self.assertEqual(D.grade(10).copies, 1)
+        self.assertFalse(D.grade(15).list_view)
+        self.assertTrue(D.grade(16).list_view)
+        self.assertFalse(D.grade(23).hide_card)
+        self.assertTrue(D.grade(24).hide_card)
+        self.assertTrue(any(D.deal(20, seed=s).list_view for s in range(6)))
+
 class TheStartPanel(unittest.TestCase):
 
     def test_pinned_tiles_open_their_app(self):
@@ -833,11 +950,11 @@ class TheBoundary(unittest.TestCase):
         from nwenv.desktop import DONE
         self.assertEqual(self.drive(3, policy=lambda task, m: DONE), [-1.0])
 
-    def test_the_ports_are_sixteen(self):
+    def test_the_ports_are_seventeen(self):
         from nwenv import catalog
         from neural_workshop.ui import desktop as screen
-        self.assertEqual(catalog.env_class('desktop').ports, 16)
-        self.assertEqual(screen.PORTS, 16)
+        self.assertEqual(catalog.env_class('desktop').ports, 17)
+        self.assertEqual(screen.PORTS, 17)
 
 
 @needs_ui

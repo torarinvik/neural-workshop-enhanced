@@ -743,7 +743,8 @@ HIDDEN_RULE_ADAPTIVE = True
 # sliders, steppers and dropdowns; tabs, scrolling, cascading menus,
 # dialogs, popups, sticky notes, greyed-out controls and Apply buttons;
 # from rung 6 a file explorer with tabs, desktop icons, a Start panel
-# and files to move, delete or restore by Cut/Paste or drag-and-drop,
+# and files to move, copy, delete or restore by Cut/Copy/Paste, a
+# right-click menu or drag-and-drop; list views; a card that hides,
 # more of them with every rung. A card lists what to do. Moving
 # the pointer is free, every click or drag costs one, and a round
 # passes if the

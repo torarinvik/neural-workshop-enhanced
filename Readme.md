@@ -2880,7 +2880,17 @@ moved, deleted or restored, each with the path it is at now.
 | 12+ | The explorer opens with **two tabs**. |
 | 14+ | **Deleting** to the Trash, and files saved on the desktop. |
 | 15+ | The explorer starts **closed**: open it from Start, the taskbar or its desktop icon. |
+| 10+ | **Copying**: Copy and Paste leave the original where it is; the card asks for a copy in another folder. |
+| 16+ | An explorer may open in **list view**; View switches between rows and icons. |
 | 18+ | **Restoring** from the Trash, and only a few apps pinned to Start. |
+| 24+ | **The card hides** after the first click. *Card* on the taskbar shows it until the next click; par allows two peeks. |
+
+The **right button** opens a menu for whatever is under the pointer: on
+a file or folder Open, Cut, Copy, Delete, or Restore if it is in the
+Trash (back to where it came from); on an open folder's background, or
+the bare desktop, Paste and View. It costs one like any click, and
+Restore is the short way back from the Trash. Pasting a copy where the
+name is taken names it *name - Copy*, as a real desktop does.
 
 So a round mixes short reaches (one click on a switch), medium ones (a
 menu, a dialog, OK) and long ones: open the explorer, walk down five
@@ -2902,17 +2912,18 @@ settings; with files in the round, dragging icons and shorter folder
 routes save only 2 to 7% more, so the top of the ladder asks for
 planning not yet found.
 
-People use the mouse. The arrow keys also move the drawn pointer (Shift
-for a long step, Alt for a short one), Space clicks, D presses and lets
-go, and Enter is Done, which is how the agent plays: sixteen ports,
-twelve moving the pointer by 80, 20 or 5 units of a 1000 by 640 screen
-in each direction, then click, press, release and Done. Every point the
-reference uses is on that grid. It is turn-based, so it takes the think
-clock.
+People use the mouse, both buttons. The arrow keys also move the drawn
+pointer (Shift for a long step, Alt for a short one), Space clicks, D
+presses and lets go, R right-clicks, and Enter is Done, which is how the
+agent plays: seventeen ports, twelve moving the pointer by 80, 20 or 5
+units of a 1000 by 640 screen in each direction, then click, press,
+release, Done and the right button. Every point the reference uses is
+on that grid. It is turn-based, so it takes the think clock.
 
-Still to come: a card that is shown and then hidden, Reset beside
+Still to come: Reset beside
 Apply, controls with no labels whose effect has to be worked out by
-trying them, renaming files, search, and typing.
+trying them, selecting several files at once, renaming, search, and
+typing.
 
 ### Window size, full screen, and the two coordinate spaces
 

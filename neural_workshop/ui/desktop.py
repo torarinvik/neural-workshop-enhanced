@@ -44,8 +44,8 @@ FEEDBACK = 2.2
 
 #: Ports: (up, down, left, right) x (long, medium, short), then these.
 DIRECTIONS = ((0, -1), (0, 1), (-1, 0), (1, 0))
-CLICK, PRESS, RELEASE, DONE = 12, 13, 14, 15
-PORTS = 16
+CLICK, PRESS, RELEASE, DONE, RIGHT = 12, 13, 14, 15, 16
+PORTS = 17
 
 TITLE_COLOURS = ((58, 98, 170), (150, 70, 60), (60, 130, 90),
                  (120, 80, 150), (170, 120, 40), (60, 120, 140))
@@ -167,8 +167,8 @@ class Desktop:
         self.status = label('', calc_fontsize(14), from_top_edge(70))
         self.facts = label('', calc_fontsize(12), from_top_edge(96))
         self.footnote = label(
-            _('arrows: pointer (+Shift long, +Alt short)   Space: click   '
-              'D: hold / let go   Enter: done   Esc'),
+            _('arrows: pointer (+Shift/+Alt)   Space: click   '
+              'R: right-click   D: hold / let go   Enter: done   Esc'),
             calc_fontsize(11), from_bottom_edge(26))
         self.verdict = VerdictLabel(batch=self.batch, y_from_bottom=60)
         if self.verdict_shown is not None:
@@ -237,8 +237,17 @@ class Desktop:
             self.press()
         elif port == RELEASE:
             self.release()
+        elif port == RIGHT:
+            self.right_click()
         else:
             self.finish_round()
+
+    def right_click(self, x: Optional[float] = None,
+                    y: Optional[float] = None) -> None:
+        if self.phase != 'working' or self.desk.held is not None:
+            return
+        self.desk.right_click(x, y)
+        self._after()
 
     def click(self, x: Optional[float] = None,
               y: Optional[float] = None) -> None:
@@ -406,6 +415,8 @@ class Desktop:
                 self._draw_menu(700)
             if desk.start_open:
                 self._draw_start(700)
+            if desk.context is not None:
+                self._draw_context(760)
             if desk.dialog is not None:
                 self._draw_dialog(720)
             if desk.dropdown is not None:
@@ -491,6 +502,24 @@ class Desktop:
         self._words(shown, x + w / 2, y + h - 12, text, size=10.0,
                     anchor='center')
 
+    def _list_row(self, node, rect, parts, text, faded=False) -> None:
+        """One row of the list view: a small icon, the name, its kind."""
+        x, y, w, h = rect
+        size = h - 8
+        if node.folder:
+            self._rect((x + 6, y + 6, size * 1.2, size * 0.8), FOLDER,
+                       parts, PANEL_EDGE)
+        else:
+            self._rect((x + 8, y + 4, size * 0.8, size), WHITE, parts,
+                       PANEL_EDGE)
+            self._rect((x + 8, y + 4 + size * 0.6, size * 0.8, size * 0.25),
+                       FILE_BANDS.get(node.kind, GREY), text)
+        self._words(node.name, x + 40, y + h / 2, text, size=11.0,
+                    colour=GREY if faded else INK)
+        kind = _('Folder') if node.folder else node.kind.capitalize()
+        self._words(kind, x + w - 110, y + h / 2, text, size=10.0,
+                    colour=GREY)
+
     def _draw_desktop_icons(self, base: int) -> None:
         desk = self.desk
         parts, text = self._group(base), self._group(base + 1)
@@ -516,8 +545,9 @@ class Desktop:
         for name, rect in model.tool_rects(win):
             usable = ((name == 'Back' and place.history)
                       or (name == 'Up' and place.path.parent is not None)
-                      or (name in ('Cut', 'Delete')
+                      or (name in ('Cut', 'Copy', 'Delete')
                           and place.selected is not None)
+                      or name == 'View'
                       or (name == 'Paste' and desk.clipboard is not None))
             self._button(rect, _(name), parts, text, size=10.0,
                          ink=INK if usable else GREY)
@@ -545,8 +575,14 @@ class Desktop:
         for node, rect in desk.icon_rects(win):
             if place.selected is node:
                 self._rect(rect, SELECTED, parts)
+            if win.list_view:
+                self._list_row(node, rect, parts, text,
+                               faded=desk.clipboard is node
+                               and not desk.copying)
+                continue
             self._glyph('folder' if node.folder else 'file', rect, parts,
-                        text, node.name, faded=desk.clipboard is node,
+                        text, node.name,
+                        faded=desk.clipboard is node and not desk.copying,
                         file_kind=node.kind)
         if desk.ex_scrolls(win):
             up, down = model.ex_scroll_rects(win)
@@ -679,6 +715,10 @@ class Desktop:
             self._button(rect, win.title, parts, text,
                          colour=(110, 118, 136) if front else TASK_BUTTON,
                          ink=GREY if win.minimised else WHITE, size=11.0)
+        if desk.hide_card:
+            self._button(model.PEEK_RECT, _('Card'), parts, text,
+                         colour=ACCENT if desk.peeking else TASK_BUTTON,
+                         ink=WHITE, size=11.0)
         self._button(model.DONE_RECT, _('Done'), parts, text, colour=ON,
                      ink=WHITE, bold=True)
 
@@ -702,6 +742,12 @@ class Desktop:
                 self._rect(rect, WHITE, group, PANEL_EDGE)
                 self._words(items[sub].dialogs[which].title + '…',
                             rect[0] + 10, rect[1] + rect[3] / 2, text)
+
+    def _draw_context(self, base: int) -> None:
+        group, text = self._group(base), self._group(base + 1)
+        for name, rect in self.desk.context_items():
+            self._rect(rect, WHITE, group, PANEL_EDGE)
+            self._words(_(name), rect[0] + 12, rect[1] + rect[3] / 2, text)
 
     def _draw_start(self, base: int) -> None:
         desk = self.desk
@@ -774,7 +820,25 @@ class Desktop:
         x = left + model.SCREEN_W * scale + window.width * 0.02
         size = calc_fontsize(11)
         line = size * 2.1
+        # Shrink the whole card to fit above the footnote.
+        units = (1.5 + len(desk.goals)
+                 + 1.75 * (len(desk.moves) + len(desk.copies)))
+        room = top - from_bottom_edge(48)
+        if line * units > room:
+            line = room / units
+            size = line / 2.1
         group = self._group(950)
+        if not desk.card_shown:
+            for row, words in enumerate((
+                    _('The card is hidden.'),
+                    _('Card on the taskbar shows it'),
+                    _('until the next click.'))):
+                self.drawn.append(pyglet.text.Label(
+                    words, font_size=size, x=x,
+                    y=top - line * (0.5 + row), anchor_x='left',
+                    anchor_y='center', color=self.textcolor,
+                    batch=self.batch, group=group, font_name=FONTLIST))
+            return
         self.drawn.append(pyglet.text.Label(
             _('Set these:'), font_size=calc_fontsize(13), weight='bold',
             x=x, y=top - line * 0.5, anchor_x='left', anchor_y='center',
@@ -819,6 +883,17 @@ class Desktop:
                 lines.append(self._card_line(
                     _('now in %s') % _short_path(node.parent),
                     x + size * 2.2, y - line * 0.6, size * 0.8, group, 0.8))
+        for number, goal in enumerate(desk.copies):
+            node, dest, _source = goal
+            mark = '✓ ' if desk.copied(goal) else '•  '
+            index = len(desk.moves) + number
+            y = top - line * (first + 1.5) - line * 1.75 * index
+            lines.append(self._card_line(
+                mark + _('Copy %s → %s') % (node.name, _short_path(dest)),
+                x, y, size, group))
+            lines.append(self._card_line(
+                _('in %s, and leave it there') % _short_path(node.parent),
+                x + size * 2.2, y - line * 0.6, size * 0.8, group, 0.8))
         # One size for every file line, the smallest any of them needed.
         if lines:
             least = min(line.font_size / scale for line, scale in lines)
@@ -890,6 +965,8 @@ class Desktop:
                 self.steer(arrows[symbol] * 3 + size)
             elif symbol == key.SPACE:
                 self.click()
+            elif symbol == key.R:
+                self.right_click()
             elif symbol == key.D:
                 if self.desk.held is None:
                     self.press()
@@ -925,6 +1002,10 @@ class Desktop:
             if point is not None:
                 self._pressed_at = (x, y)
                 self.press(*point)
+        elif self.phase == 'working' and button == mouse.RIGHT:
+            point = self._on_screen(x, y)
+            if point is not None:
+                self.right_click(*point)
         elif self.phase in ('ready', 'done') and button == mouse.LEFT:
             self.start_run()
         return pyglet.event.EVENT_HANDLED

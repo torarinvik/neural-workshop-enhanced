@@ -75,6 +75,8 @@ STILL = 3
 DONE_RECT = (SCREEN_W - 130, WORK_H + 6, 120, TASKBAR_H - 12)
 START_RECT = (6, WORK_H + 6, 70, TASKBAR_H - 12)
 POPUP_RECT = (300, 180, 400, 150)
+#: Where the card can be peeked at once it has hidden.
+PEEK_RECT = (SCREEN_W - 216, WORK_H + 6, 80, TASKBAR_H - 12)
 
 KINDS = ('toggle', 'choice', 'slider', 'dropdown', 'colour', 'stepper')
 
@@ -111,8 +113,12 @@ SUBMENU = 'More'
 #: this order: Home, its five folders, and the Trash.
 EXPLORER = 'Explorer'
 EXPLORER_W, EXPLORER_H = 600, 400
-TOOLS = ('Back', 'Up', 'Cut', 'Paste', 'Delete')
-TOOL_W = (52, 40, 44, 56, 62)
+TOOLS = ('Back', 'Up', 'Cut', 'Copy', 'Paste', 'Delete', 'View')
+TOOL_W = (52, 40, 44, 48, 56, 62, 52)
+#: A row of the explorer's list view.
+LIST_H = 26
+#: A right-click menu's width.
+CONTEXT_W = 150
 PLACES = ('Home', 'Desktop', 'Documents', 'Downloads', 'Music', 'Pictures',
           'Trash')
 HOME, DESKTOP_DIR, DOCUMENTS, TRASH = 0, 1, 2, 6
@@ -177,6 +183,11 @@ class Grade(NamedTuple):
     ex_tabs: int
     pinned: int
     explorer_closed: bool
+    #: Files to copy, whether an explorer may open in list view, and
+    #: whether the card hides after the first click (peeks cost one).
+    copies: int
+    list_view: bool
+    hide_card: bool
     goals: int
     factor: float
     slack: float
@@ -219,6 +230,9 @@ def grade(rung: int) -> Grade:
         ex_tabs=1 if r < 12 else 2,
         pinned=5 if r < 18 else 2,
         explorer_closed=r >= 15,
+        copies=0 if r < 10 else min(3, 1 + (r - 10) // 6),
+        list_view=r >= 16,
+        hide_card=r >= 24,
         goals=1 if r <= 2 else min(14, r // 2 + 1),
         factor=(max(1.0, 2.0 - (r - 1) / 11.0) if r <= 20
                 # Gentler than the other tasks' four per cent: measured,
@@ -302,6 +316,8 @@ class Node:
         self.kind = kind
         self.parent = parent
         self.children: List['Node'] = []
+        #: Where it was before it went to the Trash.
+        self.origin: Optional['Node'] = None
 
     def within(self, other: 'Node') -> bool:
         """Whether this is *other* or somewhere inside it."""
@@ -365,6 +381,8 @@ class Window:
         #: The explorer's tabs, and which is showing.
         self.places: List[Place] = []
         self.place = 0
+        #: The explorer shows rows of names instead of a grid of icons.
+        self.list_view = False
 
     @property
     def pinned(self) -> bool:
@@ -535,8 +553,21 @@ def cell_size(win: Window) -> float:
     return grid_area(win)[2] / COLUMNS
 
 
+def ex_columns(win: Window) -> int:
+    return 1 if win.list_view else COLUMNS
+
+
+def cell_dims(win: Window) -> Tuple[float, float]:
+    """Width and height of one icon's cell: a square in the grid, a
+    full-width row in the list."""
+    if win.list_view:
+        return grid_area(win)[2], LIST_H
+    size = cell_size(win)
+    return size, size
+
+
 def grid_rows(win: Window) -> int:
-    return max(1, int(grid_area(win)[3] // cell_size(win)))
+    return max(1, int(grid_area(win)[3] // cell_dims(win)[1]))
 
 
 def ex_scroll_rects(win: Window) -> Tuple[Rect, Rect]:
@@ -618,6 +649,23 @@ class Desktop:
         self.moves: List[Tuple[Node, Node]] = [
             (self.nodes[a], self.nodes[b]) for a, b in dealt.moves]
         self.clipboard: Optional[Node] = None
+        #: Whether Paste copies what is on the clipboard or moves it.
+        self.copying = False
+        #: (file, folder a copy must be in, folder it must stay in).
+        self.copies: List[Tuple[Node, Node, Node]] = [
+            (self.nodes[a], self.nodes[b], self.nodes[a].parent)
+            for a, b in dealt.copies]
+        for node, dest in self.moves:
+            if node.parent is self.nodes[TRASH]:
+                node.origin = dest
+        if self.explorer is not None:
+            self.explorer.list_view = dealt.list_view
+        #: A right-click menu: (what, node, window or None, x, y).
+        self.context: Optional[Tuple] = None
+        #: The card hides after the first click, if the rung says so;
+        #: a peek shows it until the next click.
+        self.hide_card = dealt.hide_card
+        self.peeking = False
         #: What is picked on the desktop, and what the last click hit:
         #: a second click on the same icon right after the first opens it.
         self.picked: Optional[Tuple] = None
@@ -693,7 +741,7 @@ class Desktop:
         found = []
         for win in self.apps:
             if not win.closed:
-                found.append((win, (84 + len(found) * 112, WORK_H + 6, 106,
+                found.append((win, (84 + len(found) * 100, WORK_H + 6, 94,
                                     TASKBAR_H - 12)))
         return found
 
@@ -731,22 +779,22 @@ class Desktop:
         """The explorer's icons that are showing, and where."""
         place = win.places[win.place]
         listing = place.path.listing()
-        rows = grid_rows(win)
-        most = max(0, -(-len(listing) // COLUMNS) - rows)
+        rows, columns = grid_rows(win), ex_columns(win)
+        most = max(0, -(-len(listing) // columns) - rows)
         place.scroll = max(0, min(place.scroll, most))
         gx, gy, _gw, _gh = grid_area(win)
-        size = cell_size(win)
+        cw, ch = cell_dims(win)
         found = []
-        first = place.scroll * COLUMNS
-        for index, node in enumerate(listing[first:first + rows * COLUMNS]):
-            row, column = divmod(index, COLUMNS)
-            found.append((node, (gx + column * size, gy + row * size,
-                                 size, size)))
+        first = place.scroll * columns
+        for index, node in enumerate(listing[first:first + rows * columns]):
+            row, column = divmod(index, columns)
+            found.append((node, (gx + column * cw, gy + row * ch, cw, ch)))
         return found
 
     def ex_scrolls(self, win: Window) -> bool:
         place = win.places[win.place]
-        return -(-len(place.path.listing()) // COLUMNS) > grid_rows(win)
+        return (-(-len(place.path.listing()) // ex_columns(win))
+                > grid_rows(win))
 
     def window_at(self, x: float, y: float) -> Optional[Window]:
         if y >= WORK_H:
@@ -918,7 +966,149 @@ class Desktop:
     def _overlay_open(self) -> bool:
         return (self.popup is not None or self.dialog is not None
                 or self.menu is not None or self.dropdown is not None
-                or self.start_open)
+                or self.start_open or self.context is not None)
+
+    @property
+    def card_shown(self) -> bool:
+        return not self.hide_card or self.clicks == 0 or self.peeking
+
+    # --- the right button --------------------------------------------------
+
+    def right_click(self, x: Optional[float] = None,
+                    y: Optional[float] = None) -> None:
+        """The right button: a menu of what can be done to what is under
+        the pointer. Costs one, like any click."""
+        if self.done or self.held is not None:
+            return
+        if x is None:
+            x, y = self.pointer
+        self.pointer = (x, y)
+        self.clicks += 1
+        self._previous, self.last = self.last, None
+        self.peeking = False
+        if self.popup is None and self.dialog is None:
+            self.menu = self.dropdown = None
+            self.start_open = self.start_all = False
+            self.context = self._context_for(x, y)
+        self._arrive()
+
+    def _context_for(self, x: float, y: float) -> Optional[Tuple]:
+        if y >= WORK_H:
+            return None
+        win = self.window_at(x, y)
+        if win is None:
+            item = self.icon_at(x, y)
+            if item is None:
+                self.picked = None
+                return ('folder', self.nodes[DESKTOP_DIR], None, x, y)
+            self.picked = _icon_key(item)
+            if item[0] == 'node':
+                return ('node', item[1], None, x, y)
+            return None
+        self.raise_window(win)
+        if win.kind != 'explorer':
+            return None
+        place = win.places[win.place]
+        for node, rect in self.icon_rects(win):
+            if inside(rect, x, y):
+                place.selected = node
+                return ('node', node, win, x, y)
+        if inside(grid_area(win), x, y):
+            place.selected = None
+            return ('folder', place.path, win, x, y)
+        return None
+
+    def context_items(self) -> List[Tuple[str, Rect]]:
+        """The right-click menu's items where they are."""
+        if self.context is None:
+            return []
+        what, node, win, x, y = self.context
+        trash = self.nodes[TRASH]
+        if what == 'node':
+            names = (['Open'] if node.folder else []) + ['Cut', 'Copy']
+            if node.within(trash):
+                if node.origin is not None and node.parent is trash:
+                    names.append('Restore')
+            else:
+                names.append('Delete')
+        else:
+            names = (['Paste'] if self.clipboard is not None else [])
+            if win is not None:
+                names.append('View')
+        if not names:
+            return []
+        h = len(names) * ITEM_H
+        left = min(x, SCREEN_W - CONTEXT_W - 2)
+        top = min(y, WORK_H - h - 2)
+        return [(name, (left, top + i * ITEM_H, CONTEXT_W, ITEM_H))
+                for i, name in enumerate(names)]
+
+    def _click_context(self, x: float, y: float) -> None:
+        what, node, win, _x, _y = self.context
+        items = self.context_items()
+        self.context = None
+        for name, rect in items:
+            if not inside(rect, x, y):
+                continue
+            if name == 'Open':
+                if win is None:
+                    self._open_icon(('node', node))
+                else:
+                    self.navigate(win.places[win.place], node)
+            elif name in ('Cut', 'Copy'):
+                self.clipboard, self.copying = node, name == 'Copy'
+            elif name == 'Delete':
+                self.move_file(node, self.nodes[TRASH])
+            elif name == 'Restore':
+                self.move_file(node, node.origin)
+            elif name == 'Paste':
+                self.paste(node)
+            elif name == 'View':
+                win.list_view = not win.list_view
+                win.places[win.place].scroll = 0
+            return
+
+    def paste(self, dest: Node) -> None:
+        if self.clipboard is None:
+            return
+        if self.copying:
+            self.copy_file(self.clipboard, dest)
+        elif self.move_file(self.clipboard, dest):
+            self.clipboard = None
+
+    def copy_file(self, node: Node, dest: Node) -> Optional[Node]:
+        """A copy of *node* (and all inside it) in *dest*."""
+        if not dest.folder or dest.within(node) \
+                or dest.within(self.nodes[TRASH]):
+            return None
+        taken = {c.name for c in dest.children}
+        name = node.name
+        if name in taken:
+            stem, dot, ext = name.rpartition('.')
+            if not dot or node.folder:
+                stem, ext = name, ''
+            name = '%s - Copy%s' % (stem, '.' + ext if ext else '')
+            number = 2
+            while name in taken:
+                name = '%s - Copy (%d)%s' % (stem, number,
+                                             '.' + ext if ext else '')
+                number += 1
+
+        def clone(source: Node, parent: Node, called: str) -> Node:
+            twin = Node(len(self.nodes), called, source.folder, source.kind,
+                        parent)
+            self.nodes.append(twin)
+            parent.children.append(twin)
+            for child in list(source.children):
+                clone(child, twin, child.name)
+            return twin
+        return clone(node, dest, name)
+
+    def copied(self, goal: Tuple[Node, Node, Node]) -> bool:
+        node, dest, source = goal
+        return node.parent is source and any(
+            c is not node and c.name == node.name and c.folder == node.folder
+            for c in dest.children)
 
     def _arrive(self) -> None:
         """A popup due by this click arrives now."""
@@ -929,12 +1119,14 @@ class Desktop:
             self.next_popup += 1
             self.menu = None
             self.dropdown = None
+            self.context = None
             self.start_open = self.start_all = False
 
     # --- what a click does ----------------------------------------------
 
     def _click_at(self, x: float, y: float) -> None:
         self._previous, self.last = self.last, None
+        peeked, self.peeking = self.peeking, False
         if self.popup is not None:
             safe, reset = popup_buttons(self.popup.safe_left)
             if inside(safe, x, y):
@@ -954,6 +1146,9 @@ class Desktop:
         if self.dialog is not None:
             self._click_dialog(x, y)
             return
+        if self.context is not None:
+            self._click_context(x, y)
+            return
         if self.menu is not None:
             self._click_menu(x, y)
             return
@@ -961,6 +1156,9 @@ class Desktop:
             self._click_start(x, y)
             return
         if y >= WORK_H:
+            if self.hide_card and inside(PEEK_RECT, x, y):
+                self.peeking = not peeked
+                return
             self._click_taskbar(x, y)
             return
         win = self.window_at(x, y)
@@ -1060,6 +1258,8 @@ class Desktop:
         if not dest.folder or dest.within(node) or node.parent is dest \
                 or node.ident in (HOME, TRASH) or node.ident < len(PLACES):
             return False
+        if dest is self.nodes[TRASH]:
+            node.origin = node.parent
         node.parent.children.remove(node)
         dest.children.append(node)
         node.parent = dest
@@ -1081,11 +1281,14 @@ class Desktop:
                 place.scroll, place.selected = 0, None
             elif name == 'Up' and place.path.parent is not None:
                 self.navigate(place, place.path.parent)
-            elif name == 'Cut' and place.selected is not None:
+            elif name in ('Cut', 'Copy') and place.selected is not None:
                 self.clipboard = place.selected
+                self.copying = name == 'Copy'
             elif name == 'Paste' and self.clipboard is not None:
-                if self.move_file(self.clipboard, place.path):
-                    self.clipboard = None
+                self.paste(place.path)
+            elif name == 'View':
+                win.list_view = not win.list_view
+                place.scroll = 0
             elif name == 'Delete' and place.selected is not None \
                     and not place.selected.within(self.nodes[TRASH]):
                 self.move_file(place.selected, self.nodes[TRASH])
@@ -1309,7 +1512,8 @@ class Desktop:
     @property
     def solved(self) -> bool:
         return (all(self.met(goal) for goal in self.goals)
-                and all(node.parent is dest for node, dest in self.moves))
+                and all(node.parent is dest for node, dest in self.moves)
+                and all(self.copied(goal) for goal in self.copies))
 
 
 # --- dealing a desktop ------------------------------------------------------
@@ -1355,6 +1559,10 @@ class Deal(NamedTuple):
     #: shortcut on the desktop.
     pinned: Tuple[int, ...]
     shortcuts: Tuple[int, ...]
+    #: (file, folder a copy of it must be in), in card order.
+    copies: Tuple[Tuple[int, int], ...] = ()
+    list_view: bool = False
+    hide_card: bool = False
 
 
 def build_files(dealt: Deal) -> List[Node]:
@@ -1612,11 +1820,19 @@ def deal(rung: int, seed: Optional[int] = None,
         at += rng.randint(2, 3 + level.goals)
         popups.append(Popup(at, rng.randrange(level.windows),
                             rng.random() < 0.5))
+    # Drawn last, so everything above deals as it always has.
+    copies = []
+    for _c in range(min(level.copies, len(loose))):
+        node = loose.pop()
+        copies.append((node, rng.choice(
+            [f for f in folders if f not in (files[node][3], TRASH)])))
+    list_view = level.list_view and rng.random() < 0.5
     return Deal(level, tuple(titles), tuple(tabs), tuple(menus),
                 tuple(applies), tuple(places), tuple(order), minimised,
                 closed, tuple(notes), tuple(popups), tuple(specs),
                 tuple(requires), tuple(goals), tuple(files), tuple(moves),
-                explorer_at, pinned, shortcuts)
+                explorer_at, pinned, shortcuts, tuple(copies),
+                list_view, level.hide_card)
 
 
 # --- the reference -----------------------------------------------------------
@@ -1637,6 +1853,9 @@ def reference_action(desk: Desktop) -> Optional[Action]:
     for node, dest in desk.moves:
         if node.parent is not dest:
             return _file_towards(desk, node, dest)
+    for goal in desk.copies:
+        if not desk.copied(goal):
+            return _file_towards(desk, goal[0], goal[1], copy=True)
     return None
 
 
@@ -1648,12 +1867,14 @@ def _open_from_start(desk: Desktop, win: Window) -> Action:
     return ('click', desk.reachable(all_apps_rect(), None))
 
 
-def _file_towards(desk: Desktop, node: Node, dest: Node) -> Action:
+def _file_towards(desk: Desktop, node: Node, dest: Node,
+                  copy: bool = False) -> Action:
     """Plainly: open the folder it is in one level at a time, pick it,
     Cut, open the folder it goes to the same way, Paste. A file that is
     to go to the Trash is picked and Deleted instead."""
     ex = desk.explorer
-    if desk.dropdown is not None or desk.menu is not None:
+    if desk.dropdown is not None or desk.menu is not None \
+            or desk.context is not None:
         return ('click', _anywhere_else(desk))
     if desk.dialog is not None:
         return ('click', desk.reachable(desk.dialog_buttons()[1], None))
@@ -1668,7 +1889,7 @@ def _file_towards(desk: Desktop, node: Node, dest: Node) -> Action:
         return ('click', desk.reachable(rect, None))
     place = ex.places[ex.place]
     tools = dict(tool_rects(ex))
-    if desk.clipboard is node:
+    if desk.clipboard is node and desk.copying == copy:
         if place.path is dest:
             return _ensure(desk, ex, tools['Paste'])
         return _navigate(desk, ex, place, dest)
@@ -1676,9 +1897,9 @@ def _file_towards(desk: Desktop, node: Node, dest: Node) -> Action:
         return _navigate(desk, ex, place, node.parent)
     if place.selected is not node:
         return _show(desk, ex, place, node)
-    if dest.ident == TRASH:
+    if dest.ident == TRASH and not copy:
         return _ensure(desk, ex, tools['Delete'])
-    return _ensure(desk, ex, tools['Cut'])
+    return _ensure(desk, ex, tools['Copy' if copy else 'Cut'])
 
 
 def _navigate(desk: Desktop, ex: Window, place: Place,
@@ -1695,7 +1916,7 @@ def _show(desk: Desktop, ex: Window, place: Place, node: Node) -> Action:
     """Click *node*'s icon -- scrolling to it first if it is not showing.
     Clicking a folder that is already picked opens it."""
     index = place.path.listing().index(node)
-    row = index // COLUMNS
+    row = index // ex_columns(ex)
     up, down = ex_scroll_rects(ex)
     if row < place.scroll:
         return _ensure(desk, ex, up)
@@ -1857,7 +2078,11 @@ def reference_round(dealt: Deal) -> Desktop:
 def par(dealt: Deal) -> float:
     """The clicks a round must come in at or under to pass."""
     level = dealt.level
-    return reference_round(dealt).clicks * level.factor + level.slack
+    # Two peeks at a hidden card are allowed for; the reference needs
+    # none, since it never forgets.
+    peeks = 2 if level.hide_card else 0
+    return (reference_round(dealt).clicks + peeks) * level.factor \
+        + level.slack
 
 
 def budget(par_clicks: float) -> int:
@@ -1869,7 +2094,8 @@ def colour_of(name: str) -> Tuple[int, int, int]:
     return dict(COLOURS)[name]
 
 
-__all__ = ['EXPLORER', 'HOME', 'Node', 'PLACES', 'Place', 'START_PANEL',
+__all__ = ['CONTEXT_W', 'LIST_H', 'PEEK_RECT', 'cell_dims', 'ex_columns',
+           'EXPLORER', 'HOME', 'Node', 'PLACES', 'Place', 'START_PANEL',
            'TOOLS', 'TRASH', 'all_apps_rect', 'desktop_icon_rect',
            'ex_scroll_rects', 'grid_area', 'place_tab_rects', 'plus_rect',
            'sidebar_rects', 'start_rows', 'start_tiles', 'tool_rects',

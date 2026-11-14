@@ -674,6 +674,12 @@ def desktop_note(chosen: Dict[str, Any]) -> str:
         found.append(_('the explorer closed'))
     if level.restores:
         found.append(_('restoring from the Trash'))
+    if level.copies:
+        found.append(_('copying'))
+    if level.list_view:
+        found.append(_('list views'))
+    if level.hide_card:
+        found.append(_('a card that hides'))
     if found:
         said.append(_('With %s.') % ', '.join(found))
     if level.factor < 1.0:
