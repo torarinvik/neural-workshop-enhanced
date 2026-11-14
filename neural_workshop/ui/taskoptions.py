@@ -536,6 +536,37 @@ VIDEO_PUZZLE = TaskSpec(
     note=video_puzzle_note)
 
 
+def camera_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung asks for."""
+    from .. import camera
+    level = camera.grade(int(chosen['CAMERA_RUNG']))
+    reach = level.reach
+    said = [_('Rung %d: within %s and %.2g degrees, %d objects.')
+            % (level.rung, ('%.2g m' % reach) if reach >= 0.01
+               else ('%.2g mm' % (reach * 1000)), level.aim,
+               level.objects)]
+    if level.meter:
+        said.append(_('A meter shows how close you are.'))
+    if chosen['CAMERA_ADAPTIVE']:
+        said.append(_('A match climbs a rung, a miss drops one; the '
+                      'ladder has no top.'))
+    return '  '.join(said)
+
+
+CAMERA = TaskSpec(
+    title=_('Camera options'),
+    options=(
+        Option('CAMERA_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40,
+                       60, 100)),
+        Option('CAMERA_TRIALS', _('Photographs per run'), 8,
+               values=(1, 3, 5, 8, 12, 20, 30)),
+        Option('CAMERA_ADAPTIVE',
+               _('Climb a rung on a match, drop one on a miss'), True),
+    ),
+    note=camera_note)
+
+
 def hanoi_note(chosen: Dict[str, Any]) -> str:
     """The minimum, spelled out — 2^n - 1 grows faster than a row of
     numbers suggests, and the difference between five disks and eight
@@ -2173,6 +2204,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'graph_mapping': GRAPH_MAPPING,
     'matrix_reasoning': MATRIX_REASONING,
     'jigsaw': JIGSAW,
+    'camera': CAMERA,
     'video_puzzle': VIDEO_PUZZLE,
     'tower_of_hanoi': HANOI,
     'salesman': SALESMAN,

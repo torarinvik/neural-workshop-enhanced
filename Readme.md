@@ -1012,6 +1012,51 @@ Nothing is downloaded for this one — the shapes are generated, and
 which shape it is carries nothing at all. It is a marker for an
 instant, not a thing to remember.
 
+#### Camera
+
+You stand in a field of objects, and a photograph taken somewhere in
+it is pinned in the corner of the screen. Walk there with WASD, look
+around by dragging the mouse or with the arrow keys, rise and sink with
+Q and E where the photo was taken off the ground, hold Shift for fine
+movement and T to see the photograph full size, and press Enter when
+your view is the photograph.
+
+It is judged on the pose, not the picture: the match passes when your
+eye is within the rung's distance of where the photographer stood and
+your line of sight within its angle of theirs. The ladder has no top.
+Every rung is a formula rather than a row in a table:
+
+| Rung | Within | Objects | Field |
+| --- | --- | --- | --- |
+| 1 | 3 m, 30°, with a warmth meter | 4 | 14 m across |
+| 5 | 81 cm, 10° | 14 | 28 m |
+| 10 | 16 cm, 2.5°; photos taken off the ground, occluders | 29 | 49 m |
+| 20 | 6 mm, 0.16° | 67 | 104 m |
+| 40 | 8 µm, 0.0007° | 181 | 240 m |
+
+Somewhere around rung twenty it is past any human hand, and the
+tolerances keep halving every two rungs after that for as long as you
+care to climb. The world grows with them — more objects, a larger
+field, photographs from higher and lower and tilted further, blocks
+that hide one part of the field from another, and objects that look
+more and more alike until, at the top of the world's growth, there are
+only three kinds. Then the world stops growing so a frame stays
+drawable, and the tolerances carry on alone.
+
+Every photograph is aimed at something, with at least one object close
+enough to fix the distance by, so no rung is unfair for want of
+anything to line up on. With *Climb a rung on a match* a match goes up
+one rung and a miss comes down one.
+
+The agent plays it through thirty-one ports: ten moves (walk four ways,
+turn, look up and down, rise, sink) at three sizes each, and one that
+says "this is it". The finest step is half the rung's own tolerance, so
+every rung can be reached through the ports and what makes the top hard
+is knowing where to stop. `tests/test_camera.py` proves it by driving a
+policy that knows the answer to a paid match at rung 25, about a
+millimetre. The task is turn-based, so it takes the think clock: study
+the photograph longer, or start walking sooner.
+
 ### Reasoning
 
 The *Reasoning* category holds ten tasks.

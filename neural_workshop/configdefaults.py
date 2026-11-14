@@ -716,6 +716,18 @@ JIGSAW_ADAPTIVE = True
 JIGSAW_PREVIEW = True
 JIGSAW_MARK_PLACED = False
 
+# Camera: stand in a field of objects and find the spot a photograph
+# of it was taken from, then press Enter. It matches when the eye is
+# within the rung's distance and the line of sight within its angle.
+# The ladder has no top: rung 1 accepts three metres and thirty degrees
+# with a warmth meter, rung 20 about six millimetres, and past that it
+# is beyond any human hand. The field grows, fills and gets harder to
+# tell apart as it climbs. With CAMERA_ADAPTIVE a match climbs a rung
+# and a miss drops one.
+CAMERA_RUNG = 1
+CAMERA_TRIALS = 8
+CAMERA_ADAPTIVE = True
+
 # Video Puzzle: a short action clip cut into VIDEO_PUZZLE_PIECES equal
 # stretches of time, shown shuffled and all playing at once; click two
 # to swap them, and the puzzle is done when they read in the order they

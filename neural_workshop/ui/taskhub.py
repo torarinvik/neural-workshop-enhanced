@@ -62,6 +62,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
     'perception': [
         ('count', _('Count')),
         ('mr_time', _('Mr. Time')),
+        ('camera', _('Camera')),
     ],
     'reasoning': [
         ('graph_mapping', _('Graph Mapping')),
@@ -558,6 +559,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'jigsaw':
         from .jigsaw import JigsawPuzzle
         JigsawPuzzle()
+        return
+    if task_id == 'camera':
+        from .camera import CameraTask
+        CameraTask()
         return
     if task_id == 'video_puzzle':
         from .videopuzzle import VideoPuzzle
