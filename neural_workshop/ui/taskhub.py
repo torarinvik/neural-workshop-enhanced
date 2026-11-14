@@ -104,6 +104,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
     # costs while the world moves.
     'decisions': [
         ('sonar', _('Sonar')),
+        ('dispatch', _('Dispatch')),
     ],
 }
 
@@ -566,6 +567,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'jigsaw':
         from .jigsaw import JigsawPuzzle
         JigsawPuzzle()
+        return
+    if task_id == 'dispatch':
+        from .dispatch import Dispatch
+        Dispatch()
         return
     if task_id == 'sonar':
         from .sonar import Sonar

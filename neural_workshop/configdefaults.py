@@ -726,6 +726,18 @@ SONAR_RUNG = 1
 SONAR_TRIALS = 8
 SONAR_ADAPTIVE = True
 
+# Dispatch: incidents appear on a town map in real time and grow until
+# a crew deals with them or they burn out. Click a crew, then where to
+# send it; any crew can be redirected at any moment. A round passes if
+# the town's damage (seconds incidents spent open, plus 20 per incident
+# lost) is no more than par, which is what a reference dispatcher took
+# on the identical round. From rung 4 some reports are false alarms and
+# a scout can check them; from rung 6 reported sizes are estimates;
+# past rung 20 par is below the reference's own damage.
+DISPATCH_RUNG = 1
+DISPATCH_TRIALS = 3
+DISPATCH_ADAPTIVE = True
+
 # Camera: stand in a field of objects and find the spot a photograph
 # of it was taken from, then press Enter. It matches when the eye is
 # within the rung's distance and the line of sight within its angle.

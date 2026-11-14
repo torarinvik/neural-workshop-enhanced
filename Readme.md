@@ -2689,6 +2689,55 @@ planning further ahead can beat it.
 The agent plays it through six ports: four move a cursor (free), one
 pings and one digs. It is turn-based, so it takes the think clock.
 
+#### Dispatch
+
+Sonar's decisions, with the clock running. A town map with three
+stations and two or three crews. Incidents appear as discs that grow,
+and one that fills its ring is lost. Click a crew, then click where to
+send it (or press its number, then the incident's letter, or J, K or L
+for a station). A crew at an incident shrinks it until it is gone; two
+crews shrink it twice as fast. Any crew can be sent somewhere else at
+any moment, and what it leaves unfinished starts growing again.
+
+The town's **damage** is the seconds real incidents spent open, plus
+twenty for each one lost. A round passes if that is no more than par:
+the damage a reference dispatcher took on the identical round. Where
+and when every incident appears, how fast it grows, whether it is real
+and how wrong its report is are all fixed before the round starts, so
+the reference faces exactly what you do.
+
+| Rung | What it adds |
+| --- | --- |
+| 1–2 | Two crews, one incident at a time and long gaps. Par is nearly twice the reference's damage. |
+| 3+ | **Bursts and lulls.** Several incidents at once, then quiet. A burst wants the nearest free crew sent now; a lull is the only time to move crews to where the next burst will need them. |
+| 4+ | **False alarms.** A pale disc with a question mark is unconfirmed; a **scout** is three times as fast as a crew and can go and look, but looking takes time the incident keeps growing through. |
+| 6+ | **Estimates.** An unconfirmed report's size is off by a margin that widens with the rung. |
+| 12+ | No allowance: match the reference. |
+| 21+ | Par is *below* the reference's damage, by more at every rung. |
+
+Growth keeps climbing while the crews stay at three, so by the upper
+rungs an incident across town burns out before a crew that sets off at
+once can reach it, and where the crews were standing when it appeared
+decides it. The reference itself starts losing incidents around rung
+sixteen.
+
+The reference is deliberately plain: each idle crew goes to the most
+urgent incident it can still save, the scout to the nearest unconfirmed
+report. It never moves an idle crew, never puts two crews on one job
+and never changes its mind — which are the three ways to beat it.
+
+The agent plays through seventeen ports: one per unit, one per incident
+letter, one per station, and an order is a unit then a place. The task
+is clocked, so it refuses the think clock; it already has one. Built
+for a runtime it also pays per incident, green when one is saved and
+red when one is lost, on top of the round's verdict, because one bit a
+minute is very little to learn from. That is the round's own result
+taken apart, not shaping, and it differs from the round's verdict in
+one way: it does not count how long an incident waited.
+
+Stage two — investing in stations during a lull, at the price of a
+crew out of service — is not built yet.
+
 ### Window size, full screen, and the two coordinate spaces
 
 The window is resizable, and **F11** switches to and from full screen

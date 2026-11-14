@@ -596,6 +596,36 @@ SONAR = TaskSpec(
     note=sonar_note)
 
 
+def dispatch_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung puts on the map."""
+    from .. import dispatch
+    level = dispatch.grade(int(chosen['DISPATCH_RUNG']))
+    said = [_('Rung %d: %d crews, bursts of up to %d.')
+            % (level.rung, level.crews, level.burst)]
+    if level.scout:
+        said.append(_('%d%% of reports are false alarms; a scout can '
+                      'check.') % round(level.false_rate * 100))
+    if level.error:
+        said.append(_('Reported sizes are off by up to %d%%.')
+                    % round(level.error * 100))
+    if level.factor < 1.0:
+        said.append(_('You must do better than the reference dispatcher.'))
+    return '  '.join(said)
+
+
+DISPATCH = TaskSpec(
+    title=_('Dispatch options'),
+    options=(
+        Option('DISPATCH_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30)),
+        Option('DISPATCH_TRIALS', _('Rounds per run'), 3,
+               values=(1, 2, 3, 5, 8)),
+        Option('DISPATCH_ADAPTIVE',
+               _('Climb a rung under par, drop one over'), True),
+    ),
+    note=dispatch_note)
+
+
 def hanoi_note(chosen: Dict[str, Any]) -> str:
     """The minimum, spelled out — 2^n - 1 grows faster than a row of
     numbers suggests, and the difference between five disks and eight
@@ -2235,6 +2265,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'jigsaw': JIGSAW,
     'camera': CAMERA,
     'sonar': SONAR,
+    'dispatch': DISPATCH,
     'video_puzzle': VIDEO_PUZZLE,
     'tower_of_hanoi': HANOI,
     'salesman': SALESMAN,

@@ -184,6 +184,9 @@ CATALOG: Tuple[Wrapped, ...] = (
     Wrapped('sonar', 'Sonar',
             'nwenv.sonar', 'SonarEnv',
             'neural_workshop.ui.sonar', 'Sonar'),
+    Wrapped('dispatch', 'Dispatch',
+            'nwenv.dispatch', 'DispatchEnv',
+            'neural_workshop.ui.dispatch', 'Dispatch'),
 )
 
 BY_ID: Dict[str, Wrapped] = {row.task_id: row for row in CATALOG}
