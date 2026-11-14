@@ -95,6 +95,11 @@ WALL_SHARE = 0.11
 #: A 15mm steel marble.
 MARBLE_RADIUS = 0.0075
 
+# Leave a visibly distinct gap around each opening. A merely non-intersecting
+# 3 mm gap read as a wall clipping the pit in the foreshortened 3D view, so the
+# generator and port now reserve 6 mm between every hole/cup edge and wall.
+HOLE_WALL_CLEARANCE = MARBLE_RADIUS * 0.80
+
 #: A solid sphere's moment of inertia, in units of ``m·r²``. The
 #: engine derives it from the sphere geom; it is named here because
 #: the numbers the tests check against come out of it.
@@ -271,15 +276,10 @@ class Grade(NamedTuple):
     #: cell, so a bigger maze is a bigger tray rather than a tighter
     #: one.
     #:
-    #: Tightening instead was the first attempt and it cost the top
-    #: rungs their holes. A hole has to sit in a corridor with the
-    #: marble still able to squeeze past, which needs
-    #: ``2·slack > hole_scale + margin_scale + 1``; on a 305mm tray
-    #: with twelve columns that inequality fails, and the placement
-    #: answered by shoving the holes out under the walls, where they
-    #: are a notch bitten out of a corridor edge rather than a hazard
-    #: in the road. :mod:`tests.test_marblemaze` asserts the inequality
-    #: for every rung.
+    #: A pit must fit inside the corridor, clear the nearest wall by
+    #: :data:`HOLE_WALL_CLEARANCE`, and leave room for a marble to pass
+    #: on its far side. The tray grows enough to honor all three; older
+    #: deals hid part of some pits underneath wall strips.
     slack: float
     #: Fraction of dead ends opened into loops. Nought is a perfect
     #: maze — one route, no choices. Braiding buys route choice at the
@@ -312,21 +312,21 @@ class Grade(NamedTuple):
 #: unwinnable and the rest of the ladder had nothing left to add.
 GRADES: Tuple[Grade, ...] = (
     Grade('the tray',        4,  4, 3.40, 0.00,  0, 2.0, 1.60, 1,  45.0),
-    Grade('first hole',      4,  4, 3.20, 0.00,  1, 2.0, 1.40, 1,  45.0),
-    Grade('three holes',     5,  4, 3.00, 0.10,  3, 2.0, 1.30, 1,  50.0),
-    Grade('the long way',    5,  5, 2.85, 0.10,  5, 1.9, 1.20, 1,  55.0),
-    Grade('two marbles',     5,  5, 2.85, 0.05,  4, 1.9, 1.30, 2,  70.0),
-    Grade('narrow',          6,  5, 2.70, 0.15,  7, 1.8, 1.10, 1,  60.0),
-    Grade('narrow, twice',   6,  6, 2.70, 0.15,  8, 1.8, 1.15, 2,  78.0),
-    Grade('the sieve',       7,  6, 2.55, 0.20, 11, 1.7, 1.00, 1,  65.0),
-    Grade('three marbles',   7,  6, 2.60, 0.10,  9, 1.7, 1.15, 3,  95.0),
-    Grade('tight',           8,  7, 2.40, 0.20, 14, 1.6, 0.95, 1,  72.0),
-    Grade('tight, in pairs', 8,  7, 2.45, 0.15, 13, 1.6, 1.00, 2,  90.0),
-    Grade('the labyrinth',   9,  8, 2.25, 0.25, 18, 1.5, 0.90, 1,  80.0),
-    Grade('four marbles',    9,  8, 2.35, 0.10, 14, 1.5, 1.05, 4, 120.0),
-    Grade('a hole a cell',  10,  9, 2.10, 0.25, 24, 1.4, 0.85, 1,  88.0),
-    Grade('the gauntlet',   11,  9, 2.05, 0.30, 30, 1.4, 0.80, 2, 110.0),
-    Grade('inhuman',        12, 10, 1.95, 0.30, 38, 1.3, 0.75, 3, 140.0),
+    Grade('first hole',      4,  4, 3.65, 0.00,  1, 2.0, 1.40, 1,  45.0),
+    Grade('three holes',     5,  4, 3.60, 0.10,  3, 2.0, 1.30, 1,  50.0),
+    Grade('the long way',    5,  5, 3.45, 0.10,  5, 1.9, 1.20, 1,  55.0),
+    Grade('two marbles',     5,  5, 3.50, 0.05,  4, 1.9, 1.30, 2,  70.0),
+    Grade('narrow',          6,  5, 3.30, 0.15,  7, 1.8, 1.10, 1,  60.0),
+    Grade('narrow, twice',   6,  6, 3.325,0.15,  8, 1.8, 1.15, 2,  78.0),
+    Grade('the sieve',       7,  6, 3.15, 0.20, 11, 1.7, 1.00, 1,  65.0),
+    Grade('three marbles',   7,  6, 3.225,0.10,  9, 1.7, 1.15, 3,  95.0),
+    Grade('tight',           8,  7, 3.025,0.20, 14, 1.6, 0.95, 1,  72.0),
+    Grade('tight, in pairs', 8,  7, 3.05, 0.15, 13, 1.6, 1.00, 2,  90.0),
+    Grade('the labyrinth',   9,  8, 2.90, 0.25, 18, 1.5, 0.90, 1,  80.0),
+    Grade('four marbles',    9,  8, 2.975,0.10, 14, 1.5, 1.05, 4, 120.0),
+    Grade('a hole a cell',  10,  9, 2.975,0.25, 24, 1.4, 0.85, 1,  88.0),
+    Grade('the gauntlet',   11,  9, 2.95, 0.30, 30, 1.4, 0.80, 2, 110.0),
+    Grade('inhuman',        12, 10, 2.925,0.30, 38, 1.3, 0.75, 3, 140.0),
 )
 
 
@@ -594,6 +594,17 @@ def _wall_strips(opened: Sequence[Sequence[bool]], cols: int, rows: int,
     return tuple(strips)
 
 
+def _circle_clear_of_walls(x: float, y: float, radius: float,
+                           walls: Sequence[Wall]) -> bool:
+    """Require the full opening circle to clear every emitted wall box."""
+    for wall in walls:
+        dx = max(wall.x0 - x, 0.0, x - wall.x1)
+        dy = max(wall.y0 - y, 0.0, y - wall.y1)
+        if math.hypot(dx, dy) - radius < HOLE_WALL_CLEARANCE - 1e-12:
+            return False
+    return True
+
+
 # --- certifying a tray -----------------------------------------------------
 
 
@@ -787,8 +798,10 @@ def _build(grade: Grade, rung: int, rng: random.Random) -> Tray:
     home_cell = rng.choice([c for c in range(cols * rows)
                             if from_start[c] >= reach - 1])
     home_x, home_y = centre(home_cell)
-    home_r = max(MARBLE_RADIUS * 1.5, min(corridor * 0.42,
+    home_r = max(MARBLE_RADIUS * 1.5, min(corridor * 0.40,
                                           MARBLE_RADIUS * 2.1))
+    if not _circle_clear_of_walls(home_x, home_y, home_r, walls):
+        raise Unbuildable('home cup is too close to a maze wall')
     # Distance *from the cup*, which is the one every placement below
     # actually wants. Measuring from the start instead put the marbles
     # in the cells adjacent to the cup — the furthest cells from the
@@ -799,7 +812,7 @@ def _build(grade: Grade, rung: int, rng: random.Random) -> Tray:
     from_home = _cell_distances(opened, cols, rows, home_cell)
 
     cup = Hole(home_x, home_y, home_r, True)
-    pits = _place_holes(grade, opened, cols, rows, cell, corridor,
+    pits = _place_holes(grade, opened, walls, cols, rows, cell, corridor,
                         width, depth, ox, oy, start_cell, home_cell,
                         from_start, from_home, rng)
 
@@ -852,7 +865,8 @@ def _build(grade: Grade, rung: int, rng: random.Random) -> Tray:
                 field=field, route=route)
 
 
-def _place_holes(grade: Grade, opened, cols: int, rows: int, cell: float,
+def _place_holes(grade: Grade, opened, walls: Sequence[Wall],
+                 cols: int, rows: int, cell: float,
                  corridor: float, width: float, depth: float,
                  ox: float, oy: float, start_cell: int,
                  home_cell: int, from_start: Sequence[int],
@@ -874,12 +888,12 @@ def _place_holes(grade: Grade, opened, cols: int, rows: int, cell: float,
     radius = MARBLE_RADIUS * grade.hole_scale
     margin = MARBLE_RADIUS * grade.margin_scale
     half = corridor / 2.0
-    # The offset that just satisfies the squeeze, plus whatever room is
-    # left over. Solving `offset + half - r - radius >= margin` gives
-    # the least offset that works; anything more only makes it easier,
-    # so the placement takes the least and spends the slack on variety.
+    # The offset that just satisfies the far-side squeeze, plus a small
+    # range for variety. The upper bound keeps the whole circle inside
+    # the corridor and clears the nearest wall by HOLE_WALL_CLEARANCE.
     least = radius + margin + MARBLE_RADIUS - half
-    most = half + radius * 0.55
+    most = min(half - radius - HOLE_WALL_CLEARANCE,
+               half + radius * 0.55)
     if least > most:
         return ()
 
@@ -909,6 +923,8 @@ def _place_holes(grade: Grade, opened, cols: int, rows: int, cell: float,
         hx, hy = (cx + offset, cy) if vertical else (cx, cy + offset)
         if not (radius < hx < width - radius
                 and radius < hy < depth - radius):
+            continue
+        if not _circle_clear_of_walls(hx, hy, radius, walls):
             continue
         if any(math.hypot(hx - other.x, hy - other.y)
                < radius + other.radius + MARBLE_RADIUS * 1.4

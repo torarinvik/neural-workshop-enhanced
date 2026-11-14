@@ -70,6 +70,24 @@ STEEL = (0.86, 0.88, 0.93)
 SAWN = (0.58, 0.44, 0.31)
 GREEN = (0.16, 0.55, 0.30)
 
+
+def _cup_collar_outer_radius(hole, walls) -> Optional[float]:
+    """Fit the decorative cup collar inside the nearest wall clearance.
+
+    The hole itself is guaranteed a small wall gap by the tray generator, but
+    the original full-size collar is wider than that opening and could be
+    hidden under a wall. Keep the clear aperture unchanged and trim only the
+    visual annulus; return None if a malformed/very tight board leaves no room.
+    """
+    nearest_wall = min((
+        math.hypot(max(wall.x0 - hole.x, 0.0, hole.x - wall.x1),
+                   max(wall.y0 - hole.y, 0.0, hole.y - wall.y1))
+        for wall in walls
+    ), default=math.inf)
+    available = min(hole.radius * 1.34,
+                    nearest_wall - MM.HOLE_WALL_CLEARANCE)
+    return available if available > hole.radius else None
+
 #: Where the light is, and what the room around the tray looks like to a
 #: mirrored surface. High, over the player's left shoulder — the angle a
 #: desk lamp would be, and the one that puts a marble's shadow where the
@@ -353,8 +371,10 @@ class MarbleMaze:
             target.tube(wx(hole.x), wz(hole.y), hole.radius, 0.0,
                         pit_floor, floor_disc=True)
             if hole.home:
-                collar.ring(wx(hole.x), wz(hole.y), hole.radius,
-                            hole.radius * 1.34, 0.0006)
+                collar_outer = _cup_collar_outer_radius(hole, tray.walls)
+                if collar_outer is not None:
+                    collar.ring(wx(hole.x), wz(hole.y), hole.radius,
+                                collar_outer, 0.0006)
         if not pits.empty:
             self.meshes['pits'] = pits.build(program, depth)
         if not cups.empty:

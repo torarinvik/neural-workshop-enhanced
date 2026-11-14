@@ -32,21 +32,32 @@ class TheLadderIsBuildable(unittest.TestCase):
             tray = M.deal(rung, seed=4000 + rung)
             self.assertEqual(tray.rung, rung, M.GRADES[rung - 1].name)
 
-    def test_a_corridor_always_fits_the_marble_and_a_hole_beside_it(self):
-        """``2·slack > hole_scale + margin_scale + 1``, for every rung.
-
-        This is the inequality that decides whether a hole can sit in a
-        corridor with the marble still able to squeeze past on the far
-        side. Where it fails, hole placement does not fail — it shoves
-        the holes out under the walls, where they are a notch bitten
-        out of a corridor edge rather than a hazard in the road, and
-        the rung quietly stops being the rung it claims to be.
-        """
+    def test_a_corridor_fits_the_marble_and_a_wall_clear_hole(self):
+        """The pit fits, clears the wall, and leaves a passable far side."""
         for rung, grade in enumerate(M.GRADES, start=1):
-            needed = (grade.hole_scale + grade.margin_scale + 1.0) / 2.0
+            if grade.holes == 0:
+                continue
+            clearance_scale = M.HOLE_WALL_CLEARANCE / M.MARBLE_RADIUS
+            needed = (grade.hole_scale
+                      + (grade.margin_scale + 1.0 + clearance_scale) / 2.0)
             self.assertGreater(grade.slack, needed,
                                'rung %d (%s) has no room for its holes'
                                % (rung, grade.name))
+
+    def test_dealt_holes_clear_every_wall_strip(self):
+        """No generated pit/cup may be occluded or blocked by a wall."""
+        for rung in range(1, len(M.GRADES) + 1):
+            for run in range(4):
+                tray = M.deal(rung, seed=6100 + run * 53 + rung)
+                for hole in tray.holes:
+                    for wall in tray.walls:
+                        dx = max(wall.x0 - hole.x, 0.0, hole.x - wall.x1)
+                        dy = max(wall.y0 - hole.y, 0.0, hole.y - wall.y1)
+                        clearance = math.hypot(dx, dy) - hole.radius
+                        self.assertGreaterEqual(
+                            clearance, M.HOLE_WALL_CLEARANCE - 1e-9,
+                            'rung %d has a hole under a wall (gap %.6f m)'
+                            % (rung, clearance))
 
     def test_the_marble_fits_down_every_corridor(self):
         for rung in range(1, len(M.GRADES) + 1):
