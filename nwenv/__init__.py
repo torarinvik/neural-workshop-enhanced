@@ -108,6 +108,10 @@ from .camera import CameraEnv  # noqa: E402
 from .sonar import SonarEnv  # noqa: E402
 from .hiddenrule import HiddenRuleEnv  # noqa: E402
 from .dispatch import DispatchEnv  # noqa: E402
+from .gamble import GambleEnv  # noqa: E402
+from .wiring import WiringEnv  # noqa: E402
+from .forms import FormsEnv  # noqa: E402
+from .bluff import BluffEnv  # noqa: E402
 from .desktop import DesktopEnv  # noqa: E402
 from .lookout import LookoutEnv  # noqa: E402
 from .ncupmonte import NCupMonteEnv  # noqa: E402
@@ -180,7 +184,7 @@ __all__ = [
     'CrossedWiresEnv', 'CrosswordEnv', 'CustodyEnv', 'DonkeyEnv',
     'GraphMappingEnv',
     'GoEnv', 'make_go_env', 'verify_go_outcome',
-    'HanoiEnv', 'InTheDarkEnv', 'JigsawEnv', 'VideoPuzzleEnv', 'CameraEnv', 'SonarEnv', 'HiddenRuleEnv', 'DispatchEnv', 'DesktopEnv', 'LookoutEnv',
+    'HanoiEnv', 'InTheDarkEnv', 'JigsawEnv', 'VideoPuzzleEnv', 'CameraEnv', 'SonarEnv', 'BluffEnv', 'FormsEnv', 'WiringEnv', 'GambleEnv', 'HiddenRuleEnv', 'DispatchEnv', 'DesktopEnv', 'LookoutEnv',
     'MatrixReasoningEnv', 'MazeEnv', 'MovingTargetsEnv', 'MrTimeEnv',
     'NCupMonteEnv',
     'PursuitEnv', 'RecognitionEnv', 'ReflexEnv', 'RemovalsEnv',

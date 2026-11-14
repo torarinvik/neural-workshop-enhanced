@@ -738,6 +738,56 @@ HIDDEN_RULE_RUNG = 1
 HIDDEN_RULE_TRIALS = 5
 HIDDEN_RULE_ADAPTIVE = True
 
+# Gamble: slot machines with hidden odds. A pull of a machine pays what
+# it pays on a win, or nothing; which machine is best has to be found by
+# pulling. A round passes if its pulls were worth par -- worth on average,
+# so luck neither passes nor fails it -- set from what a Thompson-sampling
+# reference's pulls were worth on the identical deal. Higher rungs bring
+# more machines closer together, odds that drift (6), machines that bite
+# with rare large losses (10), odds that jump (14), and pulls that cost
+# with a bankroll and Stop (18); past rung 20 par is above the reference.
+GAMBLE_RUNG = 1
+GAMBLE_TRIALS = 5
+GAMBLE_ADAPTIVE = True
+
+# Hidden Wiring: switches drive lamps through gates nobody shows. Flipping
+# a switch is free; looking at the lamps costs a point. The exam shows
+# lamp patterns and asks for switches that would make them, and every
+# wrong answer costs the rung's penalty. A round passes if looks plus
+# penalties come to no more than par, set from what a reference that keeps
+# every possible wiring and looks where they disagree paid on the identical
+# deal. Higher rungs bring more switches and lamps, and/or gates (3),
+# inverted inputs (5), xor (7), three-input gates (12), and from rung 16 a
+# lamp that sometimes lies; past rung 20 par is below the reference.
+WIRING_RUNG = 1
+WIRING_TRIALS = 5
+WIRING_ADAPTIVE = True
+
+# Forms: a card says who someone is and a form asks for it, filled with
+# the keyboard alone. Every key costs one; a page sent with a mistake a
+# form can see (a date that is not a date) comes back and costs the
+# rung's penalty; one wrong value at the end loses the round. A round
+# passes if it is all right in no more keys than par, set from a
+# reference typist on the identical form. Higher rungs bring more fields,
+# dates to reformat (4), phone numbers (5), lists that complete (6),
+# checkboxes and radios (8), fields that appear (10), more pages (12, 18),
+# a letter to read (14) and other people's details in it (16).
+FORMS_RUNG = 1
+FORMS_TRIALS = 5
+FORMS_ADAPTIVE = True
+
+# Bluff: one card each from a short deck; check or bet, fold or call,
+# the higher card wins a showdown. The opponent has habits to be read
+# from the log of hands: a calling station (1), a rock (3), a maniac (5),
+# one of those unannounced (7) or a sound player (10), one who adapts to
+# you (14), and from rung 18 one that changes partway. A round passes if
+# its choices were worth par on average over the opponent's cards -- so
+# the deal's luck neither passes nor fails it -- set from a reference that
+# models the opponent from showdowns; past rung 20 par is above it.
+BLUFF_RUNG = 1
+BLUFF_TRIALS = 5
+BLUFF_ADAPTIVE = True
+
 # Desktop: a small computer drawn by the task -- windows to raise,
 # move, resize, minimise and close; switches, choices, colours,
 # sliders, steppers and dropdowns; tabs, scrolling, cascading menus,

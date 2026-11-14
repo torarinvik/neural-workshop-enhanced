@@ -70,6 +70,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('graph_mapping', _('Graph Mapping')),
         ('matrix_reasoning', _('Matrix Reasoning')),
         ('hidden_rule', _('Hidden Rule')),
+        ('wiring', _('Hidden Wiring')),
         ('jigsaw', _('Jigsaw Puzzle')),
         ('video_puzzle', _('Video Puzzle')),
         ('sudoku', _('Sudoku')),
@@ -107,11 +108,14 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
     'decisions': [
         ('sonar', _('Sonar')),
         ('dispatch', _('Dispatch')),
+        ('gamble', _('Gamble')),
+        ('bluff', _('Bluff')),
     ],
     # Operating an interface: a pointer, a screen, and controls that
     # have to be found, uncovered and understood before they can be used.
     'computer': [
         ('desktop', _('Desktop')),
+        ('forms', _('Forms')),
     ],
 }
 
@@ -578,6 +582,22 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'jigsaw':
         from .jigsaw import JigsawPuzzle
         JigsawPuzzle()
+        return
+    if task_id == 'gamble':
+        from .gamble import Gamble
+        Gamble()
+        return
+    if task_id == 'wiring':
+        from .wiring import Wiring
+        Wiring()
+        return
+    if task_id == 'forms':
+        from .forms import Forms
+        Forms()
+        return
+    if task_id == 'bluff':
+        from .bluff import Bluff
+        Bluff()
         return
     if task_id == 'desktop':
         from .desktop import Desktop

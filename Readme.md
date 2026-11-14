@@ -1327,6 +1327,41 @@ The agent plays through ten ports: six step one property each to its
 next value (free), then Test, Exam, Lit and Dark. It is turn-based, so
 it takes the think clock.
 
+#### Hidden Wiring
+
+A panel of switches and a row of lamps, wired through gates nobody
+shows. Flipping a switch is free; **looking** at the lamps costs a
+point and shows which are lit for the switches as they stand, and every
+look goes into a notebook of switches and lamps. When the wiring seems
+known, the exam shows lamp patterns -- lit, dark -- and asks for
+switches that make each one. Nothing is said until the last answer,
+and a wrong answer costs more than par ever allows, so one is always a
+loss. Then the wiring is printed.
+
+Hidden Rule asks for a rule about objects put in front of it. This asks
+for a **mechanism** found by intervening on it -- which switch reaches
+which lamp, through what gate -- and then used backwards, from the
+effect wanted to the cause that makes it.
+
+| Rung | What it adds |
+| --- | --- |
+| 1 | Two switches, one lamp that follows a switch, maybe backwards. |
+| 3+ | AND and OR gates over two switches. |
+| 5+ | Gates with an input inverted; more lamps every four rungs. |
+| 7+ | XOR. |
+| 12+ | Three-input gates: AND, OR, majority, parity. Up to eight switches and six lamps, some switches wired to nothing. |
+| 16+ | On some looks a lamp **lies**, fixed by look number. |
+| 21+ | Par is below the reference, by 4% more at every rung. |
+
+Each lamp's wiring is a function of at most eight switches, so a
+256-bit truth table: one Python integer. The reference keeps every
+wiring each lamp could still have (where lamps lie, those that disagree
+with the fewest looks), looks at the setting those wirings split on
+most, and sits the exam once every question has a setting that works
+under all of them. The exam only asks patterns that need a look to
+answer. Eleven agent ports: flip switches one to eight, Look, Exam,
+Answer. Turn-based, so it takes the think clock.
+
 #### Jigsaw Puzzle
 
 A photograph is cut into a square grid of tiles and shuffled; click
@@ -2812,6 +2847,74 @@ one way: it does not count how long an incident waited. A finished
 refit is not paid: whether it was worth its twelve seconds is what the
 round's verdict is for.
 
+#### Gamble
+
+A row of slot machines with hidden odds. A pull pays what that machine
+pays on a win, or nothing, and the strip under each machine shows its
+last results -- green a win, grey nothing, red a loss. Which machine is
+best has to be found by pulling, and every pull spent finding out is a
+pull not spent on the best one: explore or exploit.
+
+A round is scored by what its pulls were **worth**, not what they won:
+each pull counts what its machine paid on average at that moment. So a
+lucky streak on a bad machine does not pass a round and an unlucky one
+on the best machine does not fail it. Coins are shown as well, and
+where there is a bankroll they are what runs out.
+
+| Rung | What it adds |
+| --- | --- |
+| 1 | Two machines far apart. |
+| 2+ | A machine more every three rungs, up to eight, closer together. |
+| 6+ | The odds **drift**: what was learned goes stale. |
+| 10+ | Machines that **bite**: they win more often than the best machine and now and then lose big, so the one that feels best is not. |
+| 14+ | The odds **jump**: the machines trade places at an unannounced pull. |
+| 18+ | A pull **costs a coin**, wins pay more, and the round starts with a bankroll: run it dry and the round is lost. When nothing pays, **Stop** walks away. |
+| 21+ | Par asks for more than the reference: a growing share of the gap between it and knowing the odds. |
+
+Every machine's odds at every pull, and the draw it would make, are
+dealt up front, so the reference meets what the player would have met
+on the same pull. Par runs from halfway between random pulling and the
+reference's worth at rung one to the reference itself at twenty-one.
+The reference is discounted Thompson sampling with a belief about each
+machine's win and bite rates, and stops once every machine has paid
+back less than it took. Measured over sixty deals, random pulling
+passes about a third of rung-one rounds and almost none past rung
+eighteen; a greedy player that tries each machine once passes three
+quarters at rung one and a fifth at rung thirty. Nine agent ports: pull
+machines one to eight, Stop. Turn-based, so it takes the think clock.
+
+#### Bluff
+
+A small poker game. Both players put in a chip and get one card from a
+short deck; the higher card wins a showdown. The first to act checks or
+bets a chip; facing a check the other checks (showdown for two) or
+bets; facing a bet a player folds (the bettor takes the pot) or calls
+(showdown for four). Who opens alternates. The log on the right shows
+the last hands -- both cards where a showdown turned them over, what
+each did, what it won -- and that log is how the opponent is read.
+
+| Rung | Across the table |
+| --- | --- |
+| 1-2 | A **calling station**: calls anything. Bet good cards, never bluff. |
+| 3-4 | A **rock**: folds all but the best. Bluff it. |
+| 5-6 | A **maniac**: bets nearly every hand. Call it down. |
+| 7-13 | One of those, unannounced, from 10 or a sound player; five cards. |
+| 14-17 | A player who **adapts to you**: bluff often and it calls more, fold too much and it bluffs more; seven cards. |
+| 18+ | One that **changes** at an unannounced hand; nine cards. |
+| 21+ | Par is above the reference by a growing share of a chip a hand. |
+
+As in Gamble a round is scored by what its choices were worth -- each
+hand's chips averaged over every card the opponent could have held,
+against what it really does then -- so the deal's luck neither passes
+nor fails it. Cards and the opponent's coin tosses are dealt by hand
+number, so the reference plays the same hands. It models the opponent
+from showdowns (how often it bets and calls with low, middle and high
+cards, forgetting slowly) and plays the best reply, looking ahead
+through its own later choice. Par runs from a sound player that never
+adapts at rung one to the reference at twenty-one; one-note and random
+players fall well short. Two agent ports: check or fold, bet or call.
+Turn-based, so it takes the think clock.
+
 ### Computer use
 
 #### Desktop
@@ -2924,6 +3027,38 @@ Still to come: Reset beside
 Apply, controls with no labels whose effect has to be worked out by
 trying them, selecting several files at once, renaming, search, and
 typing.
+
+#### Forms
+
+Desktop is the pointer half of using a computer; this is the keyboard
+half. A card on the right says who someone is, and the form on the left
+asks for it. Type into the field in focus; **Tab** goes to the next,
+**Enter** sends the page. Every key costs one. A form checks what a
+form can check -- a date is a date, a phone number is digits, nothing
+required is empty -- and a page sent with such a mistake comes back
+marked and costs the rung's penalty. What it cannot check is whether
+the values are the right person's: one wrong value when the last page
+is sent loses the round.
+
+| Rung | What it adds |
+| --- | --- |
+| 1 | One field. |
+| 2+ | A field more every two rungs, Tab between them. |
+| 4+ | A **date** to rewrite: "27 June 1955" goes in as 27/06/1955. |
+| 5+ | A **phone number** to strip to digits, country code and all. |
+| 6+ | A **list that completes**: type the start of a country, Down to the one meant; it is chosen when the field is left. The fewer letters the better. |
+| 8+ | **Checkboxes** (Space) and **radio buttons** (Up, Down). |
+| 10+ | A field that **appears** only for some answers. |
+| 12+ | Two **pages**; three from 18. |
+| 14+ | The card is a **letter** to read, not a list. |
+| 16+ | The letter mentions **other people's** details too. |
+
+Par is the keys a reference typist pressed on the identical form -- the
+shortest prefix that picks a list item, nothing wasted, every page
+right first time -- with room up to rung twenty and none from it.
+Forty-six agent ports, one per key: a-z, 0-9, space, @ . - /,
+Backspace, Tab, Enter, Up and Down. Clicking a field moves to it for a
+key. Turn-based, so it takes the think clock.
 
 ### Window size, full screen, and the two coordinate spaces
 

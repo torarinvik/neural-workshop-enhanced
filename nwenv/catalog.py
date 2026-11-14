@@ -118,6 +118,9 @@ CATALOG: Tuple[Wrapped, ...] = (
     Wrapped('hidden_rule', 'Hidden Rule',
             'nwenv.hiddenrule', 'HiddenRuleEnv',
             'neural_workshop.ui.hiddenrule', 'HiddenRule'),
+    Wrapped('wiring', 'Hidden Wiring',
+            'nwenv.wiring', 'WiringEnv',
+            'neural_workshop.ui.wiring', 'Wiring'),
     Wrapped('jigsaw', 'Jigsaw Puzzle',
             'nwenv.jigsaw', 'JigsawEnv',
             'neural_workshop.ui.jigsaw', 'JigsawPuzzle'),
@@ -190,9 +193,18 @@ CATALOG: Tuple[Wrapped, ...] = (
     Wrapped('dispatch', 'Dispatch',
             'nwenv.dispatch', 'DispatchEnv',
             'neural_workshop.ui.dispatch', 'Dispatch'),
+    Wrapped('gamble', 'Gamble',
+            'nwenv.gamble', 'GambleEnv',
+            'neural_workshop.ui.gamble', 'Gamble'),
+    Wrapped('bluff', 'Bluff',
+            'nwenv.bluff', 'BluffEnv',
+            'neural_workshop.ui.bluff', 'Bluff'),
     Wrapped('desktop', 'Desktop',
             'nwenv.desktop', 'DesktopEnv',
             'neural_workshop.ui.desktop', 'Desktop'),
+    Wrapped('forms', 'Forms',
+            'nwenv.forms', 'FormsEnv',
+            'neural_workshop.ui.forms', 'Forms'),
 )
 
 BY_ID: Dict[str, Wrapped] = {row.task_id: row for row in CATALOG}

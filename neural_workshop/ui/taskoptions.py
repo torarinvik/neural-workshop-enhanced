@@ -687,6 +687,145 @@ def desktop_note(chosen: Dict[str, Any]) -> str:
     return '  '.join(said)
 
 
+def gamble_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung puts out."""
+    from .. import gamble
+    level = gamble.grade(int(chosen['GAMBLE_RUNG']))
+    said = [_('Rung %d: %d machines, %d pulls.')
+            % (level.rung, level.arms, level.pulls)]
+    found = []
+    if level.drift:
+        found.append(_('odds that drift'))
+    if level.biters:
+        found.append(_('machines that bite'))
+    if level.jumps:
+        found.append(_('odds that jump'))
+    if level.price:
+        found.append(_('pulls that cost, a bankroll and Stop'))
+    if found:
+        said.append(_('With %s.') % ', '.join(found))
+    if level.allow < 0:
+        said.append(_('You must beat the reference.'))
+    return '  '.join(said)
+
+
+GAMBLE = TaskSpec(
+    title=_('Gamble options'),
+    options=(
+        Option('GAMBLE_RUNG', _('Starting rung'), 1,
+               values=(1, 3, 6, 10, 14, 18, 21, 25, 30)),
+        Option('GAMBLE_TRIALS', _('Rounds per run'), 5,
+               values=(1, 3, 5, 8, 12)),
+        Option('GAMBLE_ADAPTIVE',
+               _('Climb a rung at par, drop one under'), True),
+    ),
+    note=gamble_note)
+
+
+def wiring_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung wires up."""
+    from .. import wiring
+    level = wiring.grade(int(chosen['WIRING_RUNG']))
+    said = [_('Rung %d: %d switches, %d lamps, a wrong answer costs %d.')
+            % (level.rung, level.switches, level.lamps, level.penalty)]
+    gates = {'and': _('and / or'), 'xor': _('xor'),
+             'three': _('three-input gates')}
+    named = [gates[g] for g in level.gates if g in gates]
+    if level.inverts:
+        named.append(_('inverted inputs'))
+    if named:
+        said.append(_('Gates: %s.') % ', '.join(named))
+    if level.noise:
+        said.append(_('A lamp lies on %d%% of looks.')
+                    % round(level.noise * 100))
+    if level.factor < 1.0:
+        said.append(_('You must beat the reference.'))
+    return '  '.join(said)
+
+
+WIRING = TaskSpec(
+    title=_('Hidden Wiring options'),
+    options=(
+        Option('WIRING_RUNG', _('Starting rung'), 1,
+               values=(1, 3, 5, 7, 10, 12, 16, 20, 25, 30)),
+        Option('WIRING_TRIALS', _('Rounds per run'), 5,
+               values=(1, 3, 5, 8, 12)),
+        Option('WIRING_ADAPTIVE',
+               _('Climb a rung under par, drop one over'), True),
+    ),
+    note=wiring_note)
+
+
+def forms_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung's form asks."""
+    from .. import forms
+    level = forms.grade(int(chosen['FORMS_RUNG']))
+    said = [_('Rung %d: up to %d fields on %d page(s).')
+            % (level.rung, level.fields, level.pages)]
+    kinds = {'date': _('dates to reformat'), 'digits': _('phone numbers'),
+             'choice': _('lists that complete'),
+             'radio': _('checkboxes and radio buttons')}
+    named = [kinds[k] for k in level.kinds if k in kinds]
+    if level.conditional:
+        named.append(_('fields that appear'))
+    if level.letter:
+        named.append(_('a letter to read'))
+    if level.decoys:
+        named.append(_("other people's details"))
+    if named:
+        said.append(_('With %s.') % ', '.join(named))
+    if level.factor <= 1.0:
+        said.append(_('Par is the reference typist exactly.'))
+    return '  '.join(said)
+
+
+FORMS = TaskSpec(
+    title=_('Forms options'),
+    options=(
+        Option('FORMS_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 25)),
+        Option('FORMS_TRIALS', _('Rounds per run'), 5,
+               values=(1, 3, 5, 8, 12)),
+        Option('FORMS_ADAPTIVE',
+               _('Climb a rung under par, drop one over'), True),
+    ),
+    note=forms_note)
+
+
+def bluff_note(chosen: Dict[str, Any]) -> str:
+    """Who the starting rung puts across the table."""
+    from .. import bluff
+    level = bluff.grade(int(chosen['BLUFF_RUNG']))
+    names = {'station': _('a calling station'), 'rock': _('a rock'),
+             'maniac': _('a maniac'), 'sound': _('a sound player'),
+             'adaptive': _('a player who adapts to you')}
+    who = [names[k] for k in level.kinds]
+    said = [_('Rung %d: %d hands, cards 1 to %d.')
+            % (level.rung, level.hands, level.cards)]
+    if len(who) == 1:
+        said.append(_('Against %s.') % who[0])
+    else:
+        said.append(_('Against one of: %s.') % ', '.join(who))
+    if level.changes:
+        said.append(_('It changes partway.'))
+    if level.allow < 0:
+        said.append(_('You must beat the reference.'))
+    return '  '.join(said)
+
+
+BLUFF = TaskSpec(
+    title=_('Bluff options'),
+    options=(
+        Option('BLUFF_RUNG', _('Starting rung'), 1,
+               values=(1, 3, 5, 7, 10, 14, 18, 21, 25)),
+        Option('BLUFF_TRIALS', _('Rounds per run'), 5,
+               values=(1, 3, 5, 8, 12)),
+        Option('BLUFF_ADAPTIVE',
+               _('Climb a rung at par, drop one under'), True),
+    ),
+    note=bluff_note)
+
+
 DESKTOP = TaskSpec(
     title=_('Desktop options'),
     options=(
@@ -2377,6 +2516,10 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'sonar': SONAR,
     'dispatch': DISPATCH,
     'desktop': DESKTOP,
+    'bluff': BLUFF,
+    'forms': FORMS,
+    'wiring': WIRING,
+    'gamble': GAMBLE,
     'video_puzzle': VIDEO_PUZZLE,
     'tower_of_hanoi': HANOI,
     'salesman': SALESMAN,
