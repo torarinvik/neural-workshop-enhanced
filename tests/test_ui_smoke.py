@@ -31,6 +31,18 @@ if __name__ == '__main__':
     from test_sonar import *           # noqa: F401,F403,E402
     from test_hiddenrule import *      # noqa: F401,F403,E402
     from test_gamble import *  # noqa: F401,F403,E402
+    from test_sheet import *  # noqa: F401,F403,E402
+    from test_lander import *  # noqa: F401,F403,E402
+    from test_bandit import *  # noqa: F401,F403,E402
+    from test_delay import *  # noqa: F401,F403,E402
+    from test_stopswitch import *  # noqa: F401,F403,E402
+    from test_rooms import *  # noqa: F401,F403,E402
+    from test_beliefs import *  # noqa: F401,F403,E402
+    from test_pov import *  # noqa: F401,F403,E402
+    from test_fold import *  # noqa: F401,F403,E402
+    from test_sfm import *  # noqa: F401,F403,E402
+    from test_nearer import *  # noqa: F401,F403,E402
+    from test_mirror import *  # noqa: F401,F403,E402
     from test_errands import *  # noqa: F401,F403,E402
     from test_signals import *  # noqa: F401,F403,E402
     from test_falls import *  # noqa: F401,F403,E402

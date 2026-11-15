@@ -1053,6 +1053,373 @@ ERRANDS = TaskSpec(
     note=errands_note)
 
 
+def same_or_mirror_note(chosen: Dict[str, Any]) -> str:
+    """How far apart the starting rung's views are, and what is asked."""
+    from .. import mirror
+    level = mirror.grade(int(chosen['SAME_OR_MIRROR_RUNG']))
+    said = [_('Rung %d: %d cubes, turned up to %d degrees about %s.')
+            % (level.rung, level.cubes, level.most,
+               _('any axis') if level.any_axis else _('the vertical'))]
+    if level.options:
+        said.append(_('Pick the match among %d.') % level.options)
+    else:
+        said.append(_('Same or mirror?'))
+    if level.nudged:
+        said.append(_('%d of the wrong ones one cube off.') % level.nudged)
+    if not level.lit:
+        said.append(_('No shading.'))
+    return '  '.join(said)
+
+
+SAME_OR_MIRROR = TaskSpec(
+    title=_('Same or Mirror? options'),
+    options=(
+        Option('SAME_OR_MIRROR_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 21, 25, 30)),
+        Option('SAME_OR_MIRROR_TRIALS', _('Figures per run'), 12,
+               values=(1, 6, 12, 24, 40)),
+        Option('SAME_OR_MIRROR_ADAPTIVE',
+               _('Climb a rung when right, drop one when wrong'), True),
+    ),
+    note=same_or_mirror_note)
+
+
+def which_is_nearer_note(chosen: Dict[str, Any]) -> str:
+    """Which depth cue the starting rung leaves."""
+    from .. import nearer
+    level = nearer.grade(int(chosen['WHICH_IS_NEARER_RUNG']))
+    cues = {'size': _('everything: size, floor, hiding'),
+            'floor': _('where each stands on the floor'),
+            'shadow': _('shadows on the floor'),
+            'hiding': _('which hides which'),
+            'motion': _('motion parallax as the eye sways')}
+    said = [_('Rung %d: %d solids; the cue left is %s.')
+            % (level.rung, level.count, cues[level.cue])]
+    said.append(_('Nearest over next at least %.2f.') % level.ratio)
+    if level.order:
+        said.append(_('Put them all in order.'))
+    return '  '.join(said)
+
+
+WHICH_IS_NEARER = TaskSpec(
+    title=_('Which Is Nearer? options'),
+    options=(
+        Option('WHICH_IS_NEARER_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('WHICH_IS_NEARER_TRIALS', _('Scenes per run'), 12,
+               values=(1, 6, 12, 24, 40)),
+        Option('WHICH_IS_NEARER_ADAPTIVE',
+               _('Climb a rung when right, drop one when wrong'), True),
+    ),
+    note=which_is_nearer_note)
+
+
+def shape_from_motion_note(chosen: Dict[str, Any]) -> str:
+    """How many dots the starting rung shows, and what muddies them."""
+    from .. import sfm
+    level = sfm.grade(int(chosen['SHAPE_FROM_MOTION_RUNG']))
+    said = [_('Rung %d: %d dots, %d choices.')
+            % (level.rung, level.dots, level.choices)]
+    if level.life:
+        said.append(_('Each dot lives %.2f s.') % level.life)
+    if level.noise:
+        said.append(_('%d%% noise.') % int(round(level.noise * 100)))
+    if level.spin_share:
+        said.append(_('A third ask which way it turns.'))
+    if level.alike:
+        said.append(_('Wrong choices look alike.'))
+    return '  '.join(said)
+
+
+SHAPE_FROM_MOTION = TaskSpec(
+    title=_('Shape from Motion options'),
+    options=(
+        Option('SHAPE_FROM_MOTION_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 12, 16, 20, 25, 30)),
+        Option('SHAPE_FROM_MOTION_TRIALS', _('Clouds per run'), 12,
+               values=(1, 6, 12, 24, 40)),
+        Option('SHAPE_FROM_MOTION_ADAPTIVE',
+               _('Climb a rung when right, drop one when wrong'), True),
+    ),
+    note=shape_from_motion_note)
+
+
+def fold_it_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung's nets carry and asks."""
+    from .. import fold
+    level = fold.grade(int(chosen['FOLD_IT_RUNG']))
+    if level.kind == 'opposite':
+        said = [_('Rung %d: which face is opposite, on %s.')
+                % (level.rung, _('any of the eleven nets') if level.any_net
+                   else _('the cross'))]
+    else:
+        said = [_('Rung %d: which of %d cubes.')
+                % (level.rung, level.choices)]
+        if level.glyphs != ('none',):
+            said.append(_('Marks that point a way%s.')
+                        % ('' if level.colours else _(', no colours')))
+        said.append(_('Wrong cubes: %s.') % ', '.join(
+            {'swap': _('faces swapped'), 'turn': _('a mark turned'),
+             'mirror': _('the mirror image')}[w] for w in level.wrongs))
+    return '  '.join(said)
+
+
+FOLD_IT = TaskSpec(
+    title=_('Fold It options'),
+    options=(
+        Option('FOLD_IT_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('FOLD_IT_TRIALS', _('Nets per run'), 10,
+               values=(1, 5, 10, 20, 40)),
+        Option('FOLD_IT_ADAPTIVE',
+               _('Climb a rung when right, drop one when wrong'), True),
+    ),
+    note=fold_it_note)
+
+
+def point_of_view_note(chosen: Dict[str, Any]) -> str:
+    """Where the starting rung's camera stands and how close the wrong
+    pictures come."""
+    from .. import pov
+    level = pov.grade(int(chosen['POINT_OF_VIEW_RUNG']))
+    said = [_('Rung %d: %d to %d solids, %d pictures.')
+            % ((level.rung,) + level.solids + (level.choices,))]
+    said.append(_('Camera at a side.') if level.sides_only else
+                _('Camera anywhere; wrong pictures %d to %d degrees round.')
+                % level.spread)
+    if level.mirror:
+        said.append(_('One wrong picture mirrored.'))
+    if not level.colours:
+        said.append(_('One colour for all.'))
+    return '  '.join(said)
+
+
+POINT_OF_VIEW = TaskSpec(
+    title=_('Point of View options'),
+    options=(
+        Option('POINT_OF_VIEW_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('POINT_OF_VIEW_TRIALS', _('Tables per run'), 10,
+               values=(1, 5, 10, 20, 40)),
+        Option('POINT_OF_VIEW_ADAPTIVE',
+               _('Climb a rung when right, drop one when wrong'), True),
+    ),
+    note=point_of_view_note)
+
+
+def who_knows_what_note(chosen: Dict[str, Any]) -> str:
+    """Who is in the starting rung's stories and what they do."""
+    from .. import beliefs
+    level = beliefs.grade(int(chosen['WHO_KNOWS_WHAT_RUNG']))
+    said = [_('Rung %d: %d people, %d containers, %d thing%s, %d to %d '
+              'events.') % (level.rung, level.people, level.containers,
+                            level.things, '' if level.things == 1 else 's',
+                            level.events[0], level.events[1])]
+    found = []
+    if level.second:
+        found.append(_('second-order questions'))
+    if level.calls:
+        found.append(_('phone calls'))
+    if level.lies:
+        found.append(_('lies'))
+    if level.peeks:
+        found.append(_('peeks'))
+    if found:
+        said.append(_('With %s.') % ', '.join(found))
+    return '  '.join(said)
+
+
+WHO_KNOWS_WHAT = TaskSpec(
+    title=_('Who Knows What? options'),
+    options=(
+        Option('WHO_KNOWS_WHAT_RUNG', _('Starting rung'), 1,
+               values=(1, 3, 6, 9, 13, 17, 21, 25, 30)),
+        Option('WHO_KNOWS_WHAT_TRIALS', _('Stories per run'), 10,
+               values=(1, 5, 10, 20, 40)),
+        Option('WHO_KNOWS_WHAT_ADAPTIVE',
+               _('Climb a rung when right, drop one when wrong'), True),
+    ),
+    note=who_knows_what_note)
+
+
+def where_was_it_note(chosen: Dict[str, Any]) -> str:
+    """How many rooms the starting rung shows, and what makes it hard."""
+    from .. import rooms
+    level = rooms.grade(int(chosen['WHERE_WAS_IT_RUNG']))
+    said = [_('Rung %d: %d room%s of %d things on %d by %d.')
+            % (level.rung, level.rooms, '' if level.rooms == 1 else 's',
+               level.things, level.cols, level.rows)]
+    if level.shared:
+        said.append(_('The same things in every room.'))
+    if level.turn[1]:
+        said.append(_('Seen at the test from %d to %d degrees round.')
+                    % level.turn)
+    return '  '.join(said)
+
+
+WHERE_WAS_IT = TaskSpec(
+    title=_('Where Was It? options'),
+    options=(
+        Option('WHERE_WAS_IT_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('WHERE_WAS_IT_TRIALS', _('Visits per run'), 8,
+               values=(1, 4, 8, 16, 30)),
+        Option('WHERE_WAS_IT_ADAPTIVE',
+               _('Climb a rung when right, drop one when wrong'), True),
+    ),
+    note=where_was_it_note)
+
+
+def stop_and_switch_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung's blocks ask."""
+    from .. import stopswitch
+    level = stopswitch.grade(int(chosen['STOP_AND_SWITCH_RUNG']))
+    said = [_('Rung %d: %d stimuli, %.2f s to answer, %d%% right needed.')
+            % (level.rung, level.count, level.window,
+               int(round(level.needed * 100)))]
+    if level.stops:
+        said.append(_('Stops on %d%%, %.2f s in.')
+                    % (int(round(level.stops * 100)), level.ssd))
+    if len(level.rules) > 1:
+        said.append(_('Rules %s, changing %s.') % (
+            '/'.join(level.rules), _('on a beat') if
+            level.switching == 'cued' else _('at random')))
+    return '  '.join(said)
+
+
+STOP_AND_SWITCH = TaskSpec(
+    title=_('Stop & Switch options'),
+    options=(
+        Option('STOP_AND_SWITCH_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('STOP_AND_SWITCH_TRIALS', _('Blocks per run'), 6,
+               values=(1, 3, 6, 10, 20)),
+        Option('STOP_AND_SWITCH_ADAPTIVE',
+               _('Climb a rung when a block passes, drop one when not'),
+               True),
+    ),
+    note=stop_and_switch_note)
+
+
+def delay_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung's waits are like."""
+    from .. import delay
+    level = delay.grade(int(chosen['DELAY_RUNG']))
+    kinds = {'fixed': _('every wait three seconds, shown'),
+             'uniform': _('hidden waits of two to six seconds'),
+             'heavy': _('mostly short waits, some endless'),
+             'varied': _('every offer different, all shown'),
+             'switch': _('hidden waits that change kind halfway'),
+             'never': _('three in ten large rewards never come'),
+             'mixed': _('kinds mixed and switching')}
+    return _('Rung %d: %d s runs, %s.') % (level.rung, level.seconds,
+                                          kinds[level.kind])
+
+
+DELAY = TaskSpec(
+    title=_('Delay options'),
+    options=(
+        Option('DELAY_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('DELAY_TRIALS', _('Runs'), 3, values=(1, 3, 5, 10)),
+        Option('DELAY_ADAPTIVE',
+               _('Climb a rung at par, drop one under'), True),
+    ),
+    note=delay_note)
+
+
+def explore_exploit_note(chosen: Dict[str, Any]) -> str:
+    """The starting rung's machines and how they change."""
+    from .. import bandit
+    level = bandit.grade(int(chosen['EXPLORE_EXPLOIT_RUNG']))
+    said = [_('Rung %d: %d machines, %d pulls.')
+            % (level.rung, level.arms, level.pulls)]
+    if level.drift:
+        said.append(_('Means drift.'))
+    if level.jumps:
+        said.append(_('Dealt afresh every %d pulls.') % level.jumps)
+    if level.batch > 1:
+        said.append(_('Payouts shown in fives.'))
+    return '  '.join(said)
+
+
+EXPLORE_EXPLOIT = TaskSpec(
+    title=_('Explore or Exploit options'),
+    options=(
+        Option('EXPLORE_EXPLOIT_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('EXPLORE_EXPLOIT_TRIALS', _('Runs'), 3, values=(1, 3, 5, 10)),
+        Option('EXPLORE_EXPLOIT_ADAPTIVE',
+               _('Climb a rung at par, drop one under'), True),
+    ),
+    note=explore_exploit_note)
+
+
+def lander_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung's landings are like."""
+    from .. import lander
+    import math
+    level = lander.grade(int(chosen['LANDER_RUNG']))
+    said = [_('Rung %d: a %d m pad; down %.1f, across %.1f m/s, tilt %d '
+              'degrees at most.') % (level.rung, level.pad, level.max_down,
+                                     level.max_across,
+                                     round(math.degrees(level.max_tilt)))]
+    said.append(_('Fuel %d s.') % level.fuel if level.fuel
+                else _('Unlimited fuel.'))
+    found = []
+    if level.rough:
+        found.append(_('rough ground'))
+    if level.wind:
+        found.append(_('gusts') if level.gusts else _('wind'))
+    if level.hidden:
+        found.append(_('hidden gravity and engine'))
+    if level.moving:
+        found.append(_('a moving pad'))
+    if found:
+        said.append(_('With %s.') % ', '.join(found))
+    return '  '.join(said)
+
+
+LANDER = TaskSpec(
+    title=_('Lander options'),
+    options=(
+        Option('LANDER_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('LANDER_TRIALS', _('Landings per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('LANDER_ADAPTIVE',
+               _('Climb a rung on a landing, drop one on a loss'), True),
+    ),
+    note=lander_note)
+
+
+def spreadsheet_note(chosen: Dict[str, Any]) -> str:
+    """The starting rung's table and questions."""
+    from .. import sheet
+    level = sheet.grade(int(chosen['SPREADSHEET_RUNG']))
+    words = {'lookup': _('look up'), 'max': _('find the highest'),
+             'sum': _('sum a category'), 'count': _('count over a bar'),
+             'wrong': _('find the wrong total'),
+             'fix': _('correct the wrong total')}
+    return _('Rung %d: %d rows; %s.  Par allows %d%% of the reference\'s '
+             'clicks for slips, at least three.') % (
+        level.rung, level.rows, ', '.join(words[k] for k in level.kinds),
+        int(round(level.slack * 200)))
+
+
+SPREADSHEET = TaskSpec(
+    title=_('Spreadsheet options'),
+    options=(
+        Option('SPREADSHEET_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('SPREADSHEET_TRIALS', _('Questions per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('SPREADSHEET_ADAPTIVE',
+               _('Climb a rung at par, drop one under'), True),
+    ),
+    note=spreadsheet_note)
+
+
 def wiring_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung wires up."""
     from .. import wiring
@@ -2852,6 +3219,18 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'forms': FORMS,
     'wiring': WIRING,
     'gamble': GAMBLE,
+    'spreadsheet': SPREADSHEET,
+    'lander': LANDER,
+    'explore_exploit': EXPLORE_EXPLOIT,
+    'delay': DELAY,
+    'stop_and_switch': STOP_AND_SWITCH,
+    'where_was_it': WHERE_WAS_IT,
+    'who_knows_what': WHO_KNOWS_WHAT,
+    'point_of_view': POINT_OF_VIEW,
+    'fold_it': FOLD_IT,
+    'shape_from_motion': SHAPE_FROM_MOTION,
+    'which_is_nearer': WHICH_IS_NEARER,
+    'same_or_mirror': SAME_OR_MIRROR,
     'errands': ERRANDS,
     'signals': SIGNALS,
     'will_it_fall': WILL_IT_FALL,

@@ -751,6 +751,104 @@ GAMBLE_RUNG = 1
 GAMBLE_TRIALS = 5
 GAMBLE_ADAPTIVE = True
 
+# Spreadsheet: a table of orders with filters, sortable columns and sum
+# buttons, and a question answered with a number in one try, within a
+# click par. Look-ups at rung 1, the highest from 4, sums of a category
+# from 7, counts from 10, a wrong total to find from 13 and to correct
+# from 20.
+SPREADSHEET_RUNG = 1
+SPREADSHEET_TRIALS = 5
+SPREADSHEET_ADAPTIVE = True
+
+# Lander: fire the engine and turn to bring a craft down onto a pad,
+# gently and upright. Limited fuel from rung 4, rough ground from 7,
+# wind from 10 and gusts from 13, hidden gravity and engine strength
+# from 16, a moving pad from 20.
+LANDER_RUNG = 1
+LANDER_TRIALS = 5
+LANDER_ADAPTIVE = True
+
+# Explore or Exploit: a row of machines that pay around hidden means; a
+# fixed number of pulls. More machines as it climbs, means that drift
+# from rung 7 and are dealt afresh from 10, payouts shown only in fives
+# from 16.
+EXPLORE_EXPLOIT_RUNG = 1
+EXPLORE_EXPLOIT_TRIALS = 3
+EXPLORE_EXPLOIT_ADAPTIVE = True
+
+# Delay: a minute of offers -- a little now, or more if you wait; a wait
+# can be given up, for nothing. Shown waits up to rung 3, hidden ones
+# after; from 7 some waits never end in time, from 10 every offer is
+# different, from 13 the waits change kind halfway, from 16 some large
+# rewards never come.
+DELAY_RUNG = 1
+DELAY_TRIALS = 3
+DELAY_ADAPTIVE = True
+
+# Stop & Switch: answer each stimulus Left or Right by the rule shown --
+# fast -- and not at all when a red ring closes round it. Stop signals
+# from rung 4, stimuli off to the side from 7, two rules taking turns
+# from 10 and switching at random from 13, a third rule from 20.
+STOP_AND_SWITCH_RUNG = 1
+STOP_AND_SWITCH_TRIALS = 6
+STOP_AND_SWITCH_ADAPTIVE = True
+
+# Where Was It?: look round a few rooms, one after another; then one
+# comes back with one change -- click where. More rooms as it climbs,
+# the same things in every room from rung 10, and the test room seen
+# from another side from 16.
+WHERE_WAS_IT_RUNG = 1
+WHERE_WAS_IT_TRIALS = 8
+WHERE_WAS_IT_ADAPTIVE = True
+
+# Who Knows What?: a story in panels -- people put things away, go out,
+# come back, move things while others are away -- and a question: where
+# will someone look? Where does someone think someone else will look
+# (from rung 9)? Phone calls from 13, lies from 17, peeks from 21.
+WHO_KNOWS_WHAT_RUNG = 1
+WHO_KNOWS_WHAT_TRIALS = 10
+WHO_KNOWS_WHAT_ADAPTIVE = True
+
+# Point of View: a table seen from above with a camera at its edge --
+# which picture does the camera take? A mirrored picture among the wrong
+# ones from rung 7, solids that hide each other from 10, the camera
+# anywhere from 13, one colour for all from 16, closer angles from 20.
+POINT_OF_VIEW_RUNG = 1
+POINT_OF_VIEW_TRIALS = 10
+POINT_OF_VIEW_ADAPTIVE = True
+
+# Fold It: a flat net of six squares. Which face ends up opposite which
+# (rungs 1-3), then which of a row of cubes it folds into -- coloured
+# faces from 4, marks that point a way from 10, marks alone from 13,
+# wrong cubes a single turned mark or a mirror image from 16.
+FOLD_IT_RUNG = 1
+FOLD_IT_TRIALS = 10
+FOLD_IT_ADAPTIVE = True
+
+# Shape from Motion: dots on the surface of a turning solid, seen
+# straight on with nothing else -- name the solid. Dots that live only
+# half a second from rung 7, a question about which way it turns from
+# 10, noise and look-alike choices from 12, fewer dots as it climbs.
+SHAPE_FROM_MOTION_RUNG = 1
+SHAPE_FROM_MOTION_TRIALS = 12
+SHAPE_FROM_MOTION_ADAPTIVE = True
+
+# Which Is Nearer?: click the nearest of a few solids, with one depth
+# cue taken away every few rungs -- size, then the floor (from 7),
+# shadows (from 10), hiding (from 13), until only motion parallax is
+# left (from 16). From 20 put them all in order, nearest first.
+WHICH_IS_NEARER_RUNG = 1
+WHICH_IS_NEARER_TRIALS = 12
+WHICH_IS_NEARER_ADAPTIVE = True
+
+# Same or Mirror?: Shepard and Metzler's mental rotation. Two figures of
+# cubes -- the same one turned, or its mirror image? Turned about the
+# vertical up to rung 6, about any axis from 7; from 13 pick the match
+# from a row of mirror images, and from 16 of figures one cube off.
+SAME_OR_MIRROR_RUNG = 1
+SAME_OR_MIRROR_TRIALS = 12
+SAME_OR_MIRROR_ADAPTIVE = True
+
 # Errands: Mail, Shop and Expenses on one small computer. Read what the
 # mail asks, buy it in the shop, claim the order back with its number,
 # total and category, press Done -- within a click par. A receipt only at

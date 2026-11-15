@@ -48,7 +48,8 @@ TASK_DIR = os.path.join(ROOT, 'neural_workshop', 'ui')
 NOT_TASKS = frozenset({
     '__init__.py', 'cursor.py', 'effects.py', 'field.py', 'gameselect.py',
     'glyphs.py', 'graph.py', 'hud.py', 'menu.py', 'message.py', 'readouts.py',
-    'render3d.py', 'scene3d.py', 'screens.py', 'taskhub.py',
+    'render3d.py', 'scene3d.py', 'screens.py', 'spacepaint.py',
+    'taskhub.py',
     'taskoptions.py',
     'textinput.py', 'trialui.py', 'verdict.py',
 })

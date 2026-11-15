@@ -670,7 +670,7 @@ class TheHubHasSomewhereToPutIt(unittest.TestCase):
         from neural_workshop.ui.taskhub import CATEGORIES, TASKS
         self.assertIn('self_control', [cat for cat, _name in CATEGORIES])
         self.assertEqual([task for task, _name in TASKS['self_control']],
-                         ['cookie_thief'])
+                         ['cookie_thief', 'stop_and_switch', 'delay'])
 
     def test_it_has_an_options_screen(self):
         from neural_workshop.ui import taskoptions

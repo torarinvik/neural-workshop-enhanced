@@ -196,6 +196,30 @@ rung fifteen with the notebook alone and almost none after it without a
 head as well. Thirteen agent ports: four answers, write onto lines one
 to eight, Next. Turn-based, so it takes the think clock.
 
+### Where Was It?
+
+Rooms shown one after another -- a tiled floor and solids standing on
+its squares -- for as long as you like; then one comes back with one
+change. Click where: the thing that moved, the square a missing thing
+stood on, either of two that swapped, or the thing that changed
+colour. The other rooms, seen before and after the tested one, are
+what makes it hard: memory for where, under interference.
+
+| Rung | What it adds |
+| --- | --- |
+| 1 | One room, four things on a four-by-three floor; one moved or gone. |
+| 4+ | Two rooms, then one of them. |
+| 7+ | Three rooms, five things; two may swap, or one change colour. |
+| 10+ | Every room holds **the same things**, only placed differently; five-by-four. |
+| 13+ | Four rooms. |
+| 16+ | The room comes back seen **from another side**, 25 to 45 degrees round. |
+| 20+ | Five rooms of seven things on six-by-five, seen from anywhere round; a moved thing moves only to a neighbouring square. |
+
+After the verdict the right squares are outlined. Thirty-one agent
+ports: 0-29 click a floor square (counted across each row from the
+front left corner as the room was first shown, then row by row away),
+30 goes on to the next room. Turn-based, so it takes the think clock.
+
 ### Trivia
 
 ```
@@ -1512,6 +1536,94 @@ Turn-based, so it takes the think clock. After the verdict the truth is
 drawn in -- the block that topples outlined, the plank tilted, the
 ball's whole path traced -- so a wrong answer shows why.
 
+#### Same or Mirror?
+
+Shepard and Metzler's mental rotation. Two figures of cubes, each cube
+face to face with the next in straight arms at right angles: is the
+second the same figure turned, or its mirror image? No figure is its
+own mirror image, so no turn can make one into the other; only a turn
+done in the head tells them apart. Press S or M, or click.
+
+| Rung | What it adds |
+| --- | --- |
+| 1 | Turned about the **vertical**, by up to 40 degrees. |
+| 2-6 | Still about the vertical, the most growing to a half turn by 6. |
+| 7+ | About **any** axis, up to 60 degrees; a half turn from 10. |
+| 13+ | A figure on top and a row below: **which is the same figure?** Three choices, the rest mirror images. |
+| 16+ | Four choices, one of them the figure with one end cube moved. |
+| 21+ | Five, every wrong one a cube away from the figure or its mirror. |
+| 25+ | No shading: faces read only by their edges. |
+
+Figures grow from seven cubes to eleven, all drawn at one scale. A
+choice is right or wrong; for a pair, the verdict says how many degrees
+apart the two views were. Five agent ports, one per answer. Turn-based, so it
+takes the think clock.
+
+#### Which Is Nearer?
+
+A few solids in a scene: click the nearest. Depth is never given
+straight -- the eye reads it from cues -- and every few rungs one cue
+is taken away until a single one is left.
+
+| Rung | The cue that is left |
+| --- | --- |
+| 1-6 | All of them: alike solids on a gridded floor, nearer ones bigger and lower. |
+| 7-9 | Where each stands on the floor: sizes and kinds now differ, sized so size on the page says nothing. |
+| 10-12 | A **shadow** on the floor under each floating solid. |
+| 13-15 | Which **hides** which: no floor, the solids crowded together. |
+| 16-19 | **Motion parallax**: spread out, nothing hidden, the eye sways side to side and nearer things slide farther. |
+| 20+ | The same, and put **all** of them in order, nearest first. |
+
+From two solids to six; the nearest is nearer than the next by a
+factor of 1.6 at rung one, 1.1 by nineteen and 1.04 at thirty. Each
+solid's button carries a swatch of its colour, since crowded solids
+leave no room for numbers. Six agent ports, one per solid, counted
+left to right. Clocked, because from rung 16 the evidence is motion.
+
+#### Shape from Motion
+
+Dots scattered over the surface of a solid that turns about the
+vertical, seen straight on: every dot alike, no shading, no outline,
+nothing hidden. While it turns the eye puts the dots back on a surface
+-- the kinetic depth effect. Name the solid: a ball, cube, cylinder,
+cone, ring, pyramid, saddle or spring.
+
+| Rung | What it adds |
+| --- | --- |
+| 1 | Three very different solids to choose from, 300 dots that last. |
+| 4+ | Four choices. |
+| 7+ | Five, and each dot lives half a second before it jumps to a fresh spot -- none can be followed for long. |
+| 10+ | A third of the trials ask **which way the front turns**. Seen straight on, a cloud and its depth reflection turning the other way give the same picture; a little perspective is the only tell, and it weakens up the ladder. |
+| 12+ | Noise dots, 30 per cent, and wrong choices that look like the right one. |
+| 16+ | 150 dots, half noise, quarter-second lives. |
+| 20+ | Six choices, 90 dots, a slower turn; from 25, 50 dots and 60 per cent noise. |
+
+At the low rungs a still frame can give some solids away by their
+outline -- a spring especially; past rung 12 the noise and short lives
+leave the motion as what decides. A trial is right or wrong. Six agent
+ports, one per answer. Clocked: the evidence is motion.
+
+#### Point of View
+
+A map of a table from straight above -- each solid's footprint, and a
+camera with the wedge it looks along -- and a row of pictures of the
+table from different places. Which one does the camera take?
+
+| Rung | What it adds |
+| --- | --- |
+| 1 | Two or three solids, the camera at the middle of a side; the wrong pictures are from the other sides. |
+| 4+ | Up to four solids, four pictures. |
+| 7+ | One wrong picture is the right one **mirrored**, left for right. |
+| 10+ | Solids of different heights, so near ones hide far ones. |
+| 13+ | The camera anywhere round the table; wrong pictures from 45 to 90 degrees round from it. |
+| 16+ | Every solid one colour, told apart by shape and height; five pictures. |
+| 20+ | The camera higher or lower; wrong pictures as little as 25 degrees round; up to six solids. |
+
+Every wrong picture shows the solids in a different left-to-right
+order from the right one, so the order alone can always decide. A
+choice is right or wrong. Five agent ports, one per picture. Turn-
+based, so it takes the think clock.
+
 #### Winning Move
 
 One legal chess position is dealt and the side to move has exactly one
@@ -2001,6 +2113,62 @@ shape, forgetting slowly where codes can change -- with ground given
 below rung twenty and, past it, par set halfway between that learner
 and a perfect game. Sixteen agent ports: eight to pick an object, eight
 to send a glyph. Turn-based, so it takes the think clock.
+
+#### Fold It
+
+A flat net of six squares, printed side up, its squares folding away
+from the eye. Any of the eleven nets of a cube can be dealt.
+
+| Rung | The question |
+| --- | --- |
+| 1 | Lettered squares on the cross: *which face is opposite C?* |
+| 2-3 | The same, on any net. |
+| 4+ | Coloured squares and a row of cubes, three faces of each in view: *which cube does it fold into?* The wrong cubes have two faces swapped. Four cubes from 7. |
+| 10+ | Marks that point a way; a wrong cube may have one mark turned. |
+| 13+ | Every square one colour: the marks alone. |
+| 16+ | Five cubes, every wrong one a single turned mark or the mirror image of the right cube. |
+| 20+ | Marks with a handedness, so a mirrored mark is a different mark; six cubes from 25. |
+
+Which square lands where, and which way up its mark ends, is worked
+out by carrying each square's frame across every fold; the tests check
+that against turning each square a quarter turn on its hinge in 3D.
+Every wrong cube is checked against all 24 ways the right cube could
+sit, so none can be the right cube seen another way. A choice is right
+or wrong. Six agent ports, one per answer. Turn-based, so it takes the
+think clock.
+
+#### Who Knows What?
+
+A short story told in panels -- each the room just after one event,
+with what is really in each container, who is in the room and who is
+out, and the event in words -- and a question: where will someone look
+for something? From rung 9, where does someone think *someone else*
+will look? The reader sees everything; nobody in the story does.
+
+Beliefs follow simple rules. Whoever is in the room when a thing is
+moved learns where it went; whoever is out keeps believing what they
+last knew; coming back in shows nothing, since the containers are
+closed. A phone call passes on what the caller believes -- or, in a
+lie, what the caller knows is false -- and the one called believes it.
+Peeking into the container that holds a thing shows where it is, and
+peeking where one thought it was and finding it gone leaves one not
+knowing. What A thinks B believes changes only on what A could know.
+
+| Rung | What it adds |
+| --- | --- |
+| 1 | The classic false belief: Ann puts the ball away and goes out, Ben moves it. Two people, two containers. |
+| 3+ | Three containers, random stories of four to six events. |
+| 6+ | Three people and two things, stories of six to eight. |
+| 9+ | **Second-order** questions, half the time. |
+| 13+ | Phone calls. |
+| 17+ | Lies; four people, four containers. |
+| 21+ | Peeks, three things, stories of ten to thirteen events. |
+
+From rung 3 seven questions in ten have an answer that is *not* where
+the thing really is, so the truth is a poor guess. Answers come from
+the belief tracker, never from the wording, and the tests check the
+tracker on hand-written stories. A trial is right or wrong. Four agent
+ports, one per container. Turn-based, so it takes the think clock.
 
 #### Algebra
 
@@ -2749,6 +2917,28 @@ play raises or lowers the rung from the player's success, while the grid,
 pellet, and line-length controls can be fixed for children, adults, or a
 machine search.
 
+#### Lander
+
+A craft in a lunar valley with gravity, one engine and a tank. **Up**
+fires (down and fuel burn), **Left** and **Right** turn, and the agent
+has two more ports for firing while turning. Touch down on the pad
+slower than the limit, close to upright and without drifting across it.
+The minute it gets is plenty.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | A wide pad, straight below at first; no fuel limit |
+| 4–6 | Starting off to one side and moving; 25 s of fuel |
+| 7–9 | Rough ground around the pad |
+| 10–12 | Wind |
+| 13–15 | Gusts |
+| 16–19 | Gravity and the engine's strength change every round, unannounced: feel them out |
+| 20+ | The pad slides 8 m back and forth; less fuel, smaller pad, tighter limits |
+
+Speed across a moving pad is judged against the pad, so landing on one
+means matching it, not stopping. The model's autopilot lands every
+rung below 20 nearly every time and the top rungs a third of the time.
+
 ### Self-control
 
 A category of its own rather than a sixth attention task, and the
@@ -2862,6 +3052,48 @@ arm lagged behind the key that moved it, and a press bought a fraction
 of a cookie rather than a cookie. The momentum is in the door now
 instead of in the boy: it is the room that fills up rather than the
 thief who has to slow down, and the thief himself is instantaneous.
+
+**Stop & Switch.** A circle or a square, blue or orange, and two keys:
+**F** or **Left** for one answer, **J** or **Right** for the other. The
+rule above it says which feature counts. Answer before the window
+closes, and when a red ring comes up around the shape *after* it
+appeared, answer nothing at all. Pass a block at 85% right (90% from
+rung 20).
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Shape only, 12 shapes, the window narrowing from 1.5 s |
+| 4–6 | Stop rings on a quarter of the shapes, coming later each rung |
+| 7–9 | Shapes on the left or right, against the answer's side half the time |
+| 10–12 | The colour rule too, switching on a cue every four to six shapes |
+| 13–15 | Switches at random, still cued |
+| 16–19 | No time to prepare; seven in ten shapes on the wrong side |
+| 20+ | A third rule, *opposite*: press the side away from the shape; windows down to 0.45 s, stops to 0.35 s in |
+
+A stop arrives a fixed delay after the shape. That is the classical
+stop-signal design, so the task measures what it means to: how late you
+can still cancel a press you have started.
+
+**Delay.** One coin now, or eight if you wait for them. **A** or
+**Left** takes the coin (or, while waiting, gives up and takes it);
+**D** or **Right** waits. Coins only count for the minute you have, so
+the question is never *whether* waiting is virtuous but how long a wait
+is still worth it. Par is set by a ladder between always taking the coin
+and the best fixed patience for that run.
+
+| Rung | The waits |
+|---|---|
+| 1–3 | Always three seconds, shown |
+| 4–6 | Two to six seconds, not shown: wait them out |
+| 7–9 | Heavy-tailed: most short, some of them minutes. Give up after a few seconds |
+| 10–12 | Shown, with different coins on each offer: compare rates |
+| 13–15 | Halfway, the waits change from fair to heavy or back |
+| 16–19 | Three in ten never come |
+| 20+ | Two kinds in one 45-second run |
+
+The right amount of patience is a property of the world, not of the
+player. Waiting it out is right at rung 5 and wrong at rung 8, and the
+screen looks the same.
 
 ### Decision making
 
@@ -3078,6 +3310,28 @@ through its own later choice. Par runs from a sound player that never
 adapts at rung one to the reference at twenty-one; one-note and random
 players fall well short. Two agent ports: check or fold, bet or call.
 Turn-based, so it takes the think clock.
+
+#### Explore or Exploit
+
+Slot machines, each with a payout that wobbles around a mean you are
+not told. Each card shows the machine's last six payouts. Pull (click or
+the number keys) as many times as the round allows and finish above par,
+which a ladder sets between pulling at random and a reference that
+tracks every machine's recent average and its doubt.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Two machines, far apart, 30 pulls |
+| 4–6 | Three and then four machines, closer together |
+| 7–9 | The means drift |
+| 10–12 | And jump without warning, once in 18 pulls |
+| 13–15 | Six machines |
+| 16–19 | Payouts show up in batches of five, so you choose before you see |
+| 20+ | Eight machines, 80 pulls, noisier payouts; par above the reference |
+
+A machine you stopped pulling never tells you it got better, so the
+only way to know is to spend a pull finding out. The exploration that
+pays at rung 10 is wasted at rung 3.
 
 ### Computer use
 
@@ -3317,6 +3571,31 @@ under a third by rung twenty, a twentieth by thirty. Fifteen agent
 ports, Browser's: move the pointer by 80, 20 or 5 units in four
 directions, click, scroll up, scroll down. Turn-based, so it takes the
 think clock.
+
+#### Spreadsheet
+
+A table of orders (id, item, category, quantity, price, total) and a
+question above it: *what is the total of everything in Garden?*, *which
+row is the largest?*, *which row's total is wrong?* The tools are on
+the screen — filter chips by category, sort by clicking a column header
+(twice to turn it round), sum buttons that put the visible rows' sum,
+count and largest in the status bar — and the answer goes in from a
+keypad and **Submit**. Right, in no more clicks than par, passes.
+
+| Rung | Questions | Rows |
+|---|---|---|
+| 1–3 | Look a row up | 8–12 |
+| 4–6 | Or find the largest | 20 |
+| 7–9 | Sum a category | 24 |
+| 10–12 | Count one | 30 |
+| 13–15 | Find the row whose total is wrong | 30 |
+| 16–19 | Any of those | 40 |
+| 20+ | Sums, counts, wrong rows, and the corrected total | 60 |
+
+Par is the fewest clicks with a little slack, and the slack shrinks
+from 40% to 10% up the ladder. The tools only help the player who knows
+which one the question needs: scrolling 60 rows and adding up in your
+head is correct and over par.
 
 ### Window size, full screen, and the two coordinate spaces
 

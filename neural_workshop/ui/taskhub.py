@@ -48,6 +48,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('recognition', _('Seen It Before?')),
         ('trivia', _('Trivia')),
         ('notebook', _('Notebook')),
+        ('where_was_it', _('Where Was It?')),
     ],
     'attention': [
         ('reflex', _('Reflex')),
@@ -61,6 +62,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('two_hands', _('Two Hands')),
         ('overrun', _('Overrun')),
         ('marble_maze', _('Marble Maze')),
+        ('lander', _('Lander')),
     ],
     'perception': [
         ('count', _('Count')),
@@ -68,6 +70,10 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('camera', _('Camera')),
         ('what_next', _('What Happens Next')),
         ('will_it_fall', _('Will It Fall?')),
+        ('same_or_mirror', _('Same or Mirror?')),
+        ('which_is_nearer', _('Which Is Nearer?')),
+        ('shape_from_motion', _('Shape from Motion')),
+        ('point_of_view', _('Point of View')),
     ],
     'reasoning': [
         ('graph_mapping', _('Graph Mapping')),
@@ -89,6 +95,8 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('chess', _('Winning Move')),
         ('verbal_reasoning', _('Verbal Reasoning')),
         ('signals', _('Signals')),
+        ('fold_it', _('Fold It')),
+        ('who_knows_what', _('Who Knows What?')),
     ],
     'planning': [
         ('tower_of_hanoi', _('Tower of Hanoi')),
@@ -106,6 +114,8 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
     # doing. Reflex would fail every rung of it by being fast.
     'self_control': [
         ('cookie_thief', _('Cookie Thief')),
+        ('stop_and_switch', _('Stop & Switch')),
+        ('delay', _('Delay')),
     ],
     # Choosing under uncertainty: what to find out, when to stop finding
     # out and commit, what a wrong commitment costs, and what waiting
@@ -116,6 +126,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('gamble', _('Gamble')),
         ('bluff', _('Bluff')),
         ('triage', _('Triage')),
+        ('explore_exploit', _('Explore or Exploit')),
     ],
     # Operating an interface: a pointer, a screen, and controls that
     # have to be found, uncovered and understood before they can be used.
@@ -125,6 +136,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('manual', _('Manual')),
         ('browser', _('Browser')),
         ('errands', _('Errands')),
+        ('spreadsheet', _('Spreadsheet')),
     ],
 }
 
@@ -623,6 +635,54 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'errands':
         from .errands import Errands
         Errands()
+        return
+    if task_id == 'same_or_mirror':
+        from .mirror import SameOrMirror
+        SameOrMirror()
+        return
+    if task_id == 'which_is_nearer':
+        from .nearer import WhichIsNearer
+        WhichIsNearer()
+        return
+    if task_id == 'shape_from_motion':
+        from .sfm import ShapeFromMotion
+        ShapeFromMotion()
+        return
+    if task_id == 'fold_it':
+        from .fold import FoldIt
+        FoldIt()
+        return
+    if task_id == 'point_of_view':
+        from .pov import PointOfView
+        PointOfView()
+        return
+    if task_id == 'who_knows_what':
+        from .beliefs import WhoKnowsWhat
+        WhoKnowsWhat()
+        return
+    if task_id == 'where_was_it':
+        from .rooms import WhereWasIt
+        WhereWasIt()
+        return
+    if task_id == 'stop_and_switch':
+        from .stopswitch import StopAndSwitch
+        StopAndSwitch()
+        return
+    if task_id == 'delay':
+        from .delay import Delay
+        Delay()
+        return
+    if task_id == 'explore_exploit':
+        from .bandit import ExploreOrExploit
+        ExploreOrExploit()
+        return
+    if task_id == 'lander':
+        from .lander import Lander
+        Lander()
+        return
+    if task_id == 'spreadsheet':
+        from .sheet import Spreadsheet
+        Spreadsheet()
         return
     if task_id == 'gamble':
         from .gamble import Gamble
