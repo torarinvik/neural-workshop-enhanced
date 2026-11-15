@@ -29,6 +29,7 @@ from .. import runtime
 from ..i18n import _
 from . import polish
 from .clocked import ClockedTask
+from .tones import Voice as _Voice
 
 HUES = ((255, 92, 120), (255, 160, 60), (250, 220, 70), (140, 230, 90),
         (60, 220, 170), (60, 200, 250), (90, 140, 255), (160, 110, 255),
@@ -43,37 +44,6 @@ BADGE = pyglet.graphics.Group(order=6)
 #: A place drawn on a card: its fills over the card, its lines over those.
 PLACE_FILL = pyglet.graphics.Group(order=2.3)
 PLACE_LINE = pyglet.graphics.Group(order=2.6)
-
-
-class _Voice(pyglet.media.Source):
-    """The trial's sound, synthesised as it is played."""
-
-    def __init__(self, notes: Sequence[model.Note],
-                 patches: Sequence[model.Patch], duration: float) -> None:
-        from pyglet.media.codecs.base import AudioFormat
-        self.audio_format = AudioFormat(channels=2, sample_size=16,
-                                        sample_rate=model.RATE)
-        self.video_format = None
-        self._notes = list(notes)
-        self._patches = list(patches)
-        self._duration = duration
-        self._t = 0.0
-
-    def get_audio_data(self, num_bytes: int, compensation_time: float = 0.0):
-        from pyglet.media.codecs.base import AudioData
-        if self._t >= self._duration:
-            return None
-        t1 = min(self._duration, self._t + max(1, num_bytes // 4)
-                 / float(model.RATE))
-        data = model.synth(self._notes, self._t, t1, self._patches)
-        t0, self._t = self._t, t1
-        return AudioData(data, len(data), t0, t1 - t0, [])
-
-    def seek(self, timestamp: float) -> None:
-        self._t = max(0.0, min(self._duration, timestamp))
-
-    def is_precise(self) -> bool:
-        return True
 
 
 class DrShape(ClockedTask):

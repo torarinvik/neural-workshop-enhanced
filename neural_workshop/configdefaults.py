@@ -751,6 +751,85 @@ GAMBLE_RUNG = 1
 GAMBLE_TRIALS = 5
 GAMBLE_ADAPTIVE = True
 
+# Captcha: type the characters in the picture. Mixed faces and colours
+# from rung 4, struck through from 7, decoys by colour from 10, small
+# decoys and clutter from 13, upside-down decoys from 16.
+CAPTCHA_RUNG = 1
+CAPTCHA_TRIALS = 5
+CAPTCHA_ADAPTIVE = True
+
+# Echo Cave: steer a bat down a winding cave, catching moths. Dim from
+# rung 4, dark but for clicks from 7, moths only heard from 10, no
+# light at all from 16.
+ECHO_RUNG = 1
+ECHO_TRIALS = 5
+ECHO_ADAPTIVE = True
+
+# Catch: move the basket under balls lobbed down a court. No shadow
+# and spinning balls from rung 7, wall bounces from 10, two baskets
+# from 13, fog from 16, a swinging view from 20.
+CATCH_RUNG = 1
+CATCH_TRIALS = 5
+CATCH_ADAPTIVE = True
+
+# Shadow Play: turn a bent rod until its shadow fits an outline. Two
+# axes from rung 4, three from 7, a floor shadow from 10, a turning
+# outline from 13, a swinging lamp from 16.
+SHADOW_RUNG = 1
+SHADOW_TRIALS = 5
+SHADOW_ADAPTIVE = True
+
+# Tuner: hear a tune, then find the station playing it on a radio dial.
+# One instrument from rung 7, another key from 10, drifting stations
+# from 13, fading stations and near misses from 16.
+TUNER_RUNG = 1
+TUNER_TRIALS = 5
+TUNER_ADAPTIVE = True
+
+# Glider: hold to climb, let go to sink, and thread the gaps. Faster
+# from rung 7, sliding gaps from 10, gusts from 13, heavier from 16.
+GLIDER_RUNG = 1
+GLIDER_TRIALS = 5
+GLIDER_ADAPTIVE = True
+
+# Hold It: hold a key as long as the lamp shone. Halves and doubles
+# from rung 7, two lamps from 10, a misleading clock from 13.
+HOLDIT_RUNG = 1
+HOLDIT_TRIALS = 5
+HOLDIT_ADAPTIVE = True
+
+# Time It: press as the hidden ball reaches the mark. Slowing from rung
+# 7, bouncing from 10, thrown from 13, mixed and faster from 16.
+TIMEIT_RUNG = 1
+TIMEIT_TRIALS = 5
+TIMEIT_ADAPTIVE = True
+
+# Keep the Beat: tap along, then keep the beat going alone. Any tempo
+# from rung 7, swing from 10, threes from 13, a returning metronome
+# from 16.
+BEAT_RUNG = 1
+BEAT_TRIALS = 5
+BEAT_ADAPTIVE = True
+
+# Crossings: how many times does red cross blue? Curves from rung 7,
+# a green decoy from 10, shallower angles from 13.
+CROSSINGS_RUNG = 1
+CROSSINGS_TRIALS = 5
+CROSSINGS_ADAPTIVE = True
+
+# Touching?: do the shapes touch, overlap or stand apart? Sizes from
+# rung 4, squares from 7, counting pairs from 10, thick and filled
+# shapes from 13.
+TOUCHING_RUNG = 1
+TOUCHING_TRIALS = 5
+TOUCHING_ADAPTIVE = True
+
+# Inside or Out?: is the dot inside the closed line? Fingers from rung
+# 4, labyrinths from 7, two dots from 13, decoy lines from 16.
+INSIDE_RUNG = 1
+INSIDE_TRIALS = 5
+INSIDE_ADAPTIVE = True
+
 # Dr Shape: a 3D turtle draws and sings a shape; pick it out from
 # look-alikes, or pick its sound. Echoes from rung 3, space curves and
 # sound cards from 5, mirrors and colours from 8, solids from 11,

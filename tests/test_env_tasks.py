@@ -743,7 +743,7 @@ class TheBoundaryKnowsWhichTasksHaveAClock(unittest.TestCase):
                         'you_are_here', 'sokoban_3d', 'crossword',
                         'scrabble', 'scramble', 'algebra',
                         'n_in_a_row', 'verbal_reasoning', 'camera',
-                        'sonar', 'hidden_rule', 'bluff', 'forms', 'wiring', 'gamble', 'triage', 'manual', 'notebook', 'browser', 'will_it_fall', 'signals', 'errands', 'same_or_mirror', 'fold_it', 'point_of_view', 'who_knows_what', 'where_was_it', 'explore_exploit', 'spreadsheet', 'desktop'):
+                        'sonar', 'hidden_rule', 'bluff', 'forms', 'wiring', 'gamble', 'triage', 'manual', 'notebook', 'browser', 'will_it_fall', 'signals', 'errands', 'same_or_mirror', 'fold_it', 'point_of_view', 'who_knows_what', 'where_was_it', 'explore_exploit', 'spreadsheet', 'inside_or_out', 'touching', 'crossings', 'captcha', 'desktop'):
             self.assertFalse(self.clocked(task_id), task_id)
 
     def test_the_ones_that_move_on_their_own_are(self):
@@ -755,7 +755,7 @@ class TheBoundaryKnowsWhichTasksHaveAClock(unittest.TestCase):
                         'chain_of_custody', 'cookie_thief', 'donkey',
                         'two_hands', 'tetris', 'overrun', 'marble_maze',
                         'video_sequence', 'video_jigsaw', 'what_next',
-                        'which_is_nearer', 'shape_from_motion', 'stop_and_switch', 'delay', 'lander', 'rail_yard', 'air_traffic', 'firebreak', 'escort', 'sokoban_live', 'kitchen', 'crane', 'ferry', 'juggler', 'balance', 'crossroads', 'dam_keeper', 'dr_shape', 'dispatch'):
+                        'which_is_nearer', 'shape_from_motion', 'stop_and_switch', 'delay', 'lander', 'rail_yard', 'air_traffic', 'firebreak', 'escort', 'sokoban_live', 'kitchen', 'crane', 'ferry', 'juggler', 'balance', 'crossroads', 'dam_keeper', 'dr_shape', 'keep_the_beat', 'time_it', 'hold_it', 'glider', 'tuner', 'shadow_play', 'catch', 'echo_cave', 'dispatch'):
             self.assertTrue(self.clocked(task_id), task_id)
 
     def test_the_ports_are_the_ones_the_task_has(self):

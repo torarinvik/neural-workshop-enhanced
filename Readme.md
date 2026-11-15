@@ -1678,6 +1678,136 @@ frame -- 22.05 kHz, two channels -- and six ports, one per card.
 Clocked: the turtle draws and the choosing time runs out whatever the
 agent does.
 
+#### Inside or Out?
+
+One closed line on paper and a dot: is the dot inside? **I** or **Y**
+for inside, **O** or **N** for out, or click. A glance settles a blob; a
+winding labyrinth has to be followed, or the dot's way out looked for.
+The line never crosses itself and the dot is never on it.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | A round blob, the dot well in or well out |
+| 4–6 | Deep fingers; the dot in a finger or a bay |
+| 7–9 | A small labyrinth of one-cell corridors |
+| 10–12 | A larger labyrinth |
+| 13–15 | Two dots: can one reach the other without crossing the line? |
+| 16–19 | Loose lines that do not close lie about as decoys |
+| 20+ | Larger labyrinths every rung |
+
+Two agent ports, inside (or *yes*) and out (or *no*). Turn-based, so it
+takes the think clock.
+
+#### Touching?
+
+Two outlined shapes: do they stand **A**part, **T**ouch, or **O**verlap?
+Touching is exact -- the outlines meet at one point -- and apart and
+overlapping always clear a visible margin, which narrows up the ladder.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Two circles the same size, wide gaps and deep overlaps |
+| 4–6 | Different sizes, narrower margins |
+| 7–9 | Squares and circles, turned |
+| 10–12 | How many pairs touch (0–5), among three or four circles |
+| 13–15 | Thick outlines and filled shapes, thin margins |
+| 16+ | More shapes, thinner margins every rung |
+
+After the answer the touching points are ringed. Six agent ports: the
+three answers, or a count. Turn-based, so it takes the think clock.
+
+#### Time It
+
+A ball rolls (or flies) behind a screen with a mark on it. Press
+**Space** the moment the hidden ball is at the mark. Its motion has to
+be carried on in the head -- its speed, its slowing, its bounce, its
+fall -- from the stretch where it could be seen, and a hum follows it
+while it is in view. Afterwards a ghost shows where it really was.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | A steady roll, a short screen, a wide window |
+| 4–6 | A longer screen, a narrower window |
+| 7–9 | Friction: the ball slows as it rolls |
+| 10–12 | It bounces off a wall behind the screen and comes back |
+| 13–15 | Thrown in an arc; the mark is where it lands |
+| 16–19 | Any of these, faster, longer hidden |
+| 20+ | Tighter windows every rung |
+
+One agent port, the press. Clocked: the ball moves whatever the agent
+does, and the agent hears the hum with every frame.
+
+#### Tuner
+
+A tune plays twice. Then an old radio warms up: hiss across the dial,
+and here and there a station, each playing its own little tune over and
+over. Find the station playing the tune you heard -- drag the needle or
+click along the dial, drag the knob, or hold **Left** / **Right**
+(**Shift** for fine) -- and press **Space** to lock on, then stay with
+it for a moment. Locking onto the wrong station loses the trial. **R**
+plays the tune again. Nothing on the screen says which station plays
+what; the signal meter only says how strong a station is.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Three stations, lamps on the dial, each on its own instrument and rhythm |
+| 4–6 | No lamps, four stations, narrower |
+| 7–9 | Every station on the same instrument |
+| 10–12 | The tune heard first is in another key on another instrument; every station in the same rhythm; one plays the same notes in another order |
+| 13–15 | Stations drift along the dial: hold on while locking |
+| 16–19 | Stations fade in and out; one differs from the tune by a single note |
+| 20+ | More stations, narrower, faster drift every rung |
+
+Six agent ports: dial down and up, coarse and fine, lock, and hear it
+again. The tune and the radio reach the agent only as sound. Clocked.
+
+#### Shadow Play
+
+A bent copper rod hangs in a lamplit room; its shadow falls on the
+back wall, where a gold outline shows the shadow wanted. Turn the rod --
+drag it (right button or **Shift** rolls), or **A**/**D**, **W**/**S**
+and **Q**/**E** -- until its shadow lies in the outline, and hold it
+there a moment. Every turn moves the whole shadow at once, and more than
+one way the rod might hang can throw the same shadow.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | A short rod turning about the upright only; a hum rises as the fit closes |
+| 4–6 | A longer rod that tips as well |
+| 7–9 | Rolling too |
+| 10–12 | A floor lamp throws a second shadow with its own outline; no hum |
+| 13–15 | The outline turns slowly: catch it and keep up |
+| 16–19 | The lamp swings, so the shadow wanted keeps changing |
+| 20+ | All of it, longer rods, a tighter fit every rung |
+
+Six agent ports, one per turn direction. Clocked.
+
+#### Captcha
+
+Type the characters in the picture -- the keyboard types, **Backspace**
+rubs out, **Enter** submits. The rule above the picture says which
+characters count. At the bottom of the ladder it is four clean capitals;
+up the ladder every character takes its own typeface, colour, size and
+lean, the line waves and crowds, lines are struck through it, the
+background fills with stripes, blobs, arcs and a confetti of stray
+glyphs, and decoys stand among the real characters to be left out by
+colour, by size or because they are upside down. Characters any font or
+turn could confuse (0/O, 1/I/L, 2/Z, 5/S, 8/B, 6/9) are never used.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Four clean capitals, one typeface |
+| 4–6 | Five, letters and digits, three typefaces, colours and tilts |
+| 7–9 | Any of sixteen typefaces; a wavy, crowded line struck through |
+| 10–12 | Six, with decoys in other colours: *type only the blue characters* |
+| 13–15 | Small decoys to leave out; a cluttered background |
+| 16–19 | Seven, with upside-down decoys to leave out; more of everything |
+| 20+ | Eight, any rule (two at once from rung 24), more clutter and steeper tilts every rung |
+
+After the answer the real characters are ringed. Twenty-five agent
+ports: one per character, rub out, submit. Turn-based, so it takes the
+think clock.
+
 #### Winning Move
 
 One legal chess position is dealt and the side to move has exactly one
@@ -3035,6 +3165,113 @@ second with the pole up, then the next lights.
 The model's controller balances with gains computed offline for each
 pole length and passes every rung tried.
 
+#### Crossings
+
+How many times does the red line cross the blue? Press the number. Every
+crossing is clean -- a fair angle, well apart from the others, and no
+grazing in between -- so it is only a matter of following one line and
+counting.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Two bent lines, up to two crossings |
+| 4–6 | More bends, up to three |
+| 7–9 | Smooth curves, up to four |
+| 10–12 | A green line crosses both as a decoy |
+| 13–15 | Up to five, at shallower angles |
+| 16+ | More decoys, up to six |
+
+After the answer every crossing is ringed. Seven agent ports, 0 to 6.
+Turn-based, so it takes the think clock.
+
+#### Keep the Beat
+
+A metronome ticks -- a click, a lamp, a swinging arm -- then a curtain
+drops over it and it goes silent. Keep tapping **Space** (or **J**, **F**)
+on every beat that would have come. Only the silent part is judged: three
+taps in four within the window, and no more than two strays. Nothing on
+screen moves with the beat behind the curtain, so it has to be held
+inside.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | A slow, steady beat, a wide window, six beats to carry |
+| 4–6 | A narrower window, eight beats |
+| 7–9 | Any tempo from slow to brisk |
+| 10–12 | Swing: long, short, long, short |
+| 13–15 | Threes: long, short, short |
+| 16–19 | The metronome comes back for a bar halfway, then goes again |
+| 20+ | Longer silences, tighter windows every rung |
+
+One agent port, the tap; the clicks reach the agent as audio with every
+frame. Clocked. At 60 frames a second every rung can be hit; at the
+slowest frame rate the tightest windows fall between frames.
+
+#### Glider
+
+A paper glider flies on through a sunset canyon. Hold **Space** (or
+**Up**, **W**) to climb, let go to sink; it carries its speed, so it has
+to be eased, not jerked. Pass every wall's gap without touching rock,
+roof or floor.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Wide gaps, slow walls, far apart |
+| 4–6 | Narrower gaps, closer walls |
+| 7–9 | Faster |
+| 10–12 | Gaps that slide up and down |
+| 13–15 | Gusts of wind push the glider |
+| 16–19 | A heavier glider, slower to answer |
+| 20+ | Narrower, faster, gustier every rung |
+
+Every course is flown by the model's pilot before it is dealt, so each
+one can be passed. One agent port, held. Clocked.
+
+#### Catch
+
+A court runs away from you in perspective and a thrower lobs balls down
+it. Move the basket -- the mouse runs it to the spot under the pointer,
+or the arrows / **WASD** -- to wherever a ball will come down. Every ball
+pops when thrown, whistles from where it is as it flies (higher the
+higher, louder the nearer) and thuds where it lands. On the screen a
+ball landing near and one landing far trace nearly the same curve: the
+depth is the whole task. Drop no more than one.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | One basket, slow high lobs one at a time, a shadow under the ball |
+| 4–6 | Quicker, flatter throws, a smaller basket |
+| 7–9 | No shadow; spinning balls curve sideways |
+| 10–12 | Bounces off the side walls; two balls in the air at once |
+| 13–15 | Two baskets -- red on the keys, blue on the mouse -- each catching its own colour |
+| 16–19 | Fog over the far half of the court: listen for the throw |
+| 20+ | The view swings to and fro, wind, smaller baskets, more balls |
+
+Eight agent ports, four per basket. Clocked, with the balls' sound.
+
+#### Echo Cave
+
+Fly a bat down a winding cave, steering with the mouse (it flies toward
+the pointer) or the arrows, without touching rock, and fly through moths
+to catch them. **Space** clicks: the rock answers sooner and louder from
+the near side, higher from above and lower from below, and a long low
+echo from far down the cave says which way it turns. The moths buzz from
+where they are. The light fails up the ladder until the ears are all
+there is.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | A lit, wide cave, gentle bends; catch one of three moths |
+| 4–6 | Dimmer -- only the near cave shows; catch two of four |
+| 7–9 | Dark: a click lights the cave for a moment |
+| 10–12 | The moths can only be heard |
+| 13–15 | Narrower and faster, winding up and down as much as sideways |
+| 16–19 | No light at all: fly by the echoes |
+| 20+ | Narrower and faster every rung |
+
+Nine agent ports: eight steering directions and the click. Clocked;
+clicks, echoes and moths reach the agent as sound.
+
 #### Rail Yard
 
 Trains leave a tunnel one after another, each painted the colour of the
@@ -3334,6 +3571,22 @@ and the best fixed patience for that run.
 The right amount of patience is a property of the world, not of the
 player. Waiting it out is right at rung 5 and wrong at rung 8, and the
 screen looks the same.
+
+**Hold It.** A lamp lights and a tone sounds for a while, then both stop.
+Hold **Space** for just as long; the lamp lights again while it is held,
+but nothing shows how much time has gone. Close enough, as a share of
+the time asked for, passes.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | One short time, a generous margin |
+| 4–6 | Longer times, a narrower margin |
+| 7–9 | Hold half as long, or twice as long, as was shown |
+| 10–12 | Two lamps one after another: hold for both together |
+| 13–15 | A ticking clock runs at the wrong speed throughout |
+| 16+ | Any of these, tighter every rung |
+
+One agent port, held. Clocked, with the tone in the agent's audio.
 
 ### Decision making
 

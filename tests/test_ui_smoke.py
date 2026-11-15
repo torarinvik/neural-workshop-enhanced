@@ -31,6 +31,18 @@ if __name__ == '__main__':
     from test_sonar import *           # noqa: F401,F403,E402
     from test_hiddenrule import *      # noqa: F401,F403,E402
     from test_gamble import *  # noqa: F401,F403,E402
+    from test_captcha import *  # noqa: F401,F403,E402
+    from test_echocave import *  # noqa: F401,F403,E402
+    from test_catch import *  # noqa: F401,F403,E402
+    from test_shadowplay import *  # noqa: F401,F403,E402
+    from test_tuner import *  # noqa: F401,F403,E402
+    from test_glider import *  # noqa: F401,F403,E402
+    from test_holdit import *  # noqa: F401,F403,E402
+    from test_timeit import *  # noqa: F401,F403,E402
+    from test_beat import *  # noqa: F401,F403,E402
+    from test_crossings import *  # noqa: F401,F403,E402
+    from test_touching import *  # noqa: F401,F403,E402
+    from test_inside import *  # noqa: F401,F403,E402
     from test_drshape import *  # noqa: F401,F403,E402
     from test_damkeeper import *  # noqa: F401,F403,E402
     from test_crossroads import *  # noqa: F401,F403,E402

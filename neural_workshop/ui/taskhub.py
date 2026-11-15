@@ -65,6 +65,11 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('lander', _('Lander')),
         ('juggler', _('Juggler')),
         ('balance', _('Balance')),
+        ('crossings', _('Crossings')),
+        ('keep_the_beat', _('Keep the Beat')),
+        ('glider', _('Glider')),
+        ('catch', _('Catch')),
+        ('echo_cave', _('Echo Cave')),
     ],
     'perception': [
         ('count', _('Count')),
@@ -77,6 +82,12 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('shape_from_motion', _('Shape from Motion')),
         ('point_of_view', _('Point of View')),
         ('dr_shape', _('Dr Shape')),
+        ('inside_or_out', _('Inside or Out?')),
+        ('touching', _('Touching?')),
+        ('time_it', _('Time It')),
+        ('tuner', _('Tuner')),
+        ('shadow_play', _('Shadow Play')),
+        ('captcha', _('Captcha')),
     ],
     'reasoning': [
         ('graph_mapping', _('Graph Mapping')),
@@ -126,6 +137,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('cookie_thief', _('Cookie Thief')),
         ('stop_and_switch', _('Stop & Switch')),
         ('delay', _('Delay')),
+        ('hold_it', _('Hold It')),
     ],
     # Choosing under uncertainty: what to find out, when to stop finding
     # out and commit, what a wrong commitment costs, and what waiting
@@ -748,6 +760,54 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'dr_shape':
         from .drshape import DrShape
         DrShape()
+        return
+    if task_id == 'inside_or_out':
+        from .inside import InsideOrOut
+        InsideOrOut()
+        return
+    if task_id == 'touching':
+        from .touching import Touching
+        Touching()
+        return
+    if task_id == 'crossings':
+        from .crossings import Crossings
+        Crossings()
+        return
+    if task_id == 'keep_the_beat':
+        from .beat import KeepTheBeat
+        KeepTheBeat()
+        return
+    if task_id == 'time_it':
+        from .timeit import TimeIt
+        TimeIt()
+        return
+    if task_id == 'hold_it':
+        from .holdit import HoldIt
+        HoldIt()
+        return
+    if task_id == 'glider':
+        from .glider import Glider
+        Glider()
+        return
+    if task_id == 'tuner':
+        from .tuner import Tuner
+        Tuner()
+        return
+    if task_id == 'shadow_play':
+        from .shadowplay import ShadowPlay
+        ShadowPlay()
+        return
+    if task_id == 'catch':
+        from .catch import Catch
+        Catch()
+        return
+    if task_id == 'echo_cave':
+        from .echocave import EchoCave
+        EchoCave()
+        return
+    if task_id == 'captcha':
+        from .captcha import Captcha
+        Captcha()
         return
     if task_id == 'gamble':
         from .gamble import Gamble
