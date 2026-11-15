@@ -107,6 +107,11 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('sokoban_3d', _('3D Sokoban')),
         ('tetris', _('Freeform Tetris')),
         ('n_in_a_row', _('N-in-a-row')),
+        ('rail_yard', _('Rail Yard')),
+        ('air_traffic', _('Air Traffic')),
+        ('escort', _('Escort')),
+        ('sokoban_live', _('Sokoban Live')),
+        ('kitchen', _('Kitchen')),
     ],
     # Not attention, and the difference is the point. Everything under
     # attention is about finding or following the right thing; this is
@@ -127,6 +132,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('bluff', _('Bluff')),
         ('triage', _('Triage')),
         ('explore_exploit', _('Explore or Exploit')),
+        ('firebreak', _('Firebreak')),
     ],
     # Operating an interface: a pointer, a screen, and controls that
     # have to be found, uncovered and understood before they can be used.
@@ -683,6 +689,30 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'spreadsheet':
         from .sheet import Spreadsheet
         Spreadsheet()
+        return
+    if task_id == 'rail_yard':
+        from .railyard import RailYard
+        RailYard()
+        return
+    if task_id == 'air_traffic':
+        from .airtraffic import AirTraffic
+        AirTraffic()
+        return
+    if task_id == 'firebreak':
+        from .firebreak import Firebreak
+        Firebreak()
+        return
+    if task_id == 'escort':
+        from .escort import Escort
+        Escort()
+        return
+    if task_id == 'sokoban_live':
+        from .sokobanlive import SokobanLive
+        SokobanLive()
+        return
+    if task_id == 'kitchen':
+        from .kitchen import Kitchen
+        Kitchen()
         return
     if task_id == 'gamble':
         from .gamble import Gamble

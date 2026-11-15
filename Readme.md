@@ -2939,6 +2939,108 @@ Speed across a moving pad is judged against the pad, so landing on one
 means matching it, not stopping. The model's autopilot lands every
 rung below 20 nearly every time and the top rungs a third of the time.
 
+#### Rail Yard
+
+Trains leave a tunnel one after another, each painted the colour of the
+station it must reach. **Click a set of points** (or press its number)
+to throw it, and click a tunnel's signal (Q, W) to hold trains back or
+let them go. A train that reaches points while they move comes off the
+rails; two trains on one stretch of track collide.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Two stations, five trains, points throw at once; one wrong station forgiven |
+| 4–6 | Four stations, closer together |
+| 7–9 | Points take a second to throw |
+| 10–12 | Eight stations, no wrong station forgiven |
+| 13–15 | A second tunnel, merging into the yard |
+| 16–19 | Express trains that catch up with the one in front |
+| 20+ | Sixteen stations; more trains, closer and faster, every rung |
+
+The model's dispatcher throws points for the next train in and releases
+a train only when its whole route is clear; it clears every rung.
+
+#### Air Traffic
+
+A radar scope with planes coming in from the edges. **Pick a plane**
+(click it or 1–8) and tell it to **hold** (H), **turn** 45 degrees (A,
+D) or **land** (L) on a runway. Keep every pair apart, keep them out of
+storms and inside the airspace, and land them all.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | One runway, three planes |
+| 4–6 | Two runways, five planes |
+| 7–9 | A storm cell drifting across |
+| 10–12 | Fuel: a plane circling too long is lost |
+| 13–15 | A runway closes for a while; two storms |
+| 16–19 | The wind turns and the runways flip ends; planes on approach go around |
+| 20+ | More, faster planes and less fuel every rung; three storms |
+
+The model's controller resolves conflicts, steers round storms and
+clears one plane per runway at a time; it lands nearly every round low
+down and few at the top, which is honest: the top is hard.
+
+#### Escort
+
+Walkers cross a torch-lit temple from the west gate to the east, never
+stopping of their own accord. **Pull levers** (1–6, or click) to open
+portcullis doors and slide bridges over pits; flame jets keep their own
+clock, and each stands just past a door so the door is how a walker is
+timed through it. A moving bridge carries no one.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | One walker, doors and bridges, a lever each |
+| 4–9 | Flame jets, then more devices |
+| 10–12 | Coupled levers: one lever works two devices at once |
+| 13–15 | Two walkers |
+| 16–19 | Walkers change pace without warning |
+| 20+ | Three walkers, faster |
+
+Every temple is dealt so that the model's escort, which weighs what each
+lever would break against what it would fix, brings everyone through.
+
+#### Sokoban Live
+
+Crates and pads in a lit warehouse, but the clock runs. **Arrows** step
+the worker and push. Guards patrol straight aisles, one square a beat,
+turning at walls and crates, so every push re-routes them; meeting one
+ends the trial, and so does a crate pushed where it can never leave.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | One crate, then one slow guard |
+| 4–9 | Two crates, then a second guard |
+| 10–12 | Three crates |
+| 13–15 | Shutters that open and shut on a cycle |
+| 16–19 | Four crates, faster guards |
+| 20+ | Three guards, quicker every rung |
+
+Rooms come from the Sokoban generator, made roomier; every one dealt is
+cleared by the model's worker, which plans the pushes and then waits or
+sidesteps when a guard would meet it.
+
+#### Kitchen
+
+One cook, crates of tomatoes, onions, mushrooms and fish, chopping
+boards, stoves, plates, a pass and a bin. Tickets arrive along the rail,
+each a dish of one to three parts and each losing patience. **Send the
+cook to a station** (1–4, Q W, E R T, A S, D, F, or click) and it does
+the obvious thing there; a pan left done too long burns.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | One-part dishes, one stove, slow tickets; one may lapse |
+| 4–6 | Two stoves; some parts are served chopped, not cooked |
+| 7–9 | Two-part dishes, two plates |
+| 10–12 | Pans burn sooner; nothing may lapse |
+| 13–15 | Three-part dishes, a second board |
+| 16+ | Three stoves; quicker tickets and less patience every rung |
+
+The model's cook keeps every plate building toward the most urgent
+ticket and serves nearly every shift below rung 25.
+
 ### Self-control
 
 A category of its own rather than a sixth attention task, and the
@@ -3332,6 +3434,29 @@ tracks every machine's recent average and its doubt.
 A machine you stopped pulling never tells you it got better, so the
 only way to know is to spend a pull finding out. The exploration that
 pays at rung 10 is wasted at rung 3.
+
+#### Firebreak
+
+A forest fire on a painted landscape, driven by the wind. **Arrows**
+move the crew (Shift: four squares), **Space** digs a firebreak, and a
+click digs where you point. Grass burns fast, forest slow, water and
+rock not at all, and the shovels are few. Save the town: the trial
+passes when the fire is out and no roof has burned.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | One fire, a steady breeze, the town far off |
+| 4–6 | Faster fire, fewer shovels, the town nearer |
+| 7–9 | Two fires |
+| 10–12 | The wind swings round mid-round |
+| 13–15 | Embers jump a narrow break downwind |
+| 16–19 | No wind arrow: only the smoke shows which way it blows |
+| 20+ | Faster fire, slower digging, fewer shovels every rung |
+
+Where to dig is the decision: a ring close round the town is cheap but
+embers leap it; a wide one costs shovels the fire may not leave time to
+spend. The model's crew rings the town twice against embers and saves
+it nearly always below rung 20.
 
 ### Computer use
 

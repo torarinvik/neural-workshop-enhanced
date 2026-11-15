@@ -110,6 +110,12 @@ from .sonar import SonarEnv  # noqa: E402
 from .hiddenrule import HiddenRuleEnv  # noqa: E402
 from .dispatch import DispatchEnv  # noqa: E402
 from .gamble import GambleEnv  # noqa: E402
+from .kitchen import KitchenEnv  # noqa: E402
+from .sokobanlive import SokobanLiveEnv  # noqa: E402
+from .escort import EscortEnv  # noqa: E402
+from .firebreak import FirebreakEnv  # noqa: E402
+from .airtraffic import AirTrafficEnv  # noqa: E402
+from .railyard import RailYardEnv  # noqa: E402
 from .sheet import SpreadsheetEnv  # noqa: E402
 from .lander import LanderEnv  # noqa: E402
 from .bandit import ExploreOrExploitEnv  # noqa: E402
@@ -205,7 +211,7 @@ __all__ = [
     'CrossedWiresEnv', 'CrosswordEnv', 'CustodyEnv', 'DonkeyEnv',
     'GraphMappingEnv',
     'GoEnv', 'make_go_env', 'verify_go_outcome',
-    'HanoiEnv', 'InTheDarkEnv', 'JigsawEnv', 'VideoSequenceEnv', 'VideoJigsawEnv', 'CameraEnv', 'SonarEnv', 'BluffEnv', 'FormsEnv', 'WiringEnv', 'GambleEnv', 'SpreadsheetEnv', 'LanderEnv', 'ExploreOrExploitEnv', 'DelayEnv', 'StopAndSwitchEnv', 'WhereWasItEnv', 'WhoKnowsWhatEnv', 'PointOfViewEnv', 'FoldItEnv', 'ShapeFromMotionEnv', 'WhichIsNearerEnv', 'SameOrMirrorEnv', 'ErrandsEnv', 'SignalsEnv', 'WillItFallEnv', 'BrowserEnv', 'NotebookEnv', 'ManualEnv', 'WhatNextEnv', 'TriageEnv', 'HiddenRuleEnv', 'DispatchEnv', 'DesktopEnv', 'LookoutEnv',
+    'HanoiEnv', 'InTheDarkEnv', 'JigsawEnv', 'VideoSequenceEnv', 'VideoJigsawEnv', 'CameraEnv', 'SonarEnv', 'BluffEnv', 'FormsEnv', 'WiringEnv', 'GambleEnv', 'KitchenEnv', 'SokobanLiveEnv', 'EscortEnv', 'FirebreakEnv', 'AirTrafficEnv', 'RailYardEnv', 'SpreadsheetEnv', 'LanderEnv', 'ExploreOrExploitEnv', 'DelayEnv', 'StopAndSwitchEnv', 'WhereWasItEnv', 'WhoKnowsWhatEnv', 'PointOfViewEnv', 'FoldItEnv', 'ShapeFromMotionEnv', 'WhichIsNearerEnv', 'SameOrMirrorEnv', 'ErrandsEnv', 'SignalsEnv', 'WillItFallEnv', 'BrowserEnv', 'NotebookEnv', 'ManualEnv', 'WhatNextEnv', 'TriageEnv', 'HiddenRuleEnv', 'DispatchEnv', 'DesktopEnv', 'LookoutEnv',
     'MatrixReasoningEnv', 'MazeEnv', 'MovingTargetsEnv', 'MrTimeEnv',
     'NCupMonteEnv',
     'PursuitEnv', 'RecognitionEnv', 'ReflexEnv', 'RemovalsEnv',

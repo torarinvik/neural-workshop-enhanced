@@ -1420,6 +1420,173 @@ SPREADSHEET = TaskSpec(
     note=spreadsheet_note)
 
 
+def railyard_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung's yard is like."""
+    from .. import railyard
+    level = railyard.grade(int(chosen['RAILYARD_RUNG']))
+    said = [_('Rung %d: %d stations, %d trains, %s.') % (
+        level.rung, 2 ** level.depth, level.trains,
+        _('two tunnels') if level.portals == 2 else _('one tunnel'))]
+    if level.throw:
+        said.append(_('Points take %.1f s to throw.') % level.throw)
+    if level.express:
+        said.append(_('Express trains catch up.'))
+    return '  '.join(said)
+
+
+RAILYARD = TaskSpec(
+    title=_('Rail Yard options'),
+    options=(
+        Option('RAILYARD_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('RAILYARD_TRIALS', _('Yards per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('RAILYARD_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=railyard_note)
+
+
+def airtraffic_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung's sky is like."""
+    from .. import airtraffic
+    level = airtraffic.grade(int(chosen['AIRTRAFFIC_RUNG']))
+    said = [_('Rung %d: %d planes, %s.') % (
+        level.rung, level.planes,
+        _('two runways') if level.runways == 2 else _('one runway'))]
+    found = []
+    if level.storms:
+        found.append(_('%d storm cells') % level.storms)
+    if level.fuel:
+        found.append(_('fuel for %d s') % level.fuel)
+    if level.closure:
+        found.append(_('a runway closing'))
+    if level.wind_shift:
+        found.append(_('the wind turning'))
+    if found:
+        said.append(_('With %s.') % ', '.join(found))
+    return '  '.join(said)
+
+
+AIRTRAFFIC = TaskSpec(
+    title=_('Air Traffic options'),
+    options=(
+        Option('AIRTRAFFIC_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('AIRTRAFFIC_TRIALS', _('Skies per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('AIRTRAFFIC_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=airtraffic_note)
+
+
+def firebreak_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung's fire is like."""
+    from .. import firebreak
+    level = firebreak.grade(int(chosen['FIREBREAK_RUNG']))
+    said = [_('Rung %d: %s, a break takes %.2f s to dig.') % (
+        level.rung, _('two fires') if level.fires == 2 else _('one fire'),
+        level.dig)]
+    if level.shift:
+        said.append(_('The wind turns.'))
+    if level.embers:
+        said.append(_('Embers jump narrow breaks.'))
+    if level.hidden_wind:
+        said.append(_('The wind is shown only by the smoke.'))
+    return '  '.join(said)
+
+
+FIREBREAK = TaskSpec(
+    title=_('Firebreak options'),
+    options=(
+        Option('FIREBREAK_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('FIREBREAK_TRIALS', _('Fires per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('FIREBREAK_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=firebreak_note)
+
+
+def escort_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung's temple is like."""
+    from .. import escort
+    level = escort.grade(int(chosen['ESCORT_RUNG']))
+    said = [_('Rung %d: %d walker(s), %d lever(s).') % (
+        level.rung, level.walkers, level.levers)]
+    if level.jets:
+        said.append(_('Flame jets burn on their own clock.'))
+    if level.coupled:
+        said.append(_('Some levers work two devices.'))
+    if level.wobble:
+        said.append(_('Walkers change pace.'))
+    return '  '.join(said)
+
+
+ESCORT = TaskSpec(
+    title=_('Escort options'),
+    options=(
+        Option('ESCORT_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('ESCORT_TRIALS', _('Temples per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('ESCORT_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=escort_note)
+
+
+def sokobanlive_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung's warehouse is like."""
+    from .. import sokobanlive
+    level = sokobanlive.grade(int(chosen['SOKOBANLIVE_RUNG']))
+    said = [_('Rung %d: %d crate(s), %d guard(s) stepping every %.2f s.')
+            % (level.rung, level.crates, level.guards, level.beat)]
+    if level.shutters:
+        said.append(_('Shutters open and shut.'))
+    return '  '.join(said)
+
+
+SOKOBANLIVE = TaskSpec(
+    title=_('Sokoban Live options'),
+    options=(
+        Option('SOKOBANLIVE_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('SOKOBANLIVE_TRIALS', _('Warehouses per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('SOKOBANLIVE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=sokobanlive_note)
+
+
+def kitchen_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung's shift is like."""
+    from .. import kitchen
+    level = kitchen.grade(int(chosen['KITCHEN_RUNG']))
+    said = [_('Rung %d: %d tickets of up to %d part(s), %d stove(s).') % (
+        level.rung, level.tickets, level.parts, level.stoves)]
+    said.append(_('A done pan burns after %.1f s.') % level.hold)
+    if level.lapse:
+        said.append(_('One ticket may lapse.'))
+    return '  '.join(said)
+
+
+KITCHEN = TaskSpec(
+    title=_('Kitchen options'),
+    options=(
+        Option('KITCHEN_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('KITCHEN_TRIALS', _('Shifts per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('KITCHEN_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=kitchen_note)
+
+
 def wiring_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung wires up."""
     from .. import wiring
@@ -3219,6 +3386,12 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'forms': FORMS,
     'wiring': WIRING,
     'gamble': GAMBLE,
+    'kitchen': KITCHEN,
+    'sokoban_live': SOKOBANLIVE,
+    'escort': ESCORT,
+    'firebreak': FIREBREAK,
+    'air_traffic': AIRTRAFFIC,
+    'rail_yard': RAILYARD,
     'spreadsheet': SPREADSHEET,
     'lander': LANDER,
     'explore_exploit': EXPLORE_EXPLOIT,

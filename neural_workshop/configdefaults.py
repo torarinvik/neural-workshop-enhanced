@@ -751,6 +751,48 @@ GAMBLE_RUNG = 1
 GAMBLE_TRIALS = 5
 GAMBLE_ADAPTIVE = True
 
+# Kitchen: walk a cook between crates, boards, stoves and plates to
+# serve tickets before they lapse. Two-part dishes from rung 7, pans
+# burn sooner from 10, three-part dishes from 13, three stoves from 16.
+KITCHEN_RUNG = 1
+KITCHEN_TRIALS = 5
+KITCHEN_ADAPTIVE = True
+
+# Sokoban Live: push crates onto pads in real time while guards patrol
+# the aisles. Guards from rung 2, shutters from 13, faster guards and
+# four crates from 16, three guards from 20.
+SOKOBANLIVE_RUNG = 1
+SOKOBANLIVE_TRIALS = 5
+SOKOBANLIVE_ADAPTIVE = True
+
+# Escort: pull levers to open doors and slide out bridges so walkers
+# cross a temple. Flame jets from rung 4, coupled levers from 10, two
+# walkers from 13, changing pace from 16, three walkers from 20.
+ESCORT_RUNG = 1
+ESCORT_TRIALS = 5
+ESCORT_ADAPTIVE = True
+
+# Firebreak: dig breaks ahead of a wind-driven fire to save the town.
+# Two fires from rung 7, the wind turns from 10, embers jump narrow
+# breaks from 13, and from 16 the wind shows only in the smoke.
+FIREBREAK_RUNG = 1
+FIREBREAK_TRIALS = 5
+FIREBREAK_ADAPTIVE = True
+
+# Air Traffic: hold, turn and clear planes to land on the runway of their
+# colour without losing one. Two runways from rung 4, storms from 7,
+# fuel from 10, a runway closing from 13, the wind turning from 16.
+AIRTRAFFIC_RUNG = 1
+AIRTRAFFIC_TRIALS = 5
+AIRTRAFFIC_ADAPTIVE = True
+
+# Rail Yard: throw points and work tunnel signals to bring every train
+# to the station of its colour. Points take time to throw from rung 7,
+# a second tunnel from 13, express trains from 16.
+RAILYARD_RUNG = 1
+RAILYARD_TRIALS = 5
+RAILYARD_ADAPTIVE = True
+
 # Spreadsheet: a table of orders with filters, sortable columns and sum
 # buttons, and a question answered with a number in one try, within a
 # click par. Look-ups at rung 1, the highest from 4, sums of a category

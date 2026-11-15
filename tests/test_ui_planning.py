@@ -318,7 +318,9 @@ class PlanningHubTests(unittest.TestCase):
         listed = [task_id for task_id, _label in TASKS['planning']]
         self.assertEqual(listed, ['tower_of_hanoi', 'salesman', 'sokoban',
                                   'maze', 'you_are_here', 'sokoban_3d',
-                                  'tetris', 'n_in_a_row'])
+                                  'tetris', 'n_in_a_row', 'rail_yard',
+                                  'air_traffic', 'escort', 'sokoban_live',
+                                  'kitchen'])
 
     def test_the_hub_can_launch_both(self):
         from neural_workshop.ui.taskhub import launch_task

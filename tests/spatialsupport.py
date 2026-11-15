@@ -63,3 +63,16 @@ def draws(test, cls, rungs, seed=1):
         task.close()
         close_overlays()
         reset_window()
+
+
+def queued(pilot, state):
+    """A drive policy from a model pilot that may hand back several
+    ports at once: they go out one a step, in order, before the pilot
+    is asked again."""
+    pending = []
+
+    def policy(task):
+        if not pending:
+            pending.extend(pilot(state(task)))
+        return pending.pop(0) if pending else None
+    return policy
