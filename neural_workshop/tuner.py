@@ -1,40 +1,48 @@
 # -*- coding: utf-8 -*-
-"""Tuner: find the station playing the tune you just heard.
+"""Tuner: find the station playing the sound you just heard.
 
-A tune plays once, twice, and stops. Then an old radio comes on: hiss
-across the dial, and here and there a station, each playing its own
-little tune over and over. Turn the dial -- drag it, click along it, or
-hold the arrow keys (Shift for fine) -- until the station playing that
-tune comes in, and press Space to lock on. Locking takes a moment of
-staying on the station; locking onto the wrong one loses the trial.
-R plays the tune again, at the cost of the time it takes.
+A sound plays once -- a dog, a kettle, a train -- and stops. Then an
+old radio comes on: hiss across the dial, and here and there a
+station, each playing its own recording over and over. Turn the dial
+-- drag it, click along it, or hold the arrow keys (Shift for fine) --
+until the station playing that sound comes in, and press Space to lock
+on. Locking takes a moment of staying on the station; locking onto the
+wrong one loses the trial. R plays the sound again, at the cost of the
+time it takes.
 
-Nothing on the screen says which station is which: a needle and a
-signal meter show how strong a station is, never what it plays.
+The sounds are real recordings from ESC-50 (see
+:mod:`neural_workshop.soundbank`) when that library has been
+downloaded, and little synthesised tunes when it has not; the ladder
+is the same either way. Nothing on the screen says which station is
+which: a needle and a signal meter show how strong a station is, never
+what it plays.
 
 The ladder:
 
-* rungs 1-3: three stations with lamps on the dial, each on its own
-  instrument and in its own rhythm;
+* rungs 1-3: three stations with lamps on the dial, each a different
+  kind of sound (an animal, the weather, a machine...);
 * rungs 4-6: no lamps, four stations, narrower;
-* rungs 7-9: every station on the same instrument;
-* rungs 10-12: the tune you hear first is in another key on another
-  instrument, every station keeps the same rhythm, and one plays the
-  same notes in another order;
+* rungs 7-9: every station the same walk of life -- all animals, say;
+* rungs 10-12: the sound you hear first is played faster or slower
+  than the station plays it, and one station plays it backwards;
 * rungs 13-15: stations drift along the dial: hold on while locking;
-* rungs 16-19: stations fade in and out, and one differs from the tune
-  by a single note;
-* from rung 20: more stations, narrower, faster drift every rung.
+* rungs 16-19: stations fade in and out, and one plays another
+  recording of the same kind of sound -- a different dog;
+* from rung 20: more stations, narrower, faster drift every rung, and
+  from rung 24 two other recordings of the same kind.
 
 SPDX-License-Identifier: GPL-2.0-or-later
 """
 from __future__ import annotations
 
+import bisect
 import math
 import random
-from typing import List, NamedTuple, Optional, Set, Tuple
+from array import array
+from typing import Dict, List, NamedTuple, Optional, Set, Tuple
 
-from .drshape import Note, Patch, make_patch
+from . import soundbank
+from .drshape import RATE, Note, make_patch, synth
 from .i18n import _
 
 DOWN, UP, FINE_DOWN, FINE_UP, LOCK, REPLAY = range(6)
@@ -43,13 +51,17 @@ EVENTS = (LOCK, REPLAY)
 DIAL = 100.0
 COARSE = 22.0                  # dial units a second
 FINE = 4.0
+GAP = 0.35                     # silence between a station's loops
+LEAD = 0.2                     # the first hearing starts this late
+QUIET = 0.15                   # the radio's level while the sound replays
+# The fallback bank: little tunes.
 BEAT = 0.2
 MAJOR = (0, 2, 4, 5, 7, 9, 11, 12, 14)
 RHYTHMS = ((1, 1, 1, 1, 2), (2, 1, 1, 2, 1), (1, 1, 2, 1, 1),
            (1, 2, 1, 1, 2), (2, 2, 1, 1, 1), (1, 1, 1, 2, 2))
 VOICES = ('flute', 'organ', 'clarinet', 'pluck', 'bell', 'brass', 'glass',
           'square')
-HISS_EVERY = 0.1
+TAIL = 0.3                     # a tune's last note rings this long
 
 
 class Grade(NamedTuple):
@@ -57,11 +69,12 @@ class Grade(NamedTuple):
     stations: int
     width: float
     lamps: bool
-    one_voice: bool
-    shifted: bool              # the tune heard in another key and voice
+    same_group: bool           # every station one walk of life
+    shifted: bool              # the sound heard faster or slower
+    backward: bool             # one station plays the sound backwards
     drift: float
     fade: bool
-    near_miss: bool
+    near_miss: int             # other recordings of the same kind
     seconds: float
     hold: float
 
@@ -76,21 +89,29 @@ def grade(rung: int) -> Grade:
         width=(3.5 if r < 4 else 2.5 if r < 10 else 2.0 if r < 20
                else max(1.3, 1.9 - 0.05 * top)),
         lamps=r < 4,
-        one_voice=r >= 7,
+        same_group=r >= 7,
         shifted=r >= 10,
+        backward=r >= 10,
         drift=(0.0 if r < 13 else 4.0 if r < 20 else min(8.0, 4.5 + 0.3 * top)),
         fade=r >= 16,
-        near_miss=r >= 16,
+        near_miss=0 if r < 16 else 1 if r < 24 else 2,
         seconds=40.0 if r < 20 else max(25.0, 38.0 - top),
         hold=1.0 if r < 13 else 2.0)
 
 
+class Sound(NamedTuple):
+    """One recording as a station or the first hearing plays it."""
+    bank: str                  # 'esc50' or 'tune'
+    ref: Tuple                 # (row,) or (degrees, rhythm, root, voice)
+    label: int                 # the kind of sound
+    group: int                 # its walk of life
+    speed: float = 1.0         # played faster (pitch and pace together)
+    backward: bool = False
+
+
 class Station(NamedTuple):
     at: float                  # where on the dial, before drifting
-    degrees: Tuple[int, ...]
-    rhythm: Tuple[int, ...]
-    root: float
-    voice: int
+    sound: Sound
     phase: float               # seconds into its loop at t = 0
     sway: Tuple[float, float]  # drift rate, drift phase
     fade: Tuple[float, float]  # fade rate, fade phase
@@ -100,46 +121,161 @@ class Radio(NamedTuple):
     level: Grade
     stations: List[Station]
     target: int
-    heard: Station             # the tune as first played
-    listen: float              # seconds of the first playing
+    heard: Sound               # the sound as first played
+    listen: float              # seconds before the radio comes on
     start: float               # where the dial starts
-    patches: List[Patch]
+    seed: int                  # for the hiss
+
+
+# --- the sounds -------------------------------------------------------------
+
+_clips: Dict[int, soundbank.Clip] = {}
+
+
+def _clip(row: int) -> soundbank.Clip:
+    if row not in _clips:
+        _clips.update((c.row, c) for c in soundbank.bank())
+    return _clips[row]
+
+
+def length(sound: Sound) -> float:
+    """Seconds the sound lasts, without opening it."""
+    if sound.bank == 'esc50':
+        c = _clip(sound.ref[0])
+        raw = min(c.end - c.start, soundbank.LONGEST)
+    else:
+        raw = sum(sound.ref[1]) * BEAT + TAIL
+    return raw / sound.speed
 
 
 def loop(s: Station) -> float:
-    return (sum(s.rhythm) + 2) * BEAT
+    return length(s.sound) + GAP
 
 
-def pitches(s: Station) -> List[float]:
-    return [s.root * 2 ** (MAJOR[d] / 12.0) for d in s.degrees]
+_waves: Dict[Sound, array] = {}
+_WAVES_KEPT = 48
 
 
-def shape(s: Station) -> Tuple:
-    """What makes a tune the same tune in any key: its steps and rhythm."""
-    semis = [MAJOR[d] for d in s.degrees]
-    return tuple(b - a for a, b in zip(semis, semis[1:])), s.rhythm
+def _tune_wave(sound: Sound) -> array:
+    degrees, rhythm, root, voice = sound.ref
+    patch = make_patch(voice, random.Random(VOICES.index(voice)))
+    notes, t = [], 0.0
+    for k, (d, beats) in enumerate(zip(degrees, rhythm)):
+        f = root * 2 ** (MAJOR[d] / 12.0)
+        notes.append(Note(t, beats * BEAT * 0.9, f, 0.0, 0.0, 0.8, 0.8, 0.8,
+                          0, k, -1, 0.0))
+        t += beats * BEAT
+    pcm = array('h')
+    pcm.frombytes(synth(notes, 0.0, t + TAIL, [patch]))
+    out = array('f', (v / 32768.0 for v in pcm[::2]))
+    level = math.sqrt(sum(v * v for v in out) / max(1, len(out)))
+    if level > 1e-5:
+        g = soundbank.LOUDNESS / level
+        for i in range(len(out)):
+            out[i] = max(-1.0, min(1.0, out[i] * g))
+    return out
 
 
-def exact(s: Station) -> Tuple:
-    semis = [MAJOR[d] for d in s.degrees]
-    return tuple(semis), s.rhythm, round(s.root, 1)
+def wave(sound: Sound) -> array:
+    """The sound as mono floats at :data:`RATE`, as it is played."""
+    got = _waves.get(sound)
+    if got is not None:
+        return got
+    base = soundbank.samples(_clip(sound.ref[0])) if sound.bank == 'esc50' \
+        else _tune_wave(sound)
+    if sound.speed != 1.0:
+        n = int(len(base) / sound.speed)
+        last = len(base) - 1
+        out = array('f', bytes(4 * n))
+        for i in range(n):
+            x = i * sound.speed
+            j = int(x)
+            f = x - j
+            out[i] = base[j] * (1 - f) + base[min(last, j + 1)] * f
+        base = out
+    if sound.backward:
+        base = array('f', reversed(base))
+    if len(_waves) >= _WAVES_KEPT:
+        _waves.pop(next(iter(_waves)))
+    _waves[sound] = base
+    return base
 
+
+def same(a: Sound, b: Sound) -> bool:
+    """The same recording, the same way round (speed aside)."""
+    return a.bank == b.bank and a.ref == b.ref and a.backward == b.backward
+
+
+def describe(sound: Sound) -> str:
+    """For tests and logs, never the screen."""
+    if sound.bank == 'esc50':
+        name = '%s #%d' % (soundbank.CLASSES[sound.label], sound.ref[0])
+    else:
+        name = 'tune %s on %s' % (''.join(map(str, sound.ref[0])),
+                                  sound.ref[3])
+    if sound.backward:
+        name += ' backwards'
+    if sound.speed != 1.0:
+        name += ' x%.2f' % sound.speed
+    return name
+
+
+# --- dealing ----------------------------------------------------------------
 
 def deal(rung: int, seed: Optional[int] = None,
-         rng: Optional[random.Random] = None) -> Radio:
+         rng: Optional[random.Random] = None,
+         bank: Optional[str] = None) -> Radio:
+    """A radio for *rung*. The sounds come from *bank* -- 'esc50' or
+    'tune' -- or from ESC-50 whenever it has been downloaded."""
     if seed is None:
         seed = (rng or random).randrange(1 << 30)
+    if bank is None:
+        bank = 'esc50' if soundbank.ready() else 'tune'
     draw = random.Random(seed)
     level = grade(rung)
     best = None
     for _attempt in range(30):
-        radio = _build(level, draw)
-        if radio is None:
-            continue
+        radio = _build(level, draw, bank)
         best = best or radio
         if play(radio)[0]:
             return radio
     return best
+
+
+def _esc_sounds(level: Grade, draw: random.Random
+                ) -> Tuple[List[Sound], int]:
+    by_label: Dict[int, List[int]] = {}
+    for c in soundbank.bank():
+        by_label.setdefault(c.label, []).append(c.row)
+    n = level.stations
+    groups = list(range(len(soundbank.GROUPS)))
+    draw.shuffle(groups)
+    kinds = {g: [lb for lb in sorted(by_label) if lb // 10 == g]
+             for g in groups}
+    if level.same_group:
+        # The walk of life with the most kinds on disk, if none has enough.
+        g = next((g for g in groups if len(kinds[g]) >= n),
+                 max(groups, key=lambda g: len(kinds[g])))
+        labels = list(kinds[g])
+        draw.shuffle(labels)
+        labels = labels[:n]
+    else:
+        labels = []
+        while len(labels) < min(n, len(by_label)):
+            for g in groups:
+                choice = [lb for lb in kinds[g] if lb not in labels]
+                if choice and len(labels) < n:
+                    labels.append(draw.choice(choice))
+    n = len(labels)
+    target = draw.randrange(n)
+    sounds = [Sound('esc50', (draw.choice(by_label[lb]),), lb, lb // 10)
+              for lb in labels]
+    t = sounds[target]
+    kin = [r for r in by_label[t.label] if r != t.ref[0]]
+    draw.shuffle(kin)
+    twins = [Sound('esc50', (r,), t.label, t.group)
+             for r in kin[:level.near_miss]]
+    return _decoys(level, draw, sounds, target, twins), target
 
 
 def _tune(draw: random.Random) -> Tuple[int, ...]:
@@ -152,74 +288,74 @@ def _tune(draw: random.Random) -> Tuple[int, ...]:
             return tuple(d)
 
 
-def _build(level: Grade, draw: random.Random) -> Optional[Radio]:
+def _tune_sounds(level: Grade, draw: random.Random
+                 ) -> Tuple[List[Sound], int]:
     n = level.stations
-    names = list(VOICES)
-    draw.shuffle(names)
-    patches = [make_patch(name, draw) for name in names[:n]]
-    one = names[0]
+    voices = list(VOICES)
+    draw.shuffle(voices)
     rhythms = list(RHYTHMS)
     draw.shuffle(rhythms)
-    target = draw.randrange(n)
-    tunes: List[Tuple[int, ...]] = []
-    target_tune = _tune(draw)
+    sounds: List[Sound] = []
+    seen = set()
     for k in range(n):
-        if k == target:
-            tunes.append(target_tune)
-            continue
-        tunes.append(_tune(draw))
-    others = [k for k in range(n) if k != target]
+        tune = _tune(draw)
+        while tune in seen:
+            tune = _tune(draw)
+        seen.add(tune)
+        g = 0 if level.same_group else k
+        root = 220.0 * 2 ** (draw.randrange(0, 7) / 12.0)
+        sounds.append(Sound('tune', (tune, rhythms[k % len(rhythms)], root,
+                                     voices[g % len(voices)]), k, g))
+    target = draw.randrange(n)
+    t = sounds[target]
+    twins = []
+    for _k in range(level.near_miss):
+        miss = list(t.ref[0])
+        while tuple(miss) in seen:
+            i = draw.randrange(5)
+            miss[i] = max(0, min(8, miss[i] + draw.choice((-2, -1, 1, 2))))
+        seen.add(tuple(miss))
+        twins.append(t._replace(ref=(tuple(miss),) + t.ref[1:]))
+    return _decoys(level, draw, sounds, target, twins), target
+
+
+def _decoys(level: Grade, draw: random.Random, sounds: List[Sound],
+            target: int, twins: List[Sound]) -> List[Sound]:
+    """Put the target's look-alikes on some of the other stations."""
+    others = [k for k in range(len(sounds)) if k != target]
     draw.shuffle(others)
-    if level.shifted and others:
-        jumbled = list(target_tune)
-        while tuple(jumbled) == target_tune:
-            draw.shuffle(jumbled)
-        tunes[others[0]] = tuple(jumbled)
-    if level.near_miss and len(others) > 1:
-        miss = list(target_tune)
-        i = draw.randrange(5)
-        miss[i] = max(0, min(8, miss[i] + draw.choice((-2, -1, 1, 2))))
-        if tuple(miss) == target_tune:
-            miss[i] = (miss[i] + 3) % 9
-        tunes[others[1]] = tuple(miss)
+    alike = ([sounds[target]._replace(backward=True)]
+             if level.backward else []) + twins
+    for k, sound in zip(others, alike):
+        sounds[k] = sound
+    return sounds
+
+
+def _build(level: Grade, draw: random.Random, bank: str) -> Radio:
+    if bank == 'esc50':
+        sounds, target = _esc_sounds(level, draw)
+    else:
+        sounds, target = _tune_sounds(level, draw)
+    n = len(sounds)
     spacing = (DIAL - 16.0) / n
     stations: List[Station] = []
-    for k in range(n):
+    for k, sound in enumerate(sounds):
         at = 8.0 + spacing * (k + 0.5) + draw.uniform(-0.2, 0.2) * spacing
-        rhythm = rhythms[0] if level.shifted else rhythms[k % len(rhythms)]
-        root = 220.0 * 2 ** (draw.randrange(0, 7) / 12.0)
-        voice = 0 if level.one_voice else k
-        stations.append(Station(at, tunes[k], rhythm, root, voice,
-                                draw.uniform(0, 2.0),
+        stations.append(Station(at, sound, draw.uniform(0, 2.0),
                                 (draw.uniform(0.18, 0.32),
                                  draw.uniform(0, 2 * math.pi)),
                                 (draw.uniform(0.25, 0.45),
                                  draw.uniform(0, 2 * math.pi))))
-    if level.one_voice:
-        patches = [make_patch(one, draw)]
-    # Every tune must be told from the target's by the ear.
-    t_shape, t_exact = shape(stations[target]), exact(stations[target])
-    for k in others:
-        if level.shifted and shape(stations[k]) == t_shape:
-            return None
-        if exact(stations[k]) == t_exact:
-            return None
-    heard = stations[target]
+    heard = sounds[target]
     if level.shifted:
-        other_voice = [nm for nm in VOICES if nm != one and
-                       nm not in names[:n]] or [nm for nm in VOICES
-                                                if nm != one]
-        patches.append(make_patch(draw.choice(other_voice), draw))
-        root = heard.root * 2 ** (draw.choice((-5, -4, -3, 3, 4, 5)) / 12.0)
-        heard = heard._replace(root=root, voice=len(patches) - 1, phase=0.0)
-    else:
-        heard = heard._replace(phase=0.0)
-    patches.append(make_patch('hiss', draw))
-    listen = 2 * loop(heard) + 0.4
+        heard = heard._replace(speed=round(draw.choice(
+            (draw.uniform(0.78, 0.88), draw.uniform(1.14, 1.28))), 3))
+    listen = LEAD + length(heard) + 0.5
     start = draw.uniform(4.0, DIAL - 4.0)
     while abs(start - stations[target].at) < 20:
         start = draw.uniform(4.0, DIAL - 4.0)
-    return Radio(level, stations, target, heard, listen, start, patches)
+    return Radio(level, stations, target, heard, listen, start,
+                 draw.randrange(1 << 20))
 
 
 def _on(control) -> Set[int]:
@@ -230,19 +366,7 @@ def _on(control) -> Set[int]:
     return set(control)
 
 
-def play_tune(s: Station, t0: float, times: int, gain: float = 0.7,
-              seed: int = 0) -> List[Note]:
-    out = []
-    t = t0
-    for _r in range(times):
-        for f, beats in zip(pitches(s), s.rhythm):
-            out.append(Note(t, beats * BEAT * 0.9, f, 0.0, 0.0, gain, gain,
-                            0.8, s.voice, seed, -1, 0.0))
-            seed += 1
-            t += beats * BEAT
-        t += 2 * BEAT
-    return out
-
+# --- the run ------------------------------------------------------------------
 
 class Run:
     def __init__(self, radio: Radio) -> None:
@@ -251,13 +375,17 @@ class Run:
         self.t = 0.0
         self.dial = radio.start
         self.lock_since: Optional[float] = None
-        self.replay_until = 0.0
+        self.replay_until = LEAD + length(radio.heard)
         self.said = ''
         self.result: Optional[Tuple[bool, str]] = None
-        self.notes: List[Note] = play_tune(radio.heard, 0.2, 2)
-        self.hiss = len(radio.patches) - 1
         self.end = radio.listen + self.level.seconds
-        self.seed = 1000
+        # What the radio sounds like, for mixing afterwards: when the
+        # sound was played from the start, and each station's level
+        # (and last, the hiss's) at every step.
+        self.plays: List[float] = [LEAD]
+        n = len(radio.stations)
+        self.times: List[float] = [0.0]
+        self.gains: List[Tuple[float, ...]] = [(0.0,) * (n + 1)]
 
     # --- the radio
     def on(self) -> bool:
@@ -299,7 +427,7 @@ class Run:
             self.said = _('Nothing there to lock on to')
             return
         if k != self.radio.target:
-            self.result = (False, _('That station plays another tune'))
+            self.result = (False, _('That station plays another sound'))
             return
         self.lock_since = self.t
         self.said = _('Locking on -- stay with it')
@@ -308,15 +436,12 @@ class Run:
         if self.result is not None or self.t < self.replay_until or \
                 not self.on():
             return
-        heard = self.radio.heard
-        self.notes += play_tune(heard, self.t + 0.05, 1, seed=self.seed)
-        self.seed += 10
-        self.replay_until = self.t + 0.05 + loop(heard)
+        self.plays.append(self.t + 0.05)
+        self.replay_until = self.t + 0.05 + length(self.radio.heard)
 
     def step(self, dt: float, control=None) -> None:
         if self.result is not None:
             return
-        t0 = self.t
         self.t += dt
         on = _on(control)
         move = 0.0
@@ -329,54 +454,122 @@ class Run:
         if FINE_UP in on:
             move += FINE
         self.dial = max(0.0, min(DIAL, self.dial + move * dt))
-        self._sound(t0, self.t)
+        self._log()
         if self.lock_since is not None:
             k = self.radio.target
             if abs(self.dial - self.where(k)) > self.level.width * 0.8:
                 self.lock_since = None
                 self.said = _('Lost it -- find it and lock again')
             elif self.t - self.lock_since >= self.level.hold:
-                self.result = (True, _('Locked on to the tune'))
+                self.result = (True, _('Locked on to the sound'))
                 return
         if self.t >= self.end:
             self.result = (False, _('Out of time'))
 
-    def _sound(self, a: float, b: float) -> None:
-        radio = self.radio
-        listen = radio.listen
-        if b <= listen:
-            return
-        a = max(a, listen)
-        quiet = 0.15 if self.t < self.replay_until else 1.0
-        total = 0.0
-        for k, s in enumerate(radio.stations):
-            g = self.strength(k)
-            total += g
-            if g * quiet < 0.03:
-                continue
-            p = loop(s)
-            offsets, at = [], 0.0
-            for beats in s.rhythm:
-                offsets.append((at, beats))
-                at += beats * BEAT
-            freqs = pitches(s)
-            for j, (off, beats) in enumerate(offsets):
-                first = math.ceil((a - s.phase - off) / p)
-                onset = s.phase + off + first * p
-                if a <= onset < b:
-                    self.seed += 1
-                    gain = 0.75 * g * quiet
-                    self.notes.append(Note(onset, beats * BEAT * 0.9,
-                                           freqs[j], 0.0, 0.0, gain, gain,
-                                           0.8, s.voice, self.seed, -1, 0.0))
-        first = math.ceil(a / HISS_EVERY)
-        onset = first * HISS_EVERY
-        while onset < b:
-            h = (0.05 + 0.3 * max(0.0, 1.0 - total)) * quiet
-            self.seed += 1
-            self.notes.append(Note(onset, HISS_EVERY, 440.0, 0.0, 0.0, h, h,
-                                   0.5, self.hiss, self.seed, -2, 0.0))
-            onset += HISS_EVERY
+    def _log(self) -> None:
+        n = len(self.radio.stations)
+        if not self.on():
+            levels = (0.0,) * (n + 1)
+        else:
+            quiet = QUIET if self.t < self.replay_until else 1.0
+            each = [self.strength(k) for k in range(n)]
+            hiss = 0.05 + 0.4 * max(0.0, 1.0 - sum(each))
+            levels = tuple(g * quiet for g in each) + (hiss * quiet,)
+        # Gains before times: a reader on another thread sees a time
+        # only once its gains are there.
+        self.gains.append(levels)
+        self.times.append(self.t)
+
+
+# --- the sound of the run ---------------------------------------------------
+
+_hiss: Dict[int, array] = {}
+
+
+def _hiss_wave(seed: int) -> array:
+    got = _hiss.get(seed)
+    if got is None:
+        draw = random.Random(seed)
+        got, last = array('f'), 0.0
+        for _i in range(RATE):
+            last = 0.6 * last + 0.4 * draw.uniform(-1.0, 1.0)
+            got.append(last * 0.5)
+        if len(_hiss) > 8:
+            _hiss.clear()
+        _hiss[seed] = got
+    return got
+
+
+def mix(run: Run, t0: float, t1: float) -> bytes:
+    """What the radio played from *t0* to *t1*: stereo 16-bit PCM at
+    :data:`RATE`. Station levels follow the run's log, smoothly between
+    its steps; past the end of the log they hold."""
+    frames = max(0, int(round((t1 - t0) * RATE)))
+    if frames == 0:
+        return b''
+    out = [0.0] * frames
+    radio = run.radio
+    heard = wave(radio.heard)
+    for at in list(run.plays):
+        a = int(round((at - t0) * RATE))
+        lo, hi = max(0, a), min(frames, a + len(heard))
+        for i in range(lo, hi):
+            out[i] += heard[i - a]
+    times, gains = run.times, run.gains
+    count = min(len(times), len(gains))
+    first = max(0, bisect.bisect_right(times, t0, 0, count) - 1)
+    waves = [wave(s.sound) for s in radio.stations]
+    noise = _hiss_wave(radio.seed)
+    gap = int(GAP * RATE)
+    hiss = len(waves)
+    start = int(round(t0 * RATE))
+    j = first
+    while True:
+        ta, ga = times[j], gains[j]
+        if j + 1 < count:
+            tb, gb = times[j + 1], gains[j + 1]
+        else:
+            tb, gb = max(t1, ta) + 1.0, ga
+        lo = 0 if j == first else max(0, int(math.ceil((ta - t0) * RATE)))
+        hi = min(frames, int(math.ceil((tb - t0) * RATE)))
+        if hi > lo:
+            span = max(1e-9, (tb - ta) * RATE)
+            base = (ta - t0) * RATE
+            for k in range(len(ga)):
+                g0, g1 = ga[k], gb[k]
+                if g0 < 0.004 and g1 < 0.004:
+                    continue
+                slope = (g1 - g0) / span
+                if k == hiss:
+                    src, period, skew = noise, len(noise), 0
+                else:
+                    src = waves[k]
+                    period = len(src) + gap
+                    skew = int(round(radio.stations[k].phase * RATE))
+                size = len(src)
+                at = start + skew
+                for i in range(lo, hi):
+                    p = (at + i) % period
+                    if p < size:
+                        g = g0 + slope * (i - base)
+                        out[i] += src[p] * (g if g < 1.0 else 1.0)
+        if j + 1 >= count or tb >= t1:
+            break
+        j += 1
+    pcm = array('h', bytes(4 * frames))
+    for i, v in enumerate(out):
+        s = int((1.0 if v > 1.0 else -1.0 if v < -1.0 else v) * 32000)
+        pcm[2 * i] = s
+        pcm[2 * i + 1] = s
+    return pcm.tobytes()
+
+
+def warm(radio: Radio) -> None:
+    """Open every sound the radio will play, so mixing never waits."""
+    wave(radio.heard)
+    for s in radio.stations:
+        wave(s.sound)
+    _hiss_wave(radio.seed)
 
 
 def act(run: Run, port: int) -> None:
@@ -387,7 +580,7 @@ def act(run: Run, port: int) -> None:
 
 
 def autopilot(run: Run) -> List[int]:
-    """Go to the station that plays the tune -- the one the ear picks
+    """Go to the station that plays the sound -- the one the ear picks
     out -- and lock on, then stay with it."""
     if not run.on():
         return []

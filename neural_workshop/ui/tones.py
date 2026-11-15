@@ -15,6 +15,11 @@ earlier than the last one, and the speakers play it a fixed
 :data:`LAG` behind the run, so a note is never asked for before it is
 made. The agent hears it exactly on time.
 
+A task whose sound is not notes at all -- recordings mixed as the
+player turns a dial -- hands over a function from a stretch of the
+run's time to PCM instead, through :meth:`Tones._tones_stream`; it is
+played and published the same way.
+
 SPDX-License-Identifier: GPL-2.0-or-later
 """
 from __future__ import annotations
@@ -78,17 +83,54 @@ class Voice(pyglet.media.Source):
         return True
 
 
+class Stream(pyglet.media.Source):
+    """Sound made by *render(t0, t1)*, stereo 16-bit PCM at the synth's
+    rate, played *lag* behind the run."""
+
+    def __init__(self, render, duration: float, lag: float = LAG) -> None:
+        from pyglet.media.codecs.base import AudioFormat
+        self.audio_format = AudioFormat(channels=2, sample_size=16,
+                                        sample_rate=synth.RATE)
+        self.video_format = None
+        self._render = render
+        self._duration = duration
+        self._lag = lag
+        self._t = 0.0
+
+    def get_audio_data(self, num_bytes: int, compensation_time: float = 0.0):
+        from pyglet.media.codecs.base import AudioData
+        if self._t >= self._duration:
+            return None
+        t1 = min(self._duration, self._t + max(1, num_bytes // 4)
+                 / float(synth.RATE))
+        try:
+            data = self._render(self._t - self._lag, t1 - self._lag)
+        except Exception as exc:          # never kill the audio thread
+            runtime.debug_msg(exc)
+            data = bytes(4 * int(round((t1 - self._t) * synth.RATE)))
+        t0, self._t = self._t, t1
+        return AudioData(data, len(data), t0, t1 - t0, [])
+
+    def seek(self, timestamp: float) -> None:
+        self._t = max(0.0, min(self._duration, timestamp))
+
+    def is_precise(self) -> bool:
+        return True
+
+
 class Tones:
     """Mix in before ClockedTask: a trial's notes on ``self.run.t``."""
 
     tone_notes: Sequence[synth.Note] = ()
     tone_patches: Sequence[synth.Patch] = ()
     tone_player = None
+    tone_render = None
     heard_to = 0.0
     tone_first = 0
 
     def _tones_start(self, notes, patches, duration: float) -> None:
         self._tones_stop()
+        self.tone_render = None
         self.tone_notes = list(notes)
         self.tone_patches = list(patches)
         self.heard_to = 0.0
@@ -100,6 +142,7 @@ class Tones:
     def _tones_live(self, notes, patches, duration: float) -> None:
         """Play *notes*, a list the run goes on appending to."""
         self._tones_stop()
+        self.tone_render = None
         self.tone_notes = notes
         self.tone_patches = list(patches)
         self.heard_to = 0.0
@@ -109,7 +152,18 @@ class Tones:
         self._tones_play(Voice(notes, self.tone_patches, duration + LAG,
                                lag=LAG, live=True))
 
-    def _tones_play(self, voice: Voice) -> None:
+    def _tones_stream(self, render, duration: float) -> None:
+        """Play and publish *render(t0, t1)*, PCM for any stretch of the
+        run's time."""
+        self._tones_stop()
+        self.tone_notes = ()
+        self.tone_render = render
+        self.heard_to = 0.0
+        if runtime.HEADLESS:
+            return
+        self._tones_play(Stream(render, duration + LAG))
+
+    def _tones_play(self, voice) -> None:
         try:
             player = pyglet.media.Player()
             player.queue(voice)
@@ -135,11 +189,18 @@ class Tones:
     def _clear_trial(self) -> None:
         self._tones_stop()
         self.tone_notes = ()
+        self.tone_render = None
         super()._clear_trial()
 
     def audio_window(self) -> Optional[dict]:
         """The sound made since the last call, for the agent boundary."""
         run = getattr(self, 'run', None)
+        if run is not None and self.tone_render is not None:
+            if run.t <= self.heard_to:
+                return None
+            t0, self.heard_to = self.heard_to, run.t
+            return {'pcm': self.tone_render(t0, run.t), 'rate': synth.RATE,
+                    'channels': 2}
         if run is None or not self.tone_notes or run.t <= self.heard_to:
             return None
         t0, self.heard_to = self.heard_to, run.t

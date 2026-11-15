@@ -751,6 +751,53 @@ GAMBLE_RUNG = 1
 GAMBLE_TRIALS = 5
 GAMBLE_ADAPTIVE = True
 
+# Gunslinger: a duel. Draw when he draws, not before, and shoot first.
+# Cock the hammer from rung 4, several men and feints from 7, his hat
+# from 10, pacing men from 13, dust and a drifting camera from 16.
+GUN_RUNG = 1
+GUN_TRIALS = 5
+GUN_ADAPTIVE = True
+
+# Loading Dock: read each truck's order, drive a forklift with the keys
+# and lift crates with the mouse, then send the truck before it leaves.
+# Camera cuts from rung 7, marked crates from 10, 'not red' and mirrored
+# cameras from 13, waves of trucks from 16.
+DOCK_RUNG = 1
+DOCK_TRIALS = 5
+DOCK_ADAPTIVE = True
+
+# Stagehand: follow a script on a small stage -- drag props to marks,
+# click for the spotlight, press cue keys, some only in the moment after
+# a bell, a drum or the actor's arrival. The camera cuts from rung 7 and
+# goes backstage from 13.
+STAGE_RUNG = 1
+STAGE_TRIALS = 5
+STAGE_ADAPTIVE = True
+
+# Safecracker: set a dial's tumblers by ear, type the answer to a clue
+# and pull the handle before the alarm. No lamp from rung 4, a drifting
+# camera from 7, false thunks and strikes from 10, a swinging door
+# from 13.
+SAFE_RUNG = 1
+SAFE_TRIALS = 5
+SAFE_ADAPTIVE = True
+
+# Field Manual: carry out written orders on a machine that has to be
+# turned to find its parts. Sides from rung 4, every face from 7, orders
+# by ear from 10, beeps to count from 13, a turning machine from 16,
+# orders that vanish from 20.
+FIELD_RUNG = 1
+FIELD_TRIALS = 5
+FIELD_ADAPTIVE = True
+
+# Drone Hoops: fly a drone through hoops in order. The camera cuts
+# between fixed cameras from rung 7, the hoops all look alike from 10
+# (follow the bell), move from 13, wind and birds from 16, a circling
+# camera and lightning from 20.
+DRONE_RUNG = 1
+DRONE_TRIALS = 5
+DRONE_ADAPTIVE = True
+
 # Captcha: type the characters in the picture. Mixed faces and colours
 # from rung 4, struck through from 7, decoys by colour from 10, small
 # decoys and clutter from 13, upside-down decoys from 16.

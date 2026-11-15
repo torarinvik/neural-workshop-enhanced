@@ -2,15 +2,17 @@
 """Tuner on screen: an old wooden radio with a glowing dial.
 
 A cabinet with a cloth speaker, a long lit dial window with a needle,
-a signal meter and a big knob. While the tune first plays the dial is
+a signal meter and a big knob. While the sound first plays the dial is
 dark and a card says to listen. Then the radio warms up. Drag the
 needle or click along the dial to jump there, drag the knob, or hold
 Left / Right (with Shift for fine tuning); Space locks on, R plays the
-tune again. On the first rungs small lamps on the dial mark where the
+sound again. On the first rungs small lamps on the dial mark where the
 stations are; nothing ever marks which one plays what.
 
 For the agent boundary: ports 0 and 1 turn the dial down and up for
-one step, 2 and 3 the same finely; 4 locks on; 5 plays the tune again.
+one step, 2 and 3 the same finely; 4 locks on; 5 plays the sound again. The
+radio is heard as a stereo mix of the recordings on the agent's
+audio channel, exactly as it plays.
 
 SPDX-License-Identifier: GPL-2.0-or-later
 """
@@ -34,7 +36,7 @@ GLOW = (255, 196, 110)
 
 
 class Tuner(Pointer, Tones, ClockedTask):
-    """Lock on to the station that plays the tune."""
+    """Lock on to the station that plays the sound."""
 
     instance: Optional['Tuner'] = None
 
@@ -55,8 +57,10 @@ class Tuner(Pointer, Tones, ClockedTask):
     def _deal(self) -> bool:
         ok = super()._deal()
         run = self.run
-        self.message = _('Listen to the tune...')
-        self._tones_live(run.notes, run.radio.patches, run.end + 1.0)
+        self.message = _('Listen to the sound...')
+        model.warm(run.radio)
+        self._tones_stream(lambda t0, t1, run=run: model.mix(run, t0, t1),
+                           run.end + 1.0)
         return ok
 
     # --- controls -----------------------------------------------------------
@@ -106,7 +110,7 @@ class Tuner(Pointer, Tones, ClockedTask):
     def _tick(self) -> None:
         run = self.run
         if run is not None:
-            if run.on() and self.message == _('Listen to the tune...'):
+            if run.on() and self.message == _('Listen to the sound...'):
                 self.message = _('Find the station playing it, then Space')
             if run.said:
                 self.message, run.said = run.said, ''
@@ -255,6 +259,8 @@ class Tuner(Pointer, Tones, ClockedTask):
     def _facts(self) -> str:
         if self.run is None:
             return ''
-        return _('rung %d  %d/%d   %d stations') % (
+        kind = (_('recordings') if self.run.radio.heard.bank == 'esc50'
+                else _('tunes (fetch esc50 for recordings)'))
+        return _('rung %d  %d/%d   %d stations   %s') % (
             self.rung, self.trial, self.total_trials,
-            len(self.run.radio.stations))
+            len(self.run.radio.stations), kind)

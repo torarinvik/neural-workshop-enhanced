@@ -52,10 +52,12 @@ class MenuTests(unittest.TestCase):
                               'overrun', 'marble_maze', 'lander',
                               'juggler', 'balance', 'crossings',
                               'keep_the_beat', 'glider', 'catch',
-                              'echo_cave'])
+                              'echo_cave', 'drone_hoops', 'field_manual',
+                              'safecracker', 'stagehand', 'loading_dock',
+                              'gunslinger'])
             hub.set_category('attention')
             self.assertEqual(hub.category, 'attention')
-            self.assertEqual(len(hub.task_rects), 19)
+            self.assertEqual(len(hub.task_rects), 25)
             hub.set_category('long_term_memory')
             self.assertEqual(hub.category, 'long_term_memory')
             self.assertEqual(len(hub.task_rects), 5)

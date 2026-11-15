@@ -70,6 +70,12 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('glider', _('Glider')),
         ('catch', _('Catch')),
         ('echo_cave', _('Echo Cave')),
+        ('drone_hoops', _('Drone Hoops')),
+        ('field_manual', _('Field Manual')),
+        ('safecracker', _('Safecracker')),
+        ('stagehand', _('Stagehand')),
+        ('loading_dock', _('Loading Dock')),
+        ('gunslinger', _('Gunslinger')),
     ],
     'perception': [
         ('count', _('Count')),
@@ -808,6 +814,30 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'captcha':
         from .captcha import Captcha
         Captcha()
+        return
+    if task_id == 'drone_hoops':
+        from .dronehoops import DroneHoops
+        DroneHoops()
+        return
+    if task_id == 'field_manual':
+        from .fieldmanual import FieldManual
+        FieldManual()
+        return
+    if task_id == 'safecracker':
+        from .safecracker import Safecracker
+        Safecracker()
+        return
+    if task_id == 'stagehand':
+        from .stagehand import Stagehand
+        Stagehand()
+        return
+    if task_id == 'loading_dock':
+        from .loadingdock import LoadingDock
+        LoadingDock()
+        return
+    if task_id == 'gunslinger':
+        from .gunslinger import Gunslinger
+        Gunslinger()
         return
     if task_id == 'gamble':
         from .gamble import Gamble

@@ -2078,6 +2078,174 @@ CAPTCHA = TaskSpec(
     note=captcha_note)
 
 
+def dronehoops_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import dronehoops
+    level = dronehoops.grade(int(chosen['DRONE_RUNG']))
+    said = [_('Rung %d: %d hoops, %.1f across.') % (level.rung, level.hoops, 2 * level.radius)]
+    if level.camera == 'cuts':
+        said.append(_('The camera cuts.'))
+    if level.camera == 'circle':
+        said.append(_('The camera cuts and circles.'))
+    if not level.lit:
+        said.append(_('Follow the bell.'))
+    if level.wind:
+        said.append(_('Wind.'))
+    return '  '.join(said)
+
+
+DRONE = TaskSpec(
+    title=_('Drone Hoops options'),
+    options=(
+        Option('DRONE_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('DRONE_TRIALS', _('Runs per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('DRONE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=dronehoops_note)
+
+
+def fieldmanual_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import fieldmanual
+    level = fieldmanual.grade(int(chosen['FIELD_RUNG']))
+    said = [_('Rung %d: %d orders, %d parts.') % (level.rung, level.steps, level.parts)]
+    if len(level.faces) > 1:
+        said.append(_('Turn the machine.'))
+    if level.wait:
+        said.append(_('Count the beeps.'))
+    if level.spin:
+        said.append(_('It turns by itself.'))
+    if level.show:
+        said.append(_('Orders vanish.'))
+    return '  '.join(said)
+
+
+FIELD = TaskSpec(
+    title=_('Field Manual options'),
+    options=(
+        Option('FIELD_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('FIELD_TRIALS', _('Jobs per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('FIELD_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=fieldmanual_note)
+
+
+def safecracker_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import safecracker
+    level = safecracker.grade(int(chosen['SAFE_RUNG']))
+    said = [_('Rung %d: %d tumblers.') % (level.rung, level.tumblers)]
+    if not level.glow:
+        said.append(_('By ear alone.'))
+    if level.decoys:
+        said.append(_('False thunks.'))
+    if level.strict:
+        said.append(_('Three strikes.'))
+    if level.swing:
+        said.append(_('The door swings.'))
+    return '  '.join(said)
+
+
+SAFE = TaskSpec(
+    title=_('Safecracker options'),
+    options=(
+        Option('SAFE_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('SAFE_TRIALS', _('Safes per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('SAFE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=safecracker_note)
+
+
+def stagehand_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import stagehand
+    level = stagehand.grade(int(chosen['STAGE_RUNG']))
+    said = [_('Rung %d: %d lines, %d props.') % (level.rung, level.lines, level.props)]
+    if level.waits:
+        said.append(_('Some lines wait for a cue.'))
+    if level.cut:
+        said.append(_('The camera cuts.'))
+    if 4 in level.cams:
+        said.append(_('Backstage too.'))
+    return '  '.join(said)
+
+
+STAGE = TaskSpec(
+    title=_('Stagehand options'),
+    options=(
+        Option('STAGE_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('STAGE_TRIALS', _('Shows per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('STAGE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=stagehand_note)
+
+
+def loadingdock_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import loadingdock
+    level = loadingdock.grade(int(chosen['DOCK_RUNG']))
+    said = [_('Rung %d: %d trucks, up to %d crates each.') % (level.rung, level.trucks, level.most)]
+    if level.cut:
+        said.append(_('The camera cuts.'))
+    if level.tags:
+        said.append(_('Marked crates.'))
+    if level.busy:
+        said.append(_('A busy floor.'))
+    return '  '.join(said)
+
+
+DOCK = TaskSpec(
+    title=_('Loading Dock options'),
+    options=(
+        Option('DOCK_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('DOCK_TRIALS', _('Docks per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('DOCK_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=loadingdock_note)
+
+
+def gunslinger_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import gunslinger
+    level = gunslinger.grade(int(chosen['GUN_RUNG']))
+    said = [_('Rung %d: he fires %.1f seconds after he draws.') % (level.rung, level.quick)]
+    if level.cock:
+        said.append(_('Cock the hammer.'))
+    if level.men > 1:
+        said.append(_('%d men in the street.') % level.men)
+    if level.feints:
+        said.append(_('He feints.'))
+    return '  '.join(said)
+
+
+GUN = TaskSpec(
+    title=_('Gunslinger options'),
+    options=(
+        Option('GUN_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('GUN_TRIALS', _('Duels per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('GUN_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=gunslinger_note)
+
+
 def wiring_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung wires up."""
     from .. import wiring
@@ -3877,6 +4045,12 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'forms': FORMS,
     'wiring': WIRING,
     'gamble': GAMBLE,
+    'gunslinger': GUN,
+    'loading_dock': DOCK,
+    'stagehand': STAGE,
+    'safecracker': SAFE,
+    'field_manual': FIELD,
+    'drone_hoops': DRONE,
     'captcha': CAPTCHA,
     'echo_cave': ECHO,
     'catch': CATCH,

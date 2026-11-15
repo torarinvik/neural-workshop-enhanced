@@ -31,6 +31,12 @@ if __name__ == '__main__':
     from test_sonar import *           # noqa: F401,F403,E402
     from test_hiddenrule import *      # noqa: F401,F403,E402
     from test_gamble import *  # noqa: F401,F403,E402
+    from test_gunslinger import *  # noqa: F401,F403,E402
+    from test_loadingdock import *  # noqa: F401,F403,E402
+    from test_stagehand import *  # noqa: F401,F403,E402
+    from test_safecracker import *  # noqa: F401,F403,E402
+    from test_fieldmanual import *  # noqa: F401,F403,E402
+    from test_dronehoops import *  # noqa: F401,F403,E402
     from test_captcha import *  # noqa: F401,F403,E402
     from test_echocave import *  # noqa: F401,F403,E402
     from test_catch import *  # noqa: F401,F403,E402

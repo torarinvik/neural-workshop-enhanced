@@ -1739,27 +1739,37 @@ does, and the agent hears the hum with every frame.
 
 #### Tuner
 
-A tune plays twice. Then an old radio warms up: hiss across the dial,
-and here and there a station, each playing its own little tune over and
-over. Find the station playing the tune you heard -- drag the needle or
-click along the dial, drag the knob, or hold **Left** / **Right**
-(**Shift** for fine) -- and press **Space** to lock on, then stay with
-it for a moment. Locking onto the wrong station loses the trial. **R**
-plays the tune again. Nothing on the screen says which station plays
-what; the signal meter only says how strong a station is.
+A sound plays once -- a dog, rain, a chainsaw. Then an old radio warms
+up: static across the dial, and here and there a station, each playing
+its own recording over and over. Find the station playing the sound you
+heard -- drag the needle or click along the dial, drag the knob, or
+hold **Left** / **Right** (**Shift** for fine) -- and press **Space** to
+lock on, then stay with it for a moment. Locking onto the wrong station
+loses the trial. **R** plays the sound again. Nothing on the screen says
+which station plays what; the signal meter only says how strong a
+station is.
+
+The recordings are the ESC-50 clips the memory games use (see
+[the media libraries](#long-term-memory-games-and-their-media-libraries); the default 500 are enough, all
+2,000 give more variety). Each clip's kind and sounding stretch is
+indexed in `res/misc/esc50/index.tsv`, built by
+`tools/index_esc50.py`, so a trial is chosen without opening files and
+only the clips it plays are read. Without the library the stations
+play little synthesised tunes instead, on the same ladder.
 
 | Rung | What it adds |
 |---|---|
-| 1–3 | Three stations, lamps on the dial, each on its own instrument and rhythm |
+| 1–3 | Three stations, lamps on the dial, each sound from a different walk of life (animals, nature, people, home, street) |
 | 4–6 | No lamps, four stations, narrower |
-| 7–9 | Every station on the same instrument |
-| 10–12 | The tune heard first is in another key on another instrument; every station in the same rhythm; one plays the same notes in another order |
+| 7–9 | Every station from the same walk of life -- all animals, say |
+| 10–12 | The sound heard first is played faster or slower than the station plays it, and one station plays it backwards |
 | 13–15 | Stations drift along the dial: hold on while locking |
-| 16–19 | Stations fade in and out; one differs from the tune by a single note |
-| 20+ | More stations, narrower, faster drift every rung |
+| 16–19 | Stations fade in and out; one plays another recording of the same kind of sound -- a different dog |
+| 20+ | More stations, narrower, faster drift every rung; from 24, two other recordings of the same kind |
 
 Six agent ports: dial down and up, coarse and fine, lock, and hear it
-again. The tune and the radio reach the agent only as sound. Clocked.
+again. The sound and the radio reach the agent only as audio, mixed
+exactly as it plays. Clocked.
 
 #### Shadow Play
 
@@ -3271,6 +3281,155 @@ there is.
 
 Nine agent ports: eight steering directions and the click. Clocked;
 clicks, echoes and moths reach the agent as sound.
+
+#### Drone Hoops
+
+Fly a little drone through hoops standing on poles in a walled yard at
+dusk, in order, before the clock runs out. Hold the mouse button and
+the drone flies to the spot under the pointer (the wheel sets its
+height), or push it with **arrows** / **WASD**, **Space** / **E** up and
+**Shift** / **Q** down. Pushes are relative to the camera -- forward is
+into the screen -- and the drone coasts a little after you let go.
+Clip a hoop's rim and you bounce back. The next hoop rings a bell that
+rings faster the nearer you are, higher when the hoop is above you,
+from its side of the screen. A shadow and a thin line down to it show
+the drone's height; green and red lights mark its nose and tail.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Three big hoops, the next one gold; the camera rides behind the drone, looking at the next hoop |
+| 4–6 | Smaller hoops set at angles; the camera follows the drone's heading |
+| 7–9 | The camera cuts between fixed cameras round the yard every few seconds, so forward changes with it |
+| 10–12 | No gold: every hoop looks alike and only the bell says which is next; flying through any other hoop loses the run |
+| 13–15 | Hoops bob and turn on their poles; quicker cuts |
+| 16–19 | Gusts of wind, heard before they hit; birds that chirp from where they fly |
+| 20+ | The camera also circles the drone; lightning and thunder; from 24 a second bell rings on a wrong hoop at its own steady pace; more, smaller hoops every rung |
+
+Ten agent ports, each a push for one step relative to the camera:
+forward, back, left, right, the four diagonals, up and down. The agent
+hears the bell, the rotors, the wind, the birds and the thunder.
+Clocked.
+
+#### Field Manual
+
+A cube of a machine with buttons, switches, dials and sliders on its
+faces, and an order in words along the top: "Press the red button",
+"Turn the green dial to 5", "After the third beep, flip the switch left
+of the blue dial". **Drag** the machine to turn it over, **click**
+buttons and switches, **drag** a dial sideways or a slider along its
+track, **type** numbers on the digit keys and hold **Shift** when an
+order says so. The machine answers in sound: a tick for every notch, a
+bell on a dial's hidden notch, a tone that follows a slider, a hum to
+match it to, beeps to count. A wrong control, a wrong key or the clock
+running out loses the job.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | One order, three parts, all on the front face |
+| 4–6 | Two orders; parts on the sides, so the machine has to be turned; dials, sliders, numbers to type |
+| 7–9 | Three orders, every face; parts named by their neighbours; numbers painted on faces to find and type |
+| 10–12 | "Until it tocks" (by ear alone), Shift held with a click, "every button except the red one" |
+| 13–15 | Four orders; "after the third beep"; a slider matched to a hum by ear |
+| 16–19 | The machine turns by itself; beeps come high and low and only one kind counts; noise |
+| 20+ | Orders vanish after a few seconds; more orders, more parts, faster spin and less time every rung |
+
+Twenty-five agent ports. Ports 0–11 move a pointer drawn on the screen (up, down, left, right by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses its button and 13 lets go; 14–23 type the digits; 24 is Shift,
+which counts as held for a quarter of a second after it is sent.
+Clocked.
+
+#### Safecracker
+
+A vault door with a dial, a word lock and a handle, and an alarm
+counting down. **Drag round the dial**: it ticks at every number and
+thunks as it passes the number the next tumbler wants -- clockwise for
+the first, back the other way for the second -- and letting go there
+sets the tumbler. **Type** the answer to the clue along the top, then
+**drag the handle down**.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | One tumbler, a wide mark and a lamp that turns green on the number; the clue is the word itself |
+| 4–6 | Two tumblers, no lamp; the clue is read off the door (the colour of a lamp) |
+| 7–9 | Three tumblers; the camera drifts; opposites |
+| 10–12 | False thunks at a higher pitch; words backwards; three mistakes set off the alarm |
+| 13–15 | The door swings on its hinge; things on the door to count |
+| 16–19 | Four tumblers, a quieter thunk, clues in two parts |
+| 20+ | More tumblers, a finer mark, more false thunks, a wider swing and less time every rung |
+
+Forty-one agent ports. Ports 0–11 move a pointer drawn on the screen (up, down, left, right by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses its button and 13 lets go; 14–39 type A to Z; 40 is Backspace.
+Clocked.
+
+#### Stagehand
+
+A small stage with props on marks and an actor wandering about, and a
+script that comes up a line at a time. **Drag** a prop to the mark the
+line names ("Move the lamp behind the chair" -- left, right, behind and
+in front are always the audience's), **click** a prop to put the
+spotlight on it, and press a cue key: **L** lights, **C** curtain,
+**M** music, **S** smoke, **T** thunder. Lines that wait -- "When the
+bell rings twice, ...", "On the drum, ...", "When the actor reaches the
+table, ..." -- must be done in the moment after it happens, neither
+before nor late.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Two lines, three props (labelled); moves, and key cues that name their key |
+| 4–6 | The spotlight; lines that wait for the bell |
+| 7–9 | The camera cuts between seats in the house; lines that wait for the actor |
+| 10–12 | Bells that ring the wrong number of times first; cues no longer name their key |
+| 13–15 | A camera backstage, where left and right are reversed; the drum, and a whistle that is not it |
+| 16–19 | Quicker cuts, shorter moments |
+| 20+ | A line more every few rungs and less time for each |
+
+Nineteen agent ports. Ports 0–11 move a pointer drawn on the screen (up, down, left, right by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses its button and 13 lets go; 14–18 are the cue keys. Clocked.
+
+#### Loading Dock
+
+A warehouse: a shelf of crates along the back, trucks along the front,
+their orders written at the top ("OSLO: two red crates and a blue
+crate."). **Arrows / WASD** drive the forklift the way a forklift
+drives -- forward, back, turn. With the forklift beside a shelf bay,
+**drag** a crate onto it (it carries two); beside a truck, **drag** a
+crate from the forklift onto the truck; **click** a truck's lamp to
+send it once its order is met. Each truck sounds its own horn three
+seconds before it leaves by itself. The wrong crate, a truck sent
+short, or a truck that leaves without its order loses the run.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | One truck, one crate, three kinds on the shelf |
+| 4–6 | Two trucks, one or two crates each |
+| 7–9 | Three trucks; the camera cuts between corners of the warehouse |
+| 10–12 | Marked crates: "a fragile crate", "a heavy red crate" |
+| 13–15 | "A crate that is not red"; cameras overhead and behind the shelf |
+| 16–19 | Four trucks in two waves; another forklift at work and a radio |
+| 20+ | More trucks, less time for each, quicker cuts |
+
+Twenty agent ports. Ports 0–11 move a pointer drawn on the screen (up, down, left, right by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses its button and 13 lets go; 14–19 drive for the step they are sent in:
+forward, back, turn left, turn right, forward-left, forward-right.
+Clocked.
+
+#### Gunslinger
+
+A duel in a dusty street. Nothing happens for a while; then the other
+man goes for his gun, and you have as long as he takes to fire.
+**Drag** your gun up out of the holster, let go, and **click** on him.
+Touch your gun before he moves and you have drawn first, which loses;
+take too long and he shoots you. From rung 4 **Space** cocks the hammer
+before every shot. The notice along the top says who your man is and
+what to hit. There is no clock on the screen.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | One man, three seconds, and the word DRAW when he moves |
+| 4–6 | Cock the hammer; no word -- watch his hand, listen for the leather |
+| 7–9 | Two men, yours named by his hat; he feints; your aim sways |
+| 10–12 | Three men, and the others reach too; "shoot his hat off" means the hat only |
+| 13–15 | The men pace about; your man is named by who he stands next to |
+| 16–19 | Four men, dust across the street, a drifting camera, bells and crows |
+| 20+ | He is quicker every rung (down to three quarters of a second), the sway wider, more men and feints |
+
+Fifteen agent ports. Ports 0–11 move a pointer drawn on the screen (up, down, left, right by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses its button and 13 lets go; 14 cocks the hammer. Clocked.
 
 #### Rail Yard
 
