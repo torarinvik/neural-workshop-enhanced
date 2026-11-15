@@ -1,15 +1,13 @@
 # -*- coding: utf-8 -*-
 """The stepped agent boundary for Gunslinger.
 
-Fifteen ports. Ports 0-11 move the drawn pointer: up, down, left, right, each by a
-long, a medium or a short step (80, 20 and 5 units of a 1000 by 640
-screen). Port 12 presses its button and port 13 lets it go: both in one
-place is a click, with moves between them a drag. Port 14 cocks the
-hammer. A drag that starts on the holstered gun and goes up far enough
-draws it; after that every press is a shot at where the sight is.
-Pressing on the gun before the other man has gone for his loses. The
-agent hears his hand go to his gun, his feints, the shots, and from the
-higher rungs wind, bells and crows.
+Fifteen ports. Ports 0-11 move the gun's sight: up, down, left, right,
+each by a long, a medium or a short step (80, 20 and 5 units of a 1000
+by 640 screen). Port 12 pulls the trigger and port 13 lets it go; port
+14 cocks the hammer. The gun is in the hand from the start, and aiming
+and cocking are free, but a pull of the trigger before the other man
+has gone for his gun loses. The agent hears his hand go to his gun, his
+feints, the shots, and from the higher rungs wind, bells and crows.
 
 Clocked: he draws when he draws and fires when he is ready, whether or not the agent acts.
 

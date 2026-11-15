@@ -3411,13 +3411,14 @@ Clocked.
 
 #### Gunslinger
 
-A duel in a dusty street. Nothing happens for a while; then the other
-man goes for his gun, and you have as long as he takes to fire.
-**Drag** your gun up out of the holster, let go, and **click** on him.
-Touch your gun before he moves and you have drawn first, which loses;
-take too long and he shoots you. From rung 4 **Space** cocks the hammer
-before every shot. The notice along the top says who your man is and
-what to hit. There is no clock on the screen.
+A duel in a street at sundown, seen down your own barrel. Your revolver
+is already in your hand and its sight follows the **mouse**, but you
+may not fire until the other man goes for his gun; then you have as
+long as he takes to draw and shoot. **Click** to fire. Fire before he
+moves and you have shot first, which loses; take too long and he shoots
+you. Aiming while you wait is allowed. From rung 4 **Space** cocks the
+hammer before every shot. The notice nailed up along the top says who
+your man is and what to hit. There is no clock on the screen.
 
 | Rung | What it adds |
 |---|---|
@@ -3426,10 +3427,12 @@ what to hit. There is no clock on the screen.
 | 7–9 | Two men, yours named by his hat; he feints; your aim sways |
 | 10–12 | Three men, and the others reach too; "shoot his hat off" means the hat only |
 | 13–15 | The men pace about; your man is named by who he stands next to |
-| 16–19 | Four men, dust across the street, a drifting camera, bells and crows |
-| 20+ | He is quicker every rung (down to three quarters of a second), the sway wider, more men and feints |
+| 16–19 | Four men, dust across the street, a drifting camera, bells and crows; sometimes your man is only "the one who draws" |
+| 20+ | He is quicker every rung (down to four tenths of a second), the sway wider, more men and feints |
 
-Fifteen agent ports. Ports 0–11 move a pointer drawn on the screen (up, down, left, right by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses its button and 13 lets go; 14 cocks the hammer. Clocked.
+Fifteen agent ports. Ports 0–11 move the sight (up, down, left, right
+by 80, 20 or 5 units of a 1000 by 640 screen), 12 pulls the trigger
+and 13 lets it go; 14 cocks the hammer. Clocked.
 
 #### Rail Yard
 

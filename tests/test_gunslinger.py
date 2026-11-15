@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Gunslinger: the wait, the draw, the shot, the notice, the boundary.
+"""Gunslinger: the wait, the shot, the notice, the boundary.
 
 SPDX-License-Identifier: GPL-2.0-or-later
 """
@@ -30,14 +30,6 @@ def until_he_draws(run):
     return run
 
 
-def unholster(run):
-    run.hand.to(*M.HOLSTER)
-    run.press()
-    run.hand.to(M.HOLSTER[0], M.HOLSTER[1] + M.PULL + 5)
-    run.step(1 / 60.0)
-    run.release()
-
-
 def shoot_at(run, x, y):
     sx, sy = run.sway()
     run.hand.to(x - sx, y - sy)
@@ -57,7 +49,7 @@ class TheLadder(unittest.TestCase):
         self.assertTrue(g[13].pace and g[13].beside)
         self.assertTrue(g[16].dust and not g[13].dust)
         self.assertLess(g[40].quick, g[16].quick)
-        self.assertEqual(g[80].quick, 0.75)
+        self.assertEqual(g[80].quick, 0.4)
 
     def test_the_notice_names_the_man_it_means(self):
         for rung in (7, 10, 13, 20):
@@ -66,6 +58,9 @@ class TheLadder(unittest.TestCase):
                 men, foe = duel.men, duel.foe
                 if 'wears the' in duel.notice:
                     self.assertIn(M.HATS[men[foe].hat], duel.notice)
+                elif 'one who draws' in duel.notice:
+                    self.assertTrue(duel.reaches[-1].real)
+                    self.assertEqual(duel.reaches[-1].who, foe)
                 elif 'to the left of' in duel.notice:
                     self.assertIn(M.HATS[men[foe + 1].hat], duel.notice)
                     self.assertLess(men[foe].x, men[foe + 1].x)
@@ -88,19 +83,20 @@ class TheLadder(unittest.TestCase):
 
 class TheDuel(unittest.TestCase):
 
-    def test_touching_the_gun_before_he_draws_loses(self):
+    def test_firing_before_he_draws_loses(self):
         run = M.Run(M.deal(1, seed=1))
         run.step(1 / 60.0)
-        run.hand.to(*M.HOLSTER)
-        run.press()
-        self.assertEqual(run.result, (False, 'You drew first'))
+        shoot_at(run, 60.0, 560.0)
+        self.assertEqual(run.result, (False, 'You fired first'))
 
-    def test_hovering_by_the_holster_is_allowed(self):
-        run = M.Run(M.deal(1, seed=1))
-        run.hand.to(*M.HOLSTER)
+    def test_aiming_and_cocking_while_waiting_is_allowed(self):
+        run = M.Run(M.deal(4, seed=1))
+        M.act(run, M.COCK)
         for _k in range(30):
+            run.hand.to(*run.target())
             run.step(1 / 60.0)
         self.assertIsNone(run.result)
+        self.assertTrue(run.cocked)
 
     def test_too_slow_and_he_shoots(self):
         duel = M.deal(1, seed=1)
@@ -111,34 +107,19 @@ class TheDuel(unittest.TestCase):
         self.assertAlmostEqual(run.t, duel.draw_at + duel.level.quick,
                                delta=0.05)
 
-    def test_draw_then_shoot_him_wins(self):
+    def test_shooting_him_once_he_draws_wins(self):
         run = until_he_draws(M.Run(M.deal(1, seed=1)))
-        self.assertEqual(run.gun, 'holster')
-        unholster(run)
-        self.assertEqual(run.gun, 'hand')
         shoot_at(run, *run.target())
         self.assertEqual(run.result[0], True)
 
-    def test_a_short_pull_leaves_the_gun_in_the_holster(self):
-        run = until_he_draws(M.Run(M.deal(1, seed=1)))
-        run.hand.to(*M.HOLSTER)
-        run.press()
-        run.hand.to(M.HOLSTER[0], M.HOLSTER[1] + 40)
-        run.step(1 / 60.0)
-        run.release()
-        self.assertEqual(run.gun, 'holster')
-        self.assertIsNone(run.result)
-
     def test_a_miss_costs_a_round_and_the_duel_goes_on(self):
         run = until_he_draws(M.Run(M.deal(1, seed=1)))
-        unholster(run)
         shoot_at(run, 60.0, 560.0)
         self.assertIsNone(run.result)
         self.assertEqual(run.bullets, M.BULLETS - 1)
 
     def test_the_hammer_has_to_be_cocked_from_rung_4(self):
         run = until_he_draws(M.Run(M.deal(4, seed=1)))
-        unholster(run)
         shoot_at(run, *run.target())
         self.assertIsNone(run.result)
         self.assertEqual(run.bullets, M.BULLETS)
@@ -150,7 +131,6 @@ class TheDuel(unittest.TestCase):
     def test_the_wrong_man_loses(self):
         duel = M.deal(7, seed=2)
         run = until_he_draws(M.Run(duel))
-        unholster(run)
         M.act(run, M.COCK)
         other = next(k for k in range(len(duel.men)) if k != duel.foe)
         _hat, body = run.boxes(other)
@@ -160,13 +140,11 @@ class TheDuel(unittest.TestCase):
     def test_his_hat_means_his_hat(self):
         duel = duel_with(10, lambda d: d.part == 'hat')
         run = until_he_draws(M.Run(duel))
-        unholster(run)
         M.act(run, M.COCK)
         _hat, body = run.boxes(duel.foe)
         shoot_at(run, (body[0] + body[2]) / 2, (body[1] + body[3]) / 2)
         self.assertEqual(run.result[0], False)
         run = until_he_draws(M.Run(duel))
-        unholster(run)
         M.act(run, M.COCK)
         shoot_at(run, *run.target())
         self.assertEqual(run.result[0], True)
@@ -211,10 +189,8 @@ class TheBoundary(unittest.TestCase):
                          [1.0])
         self.assertEqual(drive('gunslinger', 1, lambda t: None, seed=1,
                                steps=1500), [-1.0])
-        self.assertEqual(drive('gunslinger', 1, lambda t: [
-            H.toward(t.run.hand, *M.HOLSTER, tol=10.0), H.PRESS][
-                H.toward(t.run.hand, *M.HOLSTER, tol=10.0) is None],
-            seed=1, steps=1500), [-1.0])
+        self.assertEqual(drive('gunslinger', 1, lambda t: H.PRESS, seed=1,
+                               steps=1500), [-1.0])
 
     def test_the_agent_hears_him_go_for_his_gun(self):
         from nwenv import catalog

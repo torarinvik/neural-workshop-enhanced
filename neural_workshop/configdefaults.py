@@ -751,7 +751,7 @@ GAMBLE_RUNG = 1
 GAMBLE_TRIALS = 5
 GAMBLE_ADAPTIVE = True
 
-# Gunslinger: a duel. Draw when he draws, not before, and shoot first.
+# Gunslinger: a duel. Fire when he draws, not before, and shoot first.
 # Cock the hammer from rung 4, several men and feints from 7, his hat
 # from 10, pacing men from 13, dust and a drifting camera from 16.
 GUN_RUNG = 1

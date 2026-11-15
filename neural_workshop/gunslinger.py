@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
-"""Gunslinger: a duel in the street. Draw when he draws -- not before --
-and be the quicker.
+"""Gunslinger: a duel in the street. Your gun is in your hand, but you
+may not fire until he goes for his -- and then you must be the quicker.
 
-A dusty street, a man standing in it, your gun in its holster at the
-bottom of the screen. Nothing happens for a while. Then he goes for his
-gun, and from that moment you have as long as he takes to draw and fire.
-Drag your gun up out of the holster, let go, and click on him to shoot.
-Touch your gun before he moves and you have drawn first, which loses;
-take too long and he shoots you.
+A dusty street at sundown, a man standing in it, your revolver held out
+in front of you with its sight following the pointer. Nothing happens
+for a while. Then he goes for his gun, and from that moment you have as
+long as he takes to draw and fire: click to shoot. Fire before he moves
+and you have shot first, which loses; take too long and he shoots you.
+You may aim, and cock the hammer, while you wait.
 
 From rung 4 the hammer has to be cocked before every shot: Space. The
 notice at the top says who your man is and what to hit, and from rung 7
@@ -26,7 +26,8 @@ The ladder:
 * rungs 13-15: the men pace about; the notice names your man by who he
   stands next to;
 * rungs 16-19: four men, dust blowing across the street, the camera
-  drifting, bells and crows;
+  drifting, bells and crows; sometimes the notice only says your man
+  is the one who draws;
 * from rung 20: he is quicker every rung, the sway is wider, there are
   more men and more feints.
 
@@ -47,9 +48,6 @@ PORTS = H.KEYS + 1
 EVENTS = tuple(range(PORTS))
 
 HATS = (_('red'), _('black'), _('white'), _('green'), _('brown'), _('blue'))
-HOLSTER = (850.0, 70.0)        # where the gun sits, in screen units
-GRIP = 55.0                    # how near the pointer has to be to take it
-PULL = 110.0                   # how far up it has to come
 REACH = 0.28                   # seconds his hand takes to reach his gun
 BULLETS = 6
 LEATHER, BANG, CLICK, BELL, CROW, WIND, THUD = range(7)
@@ -78,9 +76,9 @@ def grade(rung: int) -> Grade:
         rung=r,
         men=(1 if r < 7 else 2 if r < 10 else 3 if r < 16 else 4 if r < 20
              else min(6, 4 + top // 4)),
-        quick=(3.0 if r < 4 else 2.5 if r < 7 else 2.1 if r < 10 else 1.8
-               if r < 13 else 1.6 if r < 16 else 1.4 if r < 20
-               else max(0.75, 1.3 - 0.02 * top)),
+        quick=(3.0 if r < 4 else 2.2 if r < 7 else 1.8 if r < 10 else 1.5
+               if r < 13 else 1.3 if r < 16 else 1.1 if r < 20
+               else max(0.4, 1.0 - 0.02 * top)),
         word=r < 4, cock=r >= 4,
         feints=0 if r < 7 else 1 if r < 13 else 2 if r < 20
         else min(5, 3 + top // 5),
@@ -131,6 +129,8 @@ def _build(level: Grade, draw: random.Random) -> Duel:
     part = 'hat' if level.hat and draw.random() < 0.5 else 'man'
     if n == 1:
         who = _('Your man')
+    elif level.dust and draw.random() < 0.4:
+        who = _('Your man is the one who draws')
     elif level.beside and draw.random() < 0.6:
         side = draw.choice([s for s in (-1, 1) if 0 <= foe + s < n])
         who = (_('Your man stands to the left of the %s hat')
@@ -140,11 +140,11 @@ def _build(level: Grade, draw: random.Random) -> Duel:
     else:
         who = _('Your man wears the %s hat') % HATS[men[foe].hat]
     if n == 1:
-        notice = (_('Draw when he draws. Shoot his hat off.')
-                  if part == 'hat' else _('Draw when he draws, not before.'))
+        notice = (_('Fire when he draws. Shoot his hat off.')
+                  if part == 'hat' else _('Fire when he draws, not before.'))
     else:
         notice = who + (_('. Shoot his hat off.') if part == 'hat' else
-                        _('. Draw when he draws.'))
+                        _('. Fire when he draws.'))
     draw_at = draw.uniform(3.0, 6.0) + 1.2 * level.feints
     reaches: List[Reach] = []
     for k in range(level.feints):
@@ -174,8 +174,6 @@ class Run(H.HandRun):
     def __init__(self, duel: Duel) -> None:
         super().__init__(duel.draw_at + duel.level.quick)
         self.duel, self.level = duel, duel.level
-        self.gun = 'holster'           # 'holster', 'pulling' or 'hand'
-        self.pulled_from = 0.0
         self.cocked = not duel.level.cock
         self.bullets = BULLETS
         self.shots: List[Tuple[float, float, float]] = []   # t, x, y
@@ -184,6 +182,8 @@ class Run(H.HandRun):
         self.extra = random.Random(duel.seed)
         self.extra_at = 0.8
         self.fell: Optional[int] = None
+        self.fell_at = 0.0
+        self.hat_at = {}
 
     # --- the street
     def view(self):
@@ -250,25 +250,14 @@ class Run(H.HandRun):
         if self.result is not None or self.hand.down:
             return
         self.hand.down = True
-        hx, hy = self.hand.x, self.hand.y
-        if self.gun == 'holster':
-            if math.hypot(hx - HOLSTER[0], hy - HOLSTER[1]) <= GRIP:
-                if not self.drawn():
-                    self.note(0.1, 300.0, LEATHER, 0.5)
-                    return self._lose(_('You drew first'))
-                self.gun = 'pulling'
-                self.pulled_from = hy
-                self.note(0.1, 320.0, LEATHER, 0.5)
-            return
-        if self.gun == 'hand':
-            self._fire()
+        if not self.drawn():
+            self.note(0.35, 70.0, BANG, 0.8)
+            self.shots.append((self.t,) + self.aim())
+            return self._lose(_('You fired first'))
+        self._fire()
 
     def release(self) -> None:
-        if not self.hand.down:
-            return
         self.hand.down = False
-        if self.gun == 'pulling':
-            self.gun = 'holster'           # let go too soon: it drops back
 
     def cock(self) -> None:
         if self.result is not None or self.cocked:
@@ -297,14 +286,15 @@ class Run(H.HandRun):
             if not (in_hat or in_body):
                 continue
             if k != self.duel.foe:
-                self.fell = k
+                self.fell, self.fell_at = k, self.t
                 return self._lose(_('You shot the wrong man'))
             if in_hat:
                 self.hatless.add(k)
+                self.hat_at[k] = self.t
                 if self.duel.part == 'hat':
                     self.result = (True, _('His hat is off and so is he'))
                 return                     # a hat is not a man
-            self.fell = k
+            self.fell, self.fell_at = k, self.t
             if self.duel.part == 'hat':
                 return self._lose(_('The notice said his hat'))
             self.result = (True, _('You were the quicker'))
@@ -320,10 +310,6 @@ class Run(H.HandRun):
         if self.result is not None:
             return
         self.t += dt
-        if self.gun == 'pulling' and \
-                self.hand.y - self.pulled_from >= PULL:
-            self.gun = 'hand'
-            self.note(0.06, 420.0, LEATHER, 0.4)
         reaches = self.duel.reaches
         while self.reach_no < len(reaches) and \
                 reaches[self.reach_no].t <= self.t:
@@ -371,20 +357,11 @@ def act(run: Run, port: int) -> None:
 
 
 def autopilot(run: Run) -> List[int]:
-    """Wait with a hand by the holster; when he draws, draw, cock, aim
-    and fire: one port a step."""
+    """Cock the hammer and hold the sight on him; fire when he draws.
+    One port a step."""
     if run.result is not None:
         return []
     hand = run.hand
-    if run.gun == 'holster':
-        if hand.down:
-            return [H.RELEASE]
-        move = H.toward(hand, HOLSTER[0], HOLSTER[1], tol=10.0)
-        if move is not None:
-            return [move]
-        return [H.PRESS] if run.drawn() else []
-    if run.gun == 'pulling':
-        return [0]                         # straight up, a long step
     if hand.down:
         return [H.RELEASE]
     if not run.cocked:
@@ -392,7 +369,9 @@ def autopilot(run: Run) -> List[int]:
     tx, ty = run.target()
     sx, sy = run.sway()
     move = H.toward(hand, tx - sx, ty - sy, tol=3.0)
-    return [move] if move is not None else [H.PRESS]
+    if move is not None:
+        return [move]
+    return [H.PRESS] if run.drawn() else []
 
 
 def play(duel: Duel, pilot=autopilot, dt: float = 1 / 60.0

@@ -10,6 +10,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 """
 from __future__ import annotations
 
+import math
 from typing import List, Optional, Sequence, Tuple
 
 import pyglet
@@ -32,6 +33,8 @@ class HandTask(Tones, ClockedTask):
     BACK = (28, 30, 44)
     #: Whether the bar along the bottom shows the time left.
     TIME_BAR = True
+    #: Whether the arrow is drawn (a task may draw its own pointer).
+    DRAW_POINTER = True
 
     def __init__(self) -> None:
         self.fit = (0.0, 0.0, 1.0)
@@ -111,6 +114,8 @@ class HandTask(Tones, ClockedTask):
                 color=polish.mix((236, 80, 64), (110, 220, 140),
                                  min(1.0, share * 1.6)),
                 batch=batch, group=top))
+        if not self.DRAW_POINTER:
+            return
         # The pointer: an arrow, filled while the button is down.
         x, y = self.px(run.hand.x, run.hand.y)
         k = 16 * s
@@ -157,8 +162,14 @@ class HandTask(Tones, ClockedTask):
             color=colour, batch=self.batch, group=group))
 
     def disc(self, p, r: float, colour, group) -> None:
-        if p is None:
+        if p is None or not (-r <= p[0] <= hand.W + r and
+                             -r <= p[1] <= hand.H + r):
             return
+        if not (r <= p[0] <= hand.W - r and r <= p[1] <= hand.H - r):
+            # Over the edge: a polygon, so it can be cut to the screen.
+            return self.poly([(p[0] + r * math.cos(a), p[1] + r * math.sin(a))
+                              for a in (math.pi * k / 8 for k in range(16))],
+                             colour, group)
         x, y = self.px(p[0], p[1])
         self.drawn.append(pyglet.shapes.Circle(
             x, y, max(1.0, r * self.fit[2]), color=colour, batch=self.batch,
