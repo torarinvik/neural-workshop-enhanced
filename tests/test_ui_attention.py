@@ -49,7 +49,8 @@ class AttentionCategoryTests(unittest.TestCase):
                          ['reflex', 'ncup_monte', 'moving_targets',
                           'lookout', 'pursuit', 'buzz_wire',
                           'out_of_sight', 'donkey', 'two_hands',
-                          'overrun', 'marble_maze', 'lander'])
+                          'overrun', 'marble_maze', 'lander', 'juggler',
+                          'balance'])
 
     def test_it_has_an_options_screen(self):
         from neural_workshop.ui import taskoptions

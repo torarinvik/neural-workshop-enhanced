@@ -63,6 +63,8 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('overrun', _('Overrun')),
         ('marble_maze', _('Marble Maze')),
         ('lander', _('Lander')),
+        ('juggler', _('Juggler')),
+        ('balance', _('Balance')),
     ],
     'perception': [
         ('count', _('Count')),
@@ -74,6 +76,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('which_is_nearer', _('Which Is Nearer?')),
         ('shape_from_motion', _('Shape from Motion')),
         ('point_of_view', _('Point of View')),
+        ('dr_shape', _('Dr Shape')),
     ],
     'reasoning': [
         ('graph_mapping', _('Graph Mapping')),
@@ -112,6 +115,8 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('escort', _('Escort')),
         ('sokoban_live', _('Sokoban Live')),
         ('kitchen', _('Kitchen')),
+        ('crane', _('Crane')),
+        ('ferry', _('Ferry')),
     ],
     # Not attention, and the difference is the point. Everything under
     # attention is about finding or following the right thing; this is
@@ -133,6 +138,8 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('triage', _('Triage')),
         ('explore_exploit', _('Explore or Exploit')),
         ('firebreak', _('Firebreak')),
+        ('crossroads', _('Crossroads')),
+        ('dam_keeper', _('Dam Keeper')),
     ],
     # Operating an interface: a pointer, a screen, and controls that
     # have to be found, uncovered and understood before they can be used.
@@ -713,6 +720,34 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'kitchen':
         from .kitchen import Kitchen
         Kitchen()
+        return
+    if task_id == 'crane':
+        from .crane import Crane
+        Crane()
+        return
+    if task_id == 'ferry':
+        from .ferry import Ferry
+        Ferry()
+        return
+    if task_id == 'juggler':
+        from .juggler import Juggler
+        Juggler()
+        return
+    if task_id == 'balance':
+        from .balance import Balance
+        Balance()
+        return
+    if task_id == 'crossroads':
+        from .crossroads import Crossroads
+        Crossroads()
+        return
+    if task_id == 'dam_keeper':
+        from .damkeeper import DamKeeper
+        DamKeeper()
+        return
+    if task_id == 'dr_shape':
+        from .drshape import DrShape
+        DrShape()
         return
     if task_id == 'gamble':
         from .gamble import Gamble

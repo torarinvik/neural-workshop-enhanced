@@ -751,6 +751,58 @@ GAMBLE_RUNG = 1
 GAMBLE_TRIALS = 5
 GAMBLE_ADAPTIVE = True
 
+# Dr Shape: a 3D turtle draws and sings a shape; pick it out from
+# look-alikes, or pick its sound. Echoes from rung 3, space paths and
+# sound cards from 5, mirror images from 8, knots and new instruments
+# from 11, heard-only shapes from 14, tumbling chorus from 17, sensory
+# overload from 20.
+DRSHAPE_RUNG = 1
+DRSHAPE_TRIALS = 5
+DRSHAPE_ADAPTIVE = True
+
+# Dam Keeper: work the gates of a chain of reservoirs to make room
+# before storms without flooding the town. Three dams from rung 4,
+# slower rivers from 7, bigger storms from 10, stiff gates from 13,
+# no forecast from 16.
+DAMKEEPER_RUNG = 1
+DAMKEEPER_TRIALS = 5
+DAMKEEPER_ADAPTIVE = True
+
+# Crossroads: switch traffic lights so no road backs up out of town.
+# Lopsided traffic from rung 4, two junctions from 7, ambulances from
+# 10, four junctions from 13, rush hour from 16.
+CROSSROADS_RUNG = 1
+CROSSROADS_TRIALS = 5
+CROSSROADS_ADAPTIVE = True
+
+# Balance: push a cart to keep a pole upright while stopping under
+# each flag in turn. A shorter pole from rung 4, far flags from 7,
+# gusts from 10, a quick pole from 13, a pole that changes from 16.
+BALANCE_RUNG = 1
+BALANCE_TRIALS = 5
+BALANCE_ADAPTIVE = True
+
+# Juggler: ride a tray under falling balls and toss each back up
+# before it lands. Three balls from rung 4, heavy and light balls from
+# 7, four from 10, a draught from 13, a narrower tray from 16.
+JUGGLER_RUNG = 1
+JUGGLER_TRIALS = 5
+JUGGLER_ADAPTIVE = True
+
+# Ferry: steer across a running river, through lanes of barges, to
+# dock at the lit pier on the far bank. Barges from rung 4, more lanes
+# from 7, gusts from 13, fog from 16.
+FERRY_RUNG = 1
+FERRY_TRIALS = 5
+FERRY_ADAPTIVE = True
+
+# Crane: drive a gantry trolley and hoist to carry swinging containers
+# to the bays of their colour. A stack to clear from rung 7, wind from
+# 10, four containers from 13, a rolling ship from 16, gusts from 20.
+CRANE_RUNG = 1
+CRANE_TRIALS = 5
+CRANE_ADAPTIVE = True
+
 # Kitchen: walk a cook between crates, boards, stoves and plates to
 # serve tickets before they lapse. Two-part dishes from rung 7, pans
 # burn sooner from 10, three-part dishes from 13, three stoves from 16.

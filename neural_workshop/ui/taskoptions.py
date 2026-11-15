@@ -1587,6 +1587,194 @@ KITCHEN = TaskSpec(
     note=kitchen_note)
 
 
+def crane_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import crane
+    level = crane.grade(int(chosen['CRANE_RUNG']))
+    said = [_('Rung %d: %d containers, %d s.') % (
+        level.rung, level.boxes, level.seconds)]
+    if level.wall:
+        said.append(_('A stack stands in the way.'))
+    if level.wind:
+        said.append(_('Wind pushes the load.'))
+    if level.roll:
+        said.append(_('The ship rolls.'))
+    return '  '.join(said)
+
+
+CRANE = TaskSpec(
+    title=_('Crane options'),
+    options=(
+        Option('CRANE_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('CRANE_TRIALS', _('Yards per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('CRANE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=crane_note)
+
+
+def ferry_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import ferry
+    level = ferry.grade(int(chosen['FERRY_RUNG']))
+    said = [_('Rung %d: %d crossings, a %.1f m/s river, %d lane(s).') % (
+        level.rung, level.crossings, level.current, level.lanes)]
+    if level.gusts:
+        said.append(_('Gusts.'))
+    if level.fog:
+        said.append(_('Fog hides the barges.'))
+    return '  '.join(said)
+
+
+FERRY = TaskSpec(
+    title=_('Ferry options'),
+    options=(
+        Option('FERRY_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('FERRY_TRIALS', _('Rivers per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('FERRY_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=ferry_note)
+
+
+def juggler_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import juggler
+    level = juggler.grade(int(chosen['JUGGLER_RUNG']))
+    said = [_('Rung %d: %d ball(s) for %.0f s, a %.1f m tray.') % (
+        level.rung, level.balls, level.seconds, level.tray)]
+    if level.mixed:
+        said.append(_('Heavy and light balls.'))
+    if level.draught:
+        said.append(_('A draught.'))
+    return '  '.join(said)
+
+
+JUGGLER = TaskSpec(
+    title=_('Juggler options'),
+    options=(
+        Option('JUGGLER_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('JUGGLER_TRIALS', _('Acts per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('JUGGLER_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=juggler_note)
+
+
+def balance_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import balance
+    level = balance.grade(int(chosen['BALANCE_RUNG']))
+    said = [_('Rung %d: %d flags, a %.1f m pole.') % (
+        level.rung, level.flags, level.length)]
+    if level.gusts:
+        said.append(_('Gusts.'))
+    if level.changes:
+        said.append(_('The pole changes length partway.'))
+    return '  '.join(said)
+
+
+BALANCE = TaskSpec(
+    title=_('Balance options'),
+    options=(
+        Option('BALANCE_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('BALANCE_TRIALS', _('Courses per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('BALANCE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=balance_note)
+
+
+def crossroads_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import crossroads
+    level = crossroads.grade(int(chosen['CROSSROADS_RUNG']))
+    said = [_('Rung %d: %d junction(s), %.0f s.') % (
+        level.rung, level.layout, level.seconds)]
+    if level.ambulances:
+        said.append(_('%d ambulance(s).') % level.ambulances)
+    if level.rush:
+        said.append(_('Rush hour moves the busy road.'))
+    return '  '.join(said)
+
+
+CROSSROADS = TaskSpec(
+    title=_('Crossroads options'),
+    options=(
+        Option('CROSSROADS_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('CROSSROADS_TRIALS', _('Shifts per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('CROSSROADS_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=crossroads_note)
+
+
+def damkeeper_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import damkeeper
+    level = damkeeper.grade(int(chosen['DAMKEEPER_RUNG']))
+    said = [_('Rung %d: %d dams, %d storm(s).') % (
+        level.rung, level.dams, level.storms)]
+    if level.stiff:
+        said.append(_('Gates are slow to move.'))
+    if level.hidden:
+        said.append(_('No forecast.'))
+    return '  '.join(said)
+
+
+DAMKEEPER = TaskSpec(
+    title=_('Dam Keeper options'),
+    options=(
+        Option('DAMKEEPER_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('DAMKEEPER_TRIALS', _('Valleys per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('DAMKEEPER_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=damkeeper_note)
+
+
+def drshape_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import drshape
+    level = drshape.grade(int(chosen['DRSHAPE_RUNG']))
+    said = [_('Rung %d: %d candidates.') % (level.rung, level.candidates)]
+    kinds = dict(level.modes)
+    if 'hear' in kinds or 'echo' in kinds:
+        said.append(_('Some shapes are only heard.'))
+    if 'sing' in kinds or 'echo' in kinds:
+        said.append(_('Some cards are sounds.'))
+    if level.mirror:
+        said.append(_('Mirror images among them.'))
+    if level.overload:
+        said.append(_('Sensory overload.'))
+    return '  '.join(said)
+
+
+DRSHAPE = TaskSpec(
+    title=_('Dr Shape options'),
+    options=(
+        Option('DRSHAPE_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('DRSHAPE_TRIALS', _('Shapes per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('DRSHAPE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=drshape_note)
+
+
 def wiring_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung wires up."""
     from .. import wiring
@@ -3386,6 +3574,13 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'forms': FORMS,
     'wiring': WIRING,
     'gamble': GAMBLE,
+    'dr_shape': DRSHAPE,
+    'dam_keeper': DAMKEEPER,
+    'crossroads': CROSSROADS,
+    'balance': BALANCE,
+    'juggler': JUGGLER,
+    'ferry': FERRY,
+    'crane': CRANE,
     'kitchen': KITCHEN,
     'sokoban_live': SOKOBANLIVE,
     'escort': ESCORT,

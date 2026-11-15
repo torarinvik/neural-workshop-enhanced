@@ -373,6 +373,8 @@ class TaskEnv:
         }
         if self._cached_outcome is not None:
             obs['outcome'] = self._cached_outcome
+        if self._public_audio is not None:
+            obs.update(self._public_audio)
         return obs
 
     def _bind_receipt(self, receipt_id: Optional[int]) -> None:
@@ -593,6 +595,7 @@ class TaskEnv:
         self._events: List[Dict[str, Any]] = []
         self._delivered: Set[Any] = set()
         self._cached_outcome: Optional[Dict[str, Any]] = None
+        self._public_audio: Optional[Dict[str, Any]] = None
         self._settled_seen = False
         self._bank = self._think_capacity
         self._flagged = False
@@ -884,6 +887,27 @@ class TaskEnv:
                     if v and isinstance(k, int) and 0 <= k < n]
         return [p for p in ports if isinstance(p, int) and 0 <= p < n]
 
+    def _audio_since_last_frame(self) -> Optional[Dict[str, Any]]:
+        """The sound a task made since the last frame, as raw samples.
+
+        A task that makes sound offers ``audio_window()``: a dict of
+        ``pcm`` (interleaved signed 16-bit), ``rate`` and ``channels``
+        covering exactly the time since it was last asked, or None for
+        silence. Only the waveform is published -- never what made it.
+        """
+        hook = getattr(self.task, 'audio_window', None)
+        if not callable(hook):
+            return None
+        chunk = hook()
+        if not chunk or not chunk.get('pcm'):
+            return None
+        return {
+            'audio_pcm': bytes(chunk['pcm']),
+            'audio_rate': int(chunk['rate']),
+            'audio_channels': int(chunk['channels']),
+            'audio_sample_width': 2,
+        }
+
     def _publish(self) -> None:
         """Draw one frame and everything that follows from it."""
         from neural_workshop import state
@@ -909,6 +933,7 @@ class TaskEnv:
         self._export.write(self._seq, self._timestamp_ns, width, height,
                            rgba, False)
         self._cached_outcome = None
+        self._public_audio = self._audio_since_last_frame()
 
         if self._response_open:
             self._trial_digests.append(self._digest)

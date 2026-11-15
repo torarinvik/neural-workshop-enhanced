@@ -49,10 +49,11 @@ class MenuTests(unittest.TestCase):
                              ['reflex', 'ncup_monte', 'moving_targets',
                               'lookout', 'pursuit', 'buzz_wire',
                               'out_of_sight', 'donkey', 'two_hands',
-                              'overrun', 'marble_maze', 'lander'])
+                              'overrun', 'marble_maze', 'lander',
+                              'juggler', 'balance'])
             hub.set_category('attention')
             self.assertEqual(hub.category, 'attention')
-            self.assertEqual(len(hub.task_rects), 12)
+            self.assertEqual(len(hub.task_rects), 14)
             hub.set_category('long_term_memory')
             self.assertEqual(hub.category, 'long_term_memory')
             self.assertEqual(len(hub.task_rects), 5)

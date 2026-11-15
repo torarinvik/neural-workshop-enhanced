@@ -1624,6 +1624,53 @@ order from the right one, so the order alone can always decide. A
 choice is right or wrong. Five agent ports, one per picture. Turn-
 based, so it takes the think clock.
 
+#### Dr Shape
+
+A turtle flies through a dark neon stage laying down a line, and every
+stroke it draws is also a note: the stroke's **height is its pitch**,
+its **left–right place is where it sits between the ears** -- and the
+note slides from one ear toward the other as the stroke does (level and
+a fraction-of-a-millisecond delay, so it sounds placed, not panned) --
+its **nearness is how loud and bright** it rings, and its length is how
+long it lasts. Every shape has a sound, and the sound is the shape heard.
+Pick the matching card with 1–6 or a click. A trial is one of four
+kinds:
+
+| Kind | You get | The cards are | Pick |
+| --- | --- | --- | --- |
+| **See** | the turtle drawing, with its song | shapes | the same shape |
+| **Hear** | only the song | shapes | the shape that sounds like that |
+| **Sing** | the turtle drawing in silence | sounds, played in turn, twice | the sound that is the shape |
+| **Echo** | only the song | sounds, on another instrument and in another key | the same tune |
+
+After a pick, sound cards turn into the shapes they were.
+
+Each trial deals its own instruments, synthesised as they play, from a
+bank of eighteen kinds -- sine, flute, organ, glass, clarinet, pluck,
+bell, wood, pad, brass, metal, chirp, growl, square, sub, alien, zap and
+hiss -- each with its own small differences; higher up they are bent
+with vibrato, tremolo, drive, wave folding, ring modulation, glides and
+echoes.
+
+| Rung | What it adds |
+| --- | --- |
+| 1–2 | Flat polygons and stars; the shape stays in view; three cards; see only |
+| 3–4 | From memory; spirals; cards turned in the plane; echoes in the same instrument and key |
+| 5–7 | Paths through space, turned every which way; sing trials; more instruments |
+| 8–10 | Mirror images, look-alikes with one stroke bent; echoes change key |
+| 11–13 | Knots and coils, five cards, colours that mean nothing; echoes change instrument; bent instruments |
+| 14–16 | Hear, sing and echo trials only: every trial turns on the ear |
+| 17–19 | All four kinds; picture cards tumble and each sings its own shape |
+| 20+ | Sensory overload: branching shapes, six cards, sparks, flicker, shaking cards, hiss and decoy chirps in both ears, instruments that change under the strokes, a faster turtle -- worse every rung |
+
+A mirror image is never the answer, and no rotation turns one into the
+other, so mirrors are only dealt for shapes that are truly handed; by ear
+a mirror is the same tune with left and right swapped. Wherever the ear
+has to decide, no two cards sing the same tune. The agent gets the
+stereo samples made since the last frame with every frame -- 22.05 kHz,
+two channels -- and six ports, one per card. Clocked: the turtle draws
+and the choosing time runs out whatever the agent does.
+
 #### Winning Move
 
 One legal chess position is dealt and the side to move has exactly one
@@ -2939,6 +2986,48 @@ Speed across a moving pad is judged against the pad, so landing on one
 means matching it, not stopping. The model's autopilot lands every
 rung below 20 nearly every time and the top rungs a third of the time.
 
+#### Juggler
+
+A circus cart under spotlights with a springy tray. Balls drop from the
+top of the tent; **Left** and **Right** drive the cart, and a ball that
+lands on the tray is tossed back up. Every toss stays in the air the
+same time, heavy balls flying lower and light ones higher, so the
+rhythm holds; where the tray meets a ball decides where it goes next.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | One ball, then two |
+| 4–6 | Three balls |
+| 7–9 | Heavy and light balls, each falling at its own pace |
+| 10–12 | Four balls |
+| 13–15 | A draught that drifts the balls sideways |
+| 16–19 | A narrower tray |
+| 20+ | Five balls, a longer act, a smaller tray |
+
+Pass: no ball dropped before the act ends. The model's juggler aims
+every catch so the ball comes back toward the middle and keeps all of
+them up through rung 10 nearly every time.
+
+#### Balance
+
+A handcar on desert rails at dusk with a lantern on a pole standing on
+it. **Left** and **Right** push the cart; the pole leans the other way.
+Flags stand along the track; stop under the lit one and hold still a
+second with the pole up, then the next lights.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | A long, slow pole; two flags close together |
+| 4–6 | A shorter pole, three flags |
+| 7–9 | Flags far apart |
+| 10–12 | Gusts push the pole |
+| 13–15 | A short, quick pole |
+| 16–19 | The pole's length changes partway through, unannounced |
+| 20+ | Shorter still, stronger gusts, more flags |
+
+The model's controller balances with gains computed offline for each
+pole length and passes every rung tried.
+
 #### Rail Yard
 
 Trains leave a tunnel one after another, each painted the colour of the
@@ -3040,6 +3129,48 @@ the obvious thing there; a pan left done too long burns.
 
 The model's cook keeps every plate building toward the most urgent
 ticket and serves nearly every shift below rung 25.
+
+#### Crane
+
+A harbour crane at dawn: a trolley on a rail high above, a hook on a
+cable, a ship moored alongside and bays on the quay. **Left** and
+**Right** drive the trolley (it coasts when let go), **Up** and **Down**
+work the hoist, and **Grab** takes or lets go a box. Unload every box
+into its bay; the load swings, and a box swung into anything is lost.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Two containers, a short way, a heavy damper on the hook |
+| 4–6 | Three containers, a lighter damper |
+| 7–9 | A tall stack between ship and bays to clear |
+| 10–12 | Wind pushes the load |
+| 13–15 | Four containers, bays stacked two high in order |
+| 16–19 | The ship rolls, so the roofs rise and fall |
+| 20+ | Gusts, a faster trolley, less time every rung |
+
+The model's crane driver damps the swing with gains computed offline
+for each cable length and unloads nearly every yard through rung 25.
+
+#### Ferry
+
+A river ferry between piers on two banks, with barges coming down the
+lanes. **Ahead**, **Astern**, **Left** and **Right** (and the two
+diagonals) work engine and rudder; the current carries everything
+downstream. Dock at the lit pier, gently, and cross again as many times
+as the shift asks, without touching a barge or running aground.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | A gentle river, two crossings, no traffic |
+| 4–6 | One lane of barges |
+| 7–9 | A stronger river, two lanes |
+| 10–12 | Three lanes and three crossings |
+| 13–15 | Gusts up and down the river |
+| 16–19 | Fog: barges show only near the ferry |
+| 20+ | Faster barges, a stronger river, more crossings |
+
+The model's skipper waits at each lane's edge for a gap and crosses
+nearly every shift through rung 16.
 
 ### Self-control
 
@@ -3457,6 +3588,50 @@ Where to dig is the decision: a ring close round the town is cheap but
 embers leap it; a wide one costs shovels the fire may not leave time to
 spend. The model's crew rings the town twice against embers and saves
 it nearly always below rung 20.
+
+#### Crossroads
+
+A town seen from above, its traffic lights yours. **1–4** (or a click)
+switch a junction between its two ways; every switch runs through amber
+and a moment of all-red. A road whose queue backs out of town is
+gridlock; from rung 10 ambulances come through, and one held at a red
+light too long loses the shift too.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | One junction, light traffic |
+| 4–6 | Heavier traffic, lopsided between the roads |
+| 7–9 | Two junctions on one main road |
+| 10–12 | Ambulances |
+| 13–15 | Four junctions in a square |
+| 16–19 | Rush hour: the busy road changes partway |
+| 20+ | More traffic, more ambulances, a longer shift |
+
+Every town dealt is one the model's pressure controller clears and that
+leaving the lights alone does not.
+
+#### Dam Keeper
+
+Reservoirs step down a valley to a town. Each dam has a gate with four
+notches (**Q W E** open a notch, **A S D** shut one); water let out of
+one dam reaches the next some seconds later, and storms drift down the
+valley raining into whatever they pass. Keep every dam from overtopping,
+never send the town more than its river carries, and never let a
+reservoir run so low its turbines stop.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Two dams, one storm |
+| 4–6 | Three dams, two storms |
+| 7–9 | Slower rivers between dams, a lower flood line |
+| 10–12 | Bigger storms, back to back |
+| 13–15 | Gates take time to move a notch |
+| 16–19 | Storms show only once they are over the valley |
+| 20+ | Heavier rain and a lower flood line every rung |
+
+A storm brings water faster than a gate lets it out, so room has to be
+made before it comes. Gates start shut, and every valley dealt is one
+that doing nothing floods.
 
 ### Computer use
 
