@@ -21,6 +21,7 @@ from pyglet.window import key
 from .. import triage as model
 from ..geometry import calc_fontsize
 from ..i18n import _
+from . import polish
 from .rungtask import RungTask
 
 SWAP = model.MOST_CARDS
@@ -115,40 +116,51 @@ class Triage(RungTask):
         ch = (top_h - gap * (rows - 1)) / rows
         back = CARD_DARK if self.dark else CARD_LIGHT
         size = min(calc_fontsize(14), ch * 0.16, cw * 0.07)
+        pal = polish.palette(self.dark)
         for index, card in enumerate(dealt.cards):
             r, c = divmod(index, per_row)
             x = left + c * (cw + gap)
             y = bottom + height - (r + 1) * ch - r * gap
-            border = (SOLVED if index in play.solved else
-                      OPEN if index == play.open else self.ink)
-            self._box(x, y, cw, ch, back, border,
-                      thickness=4 if border != self.ink else 2)
-            self._text('%d' % (index + 1), x + 10, y + ch - size * 1.2,
-                       size, anchor='left', bold=True)
-            self._text(_('pays %d') % card.pays, x + cw / 2,
-                       y + ch * 0.75, size * 1.1, bold=True)
-            if index in play.solved:
+            solved = index in play.solved
+            lit = solved or index == play.open
+            parts = polish.machine(
+                self.drawn, self.batch, x, y, cw, ch, pal,
+                polish.HUES[index % len(polish.HUES)], lit=lit,
+                lit_colour=SOLVED if solved else OPEN, header_share=0.3,
+                screen_share=0.52)
+            hx, hy, hw, hh = parts.header
+            self._text('%d' % (index + 1), hx + 12, hy + hh / 2, size,
+                       anchor='left', bold=True,
+                       colour=(255, 255, 255, 255))
+            self._text(_('pays %d') % card.pays, hx + hw / 2, hy + hh / 2,
+                       size * 1.1, bold=True, colour=(255, 255, 255, 255))
+            sx, sy, sw, sh = parts.screen
+            if solved:
                 words = _('solved')
             elif index in play.turned:
                 words = ' '.join(str(d) for d in play.rows[index])
             else:
                 words = _('%d digits, face down') % len(card.row)
-            self._text(words, x + cw / 2, y + ch * 0.42, size * 1.15,
-                       colour=None if index in play.turned
-                       or index in play.solved else (*FACE_DOWN, 255))
+            self._text(words, sx + sw / 2, sy + sh / 2, size * 1.15,
+                       bold=solved,
+                       colour=(None if index in play.turned and not solved
+                               else (*SOLVED, 255) if solved
+                               else (*FACE_DOWN, 255)))
             if self.phase == 'judged':
                 self._text(_('cost %d') % card.cost, x + cw / 2,
-                           y + ch * 0.14, size * 0.9)
+                           y + (sy - y) / 2, size * 0.9)
             self.hits.append((x, y, cw, ch,
                               lambda i=index: self.open_card(i)))
         self._draw_open(left, bottom, width, height * 0.44, back)
 
     def _draw_open(self, left, bottom, width, height, back) -> None:
         play = self.round
-        bw, bh = width * 0.14, height * 0.2
+        bw, bh = width * 0.17, height * 0.2
         bx = left + width - bw
-        self._box(bx, bottom, bw, bh, back, self.ink)
-        self._text(_('Done (Enter)'), bx + bw / 2, bottom + bh / 2,
+        pal = polish.palette(self.dark)
+        polish.button(self.drawn, self.batch, bx, bottom, bw, bh, back,
+                      radius=bh * 0.3, shade=pal.shadow)
+        self._text(_('Done (Enter)'), bx + bw / 2, bottom + bh * 0.55,
                    min(calc_fontsize(13), bh * 0.35), bold=True)
         self.hits.append((bx, bottom, bw, bh, self.done))
         if play.open is None:
@@ -163,15 +175,19 @@ class Triage(RungTask):
         y = bottom + height * 0.45
         for j, digit in enumerate(row):
             x = x0 + j * cell * 1.5
-            self._box(x, y, cell, cell, back, OPEN)
+            polish.card(self.drawn, self.batch, x, y, cell, cell, pal.card,
+                        radius=cell * 0.16, edge=OPEN, shade=pal.shadow)
             self._text(str(digit), x + cell / 2, y + cell / 2, cell * 0.45,
                        bold=True)
             if j < n - 1:
                 sx = x + cell
                 sw = cell * 0.5
-                self._box(sx + 2, y + cell * 0.25, sw - 4, cell * 0.5,
-                          None, self.ink)
-                self._text('<>', sx + sw / 2, y + cell / 2, cell * 0.16)
+                polish.rounded(self.drawn, self.batch, sx + 4,
+                               y + cell * 0.3, sw - 8, cell * 0.4,
+                               polish.mix(pal.stage, pal.edge, 0.4),
+                               radius=cell * 0.2, group=self.card_group)
+                self._text('<>', sx + sw / 2, y + cell / 2, cell * 0.16,
+                           bold=True)
                 self.hits.append((sx, y, sw, cell,
                                   lambda a=j: self.swap(a)))
         self._text(_('card %d: %d swaps still to go')

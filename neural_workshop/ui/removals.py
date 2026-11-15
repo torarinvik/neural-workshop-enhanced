@@ -47,7 +47,7 @@ from ..constants import FONTLIST
 from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
                         width_center)
 from ..removals import (GRADES, MOST_VANS, PACK, Move, Round, Yard, generate)
-from . import cursor, taskoptions
+from . import cursor, polish, taskoptions
 from .verdict import VerdictLabel
 from ..i18n import _
 
@@ -139,9 +139,11 @@ class Removals:
     def _build_chrome(self) -> None:
         bg = 0 if state.cfg.BLACK_BACKGROUND else 255
         fg = 255 - bg
-        self.background = (bg, bg, bg)
         self.textcolor = (fg, fg, fg, 255)
-        self.ink = (fg, fg, fg)
+        self.ink = (226, 230, 240) if bg == 0 else (36, 42, 58)
+        # The yard: everything a round shows stands on it.
+        self.pal = polish.palette(bg == 0)
+        self.background = (44, 46, 52) if bg == 0 else (240, 237, 230)
         self.batch = pyglet.graphics.Batch()
         self.drawn = []
         self.title = pyglet.text.Label(
@@ -331,6 +333,7 @@ class Removals:
         self._clear_drawn()
         if self.round is not None and self.phase in ('moving', 'asking',
                                                      'scored'):
+            self._draw_yard()
             self._draw_vans()
             if self.phase == 'moving':
                 self._draw_move(self.round.moves[self.cursor])
@@ -350,16 +353,64 @@ class Removals:
             max(1.0, height - thick * 2), color=self.background,
             batch=self.batch))
 
+    def _draw_yard(self) -> None:
+        """The loading yard, and a painted line the vans stand behind."""
+        left, bottom, width, height = self._stage()
+        polish.card(self.drawn, self.batch, left, bottom, width, height,
+                    self.background, radius=18, edge=self.pal.edge,
+                    shade=self.pal.shadow, group=polish.STAGE)
+        kerb = polish.mix(self.background, self.ink, 0.12)
+        line_y = bottom + height * 0.3
+        self.drawn.append(pyglet.shapes.Line(
+            left + 24, line_y, left + width - 24, line_y,
+            thickness=max(2.0, height * 0.006), color=kerb,
+            batch=self.batch, group=polish.INSET))
+
     def _draw_vans(self) -> None:
-        """The vans: empty bays, drawn from their number and nothing else."""
+        """The vans: empty, drawn from their number and nothing else.
+
+        A body, a cab with a window, two wheels, the number on the
+        side; none of it depends on what is loaded.
+        """
+        body = (250, 250, 252) if self.pal is polish.LIGHT \
+            else (210, 214, 222)
+        trim = (92, 108, 140)
+        tyre = (40, 42, 48)
         for van in range(self.yard().vans):
             x, y, width, height = self._van_rect(van)
-            self._outline(x, y, width, height, max(2.0, height * 0.1))
+            wheel = height * 0.17
+            floor = y + wheel * 0.8
+            box_w = width * 0.74
+            polish.card(self.drawn, self.batch, x, floor, box_w,
+                        height - wheel * 0.8, body,
+                        radius=height * 0.1, edge=polish.darker(body, 0.25),
+                        lift=3, shade=self.pal.shadow)
+            cab_x = x + box_w + width * 0.02
+            cab_w = width - box_w - width * 0.02
+            cab_h = (height - wheel * 0.8) * 0.72
+            polish.card(self.drawn, self.batch, cab_x, floor, cab_w, cab_h,
+                        body, radius=height * 0.08,
+                        edge=polish.darker(body, 0.25), lift=3,
+                        shade=self.pal.shadow)
+            polish.rounded(self.drawn, self.batch, cab_x + cab_w * 0.18,
+                           floor + cab_h * 0.48, cab_w * 0.64, cab_h * 0.36,
+                           (150, 176, 206), radius=cab_h * 0.06,
+                           group=polish.INSET)
+            polish.rounded(self.drawn, self.batch, x, floor + 2, box_w,
+                           max(3.0, height * 0.08), trim,
+                           radius=height * 0.03, group=polish.INSET)
+            for wx in (x + width * 0.2, x + width * 0.84):
+                self.drawn.append(pyglet.shapes.Circle(
+                    wx, y + wheel, wheel, color=tyre, batch=self.batch))
+                self.drawn.append(pyglet.shapes.Circle(
+                    wx, y + wheel, wheel * 0.45, color=(170, 174, 184),
+                    batch=self.batch,
+                    group=pyglet.graphics.Group(order=1)))
             self.drawn.append(pyglet.text.Label(
                 str(van + 1), font_size=calc_fontsize(15), weight='bold',
-                color=self.textcolor, batch=self.batch,
-                x=x + width / 2, y=y + height / 2, anchor_x='center',
-                anchor_y='center', font_name=FONTLIST))
+                color=(40, 46, 60, 255), batch=self.batch,
+                x=x + box_w / 2, y=floor + (height - wheel * 0.8) * 0.55,
+                anchor_x='center', anchor_y='center', font_name=FONTLIST))
 
     def _glyph(self, node: int, x: float, y: float, size: float) -> None:
         """One thing or one box, drawn at its own middle.
@@ -372,17 +423,20 @@ class Removals:
         yard = self.yard()
         if yard.is_item(node):
             which = node - yard.vans - yard.boxes
-            self.drawn.append(pyglet.shapes.Circle(
-                x, y, size * 0.5, color=self.ink, batch=self.batch))
-            self.drawn.append(pyglet.shapes.Circle(
-                x, y, size * 0.42,
-                color=ITEM_COLORS[which % len(ITEM_COLORS)],
-                batch=self.batch))
+            polish.disc(self.drawn, self.batch, x, y, size * 0.5,
+                        ITEM_COLORS[which % len(ITEM_COLORS)],
+                        glint=False)
             label, shade = str(which + 1), (0, 0, 0, 255)
         else:
-            self._outline(x - size * 0.5, y - size * 0.5, size, size,
-                          max(2.0, size * 0.09))
-            label, shade = str(node - yard.vans + 1), self.textcolor
+            kraft = (206, 166, 116)
+            polish.card(self.drawn, self.batch, x - size * 0.5,
+                        y - size * 0.5, size, size, kraft,
+                        radius=size * 0.08, edge=polish.darker(kraft, 0.3),
+                        lift=3, shade=self.pal.shadow)
+            polish.rounded(self.drawn, self.batch, x - size * 0.09,
+                           y - size * 0.5, size * 0.18, size,
+                           (226, 198, 150), radius=0, group=polish.INSET)
+            label, shade = str(node - yard.vans + 1), (52, 36, 20, 255)
         self.drawn.append(pyglet.text.Label(
             label, font_size=calc_fontsize(14), weight='bold',
             color=shade, batch=self.batch, x=x, y=y,

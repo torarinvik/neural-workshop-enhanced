@@ -48,7 +48,7 @@ from ..constants import FONTLIST
 from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
                         width_center)
 from ..i18n import _
-from . import cursor, taskoptions
+from . import cursor, polish, taskoptions
 from .verdict import VerdictLabel, above_the_band
 
 #: Seconds the round's verdict stays up before the next round.
@@ -187,20 +187,24 @@ class Dispatch:
 
         left, bottom, size = self._map()
         self._size = size
-        self._ground = pyglet.shapes.Rectangle(
-            left, bottom, size, size,
-            color=(38, 42, 50) if dark else (232, 235, 240),
-            batch=self.batch, group=ground)
+        self._decor = []
+        self._town(left, bottom, size, dark)
+        self._ground = self._decor[-1]
         self._stations = []
         for index, (sx, sy) in enumerate(town.STATIONS):
             px, py = self._at(sx, sy)
-            half = size * 0.022
+            half = size * 0.026
+            roof = polish.darker(STATION, 0.3)
+            polish.rounded(self._decor, self.batch, px - half - 1.5,
+                           py - half - 1.5, 2 * half + 3, 2 * half + 3,
+                           roof, radius=half * 0.45, group=ground)
             self._stations.append((
-                pyglet.shapes.Rectangle(px - half, py - half, 2 * half,
-                                        2 * half, color=STATION,
-                                        batch=self.batch, group=things),
+                pyglet.shapes.RoundedRectangle(
+                    px - half, py - half, 2 * half, 2 * half * 0.78,
+                    half * 0.35, color=polish.lighter(STATION, 0.25),
+                    batch=self.batch, group=lines),
                 label(STATION_NAMES[index], max(6.0, size * 0.016), px,
-                      py - half * 1.9, group=text)))
+                      py - half * 2.0, group=text, bold=True)))
         self._rings, self._discs, self._letters = [], [], []
         for slot in range(town.SLOTS):
             self._rings.append(pyglet.shapes.Arc(
@@ -212,7 +216,7 @@ class Dispatch:
                                        max(7.0, size * 0.02), 0, 0,
                                        group=text, bold=True))
         self._routes, self._bodies, self._numbers = [], [], []
-        self._refits = []
+        self._refits, self._outlines = [], []
         for index in range(UNITS):
             self._routes.append(pyglet.shapes.Line(
                 0, 0, 0, 0, thickness=max(1.0, size * 0.002),
@@ -221,6 +225,9 @@ class Dispatch:
                 0, 0, size * 0.037, angle=0.0, start_angle=90.0,
                 thickness=max(2.5, size * 0.007), color=HEAVY,
                 batch=self.batch, group=movers))
+            self._outlines.append(pyglet.shapes.Circle(
+                0, 0, size * 0.023, color=(255, 255, 255),
+                batch=self.batch, group=things))
             self._bodies.append(pyglet.shapes.Circle(
                 0, 0, size * 0.019, color=CREW, batch=self.batch,
                 group=movers))
@@ -236,6 +243,35 @@ class Dispatch:
             note.delete()
         self._notes = []
         self._sync()
+
+    def _town(self, left: float, bottom: float, size: float,
+              dark: bool) -> None:
+        """The map under everything: a card of city blocks and streets.
+        Drawn once with the chrome; the last piece is the ground itself."""
+        pal = polish.palette(dark)
+        street = (44, 49, 60) if dark else (226, 230, 236)
+        block = (52, 58, 70) if dark else (240, 242, 246)
+        park = (44, 64, 56) if dark else (220, 236, 224)
+        edge = size * 0.02
+        polish.card(self._decor, self.batch, left - edge, bottom - edge,
+                    size + 2 * edge, size + 2 * edge, pal.card,
+                    radius=edge * 1.2, edge=pal.edge, shade=pal.shadow,
+                    group=polish.STAGE)
+        draw = random.Random(11)
+        count = 8
+        cell = size / count
+        gap = cell * 0.16
+        for gx in range(count):
+            for gy in range(count):
+                fill = park if draw.random() < 0.12 else block
+                polish.rounded(self._decor, self.batch,
+                               left + gx * cell + gap / 2,
+                               bottom + gy * cell + gap / 2,
+                               cell - gap, cell - gap, fill,
+                               radius=cell * 0.12, group=polish.INSET)
+        self._decor.append(pyglet.shapes.Rectangle(
+            left, bottom, size, size, color=street, batch=self.batch,
+            group=polish.CARD))
 
     def relayout(self) -> None:
         self._build_chrome()
@@ -399,7 +435,8 @@ class Dispatch:
             else:
                 kept.append((until, note))
         self._notes = kept
-        self._ground.visible = live
+        for piece in self._decor:
+            piece.visible = live
         for square, name in self._stations:
             square.visible = live
             name.visible = live
@@ -432,7 +469,8 @@ class Dispatch:
                 self._routes[index], self._bodies[index],
                 self._numbers[index], self._refits[index])
             shown = index < len(units)
-            body.visible = number.visible = shown
+            outline = self._outlines[index]
+            body.visible = number.visible = outline.visible = shown
             route.visible = refit.visible = False
             if not shown:
                 continue
@@ -443,6 +481,8 @@ class Dispatch:
                           else HEAVY if unit.heavy else CREW)
             body.radius = size * (0.014 if unit.scout
                                   else 0.023 if unit.heavy else 0.019)
+            outline.position = (px, py)
+            outline.radius = body.radius + max(1.5, size * 0.004)
             number.x, number.y = px, py
             if unit.working and unit.target[0] == 'refit':
                 # The arc closes clockwise from the top as the refit

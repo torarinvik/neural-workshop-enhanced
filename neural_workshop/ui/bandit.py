@@ -19,10 +19,9 @@ from pyglet.window import key
 from .. import bandit as model
 from ..geometry import calc_fontsize
 from ..i18n import _
+from . import polish
 from .rungtask import RungTask
-from .spacetask import BUTTON_DARK
 
-CARD = (244, 240, 230)
 LAST = (232, 186, 60)
 
 
@@ -83,34 +82,56 @@ class ExploreOrExploit(RungTask):
 
     def _draw(self, left, bottom, width, height) -> None:
         run = self.run
+        pal = polish.palette(self.dark)
         n = run.level.arms
         t = len(self.chosen)
         shown = t if self.phase == 'judged' else model.seen_after(run, t)
-        self._text(_('%d coins     %d pulls left') % (
+        # The purse and the pulls left.
+        r = max(10.0, height * 0.03)
+        cx = left + width / 2
+        words = self._text(_('%d coins     %d pulls left') % (
             self.coins(everything=self.phase == 'judged'),
-            run.level.pulls - t), left + width / 2, bottom + height * 0.92,
+            run.level.pulls - t), cx + r * 1.2, bottom + height * 0.93,
             calc_fontsize(20), bold=True)
-        gap = width * 0.012
+        polish.coin(self.drawn, self.batch,
+                    cx + r * 1.2 - words.content_width / 2 - r * 1.6,
+                    bottom + height * 0.93, r, group=self.body_group)
+        gap = width * 0.018
         cw = min(width * 0.2, (width - gap * (n - 1)) / n)
-        ch = height * 0.75
+        ch = height * 0.8
         x0 = left + (width - (cw * n + gap * (n - 1))) / 2
-        y = bottom + height * 0.05
+        y = bottom + height * 0.03
         size = min(calc_fontsize(14), cw * 0.12)
         for k in range(n):
             x = x0 + k * (cw + gap)
             last = bool(self.chosen) and self.chosen[-1] == k
-            self._box(x, y, cw, ch, BUTTON_DARK if self.dark else CARD,
-                      LAST if last else self.ink, thickness=4 if last else 2)
-            self._text(str(k + 1), x + cw / 2, y + ch - size * 1.6,
-                       size * 1.8, bold=True)
+            hue = polish.HUES[k % len(polish.HUES)]
+            parts = polish.machine(self.drawn, self.batch, x, y, cw, ch, pal,
+                                   hue, lit=last, lit_colour=LAST,
+                                   header_share=0.14, screen_share=0.62)
+            hx, hy, hw, hh = parts.header
+            self._text(str(k + 1), hx + hw / 2, hy + hh / 2, size * 1.8,
+                       bold=True, colour=(255, 255, 255, 255))
+            sx, sy, sw, sh = parts.screen
             pulls = [s for s in range(t) if self.chosen[s] == k]
+            rows = 6
+            row_h = sh / rows
+            for row, s in enumerate(reversed(pulls[-rows:])):
+                ry = sy + sh - (row + 1) * row_h
+                known = s < shown
+                chip = pal.card if known else polish.mix(pal.card, pal.edge,
+                                                         0.5)
+                polish.rounded(self.drawn, self.batch, sx + sw * 0.12,
+                               ry + row_h * 0.12, sw * 0.76, row_h * 0.76,
+                               chip, radius=row_h * 0.2,
+                               group=self.card_group)
+                self._text(str(run.pays[s][k]) if known else '?',
+                           sx + sw / 2, ry + row_h / 2, size * 1.3,
+                           bold=row == 0,
+                           colour=None if known else pal.muted + (255,))
             self._text(_('pulled %d') % len(pulls), x + cw / 2,
-                       y + ch - size * 4, size)
-            for row, s in enumerate(reversed(pulls[-6:])):
-                words = str(run.pays[s][k]) if s < shown else '?'
-                self._text(words, x + cw / 2,
-                           y + ch - size * (6.4 + row * 2.1), size * 1.4,
-                           bold=row == 0)
+                       y + (sy - y) / 2, size,
+                       colour=pal.muted + (255,))
             self.hits.append((x, y, cw, ch, lambda k=k: self.pull(k)))
 
     def _facts(self) -> str:

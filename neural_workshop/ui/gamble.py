@@ -31,7 +31,7 @@ from ..constants import FONTLIST
 from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
                         width_center)
 from ..i18n import _
-from . import cursor, taskoptions
+from . import cursor, polish, taskoptions
 from .verdict import VerdictLabel, above_the_band
 
 #: Seconds the verdict stays up before the next round.
@@ -291,17 +291,22 @@ class Gamble:
         h = height * 0.84
         y = bottom + height * 0.12
         back = CARD_DARK if self.dark else CARD_LIGHT
+        pal = polish.palette(self.dark)
         last = play.history[-1][0] if play.history else None
         size = min(calc_fontsize(13), w * 0.075)
         for arm in range(arms):
             x = x0 + arm * (w + gap)
             machine = play.deal.machines[arm]
-            self._box(x, y, w, h, back, LAST if arm == last else self.ink)
+            polish.machine(self.drawn, self.batch, x, y, w, h, pal,
+                           polish.HUES[arm % len(polish.HUES)],
+                           lit=arm == last, lit_colour=LAST,
+                           header_share=0.21, screen_share=0.66)
             top = y + h
-            self._text(_('Machine %d') % (arm + 1) if w > 160 else '%d' % (arm + 1), x + w / 2,
-                       top - h * 0.07, size * 1.15, bold=True)
+            self._text(_('Machine %d') % (arm + 1) if w > 160
+                       else '%d' % (arm + 1), x + w / 2, top - h * 0.06,
+                       size * 1.15, bold=True, colour=(255, 255, 255, 255))
             self._text(_('pays %d') % machine.pays, x + w / 2,
-                       top - h * 0.16, size)
+                       top - h * 0.155, size, colour=(255, 255, 255, 230))
             if level.price:
                 self._text(_('costs %d') % level.price, x + w / 2,
                            top - h * 0.23, size)
@@ -324,10 +329,11 @@ class Gamble:
                 row, column = divmod(index, 4)
                 gross = won + level.price
                 colour = WIN if gross > 0 else BITE if gross < 0 else NOTHING
-                self._box(x + w * 0.15 + column * cell,
-                          y + h * 0.47 - (row + 1) * cell * 1.05,
-                          cell * 0.85, cell * 0.85, colour,
-                          group=self.body_group)
+                polish.rounded(self.drawn, self.batch,
+                               x + w * 0.15 + column * cell,
+                               y + h * 0.47 - (row + 1) * cell * 1.05,
+                               cell * 0.85, cell * 0.85, colour,
+                               radius=cell * 0.2, group=self.body_group)
             if self.reveal:
                 t = min(play.t, level.pulls - 1)
                 truth = model.worth(play.deal, t, arm)
@@ -340,9 +346,10 @@ class Gamble:
         if level.price and self.phase == 'pulling':
             bw, bh = max(w * 0.9, width * 0.12), height * 0.09
             bx = left + (width - bw) / 2
-            self._box(bx, bottom, bw, bh, back, self.ink)
-            self._text(_('Stop (S)'), bx + bw / 2, bottom + bh / 2, size,
-                       bold=True)
+            polish.button(self.drawn, self.batch, bx, bottom, bw, bh,
+                          back, radius=bh * 0.3, shade=pal.shadow)
+            self._text(_('Stop (S)'), bx + bw / 2, bottom + bh * 0.55,
+                       size, bold=True)
             self.hits.append((bx, bottom, bw, bh, self.stop))
 
     def _update_labels(self) -> None:

@@ -15,13 +15,14 @@ from __future__ import annotations
 
 from typing import Optional
 
+import pyglet
 from pyglet.window import key
 
 from .. import delay as model
 from ..geometry import calc_fontsize
 from ..i18n import _
+from . import polish
 from .rungtask import RungTask
-from .spacetask import BUTTON_DARK, BUTTON_LIGHT
 
 COIN = (232, 186, 60)
 BAR = (90, 140, 220)
@@ -128,46 +129,101 @@ class Delay(RungTask):
 
     # --- drawing ---------------------------------------------------------
 
+    def _coins(self, x: float, y: float, count: int, r: float) -> None:
+        """*count* coins in a little pile centred on x, y: rows of up to
+        four, each row nudged up and over."""
+        per_row = 4
+        rows = (count + per_row - 1) // per_row
+        for k in range(count):
+            row, col = divmod(k, per_row)
+            in_row = min(per_row, count - row * per_row)
+            cx = x + (col - (in_row - 1) / 2.0) * r * 1.7 + row * r * 0.4
+            cy = y - (rows - 1) * r * 0.55 + row * r * 1.1
+            polish.coin(self.drawn, self.batch, cx, cy, r,
+                        group=pyglet.graphics.Group(order=2 + row * 4))
+
     def _draw(self, left, bottom, width, height) -> None:
         run = self.run
+        pal = polish.palette(self.dark)
         cx = left + width / 2
-        bw, bh = width * 0.3, height * 0.28
-        y = bottom + height * 0.38
-        back = BUTTON_DARK if self.dark else BUTTON_LIGHT
+        bw, bh = width * 0.3, height * 0.46
+        y = bottom + height * 0.24
         size = calc_fontsize(18)
-        self._text(_('%d coins') % self.coins, cx, bottom + height * 0.88,
-                   calc_fontsize(24), bold=True)
+        # The purse.
+        r = max(10.0, height * 0.035)
+        words = self._text(_('%d coins') % self.coins, cx + r * 1.4,
+                           bottom + height * 0.88, calc_fontsize(24),
+                           bold=True)
+        polish.coin(self.drawn, self.batch,
+                    cx + r * 1.4 - words.content_width / 2 - r * 1.8,
+                    bottom + height * 0.88, r, group=self.body_group)
         if self.mode in ('offer', 'waiting') and self.k < len(run.offers):
             offer = self.offer
             lx, rx = cx - bw - width * 0.03, cx + width * 0.03
             waiting = self.mode == 'waiting'
-            self._box(lx, y, bw, bh, back, self.ink)
-            self._text(_('Give up') if waiting else
-                       _('Take %d now') % offer.small, lx + bw / 2,
-                       y + bh / 2, size, bold=True)
+            coin_r = max(8.0, min(bw, bh) * 0.075)
+            # Now.
+            polish.card(self.drawn, self.batch, lx, y, bw, bh, pal.card,
+                        radius=16, edge=pal.edge, shade=pal.shadow)
+            self._text(_('Give up') if waiting else _('Take it now'),
+                       lx + bw / 2, y + bh * 0.82, size, bold=True)
+            self._coins(lx + bw / 2, y + bh * 0.48, offer.small, coin_r)
+            self._text(_('%d now') % offer.small, lx + bw / 2,
+                       y + bh * 0.14, calc_fontsize(14),
+                       colour=pal.muted + (255,))
             self.hits.append((lx, y, bw, bh, self.take))
-            self._box(rx, y, bw, bh, COIN if waiting else back, self.ink)
+            # Later.
+            face = polish.mix(pal.card, COIN, 0.22) if waiting else pal.card
+            polish.card(self.drawn, self.batch, rx, y, bw, bh, face,
+                        radius=16, edge=COIN if waiting else pal.edge,
+                        shade=pal.shadow)
             if run.level.shown:
-                words = _('Wait %.1f s for %d') % (offer.wait, offer.large)
+                words = _('Wait %.1f s') % offer.wait
             else:
-                words = _('Wait for %d') % offer.large
-            self._text(words, rx + bw / 2, y + bh * 0.62, size, bold=True)
+                words = _('Wait for it')
+            self._text(words, rx + bw / 2, y + bh * 0.82, size, bold=True)
             if waiting:
-                self._text(_('waited %.1f s') % (self.clock() - self.since),
-                           rx + bw / 2, y + bh * 0.3, calc_fontsize(14))
+                waited = self.clock() - self.since
+                ring = min(bw, bh) * 0.2
+                mx, my = rx + bw / 2, y + bh * 0.45
+                self.drawn.append(pyglet.shapes.Arc(
+                    mx, my, ring, thickness=ring * 0.22,
+                    color=polish.mix(face, pal.muted, 0.35),
+                    batch=self.batch, group=self.body_group))
+                share = (waited / offer.wait if run.level.shown
+                         else (waited % 10.0) / 10.0)
+                self.drawn.append(pyglet.shapes.Arc(
+                    mx, my, ring, thickness=ring * 0.22,
+                    angle=-360.0 * min(1.0, share), start_angle=90.0,
+                    color=polish.darker(COIN, 0.1), batch=self.batch,
+                    group=self.text_group))
+                self._text(_('%.1f s') % waited, mx, my, calc_fontsize(14),
+                           bold=True)
             else:
+                self._coins(rx + bw / 2, y + bh * 0.48, offer.large, coin_r)
                 self.hits.append((rx, y, bw, bh, self.wait))
+            self._text(_('%d later') % offer.large, rx + bw / 2,
+                       y + bh * 0.14, calc_fontsize(14),
+                       colour=pal.muted + (255,))
         else:
-            self._text('...', cx, y + bh / 2, size)
+            self._text(_('next offer ...'), cx, y + bh / 2, size,
+                       colour=pal.muted + (255,))
         # The run's time.
         full = width * 0.8
+        bar_h = max(8.0, height * 0.035)
         left_frac = max(0.0, self._left() / run.level.seconds)
-        self._box(cx - full / 2, bottom + height * 0.12, full, height * 0.04,
-                  (220, 222, 228))
-        self._box(cx - full / 2, bottom + height * 0.12, full * left_frac,
-                  height * 0.04, BAR)
+        polish.rounded(self.drawn, self.batch, cx - full / 2,
+                       bottom + height * 0.1, full, bar_h,
+                       polish.mix(pal.stage, pal.edge, 0.5),
+                       radius=bar_h / 2, group=self.card_group)
+        if left_frac > 0:
+            polish.rounded(self.drawn, self.batch, cx - full / 2,
+                           bottom + height * 0.1, max(bar_h, full * left_frac),
+                           bar_h, BAR, radius=bar_h / 2,
+                           group=self.body_group)
         self._text(_('%d s left') % max(0, int(self._left() + 0.99)), cx,
-                   bottom + height * 0.07, calc_fontsize(12))
+                   bottom + height * 0.05, calc_fontsize(12),
+                   colour=pal.muted + (255,))
 
     def _facts(self) -> str:
         if self.run is None:

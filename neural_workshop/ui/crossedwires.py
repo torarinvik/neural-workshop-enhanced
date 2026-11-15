@@ -45,7 +45,7 @@ from ..constants import FONTLIST
 from ..crossedwires import GRADES, Bench, deal
 from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
                         width_center)
-from . import cursor, taskoptions
+from . import cursor, polish, taskoptions
 from .verdict import VerdictLabel
 from ..i18n import _
 
@@ -147,6 +147,7 @@ class CrossedWires:
         self.background = (bg, bg, bg)
         self.textcolor = (fg, fg, fg, 255)
         self.ink = (fg, fg, fg)
+        self.pal = polish.palette(bool(bg == 0))
         self.batch = pyglet.graphics.Batch()
         self.drawn = []
         self.title = pyglet.text.Label(
@@ -298,44 +299,51 @@ class CrossedWires:
         self._update_status()
 
     def _draw_board(self) -> None:
-        """The floor, and the lines that make the steps countable."""
+        """The floor, as a tray of tiles, and the lines that make the
+        steps countable."""
         left, bottom, side = self._board()
         grade = self.grade()
         width, height = side * grade.across, side * grade.down
-        thick = max(1.0, side * 0.06)
-        self.drawn.append(pyglet.shapes.Rectangle(
-            left, bottom, width, height, color=self.ink, batch=self.batch))
-        self.drawn.append(pyglet.shapes.Rectangle(
-            left + thick, bottom + thick, width - thick * 2,
-            height - thick * 2, color=self.background, batch=self.batch))
+        pal = self.pal
+        dark = pal is polish.DARK
+        rim = max(6.0, side * 0.35)
+        tray = (52, 58, 74) if dark else (62, 72, 96)
+        floor = (40, 45, 58) if dark else (246, 247, 251)
+        polish.card(self.drawn, self.batch, left - rim, bottom - rim,
+                    width + 2 * rim, height + 2 * rim, tray,
+                    radius=rim * 1.2, shade=pal.shadow, group=polish.STAGE)
+        polish.rounded(self.drawn, self.batch, left, bottom, width, height,
+                       floor, radius=max(2.0, side * 0.12),
+                       group=polish.CARD)
         if not self.show_grid:
             return
+        line = polish.mix(floor, pal.muted, 0.28)
         for column in range(1, grade.across):
             self.drawn.append(pyglet.shapes.Line(
                 left + column * side, bottom, left + column * side,
-                bottom + height, thickness=1.0, color=GRID,
-                batch=self.batch))
+                bottom + height, thickness=1.0, color=line,
+                batch=self.batch, group=polish.INSET))
         for row in range(1, grade.down):
             self.drawn.append(pyglet.shapes.Line(
                 left, bottom + row * side, left + width, bottom + row * side,
-                thickness=1.0, color=GRID, batch=self.batch))
+                thickness=1.0, color=line, batch=self.batch,
+                group=polish.INSET))
 
     def _draw_target(self) -> None:
-        """The target: a ring, so the marker on top of it still reads."""
+        """The target: a ring on a soft halo, so the marker on top of it
+        still reads."""
         x, y, side = self._cell_rect(self.bench.goal())
-        middle = (x + side / 2, y + side / 2)
-        self.drawn.append(pyglet.shapes.Circle(
-            middle[0], middle[1], side * 0.46, color=TARGET,
-            batch=self.batch))
-        self.drawn.append(pyglet.shapes.Circle(
-            middle[0], middle[1], side * 0.30, color=self.background,
-            batch=self.batch))
+        mx, my = x + side / 2, y + side / 2
+        polish.glow(self.drawn, self.batch, mx, my, side * 0.9, TARGET,
+                    strength=110)
+        self.drawn.append(pyglet.shapes.Arc(
+            mx, my, side * 0.38, thickness=max(2.0, side * 0.14),
+            color=TARGET, batch=self.batch))
 
     def _draw_marker(self) -> None:
         x, y, side = self._cell_rect(self.bench.at)
-        self.drawn.append(pyglet.shapes.Circle(
-            x + side / 2, y + side / 2, side * 0.28, color=MARKER,
-            batch=self.batch))
+        polish.disc(self.drawn, self.batch, x + side / 2, y + side / 2,
+                    side * 0.32, MARKER, group=pyglet.graphics.Group(1))
 
     def _draw_budget(self) -> None:
         """What is left, as a length as well as a number.
@@ -347,15 +355,16 @@ class CrossedWires:
         left, bottom, side = self._board()
         grade = self.grade()
         width = side * grade.across
-        height = max(4.0, side * 0.3)
-        foot = bottom - height * 2.2
-        self.drawn.append(pyglet.shapes.Rectangle(
-            left, foot, width, height, color=GRID, batch=self.batch))
+        height = max(6.0, side * 0.3)
+        foot = bottom - max(6.0, side * 0.35) - height * 2.0
+        polish.rounded(self.drawn, self.batch, left, foot, width, height,
+                       polish.mix(self.background, GRID, 0.35),
+                       radius=height / 2, group=polish.CARD)
         share = self.bench.left() / float(max(1, self.bench.bout.budget))
         if share > 0:
-            self.drawn.append(pyglet.shapes.Rectangle(
-                left, foot, width * share, height, color=MARKER,
-                batch=self.batch))
+            polish.rounded(self.drawn, self.batch, left, foot,
+                           max(height, width * share), height, MARKER,
+                           radius=height / 2, group=polish.INSET)
 
     def _update_status(self) -> None:
         parts = [self.message]

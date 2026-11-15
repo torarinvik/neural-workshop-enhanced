@@ -35,7 +35,7 @@ from ..constants import FONTLIST
 from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
                         width_center)
 from ..i18n import _
-from . import cursor, taskoptions
+from . import cursor, polish, taskoptions
 from .verdict import VerdictLabel, above_the_band
 
 #: Seconds the verdict stays up before the next round.
@@ -148,8 +148,9 @@ class Sonar:
     def _board(self) -> Tuple[float, float, float]:
         """Left, bottom and size of the square board."""
         window = state.window
-        top = from_top_edge(116)
-        bottom = above_the_band(from_bottom_edge(58))
+        # Room for the bezel drawn round the board.
+        top = from_top_edge(116) - 16
+        bottom = above_the_band(from_bottom_edge(58)) + 16
         size = max(40.0, min(window.width * 0.9, top - bottom))
         return ((window.width - size) / 2.0,
                 bottom + (top - bottom - size) / 2.0, size)
@@ -304,7 +305,10 @@ class Sonar:
         if self.phase in ('searching', 'judged') and play is not None:
             level = play.level
             back = UNKNOWN_DARK if self.dark else UNKNOWN_LIGHT
-            gap = 1.0
+            self._draw_bezel()
+            span0 = self._cell_rect((0, 0))[2]
+            gap = 1.0 if span0 < 14 else max(1.5, span0 * 0.045)
+            corner = 0.0 if span0 < 14 else span0 * 0.16
             latest: Dict[rules.Cell, Tuple[int, int]] = {}
             for index, (cell, reading) in enumerate(play.pings):
                 latest[cell] = (reading, index)
@@ -327,10 +331,15 @@ class Sonar:
                     if self.phase == 'judged' and play.found \
                             and cell == play.target:
                         colour, text = FOUND, '★'
-                    self.drawn.append(pyglet.shapes.Rectangle(
-                        left + gap, bottom + gap, span - 2 * gap,
-                        span - 2 * gap, color=colour, batch=self.batch,
-                        group=self.cell_group))
+                    if self.phase == 'judged' and play.found \
+                            and cell == play.target:
+                        polish.glow(self.drawn, self.batch, left + span / 2,
+                                    bottom + span / 2, span * 1.4, FOUND,
+                                    strength=160)
+                    polish.rounded(self.drawn, self.batch, left + gap,
+                                   bottom + gap, span - 2 * gap,
+                                   span - 2 * gap, colour, radius=corner,
+                                   group=self.cell_group)
                     if text and span >= 14:
                         shade = 255 if sum(colour) < 380 else 20
                         self.drawn.append(pyglet.text.Label(
@@ -342,10 +351,31 @@ class Sonar:
                             font_name=FONTLIST))
             if self.phase == 'searching':
                 left, bottom, span = self._cell_rect(self.at)
+                ring = max(2.5, span * 0.08)
                 self.drawn.append(pyglet.shapes.Box(
-                    left, bottom, span, span, thickness=3, color=CURSOR,
-                    batch=self.batch, group=self.mark_group))
+                    left - ring * 0.3, bottom - ring * 0.3,
+                    span + ring * 0.6, span + ring * 0.6, thickness=ring,
+                    color=CURSOR, batch=self.batch, group=self.mark_group))
         self._update_labels()
+
+    def _draw_bezel(self) -> None:
+        """The instrument the board sits in: a slate bezel on a shadow,
+        and a thin glass rim inside it."""
+        left, bottom, size = self._board()
+        rim = max(8.0, size * 0.03)
+        pal = polish.palette(self.dark)
+        slate = (52, 60, 78) if not self.dark else (60, 68, 88)
+        polish.card(self.drawn, self.batch, left - rim, bottom - rim,
+                    size + 2 * rim, size + 2 * rim, slate, radius=rim * 1.4,
+                    shade=pal.shadow, group=polish.STAGE)
+        polish.rounded(self.drawn, self.batch, left - rim * 0.35,
+                       bottom - rim * 0.35, size + rim * 0.7,
+                       size + rim * 0.7, polish.lighter(slate, 0.12),
+                       radius=rim * 0.8, group=polish.CARD)
+        polish.rounded(self.drawn, self.batch, left, bottom, size, size,
+                       polish.darker(slate, 0.6 if self.dark else 0.25),
+                       radius=rim * 0.5,
+                       group=polish.INSET)
 
     def _ping_action_indices(self) -> List[int]:
         """The action number each ping was, so age counts digs too."""

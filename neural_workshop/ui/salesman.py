@@ -35,7 +35,7 @@ from ..constants import FONTLIST
 from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
                         width_center)
 from ..i18n import _
-from . import cursor, taskoptions
+from . import cursor, polish, taskoptions
 from .verdict import VerdictLabel
 
 #: Cities a round may hold. Five is a warm-up. The ceiling is set by
@@ -205,10 +205,13 @@ class TravelingSalesman:
         bg = 0 if state.cfg.BLACK_BACKGROUND else 255
         fg = 255 - bg
         self.textcolor = (fg, fg, fg, 255)
+        self.pal = polish.palette(bool(state.cfg.BLACK_BACKGROUND))
         self.citycolor = (fg, fg, fg, 255)
         self.routecolor = (64, 96, 255, 255)
         self.bestcolor = (46, 160, 67, 255)
         self.batch = pyglet.graphics.Batch()
+        self.casing_group = pyglet.graphics.Group(order=-6)
+        self.best_group = pyglet.graphics.Group(order=-4)
         self.line_group = pyglet.graphics.Group(order=0)
         self.city_group = pyglet.graphics.Group(order=1)
         self.title = pyglet.text.Label(
@@ -370,32 +373,79 @@ class TravelingSalesman:
               group=None) -> None:
         ax, ay = self._place(self.cities[one])
         bx, by = self._place(self.cities[two])
+        group = group or self.line_group
+        for x, y in ((ax, ay), (bx, by)):      # round the joints
+            self.drawn.append(pyglet.shapes.Circle(
+                x, y, width / 2.0, color=color, batch=self.batch,
+                group=group))
         self.drawn.append(pyglet.shapes.Line(
             ax, ay, bx, by, thickness=width, color=color,
-            batch=self.batch, group=group or self.line_group))
+            batch=self.batch, group=group))
+
+    def _road(self, one: int, two: int, color, width: float,
+              group) -> None:
+        """A route leg: a pale casing under a coloured line, as a road
+        on a map is drawn."""
+        self._line(one, two, self.casing, width + 5.0, self.casing_group)
+        self._line(one, two, color, width, group)
+
+    def _draw_map(self) -> None:
+        left, bottom, width, height = self._canvas()
+        pad = 10.0
+        pal = self.pal
+        dark = pal is polish.DARK
+        land = (34, 44, 46) if dark else (233, 241, 236)
+        self.casing = (20, 26, 30) if dark else (255, 255, 255)
+        polish.card(self.drawn, self.batch, left - pad, bottom - pad,
+                    width + 2 * pad, height + 2 * pad, land, radius=16,
+                    edge=pal.edge, shade=pal.shadow, group=polish.STAGE)
+        grid = polish.mix(land, (120, 150, 140) if not dark
+                          else (90, 120, 110), 0.18)
+        for k in range(1, 8):
+            x = left + width * k / 8.0
+            y = bottom + height * k / 8.0
+            self.drawn.append(pyglet.shapes.Line(
+                x, bottom - pad * 0.5, x, bottom + height + pad * 0.5,
+                thickness=1, color=grid, batch=self.batch,
+                group=polish.INSET))
+            self.drawn.append(pyglet.shapes.Line(
+                left - pad * 0.5, y, left + width + pad * 0.5, y,
+                thickness=1, color=grid, batch=self.batch,
+                group=polish.INSET))
 
     def _redraw(self) -> None:
         self._clear_drawn()
         if self.phase in ('touring', 'toured') and self.cities:
+            self._draw_map()
             if self.phase == 'toured' and self.show_best:
                 for here in range(len(self.best_order)):
-                    self._line(self.best_order[here],
+                    self._road(self.best_order[here],
                                self.best_order[(here + 1)
                                                % len(self.best_order)],
-                               self.bestcolor, width=5.0)
+                               self.bestcolor, 7.0, self.best_group)
             for here in range(len(self.route) - 1):
-                self._line(self.route[here], self.route[here + 1],
-                           self.routecolor)
+                self._road(self.route[here], self.route[here + 1],
+                           self.routecolor, 4.5, self.line_group)
             if self.phase == 'toured' and len(self.route) > 1:
-                self._line(self.route[-1], self.route[0], self.routecolor)
+                self._road(self.route[-1], self.route[0], self.routecolor,
+                           4.5, self.line_group)
+            home = self.route[0] if self.route else -1
+            ink = self.pal.ink
+            pin = max(9.0, self._canvas()[3] * 0.02)
             for city, position in enumerate(self.cities):
                 x, y = self._place(position)
                 visited = city in self.route
-                self.drawn.append(pyglet.shapes.Circle(
-                    x, y, 9 if city == (self.route[0] if self.route
-                                        else -1) else 7,
-                    color=self.routecolor if visited else self.citycolor,
-                    batch=self.batch, group=self.city_group))
+                if city == home:
+                    polish.disc(self.drawn, self.batch, x, y, pin * 1.35,
+                                self.pal.gold, group=self.city_group,
+                                ring=polish.darker(self.pal.gold, 0.4))
+                elif visited:
+                    polish.disc(self.drawn, self.batch, x, y, pin,
+                                self.routecolor[:3], group=self.city_group)
+                else:
+                    polish.disc(self.drawn, self.batch, x, y, pin,
+                                self.casing, group=self.city_group,
+                                ring=ink, glint=False)
         self._update_labels()
 
     def _update_labels(self) -> None:
@@ -438,7 +488,8 @@ class TravelingSalesman:
         return pyglet.event.EVENT_HANDLED
 
     def _at(self, x: int, y: int) -> Optional[int]:
-        nearest, best = None, 18.0 ** 2
+        nearest = None
+        best = max(22.0, self._canvas()[3] * 0.035) ** 2
         for city, position in enumerate(self.cities):
             cx, cy = self._place(position)
             apart = (x - cx) ** 2 + (y - cy) ** 2

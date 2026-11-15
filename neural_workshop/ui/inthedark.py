@@ -41,7 +41,7 @@ from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
                         width_center)
 from ..inthedark import (GRADES, MOST_COLOURS, PAINT, SWAP, TURN, Room,
                          Round, generate)
-from . import cursor, taskoptions
+from . import cursor, polish, taskoptions
 from .verdict import VerdictLabel
 from ..i18n import _
 
@@ -131,9 +131,16 @@ class InTheDark:
     def _build_chrome(self) -> None:
         bg = 0 if state.cfg.BLACK_BACKGROUND else 255
         fg = 255 - bg
-        self.background = (bg, bg, bg)
         self.textcolor = (fg, fg, fg, 255)
-        self.ink = (fg, fg, fg)
+        # Everything a round shows sits on a dark stage, in either
+        # theme: the lamps are in the dark. Ink and background are the
+        # stage's, not the window's.
+        self.pal = polish.palette(bg == 0)
+        self.stage_fill = (30, 33, 44) if bg else (26, 28, 36)
+        self.background = self.stage_fill
+        self.hole = (12, 13, 18)
+        self.ink = (222, 226, 236)
+        self.stage_text = (222, 226, 236, 255)
         self.batch = pyglet.graphics.Batch()
         self.drawn = []
         self.title = pyglet.text.Label(
@@ -310,6 +317,7 @@ class InTheDark:
         self._clear_drawn()
         if self.round is not None and self.phase in ('walking', 'asking',
                                                      'scored'):
+            self._draw_stage()
             self._draw_sockets()
             if self.phase == 'walking':
                 self._draw_room(self.round.rooms[self.cursor])
@@ -319,6 +327,13 @@ class InTheDark:
                 self._draw_verdicts()
         self._update_status()
 
+    def _draw_stage(self) -> None:
+        """The dark room the lamps hang in."""
+        left, bottom, width, height = self._stage()
+        polish.card(self.drawn, self.batch, left, bottom, width, height,
+                    self.stage_fill, radius=18, shade=self.pal.shadow,
+                    group=polish.STAGE)
+
     def _draw_sockets(self) -> None:
         """The lamps: rims and holes, never a colour.
 
@@ -327,15 +342,27 @@ class InTheDark:
         """
         for lamp in range(self.round.lamps):
             x, y, radius = self._socket(lamp)
+            polish.glow(self.drawn, self.batch, x, y, radius * 1.6,
+                        (120, 130, 160), strength=40)
             self.drawn.append(pyglet.shapes.Circle(
-                x, y, radius, color=self.ink, batch=self.batch))
+                x, y, radius, color=(150, 156, 172), batch=self.batch))
             self.drawn.append(pyglet.shapes.Circle(
-                x, y, radius * 0.82, color=self.background, batch=self.batch))
+                x, y, radius * 0.9, color=(84, 90, 106), batch=self.batch,
+                group=pyglet.graphics.Group(order=1)))
+            self.drawn.append(pyglet.shapes.Circle(
+                x, y, radius * 0.74, color=self.hole, batch=self.batch,
+                group=pyglet.graphics.Group(order=2)))
+            self.drawn.append(pyglet.shapes.Arc(
+                x, y, radius * 0.6, thickness=max(1.5, radius * 0.07),
+                angle=70.0, start_angle=100.0,
+                color=(70, 76, 92), batch=self.batch,
+                group=pyglet.graphics.Group(order=3)))
             self.drawn.append(pyglet.text.Label(
                 str(lamp + 1), font_size=calc_fontsize(13), weight='bold',
-                color=self.textcolor, batch=self.batch,
-                x=x, y=y - radius * 2.0, anchor_x='center',
-                anchor_y='center', font_name=FONTLIST))
+                color=self.stage_text, batch=self.batch,
+                x=x, y=y, anchor_x='center', anchor_y='center',
+                font_name=FONTLIST,
+                group=pyglet.graphics.Group(order=4)))
 
     def _arrow(self, from_x: float, from_y: float, to_x: float, to_y: float,
                shade: Tuple[int, int, int], thick: float,
@@ -377,8 +404,8 @@ class InTheDark:
             # round: one colour along, whichever colour it was.
             self.drawn.append(pyglet.shapes.Arc(
                 x, band + radius * 1.2, radius, thickness=thick,
-                color=self.ink, angle=math.radians(300),
-                start_angle=math.radians(-60), batch=self.batch))
+                color=self.ink, angle=300.0,
+                start_angle=-60.0, batch=self.batch))
             self._arrow(x + radius * 0.75, band + radius * 1.75,
                         x + radius * 1.15, band + radius * 1.2,
                         self.ink, thick)
@@ -397,7 +424,7 @@ class InTheDark:
                     thickness=thick * 0.7, color=self.ink, batch=self.batch))
 
     def _mark(self, lamp: int, shade: Tuple[int, int, int],
-              lift: float = 1.9) -> None:
+              lift: float = 1.45) -> None:
         """A pip under one socket, to point at the lamp being asked."""
         x, y, radius = self._socket(lamp)
         self.drawn.append(pyglet.shapes.Circle(
@@ -408,7 +435,7 @@ class InTheDark:
         """The colours and the keys that name them."""
         left, _b, width, _h = self._stage()
         colours = self.round.colours
-        radius = min(width / max(colours, 1) * 0.08, 16.0)
+        radius = min(width / max(colours, 1) * 0.09, 26.0)
         for colour in range(colours):
             x = left + width * (colour + 0.5) / colours
             self.drawn.append(pyglet.shapes.Circle(
@@ -418,7 +445,7 @@ class InTheDark:
                 batch=self.batch))
             self.drawn.append(pyglet.text.Label(
                 str(colour + 1), font_size=calc_fontsize(12), weight='bold',
-                color=self.textcolor, batch=self.batch,
+                color=self.stage_text, batch=self.batch,
                 x=x, y=y - radius * 2.2, anchor_x='center',
                 anchor_y='center', font_name=FONTLIST))
 

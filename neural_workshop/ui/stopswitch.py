@@ -21,6 +21,7 @@ from pyglet.window import key
 from .. import stopswitch as model
 from ..geometry import calc_fontsize
 from ..i18n import _
+from . import polish
 from .rungtask import RungTask
 from .spacetask import RIGHT, WRONG
 
@@ -140,54 +141,88 @@ class StopAndSwitch(RungTask):
 
     # --- drawing ---------------------------------------------------------
 
+    def _keycap(self, x: float, y: float, size: float, letter: str,
+                word: str, lit: bool) -> None:
+        """One of the two answer keys, sunk while it is the reply."""
+        pal = polish.palette(self.dark)
+        face = polish.mix(pal.card, pal.accent, 0.25) if lit else pal.card
+        polish.button(self.drawn, self.batch, x - size / 2, y - size / 2,
+                      size, size, face, radius=size * 0.16, pressed=lit,
+                      shade=pal.shadow)
+        self._text(letter, x, y + size * 0.06, calc_fontsize(22), bold=True)
+        self._text(word, x, y - size * 0.82, calc_fontsize(13),
+                   colour=pal.muted + (255,))
+
     def _draw(self, left, bottom, width, height) -> None:
         block = self.block
         s = self.stimulus
+        pal = polish.palette(self.dark)
         cx = left + width / 2
         cy = bottom + height * 0.5
         unit = min(width, height) * 0.1
+        # The stage the shapes come up on.
+        sw, sh = width * 0.66, height * 0.6
+        polish.card(self.drawn, self.batch, cx - sw / 2, cy - sh / 2, sw,
+                    sh, pal.stage, radius=22, edge=pal.edge,
+                    shade=pal.shadow)
         # The rule.
         if s is not None and (block.level.prepared or self.showing):
             bw, bh = width * 0.3, height * 0.1
-            self._box(cx - bw / 2, bottom + height * 0.82, bw, bh,
-                      BANDS[s.rule])
-            self._text(model.RULES[s.rule], cx, bottom + height * 0.82
+            colour = BANDS[s.rule]
+            polish.card(self.drawn, self.batch, cx - bw / 2,
+                        bottom + height * 0.84, bw, bh, colour,
+                        radius=bh / 2, shade=pal.shadow, lift=3)
+            self._text(model.RULES[s.rule], cx, bottom + height * 0.84
                        + bh / 2, min(calc_fontsize(20), bh * 0.5),
                        bold=True, colour=(255, 255, 255, 255))
-        # The stimulus, or a fixation point.
+        # The stimulus, or a fixation cross.
         if s is not None and self.showing:
-            x = cx + s.side * width * 0.25
+            x = cx + s.side * width * 0.2
             colour = BLUE if s.colour == 'blue' else ORANGE
+            polish.shadow(self.drawn, self.batch, x - unit * 0.9,
+                          cy - unit * 0.9, unit * 1.8, unit * 1.8,
+                          radius=unit * (0.9 if s.shape == 'circle'
+                                         else 0.25),
+                          lift=unit * 0.12, colour=pal.shadow)
             if s.shape == 'circle':
-                self.drawn.append(pyglet.shapes.Circle(
-                    x, cy, unit, color=colour, batch=self.batch,
-                    group=self.body_group))
+                polish.disc(self.drawn, self.batch, x, cy, unit, colour,
+                            group=self.body_group)
             else:
-                self._box(x - unit * 0.9, cy - unit * 0.9, unit * 1.8,
-                          unit * 1.8, colour, group=self.body_group)
+                polish.rounded(self.drawn, self.batch, x - unit * 0.9,
+                               cy - unit * 0.9, unit * 1.8, unit * 1.8,
+                               colour, radius=unit * 0.22,
+                               group=self.body_group)
             if s.stop and self.ring_up:
                 self.drawn.append(pyglet.shapes.Arc(
                     x, cy, unit * 1.6, thickness=unit * 0.25, color=STOP,
                     batch=self.batch, group=self.top_group))
         elif s is not None:
-            self.drawn.append(pyglet.shapes.Circle(
-                cx, cy, unit * 0.12, color=self.ink, batch=self.batch,
-                group=self.body_group))
+            arm = unit * 0.22
+            for dx, dy in ((arm, 0), (0, arm)):
+                self.drawn.append(pyglet.shapes.Line(
+                    cx - dx, cy - dy, cx + dx, cy + dy,
+                    thickness=max(2.0, unit * 0.05), color=pal.muted,
+                    batch=self.batch, group=self.body_group))
+        # The keys.
+        key_size = min(width * 0.1, height * 0.16)
+        lit = self.replied if self.showing else None
+        self._keycap(left + width * 0.08, cy, key_size, 'F', _('left'),
+                     lit == model.LEFT)
+        self._keycap(left + width * 0.92, cy, key_size, 'J', _('right'),
+                     lit == model.RIGHT)
         # The score so far.
         n = len(block.stimuli)
         step = min(width * 0.8 / n, unit * 0.7)
         x0 = cx - step * (n - 1) / 2
         for i in range(n):
             colour = (RIGHT if self.marks[i] else WRONG) \
-                if i < len(self.marks) else (200, 202, 208)
-            self.drawn.append(pyglet.shapes.Circle(
-                x0 + i * step, bottom + height * 0.06, step * 0.3,
-                color=colour, batch=self.batch, group=self.body_group))
-        # Where left and right are.
-        self._text(_('F  left'), left + width * 0.08, bottom + height * 0.5,
-                   calc_fontsize(13))
-        self._text(_('right  J'), left + width * 0.92,
-                   bottom + height * 0.5, calc_fontsize(13))
+                if i < len(self.marks) else polish.mix(pal.stage, pal.edge,
+                                                       0.6)
+            polish.rounded(self.drawn, self.batch,
+                           x0 + i * step - step * 0.32,
+                           bottom + height * 0.06 - step * 0.16,
+                           step * 0.64, step * 0.32, colour,
+                           radius=step * 0.16, group=self.body_group)
 
     def _facts(self) -> str:
         if self.block is None:

@@ -28,7 +28,7 @@ from .. import display, state
 from ..constants import FONTLIST
 from ..geometry import (calc_fontsize, from_bottom_edge, from_top_edge,
                         scale_to_height, width_center)
-from . import cursor, taskoptions
+from . import cursor, polish, taskoptions
 from .verdict import VerdictLabel
 from ..i18n import _
 
@@ -123,7 +123,9 @@ class Counting:
         bg = 0 if state.cfg.BLACK_BACKGROUND else 255
         fg = 255 - bg
         self.textcolor = (fg, fg, fg, 255)
-        self.inkcolor = (fg, fg, fg, 255)
+        self.pal = polish.palette(bool(state.cfg.BLACK_BACKGROUND))
+        self.inkcolor = (226, 230, 240, 255) if bg == 0 else \
+            (34, 44, 74, 255)
         self.batch = pyglet.graphics.Batch()
         self.drawn = []
         self.extra_labels = []
@@ -365,12 +367,15 @@ class Counting:
             except Exception:
                 pass
         self.drawn = []
+        for item in getattr(self, 'paper', []):
+            item.delete()
+        self.paper = []
         for label in self.extra_labels:
             label.delete()
         self.extra_labels = []
 
     def _thickness(self) -> float:
-        return max(1.0, scale_to_height(1.4))
+        return max(1.5, scale_to_height(2.2))
 
     def _build_shape(self, shape: Shape) -> Optional[object]:
         """One pyglet shape for *shape*, at the current canvas size."""
@@ -397,12 +402,27 @@ class Counting:
 
     def _redraw(self) -> None:
         self._clear_drawn()
+        if self.phase in ('showing', 'hidden', 'feedback'):
+            self._draw_paper()
         if self.phase in ('showing', 'feedback'):
             for shape in self.shapes_data:
                 built = self._build_shape(shape)
                 if built is not None:
                     self.drawn.append(built)
         self._update_labels()
+
+    def _draw_paper(self) -> None:
+        """The sheet the tangle is drawn on: a soft card a little larger
+        than the canvas. Kept apart from :attr:`drawn`, which holds the
+        tangle and only the tangle."""
+        left, bottom, width, height = self.canvas()
+        pad = scale_to_height(18)
+        pal = self.pal
+        paper = pal.card if pal is polish.DARK else pal.warm
+        polish.card(self.paper, self.batch, left - pad, bottom - pad,
+                    width + 2 * pad, height + 2 * pad, paper,
+                    radius=scale_to_height(14), edge=pal.edge,
+                    shade=pal.shadow)
 
     def _update_labels(self) -> None:
         parts = [self.message]
