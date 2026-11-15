@@ -67,18 +67,19 @@ class TheLookAlikes(unittest.TestCase):
     def test_the_answer_is_the_shape_and_no_decoy_is(self):
         for rung in RUNGS:
             for seed in range(6):
-                p = M.deal(rung, seed=seed)
-                self.assertEqual(len(p.candidates), p.level.candidates)
-                self.assertIs(p.candidates[p.answer].segs, p.shape)
-                hand = M.handedness(p.shape)
-                for k, c in enumerate(p.candidates):
-                    if k == p.answer:
+                for mode in dict(M.grade(rung).modes):
+                    if mode in M.SCENES:
                         continue
-                    if M.unlike(c.segs, p.shape):
-                        continue
-                    # Same distances: only a mirror of a handed shape.
-                    self.assertGreater(abs(hand), 0.08, (rung, seed, k))
-                    self.assertLess(M.handedness(c.segs) * hand, 0.0)
+                    p = M.deal(rung, seed=seed, mode=mode)
+                    self.assertEqual(len(p.candidates), p.level.candidates)
+                    right = p.candidates[p.answer]
+                    self.assertIs(right.form, p.form)
+                    self.assertEqual(right.size, 1.0)
+                    for k, c in enumerate(p.candidates):
+                        if k != p.answer:
+                            self.assertTrue(
+                                M.distinct(p.form, c.form, 0.1, 1.0, c.size),
+                                (rung, seed, mode, k))
 
     def test_the_answer_moves_around(self):
         answers = {M.deal(5, seed=s).answer for s in range(30)}
@@ -92,10 +93,17 @@ class TheLookAlikes(unittest.TestCase):
         self.assertIn('echo', dict(M.grade(3).modes))
         self.assertIn('sing', dict(M.grade(5).modes))
         self.assertNotIn('see', dict(M.grade(15).modes))
-        self.assertEqual(set(dict(M.grade(20).modes)), set(M.MODES))
-        self.assertTrue(M.grade(17).chorus)
-        self.assertEqual(M.grade(20).candidates, 6)
-        self.assertLess(M.grade(21).overload, M.grade(28).overload)
+        self.assertIn('scene', dict(M.grade(20).modes))
+        self.assertEqual(set(dict(M.grade(23).modes)), set(M.MODES))
+        self.assertEqual((M.grade(7).colours, M.grade(8).colours,
+                          M.grade(11).colours), (1, 2, 3))
+        self.assertIn('curve', M.grade(5).families)
+        self.assertIn('solid', M.grade(11).families)
+        self.assertFalse(M.grade(16).floor)
+        self.assertTrue(M.grade(17).floor)
+        self.assertTrue(M.grade(23).each_side)
+        self.assertEqual(M.grade(23).candidates, 6)
+        self.assertLess(M.grade(24).overload, M.grade(30).overload)
         self.assertLess(M.grade(5).wild, M.grade(25).wild)
 
     def test_every_kind_deals_at_every_rung_it_appears(self):
@@ -116,9 +124,164 @@ class TheLookAlikes(unittest.TestCase):
             for mode in ('sing', 'echo', 'hear'):
                 for seed in range(4):
                     p = M.deal(rung, seed=seed, mode=mode)
-                    tunes = {M.tune(c.segs, p.view) for c in p.candidates}
+                    tunes = {M.tune(c.form, p.view) for c in p.candidates}
                     self.assertEqual(len(tunes), len(p.candidates),
                                      (rung, mode, seed))
+
+
+class TheForms(unittest.TestCase):
+
+    def test_every_family_builds_with_faces_where_it_should(self):
+        draw = random.Random(1)
+        for family in ('curve', 'prism', 'pyramid', 'solid', 'space'):
+            for _k in range(5):
+                f = M.build(family, M.draw_params(family, draw))
+                self.assertGreaterEqual(len(f.segs), 3, family)
+                far = max(math.sqrt(M._dot(p, p)) for p in M.points(f.segs))
+                self.assertAlmostEqual(far, 1.0, places=6)
+                if family in ('prism', 'pyramid', 'solid'):
+                    self.assertTrue(f.faces, family)
+
+    def test_a_nudge_changes_the_shape(self):
+        draw = random.Random(2)
+        for family in ('curve', 'prism', 'pyramid', 'solid'):
+            for _k in range(6):
+                params = M.draw_params(family, draw)
+                a = M.build(family, params)
+                b = M.build(family, M.nudge(family, params, draw))
+                self.assertTrue(M.distinct(a, b, 0.02), (family, params))
+
+    def test_turning_a_coloured_form_keeps_it_the_same(self):
+        draw = random.Random(3)
+        f = M.colour(M.build('prism', M.draw_params('prism', draw)), 3,
+                     draw)
+        g = M.turned_form(M.random_turn(draw), f)
+        self.assertFalse(M.distinct(f, g))
+
+    def test_moving_the_colours_makes_another_thing(self):
+        draw = random.Random(4)
+        moved = 0
+        for _k in range(20):
+            f = M.colour(M.build('space', M.draw_params('space', draw)), 2,
+                         draw)
+            g = M.recoloured(f, draw)
+            if g.tints != f.tints and M.distinct(f, g):
+                moved += 1
+                self.assertFalse(M.unlike(f.segs, g.segs, 1e-6))
+        self.assertGreater(moved, 10)
+
+    def test_a_symmetric_recolouring_is_not_called_different(self):
+        # A square with alternate colours swapped is the same square
+        # turned a quarter: it must not be dealt as a look-alike.
+        sq = M.form_of(M.trace([op for _k in range(4)
+                                for op in (('F', 1.0), ('Y', 90))]),
+                       [0, 1, 0, 1])
+        swapped = M.Form(sq.segs, [1, 0, 1, 0], [])
+        self.assertFalse(M.distinct(sq, swapped))
+
+    def test_size_makes_another_thing(self):
+        f = M.build('solid', M.draw_params('solid', random.Random(5)))
+        self.assertTrue(M.distinct(f, f, 0.12, 1.0, 1.6))
+        self.assertFalse(M.distinct(f, f, 0.12, 1.0, 1.1))
+
+    def test_colour_look_alikes_appear_from_rung_8(self):
+        kinds = 0
+        for seed in range(20):
+            p = M.deal(9, seed=seed, mode='see')
+            for k, c in enumerate(p.candidates):
+                if k != p.answer and not M.unlike(c.segs, p.shape, 1e-6) \
+                        and c.form.tints != p.form.tints:
+                    kinds += 1
+        self.assertGreater(kinds, 5)
+
+
+class TheFloor(unittest.TestCase):
+
+    def test_sized_look_alikes_look_the_same_size(self):
+        seen = 0
+        for seed in range(20):
+            p = M.deal(18, seed=seed, mode='see')
+            self.assertTrue(p.floor)
+            right = p.candidates[p.answer]
+            self.assertGreater(right.depth, 0.0)
+            for c in p.candidates:
+                if c.size != 1.0:
+                    seen += 1
+                    self.assertFalse(M.unlike(c.segs, p.shape, 1e-6))
+                    # How big it looks (size over distance) falls in the
+                    # range the true-size cards cover.
+                    looks = c.size / c.depth
+                    self.assertTrue(1 / 4.4 - 1e-9 <= looks <= 1 / 2.3)
+        self.assertGreater(seen, 10)
+
+    def test_rest_puts_the_lowest_point_on_the_ground(self):
+        f = M.build('pyramid', M.draw_params('pyramid', random.Random(1)))
+        turn = M.random_turn(random.Random(2))
+        g, lift = M.rest(f, turn, 0.7)
+        low = min(min(a[1], b[1]) for a, b in g.segs)
+        self.assertAlmostEqual(low + lift, 0.0, places=9)
+
+
+class TheScenes(unittest.TestCase):
+
+    def test_the_right_card_is_the_place_and_no_other_is(self):
+        for rung in (20, 23, 28):
+            for mode in ('scene', 'hear_scene'):
+                if mode not in dict(M.grade(rung).modes):
+                    continue
+                for seed in range(6):
+                    p = M.deal(rung, seed=seed, mode=mode)
+                    self.assertTrue(p.scene)
+                    lays = [c.layout for c in p.candidates]
+                    self.assertEqual(lays[p.answer], p.layout)
+                    for k, lay in enumerate(lays):
+                        if k != p.answer:
+                            self.assertFalse(M.same_layout(lay, p.layout))
+                            for j in range(k):
+                                self.assertFalse(M.same_layout(lay, lays[j]))
+
+    def test_things_stand_apart_and_clear_of_the_beacon(self):
+        for seed in range(10):
+            p = M.deal(21, seed=seed, mode='scene')
+            spots = [(x, z) for _t, x, z in p.layout] + \
+                [(M.PLATFORM - 0.1, 0.0)]
+            for i in range(len(spots)):
+                self.assertLess(math.hypot(*spots[i]), M.PLATFORM)
+                for j in range(i):
+                    self.assertGreater(math.hypot(
+                        spots[i][0] - spots[j][0],
+                        spots[i][1] - spots[j][1]), 1.6)
+
+    def test_seen_scenes_are_shown_from_elsewhere_heard_ones_not(self):
+        p = M.deal(21, seed=1, mode='scene')
+        for c in p.candidates:
+            gap = abs((c.look - p.look + math.pi) % (2 * math.pi) - math.pi)
+            self.assertGreater(gap, 0.85)
+        self.assertEqual(len({c.look for c in p.candidates}), 1)
+        q = M.deal(25, seed=1, mode='scene')
+        self.assertGreater(len({c.look for c in q.candidates}), 1)
+        h = M.deal(25, seed=1, mode='hear_scene')
+        self.assertTrue(all(c.look == h.look for c in h.candidates))
+
+    def test_each_thing_sings_from_where_it_stands(self):
+        p = M.deal(21, seed=3, mode='scene')
+        self.assertEqual([i for i, _a, _b in p.parts], [0, 1, 2])
+        for i, x, z in p.layout:
+            mine = [n for n in p.notes if n.who == -10 - i]
+            self.assertTrue(mine)
+            self.assertEqual({n.voice for n in mine}, {i})
+            where = M.seen_from(p.look, (x, 0.0, z))
+            pan = sum(n.pan + n.pan2 for n in mine) / (2 * len(mine))
+            if abs(where[0] / where[2]) > 0.15:
+                self.assertEqual(pan > 0, where[0] > 0)
+            self.assertTrue(all(n.room > 0 for n in mine))
+
+    def test_the_camera_looks_at_the_middle(self):
+        for look in (0.0, 1.0, 2.5, 4.0):
+            c = M.seen_from(look, (0.0, 0.0, 0.0))
+            self.assertAlmostEqual(c[0], 0.0, places=9)
+            self.assertAlmostEqual(c[1], 0.0, places=9)
+            self.assertAlmostEqual(c[2], M.ORBIT, places=9)
 
 
 class TheCards(unittest.TestCase):
@@ -145,13 +308,21 @@ class TheCards(unittest.TestCase):
         p = M.deal(8, seed=3, mode='sing')
         k, a, b = p.spans[p.answer]
         card = [x for x in p.notes if x.who == k and a <= x.t < b]
-        alone, _d, _e = M.sing(p.shape, p.view, 0.0)
-        self.assertEqual([round(x.freq, 3) for x in card],
-                         [round(x.freq, 3) for x in alone])
-        self.assertEqual([round(x.pan, 3) for x in card],
-                         [round(x.pan, 3) for x in alone])
+        alone, _d, _e = M.sing(p.form, p.view, 0.0)
+        self.assertEqual([(round(x.freq, 3), round(x.pan, 3), x.voice)
+                          for x in card],
+                         [(round(x.freq, 3), round(x.pan, 3), x.voice)
+                          for x in alone])
 
-    def test_an_echo_moves_key_and_instrument_but_keeps_the_tune(self):
+    def test_colours_are_instruments(self):
+        p = M.deal(12, seed=2, mode='see')
+        shape = [x for x in p.notes if x.who == -1]
+        self.assertEqual([x.voice for x in shape], p.form.tints)
+        used = sorted(set(p.form.tints))
+        names = [p.patches[t].name for t in used]
+        self.assertEqual(len(set(names)), len(names))
+
+    def test_an_echo_moves_key_and_instruments_but_keeps_the_tune(self):
         p = M.deal(12, seed=4, mode='echo')
         shape = [x for x in p.notes if x.who == -1]
         k, a, b = p.spans[p.answer]
@@ -160,8 +331,12 @@ class TheCards(unittest.TestCase):
                  for s, c in zip(shape, card)}
         self.assertEqual(len(steps), 1)          # one shift for every note
         self.assertNotEqual(steps, {0})
-        self.assertEqual({x.voice for x in card}, {1})
-        self.assertNotEqual(p.patches[1].name, p.patches[0].name)
+        # Each colour moves to its own new instrument.
+        self.assertEqual([x.voice - M.TINTS for x in card],
+                         [x.voice for x in shape])
+        for t in set(x.voice for x in shape):
+            self.assertNotEqual(p.patches[t].name,
+                                p.patches[t + M.TINTS].name)
         self.assertEqual([round(x.pan, 3) for x in shape],
                          [round(x.pan, 3) for x in card])
 
@@ -171,7 +346,8 @@ class TheCards(unittest.TestCase):
         k, a, b = p.spans[p.answer]
         card = [x for x in p.notes if x.who == k and a <= x.t < b]
         self.assertEqual([x.freq for x in shape], [x.freq for x in card])
-        self.assertEqual(p.patches[0], p.patches[1])
+        for x, y in zip(shape, card):
+            self.assertEqual(p.patches[x.voice], p.patches[y.voice])
 
 
 class TheSong(unittest.TestCase):
@@ -239,6 +415,24 @@ class TheSong(unittest.TestCase):
     def test_instruments_vary_trial_to_trial(self):
         names = {M.deal(25, seed=s).patches[0] for s in range(12)}
         self.assertGreater(len(names), 8)
+
+    def test_far_sounds_are_quieter_later_and_roomier(self):
+        f = M.build('solid', M.draw_params('solid', random.Random(1)))
+        near, _d, _e = M.sing(f, M.IDENTITY, 0.0, distance=2.0)
+        far, _d, _e = M.sing(f, M.IDENTITY, 0.0, distance=8.0)
+        self.assertGreater(near[0].gain, far[0].gain)
+        self.assertGreater(far[0].t, near[0].t)
+        self.assertGreater(far[0].room, near[0].room)
+        self.assertGreaterEqual(near[0].bright, far[0].bright)
+
+    def test_the_room_rings_on_after_the_note(self):
+        dry = M.Note(0.0, 0.2, 440.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0, 0, -1)
+        wet = dry._replace(room=0.8)
+        tail = (0.5, 0.65)
+        a = array.array('h', M.synth([dry], *tail, [PURE]))
+        b = array.array('h', M.synth([wet], *tail, [PURE]))
+        self.assertEqual(max(map(abs, a)), 0)
+        self.assertGreater(max(map(abs, b)), 100)
 
     def test_overload_adds_noise(self):
         self.assertGreater(len(M.deal(30, seed=1).notes),

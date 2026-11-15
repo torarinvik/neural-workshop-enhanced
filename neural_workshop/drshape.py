@@ -6,40 +6,54 @@ draws is also a note: the stroke's height is the note's pitch, its
 left-right place is where the note sits between the two ears -- and the
 note travels from one ear toward the other as the stroke does -- its
 nearness is how loud and bright it rings, and its length is how long it
-lasts. So every shape has a sound, and the sound is the shape heard.
+lasts. Each colour a stroke is drawn in is an instrument. So every shape
+has a sound, and the sound is the shape heard.
 
-A trial is one of four kinds:
+What has to be understood grows rung by rung: a shape however it is
+turned; a shape and its mirror; which colour goes where; how big a thing
+really is, when it might be near or far; and where several things stand
+in a place seen from somewhere else -- or only heard.
+
+A trial is one of six kinds:
 
 * **see** -- watch (and hear) the turtle draw; pick the same shape from
   look-alikes on cards;
-* **hear** -- the shape is only heard; pick what it sounded like from
-  shapes on cards;
+* **hear** -- the shape is only heard; pick what it sounded like;
 * **sing** -- the turtle draws in silence; the cards are sounds, played
   in turn; pick the sound that is the shape;
 * **echo** -- the shape is only heard; the cards are sounds again, played
-  on another instrument and in another key; pick the same tune.
+  on other instruments and in another key; pick the same tune;
+* **scene** -- three things stand on a platform by a beacon, each singing
+  from where it stands; the cards show the platform from somewhere else;
+  pick the one where everything is where it was;
+* **hear_scene** -- the same, but the platform is only heard.
 
 Each trial deals its own instruments from a bank of synthesised ones --
 bells, glass, wood, reeds, brass, plucks, pads, growls, chirps, metal and
 stranger things -- and higher up bends them with vibrato, tremolo,
-drive, folding, ring modulation, glides and echoes.
+drive, folding, ring modulation, glides and echoes. A far thing sounds
+quieter, duller, a little later and with more of the room in it.
 
 The ladder:
 
 * rungs 1-2: flat polygons and stars, the shape stays in view;
-* rungs 3-4: flat shapes from memory; some trials are echoes, same
+* rungs 3-4: from memory; spirals; some trials are echoes, same
   instrument, same key;
-* rungs 5-7: paths through space, turned every which way; some trials
-  ask which sound is the shape;
-* rungs 8-10: mirror images and shapes with one stroke changed; echoes
-  move key;
-* rungs 11-13: knots and coils, five candidates, colours that lie;
-  echoes change instrument too;
+* rungs 5-7: paths and curves through space -- knots, loops, helices --
+  turned every which way; some trials ask which sound is the shape;
+* rungs 8-10: mirror images, one stroke changed, prisms; two colours,
+  and look-alikes with the colours moved; echoes move key;
+* rungs 11-13: solids, pyramids, knots and coils; three colours; echoes
+  change instruments;
 * rungs 14-16: shapes only heard, and sounds to pick;
-* rungs 17-19: the candidates tumble and sing their own shapes;
-* from rung 20: sensory overload -- branching shapes, six candidates,
-  noise, flicker, jitter, decoy sounds and instruments that change
-  under every stroke, worse every rung.
+* rungs 17-19: the cards are places: each shape stands somewhere on a
+  floor, near or far, and some look-alikes are the same shape bigger or
+  smaller, placed so they look the same size;
+* rungs 20-22: scenes, seen from another side;
+* from rung 23: everything, scenes only heard, each card seen from its
+  own side, and sensory overload -- branching shapes, six cards, noise,
+  flicker, jitter, decoy sounds and instruments that change under every
+  stroke, worse every rung.
 
 SPDX-License-Identifier: GPL-2.0-or-later
 """
@@ -61,9 +75,19 @@ LEAD_IN = 0.4
 HOLD = 0.9                   # a still moment after the turtle stops
 SCALE = (0, 2, 4, 7, 9)      # pentatonic: any two notes sit well together
 NYQUIST_SAFE = RATE * 0.42
-MODES = ('see', 'hear', 'sing', 'echo')
+MODES = ('see', 'hear', 'sing', 'echo', 'scene', 'hear_scene')
 #: Modes whose candidates are sounds rather than pictures.
 SOUND_CARDS = ('sing', 'echo')
+SCENES = ('scene', 'hear_scene')
+TINTS = 3                    # most colours a shape is drawn in
+SPEED_OF_SOUND = 343.0
+# The floor and the platform, in shape radii.
+FLOOR_EYE = 1.1              # how high the eye is above the floor
+SHOW_DEPTH = 3.4             # how far off the shape stands while drawn
+PLATFORM = 2.7               # the platform's radius
+ORBIT = 7.0                  # the camera's distance from the platform
+ORBIT_RISE = 0.5             # radians the camera looks down
+OBJECT = 0.78               # the size of a thing on the platform
 
 Vec = Tuple[float, float, float]
 Segment = Tuple[Vec, Vec]
@@ -78,10 +102,12 @@ class Grade(NamedTuple):
     turn: str            # 'none', 'plane' or 'space'
     mirror: bool         # mirror images among the look-alikes
     near: bool           # look-alikes with one stroke changed
-    recolour: bool       # colours mean nothing
+    colours: int         # how many colours a shape may be drawn in
     modes: Tuple[Tuple[str, float], ...]   # trial kinds and their odds
     echo_key: bool       # echoes move key
     echo_voice: bool     # echoes change instrument
+    floor: bool          # picture cards stand on a floor, near or far
+    each_side: bool      # every scene card seen from its own side
     tumble: bool         # candidates keep turning
     chorus: bool         # candidates sing their own shapes
     overload: float      # 0..1: noise, flicker, jitter, decoy sounds
@@ -99,17 +125,20 @@ ALL = MANY + ('alien', 'zap')
 
 def grade(rung: int) -> Grade:
     r = max(1, int(rung))
-    over = 0.0 if r < 20 else min(1.0, 0.25 + 0.075 * (r - 20))
+    over = 0.0 if r < 23 else min(1.0, 0.25 + 0.075 * (r - 23))
     if r < 3:
         fam = ('polygon', 'star')
     elif r < 5:
         fam = ('polygon', 'star', 'spiral')
+    elif r < 8:
+        fam = ('space', 'curve')
     elif r < 11:
-        fam = ('space',)
-    elif r < 20:
-        fam = ('coil', 'space')
+        fam = ('space', 'curve', 'prism')
+    elif r < 23:
+        fam = ('coil', 'space', 'curve', 'prism', 'pyramid', 'solid')
     else:
-        fam = ('space', 'coil', 'branch')
+        fam = ('coil', 'space', 'curve', 'prism', 'pyramid', 'solid',
+               'branch')
     if r < 3:
         modes = (('see', 1.0),)
     elif r < 5:
@@ -121,31 +150,38 @@ def grade(rung: int) -> Grade:
     elif r < 17:
         modes = (('hear', 0.5), ('sing', 0.25), ('echo', 0.25))
     elif r < 20:
-        modes = (('see', 0.4), ('hear', 0.2), ('sing', 0.2), ('echo', 0.2))
+        modes = (('see', 0.5), ('hear', 0.15), ('sing', 0.15),
+                 ('echo', 0.2))
+    elif r < 23:
+        modes = (('scene', 0.5), ('see', 0.2), ('sing', 0.15),
+                 ('echo', 0.15))
     else:
-        modes = tuple((m, 0.25) for m in MODES)
+        modes = (('scene', 0.2), ('hear_scene', 0.15), ('see', 0.2),
+                 ('hear', 0.15), ('sing', 0.15), ('echo', 0.15))
     return Grade(
         rung=r,
         families=fam,
-        candidates=(3 if r < 3 else 4 if r < 11 else 5 if r < 20 else 6),
+        candidates=(3 if r < 3 else 4 if r < 11 else 5 if r < 23 else 6),
         keep=r < 3,
         turn='none' if r < 3 else 'plane' if r < 5 else 'space',
         mirror=8 <= r < 14 or r >= 17,
         near=8 <= r < 14 or r >= 17,
-        recolour=r >= 11,
+        colours=1 if r < 8 else 2 if r < 11 else 3,
         modes=modes,
         echo_key=r >= 8,
         echo_voice=r >= 11,
-        tumble=r >= 17,
-        chorus=r >= 17,
+        floor=r >= 17,
+        each_side=r >= 23,
+        tumble=17 <= r < 20 or r >= 23,
+        chorus=17 <= r < 20 or r >= 23,
         overload=over,
-        wild=(0.0 if r < 5 else 0.2 if r < 11 else 0.45 if r < 20
+        wild=(0.0 if r < 5 else 0.2 if r < 11 else 0.45 if r < 23
               else 0.6 + 0.4 * over),
-        instruments=(GENTLE if r < 5 else MORE if r < 11 else MANY if r < 20
+        instruments=(GENTLE if r < 5 else MORE if r < 11 else MANY if r < 23
                      else ALL),
-        choose=(14.0 if r < 11 else 12.0 if r < 20
-                else max(8.0, 11.0 - 0.15 * (r - 20))),
-        tempo=1.0 if r < 20 else 1.0 + 0.6 * over)
+        choose=(14.0 if r < 11 else 12.0 if r < 23
+                else max(8.0, 11.0 - 0.15 * (r - 23))),
+        tempo=1.0 if r < 23 else 1.0 + 0.6 * over)
 
 
 # --- vectors ----------------------------------------------------------------
@@ -370,6 +406,355 @@ def bend(program: List[Op], draw: random.Random) -> List[Op]:
         out[i] = (kind, value + draw.choice((-60, -45, 45, 60)))
     return out
 
+# --- forms: strokes, faces and colours ----------------------------------------
+
+Face = Tuple[Tuple[Vec, ...], int]
+
+
+class Form(NamedTuple):
+    """A shape as drawn: strokes in drawing order, each in a colour
+    (0..TINTS-1), and the flat faces between them, each in a colour."""
+    segs: List[Segment]
+    tints: List[int]
+    faces: List[Face]
+
+
+def form_of(segs: Sequence[Segment], tints: Optional[Sequence[int]] = None,
+            faces: Sequence[Face] = ()) -> Form:
+    return Form(list(segs), list(tints) if tints is not None
+                else [0] * len(segs), list(faces))
+
+
+def map_form(f: Form, fn) -> Form:
+    return Form([(fn(a), fn(b)) for a, b in f.segs], list(f.tints),
+                [(tuple(fn(v) for v in poly), t) for poly, t in f.faces])
+
+
+def normalise_form(f: Form) -> Form:
+    pts = points(f.segs)
+    c = _mul((sum(p[0] for p in pts), sum(p[1] for p in pts),
+              sum(p[2] for p in pts)), 1.0 / len(pts))
+    far = max(math.sqrt(_dot(_sub(p, c), _sub(p, c))) for p in pts) or 1.0
+    return map_form(f, lambda p: _mul(_sub(p, c), 1.0 / far))
+
+
+def turned_form(m: Matrix, f: Form) -> Form:
+    return map_form(f, lambda p: apply(m, p))
+
+
+def mirrored_form(f: Form) -> Form:
+    return map_form(f, lambda p: (-p[0], p[1], p[2]))
+
+
+def _ring(n: int, r: float, y: float, twist: float = 0.0) -> List[Vec]:
+    return [(r * math.cos(2 * math.pi * k / n + twist), y,
+             r * math.sin(2 * math.pi * k / n + twist)) for k in range(n)]
+
+
+def _loop(pts: Sequence[Vec]) -> List[Segment]:
+    return [(pts[k], pts[(k + 1) % len(pts)]) for k in range(len(pts))]
+
+
+def draw_params(family: str, draw: random.Random) -> Dict:
+    if family in ('polygon', 'star', 'spiral', 'space', 'coil', 'branch'):
+        return {'program': make_program(family, draw)}
+    if family == 'curve':
+        kind = draw.choice(('knot', 'lissa', 'helix'))
+        if kind == 'knot':
+            p, q = draw.choice(((2, 3), (3, 2), (2, 5), (3, 4)))
+            return {'kind': kind, 'a': p, 'b': q, 'c': 0,
+                    'n': draw.randint(12, 15)}
+        if kind == 'lissa':
+            a, b, c = draw.sample((1, 2, 3, 4), 3)
+            return {'kind': kind, 'a': a, 'b': b, 'c': c,
+                    'n': draw.randint(12, 15)}
+        return {'kind': kind, 'a': draw.choice((1.5, 2.0, 2.5)),
+                'b': draw.choice((1, -1)), 'c': 0, 'n': draw.randint(11, 14)}
+    if family == 'prism':
+        return {'n': draw.randint(3, 6), 'twist': draw.choice((0, 15, 30)),
+                'taper': draw.choice((1.0, 1.0, 0.55)),
+                'height': draw.choice((0.6, 1.0, 1.5))}
+    if family == 'pyramid':
+        return {'n': draw.randint(3, 6),
+                'lean': draw.choice((0.0, 0.5, 0.9)),
+                'height': draw.choice((1.0, 1.6))}
+    if family == 'solid':
+        return {'kind': draw.choice(('tetra', 'cube', 'octa')),
+                'stretch': (draw.choice((0.6, 1.0, 1.6)),
+                            draw.choice((0.6, 1.0, 1.6)),
+                            draw.choice((0.6, 1.0)))}
+    raise ValueError(family)
+
+
+def nudge(family: str, params: Dict, draw: random.Random) -> Dict:
+    """The same kind of shape with one thing about it changed."""
+    out = dict(params)
+    if 'program' in params:
+        out['program'] = bend(params['program'], draw)
+    elif family == 'curve':
+        if params['kind'] == 'knot':
+            pairs = [pq for pq in ((2, 3), (3, 2), (2, 5), (3, 4))
+                     if pq != (params['a'], params['b'])]
+            out['a'], out['b'] = draw.choice(pairs)
+        elif params['kind'] == 'lissa':
+            key = draw.choice('abc')
+            free = [v for v in (1, 2, 3, 4, 5)
+                    if v not in (params['a'], params['b'], params['c'])]
+            out[key] = draw.choice(free)
+        else:
+            out['a'] = params['a'] + draw.choice((-0.5, 0.5, 1.0))
+    elif family == 'prism':
+        key = draw.choice(('n', 'twist', 'taper', 'height'))
+        if key == 'n':
+            out['n'] = params['n'] + (1 if params['n'] < 6 else -1)
+        elif key == 'twist':
+            out['twist'] = 30 if params['twist'] != 30 else 0
+        elif key == 'taper':
+            out['taper'] = 0.55 if params['taper'] == 1.0 else 1.0
+        else:
+            out['height'] = 0.6 if params['height'] != 0.6 else 1.5
+    elif family == 'pyramid':
+        if draw.random() < 0.5:
+            out['n'] = params['n'] + (1 if params['n'] < 6 else -1)
+        else:
+            out['lean'] = 0.9 if params['lean'] < 0.5 else 0.0
+    elif family == 'solid':
+        sx, sy, sz = params['stretch']
+        out['stretch'] = (sy, sx * 1.6 if sx < 1.5 else 0.6, sz)
+    return out
+
+
+def build(family: str, params: Dict) -> Form:
+    """The shape a family's parameters describe, uncoloured."""
+    if 'program' in params:
+        return form_of(trace(params['program']))
+    if family == 'curve':
+        n, kind = params['n'], params['kind']
+        pts = []
+        for k in range(n + (0 if kind != 'helix' else 1)):
+            t = 2 * math.pi * k / n
+            if kind == 'knot':
+                p, q = params['a'], params['b']
+                r = math.cos(q * t) + 2.2
+                pts.append((r * math.cos(p * t), r * math.sin(p * t),
+                            -math.sin(q * t) * 1.3))
+            elif kind == 'lissa':
+                pts.append((math.sin(params['a'] * t + 0.5 * math.pi),
+                            math.sin(params['b'] * t),
+                            math.sin(params['c'] * t + 0.25 * math.pi)))
+            else:
+                turns = params['a'] * params['b']
+                s = k / n
+                pts.append((math.cos(2 * math.pi * turns * s), 2.4 * s - 1.2,
+                            math.sin(2 * math.pi * turns * s)))
+        segs = _loop(pts) if kind != 'helix' else \
+            [(pts[k], pts[k + 1]) for k in range(len(pts) - 1)]
+        return normalise_form(form_of(segs))
+    if family == 'prism':
+        n, h = params['n'], params['height'] / 2
+        base = _ring(n, 1.0, -h)
+        top = _ring(n, params['taper'], h, math.radians(params['twist']))
+        segs = _loop(base) + [(base[k], top[k]) for k in range(n)] + \
+            _loop(top)
+        faces = [(tuple(base), 0), (tuple(top), 0)] + \
+            [((base[k], base[(k + 1) % n], top[(k + 1) % n], top[k]), 0)
+             for k in range(n)]
+        return normalise_form(form_of(segs, None, faces))
+    if family == 'pyramid':
+        n = params['n']
+        base = _ring(n, 1.0, -0.6)
+        apex = (params['lean'], params['height'] - 0.6, 0.0)
+        segs = _loop(base) + [(base[k], apex) for k in range(n)]
+        faces = [(tuple(base), 0)] + [((base[k], base[(k + 1) % n], apex), 0)
+                                      for k in range(n)]
+        return normalise_form(form_of(segs, None, faces))
+    if family == 'solid':
+        sx, sy, sz = params['stretch']
+        kind = params['kind']
+        if kind == 'cube':
+            v = [(x, y, z) for y in (-1, 1) for x, z in ((-1, -1), (1, -1),
+                                                         (1, 1), (-1, 1))]
+            bottom, top = v[:4], v[4:]
+            segs = _loop(bottom) + [(bottom[k], top[k]) for k in range(4)] + \
+                _loop(top)
+            faces = [(tuple(bottom), 0), (tuple(top), 0)] + \
+                [((bottom[k], bottom[(k + 1) % 4], top[(k + 1) % 4],
+                   top[k]), 0) for k in range(4)]
+        elif kind == 'octa':
+            eq = [(1, 0, 0), (0, 0, 1), (-1, 0, 0), (0, 0, -1)]
+            up, down = (0, 1.2, 0), (0, -1.2, 0)
+            segs = _loop(eq) + [(e, up) for e in eq] + [(e, down) for e in eq]
+            faces = [((eq[k], eq[(k + 1) % 4], tip), 0) for tip in (up, down)
+                     for k in range(4)]
+        else:
+            base = _ring(3, 1.0, -0.5)
+            tip = (0.0, 1.1, 0.0)
+            segs = _loop(base) + [(b, tip) for b in base]
+            faces = [(tuple(base), 0)] + [((base[k], base[(k + 1) % 3], tip), 0)
+                                          for k in range(3)]
+        f = form_of(segs, None, faces)
+        f = map_form(f, lambda p: (p[0] * sx, p[1] * sy, p[2] * sz))
+        return normalise_form(f)
+    raise ValueError(family)
+
+
+def colour(f: Form, k: int, draw: random.Random,
+           style: Optional[str] = None) -> Form:
+    """*f* drawn in *k* colours: in runs, in turn, or at random (every
+    colour used)."""
+    n = len(f.segs)
+    if k <= 1 or n < 2:
+        return Form(list(f.segs), [0] * n, [(p, 0) for p, _t in f.faces])
+    k = min(k, n)
+    style = style or draw.choice(('runs', 'cycle', 'random'))
+    if style == 'runs':
+        cuts = sorted(draw.sample(range(1, n), k - 1))
+        tints, c = [], 0
+        for i in range(n):
+            if c < len(cuts) and i >= cuts[c]:
+                c += 1
+            tints.append(c)
+    elif style == 'cycle':
+        tints = [i % k for i in range(n)]
+    else:
+        tints = list(range(k)) + [draw.randrange(k) for _i in range(n - k)]
+        draw.shuffle(tints)
+    faces = [(p, draw.randrange(k)) for p, _t in f.faces]
+    return Form(list(f.segs), tints, faces)
+
+
+def recoloured(f: Form, draw: random.Random) -> Form:
+    """The same strokes with the colours moved about."""
+    used = sorted(set(f.tints))
+    if len(used) < 2:
+        return f
+    if draw.random() < 0.5:
+        a, b = draw.sample(used, 2)
+        swap = {a: b, b: a}
+        return Form(list(f.segs), [swap.get(t, t) for t in f.tints],
+                    [(p, swap.get(t, t)) for p, t in f.faces])
+    return colour(f, len(used), draw)
+
+
+def _items(f: Form) -> List[Tuple[int, Vec]]:
+    out = [(t, _mul(_add(a, b), 0.5)) for (a, b), t in zip(f.segs, f.tints)]
+    for poly, t in f.faces:
+        out.append((10 + t, _mul(tuple(map(sum, zip(*poly))), 1.0 / len(poly))))
+    return out
+
+
+def same_colouring(a: Form, b: Form, tol: float = 0.02) -> bool:
+    """Whether two forms of the same geometry could be the same coloured
+    thing however turned: their colour-tagged distances agree."""
+    def groups(f: Form) -> Dict[Tuple[int, int], List[float]]:
+        out: Dict[Tuple[int, int], List[float]] = {}
+        items = _items(f)
+        for i in range(len(items)):
+            out.setdefault((items[i][0], -1), []).append(0.0)
+            for j in range(i + 1, len(items)):
+                d = _sub(items[i][1], items[j][1])
+                key = (min(items[i][0], items[j][0]),
+                       max(items[i][0], items[j][0]))
+                out.setdefault(key, []).append(math.sqrt(_dot(d, d)))
+        return out
+    ga, gb = groups(a), groups(b)
+    if set(ga) != set(gb):
+        return False
+    for key, xs in ga.items():
+        ys = gb[key]
+        if len(xs) != len(ys):
+            return False
+        if any(abs(x - y) > tol for x, y in zip(sorted(xs), sorted(ys))):
+            return False
+    return True
+
+
+def distinct(a: Form, b: Form, margin: float = 0.12,
+             size_a: float = 1.0, size_b: float = 1.0) -> bool:
+    """Whether *b* is surely not *a*: other geometry by more than
+    *margin*, its mirror, other colours, or another size. Shapes too
+    close to tell apart but not the same count as not distinct."""
+    if abs(math.log(size_a / size_b)) > 0.3:
+        return True
+    if len(a.segs) != len(b.segs):
+        return True
+    sa, sb = signature(a.segs), signature(b.segs)
+    if len(sa) != len(sb):
+        return True
+    gap = max((abs(x - y) for x, y in zip(sa, sb)), default=0.0)
+    if gap > margin:
+        return True
+    if gap > 0.02:
+        return False
+    ha, hb = handedness(a.segs), handedness(b.segs)
+    if abs(ha) > 0.08 and (ha > 0) != (hb > 0):
+        return True
+    return not same_colouring(a, b)
+
+
+# --- scenes -----------------------------------------------------------------
+
+class Thing(NamedTuple):
+    """Something on the platform: a form, turned once and for all."""
+    form: Form
+    turn: Matrix
+    tint: int
+
+
+Layout = Tuple[Tuple[int, float, float], ...]   # (thing, x, z)
+
+
+def rest(f: Form, turn: Matrix, size: float) -> Tuple[Form, float]:
+    """*f* turned and scaled, and how far to lift it so it stands on
+    the ground (its lowest point at height zero)."""
+    g = map_form(f, lambda p: _mul(apply(turn, p), size))
+    low = min(min(a[1], b[1]) for a, b in g.segs)
+    return g, -low
+
+
+def _spots(draw: random.Random, n: int, avoid: Sequence[Tuple[float, float]]
+           = ()) -> Optional[List[Tuple[float, float]]]:
+    out: List[Tuple[float, float]] = []
+    taken = list(avoid) + [(PLATFORM - 0.1, 0.0)]       # the beacon
+    for _k in range(n):
+        for _try in range(60):
+            r = PLATFORM * 0.82 * math.sqrt(draw.random())
+            a = draw.uniform(0, 2 * math.pi)
+            x, z = r * math.cos(a), r * math.sin(a)
+            if all(math.hypot(x - u, z - v) > 1.7 for u, v in taken + out):
+                out.append((x, z))
+                break
+        else:
+            return None
+    return out
+
+
+def same_layout(a: Layout, b: Layout, tol: float = 0.45) -> bool:
+    if sorted(t for t, _x, _z in a) != sorted(t for t, _x, _z in b):
+        return False
+    where = {t: (x, z) for t, x, z in a}
+    return all(math.hypot(where[t][0] - x, where[t][1] - z) < tol
+               for t, x, z in b)
+
+
+def eye(look: float) -> Tuple[Vec, Matrix]:
+    """Where the camera stands to look at the platform from *look*
+    (radians round it), and its turn: rows right, up, forward."""
+    c = (ORBIT * math.cos(ORBIT_RISE) * math.sin(look),
+         ORBIT * math.sin(ORBIT_RISE),
+         -ORBIT * math.cos(ORBIT_RISE) * math.cos(look))
+    fwd = _mul(c, -1.0 / ORBIT)
+    right = _cross((0.0, 1.0, 0.0), fwd)
+    right = _mul(right, 1.0 / math.sqrt(_dot(right, right)))
+    up = _cross(fwd, right)
+    return c, (right, up, fwd)
+
+
+def seen_from(look: float, p: Vec) -> Vec:
+    """A platform point in the camera's frame: x right, y up, z ahead."""
+    c, m = eye(look)
+    return apply(m, _sub(p, c))
+
 
 # --- instruments ------------------------------------------------------------
 
@@ -555,10 +940,18 @@ def _voice(p: Patch, freq: float, dur: float, bright: float, seed: int):
 # --- a trial ----------------------------------------------------------------
 
 class Candidate(NamedTuple):
-    segs: List[Segment]       # in its own frame
+    form: Form                # in its own frame
     view: Matrix              # how it is shown
-    spin: Vec                 # axis it tumbles about (zero: it does not)
-    colour: int
+    spin: Vec                 # axis it turns about (zero: it does not)
+    size: float = 1.0         # how big it really is
+    depth: float = 0.0        # how far off it stands, on a floor card
+    side: float = 0.0         # how far left or right, on a floor card
+    layout: Optional[Layout] = None   # a scene card's things and places
+    look: float = 0.0         # where a scene card is seen from
+
+    @property
+    def segs(self) -> List[Segment]:
+        return self.form.segs
 
 
 class Note(NamedTuple):
@@ -572,13 +965,14 @@ class Note(NamedTuple):
     bright: float             # 0 dull .. 1 bright
     voice: int                # which of the trial's patches
     seed: int
-    who: int                  # -1 the shape, k candidate k, -2 noise
+    who: int                  # -1 the shape, k card k, -2 noise, -10-i thing i
+    room: float = 0.0         # how much of the room is heard with it
 
 
 class Puzzle(NamedTuple):
     level: Grade
-    mode: str                 # 'see', 'hear', 'sing' or 'echo'
-    shape: List[Segment]      # the target, as the turtle drew it
+    mode: str
+    form: Optional[Form]      # the target as the turtle drew it
     view: Matrix              # how the target is shown and heard
     candidates: List[Candidate]
     answer: int
@@ -588,17 +982,35 @@ class Puzzle(NamedTuple):
     show_end: float
     choose: float             # seconds to choose
     spans: List[Tuple[int, float, float]]   # (card, from, to) it sounds
+    hues: Tuple[int, ...]     # the colour shown for each tint
+    things: List[Thing]       # a scene's things (and their stand-ins)
+    layout: Optional[Layout]  # where a scene's things stand
+    look: float               # where a scene is first seen from
+    parts: List[Tuple[int, float, float]]   # (thing, from, to) it sings
     seed: int
 
     @property
+    def shape(self) -> List[Segment]:
+        return self.form.segs if self.form is not None else []
+
+    @property
     def heard(self) -> bool:
-        """The shape is only heard, never seen."""
-        return self.mode in ('hear', 'echo')
+        """The target is only heard, never seen."""
+        return self.mode in ('hear', 'echo', 'hear_scene')
 
     @property
     def sound_cards(self) -> bool:
         """The candidates are sounds, not pictures."""
         return self.mode in SOUND_CARDS
+
+    @property
+    def scene(self) -> bool:
+        return self.mode in SCENES
+
+    @property
+    def floor(self) -> bool:
+        """Picture cards stand on a floor, near or far."""
+        return self.level.floor and self.mode == 'see'
 
 
 def deal(rung: int, seed: Optional[int] = None,
@@ -608,8 +1020,12 @@ def deal(rung: int, seed: Optional[int] = None,
         seed = (rng or random).randrange(1 << 30)
     draw = random.Random(seed)
     level = grade(rung)
-    for _attempt in range(60):
-        puzzle = _build(level, draw, seed, mode)
+    for _attempt in range(80):
+        kind = mode or _pick_mode(level, draw)
+        if kind in SCENES:
+            puzzle = _build_scene(level, kind, draw, seed)
+        else:
+            puzzle = _build(level, draw, seed, kind)
         if puzzle is not None:
             return puzzle
     raise RuntimeError('no Dr Shape puzzle for rung %d' % rung)
@@ -633,66 +1049,102 @@ def _pick_mode(level: Grade, draw: random.Random) -> str:
     return level.modes[-1][0]
 
 
-def tune(segs: Sequence[Segment], view: Matrix) -> Tuple:
+def tune(form, view: Matrix) -> Tuple:
     """What an ear can tell of a shape's song: each note's step on the
-    scale, its length and which side it is on."""
-    notes, _done, _end = sing(segs, view, 0.0)
+    scale, its length, which side it is on and its instrument."""
+    notes, _done, _end = sing(form, view, 0.0)
     return tuple((round(math.log2(n.freq / 196.0) * 12),
-                  round(n.dur * 10), round((n.pan + n.pan2) * 2))
+                  round(n.dur * 10), round((n.pan + n.pan2) * 2), n.voice)
                  for n in notes)
 
 
+def _patches(level: Grade, draw: random.Random) -> List[Patch]:
+    """One instrument per colour, one per colour for echoes, spares."""
+    names = list(level.instruments)
+    mine = draw.sample(names, TINTS)
+    out = [make_patch(n, draw, level.wild) for n in mine]
+    if level.echo_voice:
+        others = [n for n in names if n not in mine] or names
+        echo = draw.sample(others, min(TINTS, len(others)))
+        while len(echo) < TINTS:
+            echo.append(draw.choice(names))
+        out += [make_patch(n, draw, level.wild) for n in echo]
+    else:
+        out += out[:TINTS]
+    out += [make_patch(draw.choice(names), draw, level.wild)
+            for _k in range(4)]
+    return out
+
+
+SPARE = 2 * TINTS            # the first spare patch
+
+
+def _hues(draw: random.Random) -> Tuple[int, ...]:
+    """Colours for the tints, spread round the wheel so none is mistaken
+    for another."""
+    h = draw.randrange(12)
+    step = draw.choice((4, -4))
+    return tuple((h + step * k) % 12 for k in range(TINTS))
+
+
 def _build(level: Grade, draw: random.Random, seed: int,
-           mode: Optional[str] = None) -> Optional[Puzzle]:
-    mode = mode or _pick_mode(level, draw)
+           mode: str) -> Optional[Puzzle]:
     family = draw.choice(level.families)
-    program = make_program(family, draw)
-    shape = trace(program)
-    if len(shape) < 3:
+    params = draw_params(family, draw)
+    base = build(family, params)
+    if len(base.segs) < 3:
         return None
     strict = mode != 'see'            # told apart by ear, at least partly
-    chiral = abs(handedness(shape)) > 0.08
+    floor = level.floor and mode == 'see'
+    k = 1 if level.colours == 1 else draw.randint(2, level.colours)
+    target = colour(base, k, draw)
+    chiral = abs(handedness(target.segs)) > 0.08
     view = _tilt(draw, level)
-    known = {tune(shape, view)}
-    # The look-alikes.
-    decoys: List[List[Segment]] = []
+    margin = 0.25 if strict else 0.12
+    known = {tune(target, view)}
+    decoys: List[Tuple[Form, float]] = []
+    counts: Dict[str, int] = {}
     tries = 0
-    while len(decoys) < level.candidates - 1 and tries < 80:
+    while len(decoys) < level.candidates - 1 and tries < 120:
         tries += 1
         roll = draw.random()
-        if level.mirror and chiral and roll < 0.3 and \
-                not any(not unlike(d, shape) for d in decoys):
-            other = mirrored(shape)
-        elif level.near and (not strict or level.rung >= 17) and \
-                roll < 0.75:
-            other = trace(bend(program, draw))
-            if len(other) < 3 or not unlike(other, shape,
-                                            0.25 if strict else 0.12):
-                continue
+        size = 1.0
+        if floor and roll < 0.3 and counts.get('size', 0) < 2:
+            kind, other = 'size', target
+            size = draw.choice((0.55, 0.6, 1.65, 1.8))
+        elif level.mirror and chiral and roll < 0.45 and \
+                counts.get('mirror', 0) < 1:
+            kind, other = 'mirror', mirrored_form(target)
+        elif k > 1 and roll < 0.65 and counts.get('colour', 0) < 2:
+            kind, other = 'colour', recoloured(target, draw)
+        elif level.near and (not strict or level.rung >= 17) and roll < 0.85:
+            kind = 'near'
+            other = colour(build(family, nudge(family, params, draw)), k,
+                           draw)
         else:
+            kind = 'other'
             fam = family if strict and draw.random() < 0.5 else \
                 draw.choice(level.families)
-            other = trace(make_program(fam, draw))
-            if len(other) < 3 or not unlike(other, shape,
-                                            0.25 if strict else 0.12):
-                continue
-        if any(not unlike(other, d, 0.1) and
-               (handedness(other) > 0) == (handedness(d) > 0)
-               for d in decoys):
+            other = colour(build(fam, draw_params(fam, draw)), k, draw)
+        if len(other.segs) < 3:
+            continue
+        if not distinct(target, other, margin, 1.0, size):
+            continue
+        if any(not distinct(d, other, 0.1, ds, size) for d, ds in decoys):
             continue
         if strict:
             heard = tune(other, view)
             if heard in known:
                 continue
             known.add(heard)
-        decoys.append(other)
+        counts[kind] = counts.get(kind, 0) + 1
+        decoys.append((other, size))
     if len(decoys) < level.candidates - 1:
         return None
     answer = draw.randrange(level.candidates)
-    shapes = decoys[:answer] + [shape] + decoys[answer:]
-    hue = draw.randrange(12)
+    forms = decoys[:answer] + [(target, 1.0)] + decoys[answer:]
     cands = []
-    for k, segs in enumerate(shapes):
+    for f, size in forms:
         if level.turn == 'none' or strict:
             v = view
         elif level.turn == 'plane':
@@ -700,30 +1152,24 @@ def _build(level: Grade, draw: random.Random, seed: int,
                                        draw.uniform(0.5, 2 * math.pi - 0.5)))
         else:
             v = random_turn(draw)
-        spin = (draw.uniform(-1, 1), draw.uniform(-1, 1),
-                draw.uniform(-1, 1)) if level.tumble and mode == 'see' \
-            else (0.0, 0.0, 0.0)
-        colour = draw.randrange(12) if level.recolour else hue
-        cands.append(Candidate(segs, v, spin, colour))
-    # The instruments: the shape's own, an echo's, and spares.
-    names = level.instruments
-    main = draw.choice(names)
-    patches = [make_patch(main, draw, level.wild)]
-    if level.echo_voice:
-        patches.append(make_patch(draw.choice([n for n in names
-                                               if n != main]), draw,
-                                  level.wild))
-    else:
-        patches.append(patches[0])
-    for _k in range(4):
-        patches.append(make_patch(draw.choice(names), draw, level.wild))
-    spare = list(range(2, len(patches)))
-    # The shape's own song (silent in a sing trial, where only the
-    # cards sound).
-    voices: Tuple[int, ...] = (0,)
+        spin: Vec = (0.0, 0.0, 0.0)
+        if level.tumble and mode == 'see':
+            spin = (0.0, 1.0, 0.0) if floor else \
+                (draw.uniform(-1, 1), draw.uniform(-1, 1), draw.uniform(-1, 1))
+        depth = side = 0.0
+        if floor:
+            depth = size * draw.uniform(2.3, 4.4)
+            side = draw.uniform(-0.25, 0.25) * depth
+        cands.append(Candidate(f, v, spin, size, depth, side))
+    patches = _patches(level, draw)
+    hues = _hues(draw)
+    voice_of = None
     if level.overload >= 0.5 and mode in ('see', 'hear'):
-        voices = (0, draw.choice(spare))
-    notes, drawn_by, end = sing(shape, view, LEAD_IN, level.tempo, voices)
+        spare = SPARE + draw.randrange(4)
+        voice_of = lambda t, i: t if i % 2 == 0 else spare   # noqa: E731
+    notes, drawn_by, end = sing(target, view, LEAD_IN, level.tempo,
+                                voice_of,
+                                distance=SHOW_DEPTH if floor else None)
     if mode == 'sing':
         notes = []
     show_end = end + HOLD
@@ -732,51 +1178,164 @@ def _build(level: Grade, draw: random.Random, seed: int,
     if mode in SOUND_CARDS:
         shift = draw.choice((-12, -7, -5, 5, 7, 12)) \
             if mode == 'echo' and level.echo_key else 0
-        voice = 1 if mode == 'echo' else 0
+        off = TINTS if mode == 'echo' else 0
         t = show_end + 0.5
         for _pass in range(2):
-            for k, c in enumerate(cands):
-                more, _d, e = sing(c.segs, view, t, level.tempo * 1.15,
-                                   (voice,), transpose=shift, who=k)
+            for i, c in enumerate(cands):
+                more, _d, e = sing(c.form, view, t, level.tempo * 1.15,
+                                   lambda tint, _i: tint + off,
+                                   transpose=shift, who=i)
                 notes += more
-                spans.append((k, t, e))
+                spans.append((i, t, e))
                 t = e + 0.45
             t += 0.6
         choose = max(choose, t - show_end + 2.5)
-    elif level.chorus:
+    elif level.chorus and mode == 'see':
         n = len(cands)
         t = show_end + 0.6
-        for k, c in enumerate(cands):
-            pan = -0.8 + 1.6 * k / max(1, n - 1)
-            more, _d, e = sing(c.segs, c.view, t, 1.3,
-                               (spare[k % len(spare)],), pan_shift=pan,
-                               pan_width=0.2, gain=0.55, who=k)
+        for i, c in enumerate(cands):
+            pan = -0.8 + 1.6 * i / max(1, n - 1)
+            more, _d, e = sing(c.form, c.view, t, 1.3, pan_shift=pan,
+                               pan_width=0.2, gain=0.55, who=i,
+                               distance=c.depth if floor else None)
             notes += more
-            spans.append((k, t, e))
+            spans.append((i, t, e))
             t = e + 0.25 if level.overload < 0.5 else t + 0.6
     if level.overload:
-        patches += [make_patch(draw.choice(('hiss', 'zap', 'chirp', 'wood',
-                                            'metal', 'alien')), draw, 1.0)
-                    for _k in range(3)]
-        notes += _decoys(level, draw, show_end + choose,
-                         len(patches) - 3)
+        notes += _noise_for(level, draw, patches, show_end + choose)
     notes.sort()
-    return Puzzle(level, mode, shape, view, cands, answer, patches, notes,
-                  drawn_by, show_end, choose, spans, seed)
+    return Puzzle(level, mode, target, view, cands, answer, patches, notes,
+                  drawn_by, show_end, choose, spans, hues, [], None, 0.0, [],
+                  seed)
 
 
-def sing(segs: Sequence[Segment], view: Matrix, start: float,
-         tempo: float = 1.0, voices: Sequence[int] = (0,),
-         pan_shift: float = 0.0, pan_width: float = 1.0, gain: float = 1.0,
-         transpose: int = 0, who: int = -1
+def _noise_for(level: Grade, draw: random.Random, patches: List[Patch],
+               until: float) -> List[Note]:
+    first = len(patches)
+    patches += [make_patch(draw.choice(('hiss', 'zap', 'chirp', 'wood',
+                                        'metal', 'alien')), draw, 1.0)
+                for _k in range(3)]
+    return _decoys(level, draw, until, first)
+
+
+def _build_scene(level: Grade, mode: str, draw: random.Random, seed: int
+                 ) -> Optional[Puzzle]:
+    """Three things on a platform by a beacon, and the same platform with
+    something changed, seen from elsewhere."""
+    kinds = [f for f in level.families if f not in ('polygon', 'star',
+                                                    'spiral', 'branch')]
+    fams = draw.sample(kinds, 3) if len(kinds) >= 3 else \
+        [draw.choice(kinds) for _k in range(3)]
+    things: List[Thing] = []
+    for i, fam in enumerate(fams):
+        f = build(fam, draw_params(fam, draw))
+        if len(f.segs) < 3:
+            return None
+        f = colour(f, 1, draw)
+        f = Form(f.segs, [i] * len(f.segs), [(p, i) for p, _t in f.faces])
+        things.append(Thing(f, random_turn(draw), i))
+    spots = _spots(draw, 3)
+    if spots is None:
+        return None
+    layout: Layout = tuple((i, x, z) for i, (x, z) in enumerate(spots))
+    look0 = draw.uniform(0, 2 * math.pi)
+    decoys: List[Layout] = []
+    tries = 0
+    while len(decoys) < level.candidates - 1 and tries < 100:
+        tries += 1
+        roll = draw.random()
+        if roll < 0.3:
+            a, b = draw.sample(range(3), 2)
+            where = {t: (x, z) for t, x, z in layout}
+            where[a], where[b] = where[b], where[a]
+            other = tuple((t, *where[t]) for t in range(3))
+        elif roll < 0.55:
+            i = draw.randrange(3)
+            rest_ = [(x, z) for t, x, z in layout if t != i]
+            spot = _spots(draw, 1, rest_)
+            if spot is None:
+                continue
+            other = tuple((t, *(spot[0] if t == i else (x, z)))
+                          for t, x, z in layout)
+        elif roll < 0.75:
+            other = tuple((t, x, -z) for t, x, z in layout)
+        else:
+            i = draw.randrange(3)
+            fam = draw.choice(kinds)
+            f = build(fam, draw_params(fam, draw))
+            f = Form(f.segs, [i] * len(f.segs), [(p, i) for p, _t in f.faces])
+            if len(f.segs) < 3 or not distinct(things[i].form, f, 0.2):
+                continue
+            things.append(Thing(f, random_turn(draw), i))
+            other = tuple((len(things) - 1 if t == i else t, x, z)
+                          for t, x, z in layout)
+        if same_layout(other, layout) or \
+                any(same_layout(other, d) for d in decoys):
+            continue
+        decoys.append(other)
+    if len(decoys) < level.candidates - 1:
+        return None
+    answer = draw.randrange(level.candidates)
+    layouts = decoys[:answer] + [layout] + decoys[answer:]
+    away = look0 + draw.choice((-1, 1)) * draw.uniform(0.9, 2.4)
+    cands = []
+    for lay in layouts:
+        if mode == 'hear_scene':
+            look = look0
+        elif level.each_side:
+            look = look0 + draw.choice((-1, 1)) * draw.uniform(0.9, 2.6)
+        else:
+            look = away
+        cands.append(Candidate(things[0].form, IDENTITY, (0.0, 0.0, 0.0),
+                               layout=lay, look=look))
+    patches = _patches(level, draw)
+    hues = _hues(draw)
+    notes: List[Note] = []
+    parts = []
+    t = LEAD_IN
+    _c, cam = eye(look0)
+    for i, x, z in layout:
+        th = things[i]
+        g, lift = rest(th.form, th.turn, OBJECT)
+        where = seen_from(look0, (x, lift, z))
+        d = math.sqrt(_dot(where, where))
+        pan = max(-1.0, min(1.0, 2.2 * where[0] / where[2]))
+        more, _done, end = sing(th.form, matmul(cam, th.turn), t,
+                                level.tempo, pan_shift=pan, pan_width=0.15,
+                                who=-10 - i, distance=d, ref=ORBIT)
+        notes += more
+        parts.append((i, t, end))
+        t = end + 0.5
+    show_end = t + HOLD
+    if level.overload:
+        notes += _noise_for(level, draw, patches, show_end + level.choose)
+    notes.sort()
+    return Puzzle(level, mode, None, IDENTITY, cands, answer, patches, notes,
+                  [], show_end, level.choose, [], hues, things, layout,
+                  look0, parts, seed)
+
+
+def sing(form, view: Matrix, start: float, tempo: float = 1.0,
+         voice_of=None, pan_shift: float = 0.0, pan_width: float = 1.0,
+         gain: float = 1.0, transpose: int = 0, who: int = -1,
+         distance: Optional[float] = None, ref: float = SHOW_DEPTH
          ) -> Tuple[List[Note], List[float], float]:
     """A shape heard: one note per stroke, in the order drawn. Height is
     pitch, left-right is pan (moving with the stroke), nearness is
-    loudness and brightness, and length is duration. Returns the notes,
-    when each stroke is done, and when the last note ends."""
+    loudness and brightness, length is duration, and colour is the
+    instrument. A shape far off is quieter, duller, a little late and
+    full of the room. Returns the notes, when each stroke is done, and
+    when the last note ends."""
+    if not isinstance(form, Form):
+        form = form_of(form)
+    room, late, far = 0.0, 0.0, 1.0
+    if distance is not None:
+        far = max(0.3, min(1.5, ref / max(0.3, distance)))
+        room = min(0.85, 0.25 * distance / ref)
+        late = distance / SPEED_OF_SOUND
     notes, done = [], []
     t = start
-    for k, (a, b) in enumerate(segs):
+    for k, ((a, b), tint) in enumerate(zip(form.segs, form.tints)):
         a, b = apply(view, a), apply(view, b)
         mid = _mul(_add(a, b), 0.5)
         d = _sub(b, a)
@@ -792,12 +1351,12 @@ def sing(segs: Sequence[Segment], view: Matrix, start: float,
 
         def pan(p: Vec) -> float:
             return max(-1.0, min(1.0, pan_shift + p[0] * pan_width))
-        notes.append(Note(t, dur, freq, pan(a), pan(b),
-                          gain * (0.35 + 0.65 * near(a)),
-                          gain * (0.35 + 0.65 * near(b)),
-                          0.25 + 0.75 * near(mid),
-                          voices[k % len(voices)], k + 1000 * (who + 3),
-                          who))
+        voice = tint if voice_of is None else voice_of(tint, k)
+        notes.append(Note(t + late, dur, freq, pan(a), pan(b),
+                          far * gain * (0.35 + 0.65 * near(a)),
+                          far * gain * (0.35 + 0.65 * near(b)),
+                          min(1.0, far) * (0.25 + 0.75 * near(mid)),
+                          voice, k + 1000 * (who + 30), who, room))
         t += dur
         done.append(t)
     return notes, done, t
@@ -823,6 +1382,10 @@ def _decoys(level: Grade, draw: random.Random, until: float,
 # --- sound ------------------------------------------------------------------
 
 ITD = 0.0006                 # the far ear hears a note this much later
+#: A room's first reflections: delay, gain, and where each comes from
+#: (as a share of the note's own side, negative for the other side).
+ROOM = ((0.043, 0.55, -0.7), (0.071, 0.45, 0.6), (0.113, 0.35, -0.3),
+        (0.167, 0.25, 0.8), (0.231, 0.18, -0.9))
 
 
 def synth(notes: Sequence[Note], t0: float, t1: float,
@@ -837,7 +1400,10 @@ def synth(notes: Sequence[Note], t0: float, t1: float,
     for n in notes:
         p = patches[n.voice]
         span = n.dur + p.release
-        reach = span + max((d for d, _g, _p in p.taps), default=0.0)
+        taps = list(p.taps)
+        if n.room:
+            taps += [(d, g * n.room, pm) for d, g, pm in ROOM]
+        reach = span + max((d for d, _g, _p in taps), default=0.0)
         if n.t >= t1 or n.t + reach <= t0:
             continue
         base = int(math.floor((t0 - n.t) * rate + 0.5 + 1e-9))
@@ -847,7 +1413,7 @@ def synth(notes: Sequence[Note], t0: float, t1: float,
         lag_l, lag_r = (lag, 0) if mid > 0 else (0, lag)
         # (lag left, lag right, gain, fixed pan or None to follow the note)
         sources = [(lag_l, lag_r, 1.0, None)]
-        for d, g, pm in p.taps:
+        for d, g, pm in taps:
             ds = int(round(d * rate))
             sources.append((ds + lag_r, ds + lag_l, g, mid * pm))
         top = max(max(a, b) for a, b, _g, _p in sources)
@@ -890,6 +1456,7 @@ def synth(notes: Sequence[Note], t0: float, t1: float,
 
 
 # --- a run ------------------------------------------------------------------
+# --- a run ------------------------------------------------------------------
 
 class Run:
     def __init__(self, puzzle: Puzzle) -> None:
@@ -912,6 +1479,13 @@ class Run:
                 return k + max(0.0, (self.t - prev) / (end - prev))
             prev = end
         return float(len(p.drawn_by))
+
+    def singing_thing(self) -> Optional[int]:
+        """The scene's thing singing now, while the scene is shown."""
+        for i, a, b in self.puzzle.parts:
+            if a <= self.t <= b + 0.3:
+                return i
+        return None
 
     def sounding(self) -> Optional[int]:
         """The card whose sound is playing now, if one is."""

@@ -1755,6 +1755,12 @@ def drshape_note(chosen: Dict[str, Any]) -> str:
         said.append(_('Some shapes are only heard.'))
     if 'sing' in kinds or 'echo' in kinds:
         said.append(_('Some cards are sounds.'))
+    if level.colours > 1:
+        said.append(_('Shapes in %d colours.') % level.colours)
+    if level.floor:
+        said.append(_('Near and far.'))
+    if 'scene' in kinds:
+        said.append(_('Scenes.'))
     if level.mirror:
         said.append(_('Mirror images among them.'))
     if level.overload:

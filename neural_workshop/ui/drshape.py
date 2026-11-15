@@ -37,7 +37,12 @@ NUMBER_KEYS = {getattr(key, '_%d' % (k + 1)): k for k in range(model.MOST)}
 NUMBER_KEYS.update({getattr(key, 'NUM_%d' % (k + 1)): k
                     for k in range(model.MOST)})
 LENS = 3.4               # camera distance, in shape radii
+FOG = (40, 28, 78)       # what far things fade toward
+LIGHT = (-0.42, 0.72, -0.55)   # toward the light, in a camera's frame
 BADGE = pyglet.graphics.Group(order=6)
+#: A place drawn on a card: its fills over the card, its lines over those.
+PLACE_FILL = pyglet.graphics.Group(order=2.3)
+PLACE_LINE = pyglet.graphics.Group(order=2.6)
 
 
 class _Voice(pyglet.media.Source):
@@ -103,7 +108,11 @@ class DrShape(ClockedTask):
             'hear': _('Listen: the shape is only heard'),
             'sing': _('Watch: the turtle draws in silence'),
             'echo': _('Listen to the tune'),
+            'scene': _('Watch and listen: where does each thing stand?'),
+            'hear_scene': _('Listen: where does each thing stand?'),
         }[puzzle.mode]
+        if puzzle.floor:
+            self.message = _('Watch and listen: how big is it, how far?')
         self._start_sound()
         return ok
 
@@ -222,65 +231,327 @@ class DrShape(ClockedTask):
 
     # --- drawing a shape -----------------------------------------------------
 
-    def _shape(self, segs, view, cx, cy, size, hue, upto=None,
-               wobble=0.0, seed=0, faded=False, group=None) -> Optional[
-                   Tuple[float, float]]:
-        """Draw *segs* turned by *view*; return the pen's screen point when
-        only *upto* strokes are drawn."""
+    # --- cameras ------------------------------------------------------------
+    #
+    # A camera maps a point of a form to (screen x, screen y, depth, near,
+    # point in the camera's frame). The frame is x right, y up, z ahead;
+    # depth sorts far to near; near (0..1) brightens and fattens strokes.
+
+    def _orbit_cam(self, view, cx, cy, size):
+        def cam(p):
+            x, y, z = model.apply(view, p)
+            f = LENS / (LENS - z)
+            return (cx + x * size * f, cy + y * size * f, -z,
+                    max(0.0, min(1.0, (z + 1) / 2)), (x, y, -z))
+        return cam
+
+    def _floor_cam(self, cx, hy, focal, view, size, side, depth, lift):
+        def cam(p):
+            x, y, z = model.apply(view, p)
+            x, y, z = x * size + side, y * size + lift, z * size + depth
+            z = max(0.3, z)
+            return (cx + focal * x / z, hy + focal * (y - model.FLOOR_EYE) / z,
+                    z, max(0.0, min(1.0, 1.0 - (z - 1.8) / 6.0)), (x, y, z))
+        return cam
+
+    def _scene_cam(self, cx, cy, focal, look, turn, x0, z0, lift):
+        def cam(p):
+            q = model.apply(turn, p)
+            w = (q[0] * model.OBJECT + x0, q[1] * model.OBJECT + lift,
+                 q[2] * model.OBJECT + z0)
+            c = model.seen_from(look, w)
+            z = max(0.5, c[2])
+            return (cx + focal * c[0] / z, cy + focal * c[1] / z, z,
+                    max(0.0, min(1.0, 1.0 - (z - model.ORBIT + 2.5) / 5.0)),
+                    c)
+        return cam
+
+    # --- drawing a form -------------------------------------------------------
+
+    def _form(self, form, cam, hues, scale, upto=None, wobble=0.0, seed=0,
+              faded=False, glow=False, shadow=None, group=None):
+        """Draw *form* through *cam*: shaded faces, lit tubes and
+        jointed corners, far parts fogged, far to near. *shadow* maps a
+        point to where its shadow falls on screen. Returns the pen's
+        screen point when only *upto* strokes are drawn."""
         d, batch = self.drawn, self.batch
         group = group or self.text_group
         jig = random.Random(seed)
-        proj = []
-        full = len(segs) if upto is None else min(len(segs), upto)
+        n = len(form.segs)
+        full = n if upto is None else min(n, upto)
         whole = int(math.floor(full))
+        items = []
         pen = None
 
         def at(p):
-            x, y, z = model.apply(view, p)
-            f = LENS / (LENS - z)
-            jx = jig.uniform(-1, 1) * wobble * size
-            jy = jig.uniform(-1, 1) * wobble * size
-            return cx + x * size * f + jx, cy + y * size * f + jy, z
+            sx, sy, depth, near, c = cam(p)
+            if wobble:
+                sx += jig.uniform(-1, 1) * wobble * scale
+                sy += jig.uniform(-1, 1) * wobble * scale
+            return sx, sy, depth, near, c
 
-        for k, (a, b) in enumerate(segs):
+        for k, ((a, b), tint) in enumerate(zip(form.segs, form.tints)):
             if k > whole or (k == whole and full - whole <= 0):
                 break
-            pa, pb = at(a), at(b)
             if k == whole:
                 share = full - whole
-                pb = (pa[0] + (pb[0] - pa[0]) * share,
-                      pa[1] + (pb[1] - pa[1]) * share,
-                      pa[2] + (pb[2] - pa[2]) * share)
-            proj.append((pa, pb))
+                b = tuple(a[i] + (b[i] - a[i]) * share for i in range(3))
+            pa, pb = at(a), at(b)
+            items.append(((pa[2] + pb[2]) / 2, 1, (pa, pb, tint)))
             pen = (pb[0], pb[1])
-        # Shadows on the floor.
-        floor = cy - size * 1.25
-        for pa, pb in proj:
-            d.append(pyglet.shapes.Line(
-                pa[0], floor + (pa[1] - cy) * 0.12, pb[0],
-                floor + (pb[1] - cy) * 0.12, thickness=max(2.0, size * 0.05),
-                color=(0, 0, 0, 70), batch=batch, group=self.card_group))
-        proj.sort(key=lambda s: s[0][2] + s[1][2])
-        for pa, pb in proj:
-            near = max(0.0, min(1.0, ((pa[2] + pb[2]) / 2 + 1) / 2))
-            colour = polish.mix(polish.darker(hue, 0.55),
-                                polish.lighter(hue, 0.35), near)
-            if faded:
-                colour = polish.mix(colour, (90, 90, 110), 0.6)
-            thick = max(2.0, size * (0.035 + 0.05 * near))
-            d.append(pyglet.shapes.Line(
-                pa[0], pa[1], pb[0], pb[1], thickness=thick * 2.2,
-                color=tuple(hue) + (45,), batch=batch, group=group))
-            d.append(pyglet.shapes.Line(pa[0], pa[1], pb[0], pb[1],
-                                        thickness=thick, color=colour,
-                                        batch=batch, group=group))
-            for q in (pa, pb):
-                d.append(pyglet.shapes.Circle(
-                    q[0], q[1], thick * 0.62, color=colour, batch=batch,
-                    group=group))
+            if shadow is not None:
+                sa, sb = shadow(a), shadow(b)
+                d.append(pyglet.shapes.Line(
+                    sa[0], sa[1], sb[0], sb[1],
+                    thickness=max(2.0, scale * 0.05),
+                    color=(0, 0, 0, 80), batch=batch, group=PLACE_LINE))
+        if full >= n:
+            for poly, tint in form.faces:
+                pts = [at(v) for v in poly]
+                depth = sum(p[2] for p in pts) / len(pts) + 0.05
+                items.append((depth, 0, (pts, tint)))
+        items.sort(key=lambda it: (-it[0], it[1]))
+        for _depth, kind, data in items:
+            if kind == 0:
+                self._face(data[0], self._hue(hues, data[1]), faded, group)
+            else:
+                self._tube(data[0], data[1], self._hue(hues, data[2]), scale,
+                           faded, glow, group)
         return pen
 
+    def _hue(self, hues, tint):
+        return HUES[hues[tint % len(hues)] % len(HUES)]
+
+    def _fogged(self, colour, near, faded):
+        c = polish.mix(FOG, colour, 0.35 + 0.65 * near)
+        if faded:
+            c = polish.mix(c, (90, 90, 110), 0.6)
+        return c
+
+    def _face(self, pts, hue, faded, group):
+        (ax, ay, _d, _n, a), (bx, by, _e, _m, b), (_x, _y, _f, _o, c) = \
+            pts[0], pts[1], pts[2]
+        u = (b[0] - a[0], b[1] - a[1], b[2] - a[2])
+        v = (c[0] - a[0], c[1] - a[1], c[2] - a[2])
+        nx, ny, nz = (u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2],
+                      u[0] * v[1] - u[1] * v[0])
+        length = math.sqrt(nx * nx + ny * ny + nz * nz) or 1.0
+        lam = abs(nx * LIGHT[0] + ny * LIGHT[1] + nz * LIGHT[2]) / length
+        near = sum(p[3] for p in pts) / len(pts)
+        colour = polish.mix(polish.darker(hue, 0.6), polish.lighter(hue, 0.2),
+                            lam)
+        colour = self._fogged(colour, near, faded)
+        try:
+            self.drawn.append(pyglet.shapes.Polygon(
+                *[(p[0], p[1]) for p in pts], color=colour + (150,),
+                batch=self.batch, group=group))
+        except Exception:
+            pass
+
+    def _tube(self, pa, pb, hue, scale, faded, glow, group):
+        d, batch = self.drawn, self.batch
+        near = (pa[3] + pb[3]) / 2
+        colour = self._fogged(polish.mix(polish.darker(hue, 0.45),
+                                         polish.lighter(hue, 0.25), near),
+                              near, faded)
+        thick = max(2.0, scale * (0.03 + 0.05 * near))
+        if glow:
+            d.append(pyglet.shapes.Line(
+                pa[0], pa[1], pb[0], pb[1], thickness=thick * 3.2,
+                color=tuple(hue) + (60,), batch=batch, group=group))
+        d.append(pyglet.shapes.Line(
+            pa[0], pa[1], pb[0], pb[1], thickness=thick * 1.6,
+            color=polish.darker(colour, 0.55) + (230,), batch=batch,
+            group=group))
+        d.append(pyglet.shapes.Line(pa[0], pa[1], pb[0], pb[1],
+                                    thickness=thick, color=colour,
+                                    batch=batch, group=group))
+        fine = thick >= 3.5
+        if fine:
+            off = thick * 0.22
+            d.append(pyglet.shapes.Line(
+                pa[0] - off, pa[1] + off, pb[0] - off, pb[1] + off,
+                thickness=max(1.0, thick * 0.3),
+                color=polish.lighter(colour, 0.55) + (200,), batch=batch,
+                group=group))
+        for q in (pa, pb):
+            d.append(pyglet.shapes.Circle(q[0], q[1], thick * 0.8,
+                                          color=colour, batch=batch,
+                                          group=group,
+                                          segments=12 if fine else 6))
+            if fine:
+                d.append(pyglet.shapes.Circle(
+                    q[0] - thick * 0.25, q[1] + thick * 0.25, thick * 0.25,
+                    color=polish.lighter(colour, 0.6), batch=batch,
+                    group=group, segments=6))
+
+    # --- places: a turntable, a floor, a platform -------------------------------
+
+    def _turntable(self, form, view, cx, cy, size, hues, upto=None,
+                   wobble=0.0, seed=0, faded=False, group=None):
+        cam = self._orbit_cam(view, cx, cy, size)
+        floor = cy - size * 1.25
+
+        def shadow(p):
+            sx, sy, _d, _n, _c = cam(p)
+            return sx, floor + (sy - cy) * 0.12
+        return self._form(form, cam, hues, size, upto, wobble, seed, faded,
+                          shadow=shadow, group=group)
+
+    def _floor_box(self, x, y, w, h):
+        """Horizon height and focal length for a floor view in a box."""
+        return y + h * 0.62, min(w, h) * 0.9
+
+    def _floor(self, x, y, w, h):
+        """A floor running off to the horizon, ruled so distance shows."""
+        d, batch = self.drawn, self.batch
+        hy, focal = self._floor_box(x, y, w, h)
+        cx = x + w / 2
+        polish.gradient(d, batch, x + 2, hy, w - 4, y + h - hy - 2,
+                        (60, 40, 100), (24, 16, 50), bands=6,
+                        group=PLACE_FILL)
+        d.append(pyglet.shapes.Rectangle(x + 2, y + 2, w - 4, hy - y - 2,
+                                         color=(30, 24, 58), batch=batch,
+                                         group=PLACE_FILL))
+        eye = model.FLOOR_EYE
+        for z in (1.5, 2.0, 2.7, 3.6, 5.0, 7.0, 10.0):
+            sy = hy - focal * eye / z
+            if sy < y + 2:
+                continue
+            fade = int(170 - 12 * z)
+            d.append(pyglet.shapes.Line(x + 2, sy, x + w - 2, sy,
+                                        thickness=1,
+                                        color=(90, 200, 255, max(40, fade)),
+                                        batch=batch, group=PLACE_LINE))
+        for k in range(-6, 7):
+            xs = k * 0.9
+            z1, z2 = 1.2, 14.0
+            a = (cx + focal * xs / z1, hy - focal * eye / z1)
+            b = (cx + focal * xs / z2, hy - focal * eye / z2)
+            if a[1] < y + 2:
+                share = (y + 2 - b[1]) / (a[1] - b[1])
+                a = (b[0] + (a[0] - b[0]) * share, y + 2)
+            if not (x - 50 < b[0] < x + w + 50):
+                continue
+            a = (max(x + 2, min(x + w - 2, a[0])), a[1])
+            d.append(pyglet.shapes.Line(a[0], a[1], b[0], b[1], thickness=1,
+                                        color=(200, 90, 255, 90), batch=batch,
+                                        group=PLACE_LINE))
+        d.append(pyglet.shapes.Line(x + 2, hy, x + w - 2, hy, thickness=2,
+                                    color=(255, 150, 220, 160), batch=batch,
+                                    group=PLACE_LINE))
+
+    def _on_floor(self, form, view, size, side, depth, x, y, w, h, hues,
+                  upto=None, wobble=0.0, seed=0, faded=False):
+        hy, focal = self._floor_box(x, y, w, h)
+        cx = x + w / 2
+        g, lift = model.rest(form, view, 1.0)
+        lift *= size
+        cam = self._floor_cam(cx, hy, focal, view, size, side, depth, lift)
+
+        def shadow(p):
+            q = model.apply(view, p)
+            gx, gz = q[0] * size + side, q[2] * size + depth
+            gz = max(0.3, gz) + 0.15
+            return (cx + focal * (gx + 0.12) / gz,
+                    hy - focal * model.FLOOR_EYE / gz)
+        return self._form(form, cam, hues, focal / depth * size * 0.9, upto,
+                          wobble, seed, faded, shadow=shadow)
+
+    def _platform(self, look, cx, cy, focal, t, glow_beacon=True):
+        """The round platform, its rings and the beacon by its edge."""
+        d, batch = self.drawn, self.batch
+
+        def scr(w):
+            c = model.seen_from(look, w)
+            z = max(0.5, c[2])
+            return cx + focal * c[0] / z, cy + focal * c[1] / z
+        angles = [2 * math.pi * k / 28 for k in range(28)]
+        rim = [scr((model.PLATFORM * math.cos(a), 0.0,
+                    model.PLATFORM * math.sin(a))) for a in angles]
+        under = [scr((model.PLATFORM * math.cos(a), -0.35,
+                      model.PLATFORM * math.sin(a))) for a in angles]
+        try:
+            d.append(pyglet.shapes.Polygon(*under, color=(40, 24, 70),
+                                           batch=batch, group=PLACE_FILL))
+            d.append(pyglet.shapes.Polygon(*rim, color=(70, 50, 120),
+                                           batch=batch, group=PLACE_LINE))
+        except Exception:
+            pass
+        for share, colour in ((1.0, (120, 220, 255, 200)),
+                              (0.55, (200, 120, 255, 110))):
+            ring = [scr((model.PLATFORM * share * math.cos(a), 0.0,
+                         model.PLATFORM * share * math.sin(a)))
+                    for a in angles + [0.0]]
+            for p, q in zip(ring, ring[1:]):
+                d.append(pyglet.shapes.Line(p[0], p[1], q[0], q[1],
+                                            thickness=2 if share == 1 else 1,
+                                            color=colour, batch=batch,
+                                            group=PLACE_LINE))
+        # The beacon: a striped mast with a lamp, always at the same spot.
+        bx = model.PLATFORM - 0.1
+        base, top = scr((bx, 0.0, 0.0)), scr((bx, 1.9, 0.0))
+        depth = model.seen_from(look, (bx, 0.9, 0.0))[2]
+        thick = max(3.0, focal * 0.12 / depth)
+        for k in range(6):
+            a = (base[0] + (top[0] - base[0]) * k / 6,
+                 base[1] + (top[1] - base[1]) * k / 6)
+            b = (base[0] + (top[0] - base[0]) * (k + 1) / 6,
+                 base[1] + (top[1] - base[1]) * (k + 1) / 6)
+            d.append(pyglet.shapes.Line(
+                a[0], a[1], b[0], b[1], thickness=thick,
+                color=(250, 250, 250) if k % 2 else (240, 70, 70),
+                batch=batch, group=PLACE_LINE))
+        if glow_beacon:
+            polish.glow(d, batch, top[0], top[1], thick * 3,
+                        (255, 240, 150), strength=120, group=PLACE_LINE)
+        d.append(pyglet.shapes.Circle(top[0], top[1], thick * 0.9,
+                                      color=(255, 245, 180), batch=batch,
+                                      group=self.text_group))
+        return depth
+
+    def _scene(self, p, layout, look, x, y, w, h, t, show=None, faded=False,
+               wobble=0.0, seed=0):
+        """A platform with things standing on it, seen from *look*.
+        *show*, when given, is the set of things to draw (the rest have
+        not sung yet)."""
+        cx, cy = x + w / 2, y + h * 0.42
+        focal = min(w, h) * 1.25
+        self._platform(look, cx, cy, focal, t)
+        order = []
+        for i, x0, z0 in layout:
+            th = p.things[i]
+            if show is not None and th.tint not in show:
+                continue
+            _g, lift = model.rest(th.form, th.turn, model.OBJECT)
+            c = model.seen_from(look, (x0, lift, z0))
+            order.append((c[2], th, x0, z0, lift))
+        order.sort(key=lambda o: -o[0])
+        singing = self.run.singing_thing() if show is not None else None
+        for depth, th, x0, z0, lift in order:
+            cam = self._scene_cam(cx, cy, focal, look, th.turn, x0, z0, lift)
+
+            def shadow(q, th=th, x0=x0, z0=z0):
+                r = model.apply(th.turn, q)
+                g = model.seen_from(look, (r[0] * model.OBJECT + x0, 0.0,
+                                           r[2] * model.OBJECT + z0))
+                z = max(0.5, g[2])
+                return cx + focal * g[0] / z, cy + focal * g[1] / z
+            scale = focal * model.OBJECT / depth
+            if singing is not None and th.tint == singing:
+                sx, sy, _d, _n, _c = cam((0.0, 0.0, 0.0))
+                polish.glow(self.drawn, self.batch, sx, sy, scale * 2.2,
+                            self._hue(p.hues, th.tint), strength=110,
+                            group=PLACE_LINE)
+            self._form(th.form, cam, p.hues, scale, wobble=wobble,
+                       seed=seed, faded=faded, shadow=shadow)
+
     # --- the frame -----------------------------------------------------------
+
+    def _sway(self, view, t, k=0):
+        return model.matmul(model.axis_turn((0, 1, 0),
+                                            0.12 * math.sin(t * 0.9 + k)),
+                            view)
 
     def _draw(self, left, bottom, width, height) -> None:
         run = self.run
@@ -292,32 +563,27 @@ class DrShape(ClockedTask):
         d, batch = self.drawn, self.batch
         t = run.t
         o = level.overload
-        hue = HUES[p.candidates[p.answer].colour % len(HUES)]
         if o:
             self._storm(left, bottom, width, height, t, o)
         self._time_bar(left, bottom, width, height, run)
-        self._ears(left, bottom, width, height, t, p.mode != 'see')
+        self._ears(left, bottom, width, height, t,
+                   p.mode not in ('see', 'scene'))
         if not run.choosing:
-            cx, cy = left + width / 2, bottom + height * 0.5
-            size = min(width, height) * 0.3
-            if p.heard:
-                self._speaker(cx, cy, size, t)
-            else:
-                sway = model.matmul(model.axis_turn((0, 1, 0),
-                                                    0.12 * math.sin(t * 0.9)),
-                                    p.view)
-                pen = self._shape(p.shape, sway, cx, cy, size, hue,
-                                  upto=run.strokes(), wobble=0.01 * o,
-                                  seed=int(t * 20))
-                if pen is not None and run.strokes() < len(p.shape):
-                    self._turtle(pen, size, t, hue, p.mode != 'sing')
+            self._show(p, run, left, bottom, width, height, t, o)
             return
         if not self.message.startswith(_('Which')):
             n = len(p.candidates)
-            self.message = {
-                'sing': _('Which sound is the shape?  1-%d'),
-                'echo': _('Which is the same tune?  1-%d'),
-            }.get(p.mode, _('Which is the same shape?  1-%d')) % n
+            if p.scene:
+                ask = _('Which is the same place, seen from elsewhere?  1-%d')
+                if p.mode == 'hear_scene':
+                    ask = _('Which place did you hear?  1-%d')
+            elif p.floor:
+                ask = _('Which is the same shape, the same size?  1-%d')
+            else:
+                ask = {'sing': _('Which sound is the shape?  1-%d'),
+                       'echo': _('Which is the same tune?  1-%d'),
+                       }.get(p.mode, _('Which is the same shape?  1-%d'))
+            self.message = ask % n
         if self._panel():
             kx = left + width * 0.03
             kw = width * 0.22
@@ -326,17 +592,12 @@ class DrShape(ClockedTask):
                         edge=(120, 90, 200), shade=(0, 0, 0, 80),
                         group=self.card_group)
             self._text(_('the shape'), kx + kw / 2, ky + kh - 18, 14,
-                       bold=True,
-                       colour=(220, 210, 255, 230))
-            sway = model.matmul(model.axis_turn((0, 1, 0),
-                                                0.12 * math.sin(t * 0.9)),
-                                p.view)
-            self._shape(p.shape, sway, kx + kw / 2, ky + kh * 0.48,
-                        min(kw, kh) * 0.34, hue)
-        cells = self._cells()
+                       bold=True, colour=(220, 210, 255, 230))
+            self._turntable(p.form, self._sway(p.view, t), kx + kw / 2,
+                            ky + kh * 0.48, min(kw, kh) * 0.34, p.hues)
         judged = run.result is not None
         singing = run.sounding()
-        for k, (x, y, w, h) in enumerate(cells):
+        for k, (x, y, w, h) in enumerate(self._cells()):
             c = p.candidates[k]
             shake = random.Random(int(t * 15) * 31 + k)
             if o:
@@ -354,22 +615,35 @@ class DrShape(ClockedTask):
                 edge = (255, 80, 80)
             polish.card(d, batch, x, y, w, h, (32, 24, 62), radius=12,
                         edge=edge, shade=(0, 0, 0, 80), group=self.card_group)
-            view = c.view
-            if level.tumble:
-                view = model.matmul(model.axis_turn(c.spin, t * 0.7), c.view)
-            else:
-                view = model.matmul(model.axis_turn(
-                    (0, 1, 0), 0.12 * math.sin(t * 0.9 + k)), c.view)
-            ch = HUES[c.colour % len(HUES)]
+            faded = judged and k != p.answer
+            hues = p.hues
             if o and shake.random() < 0.15 * o:
-                ch = HUES[shake.randrange(len(HUES))]
+                hues = tuple(shake.randrange(12) for _h in p.hues)
+            wob = 0.012 * o
             if p.sound_cards and not judged:
                 self._sound_card(k, x, y, w, h, t, singing == k)
+            elif p.scene:
+                self._scene(p, c.layout, c.look, x, y, w, h, t,
+                            faded=faded, wobble=wob, seed=int(t * 20) + k)
+            elif p.floor:
+                self._floor(x, y, w, h)
+                view = c.view
+                if level.tumble:
+                    view = model.matmul(model.axis_turn(c.spin, t * 0.6),
+                                        c.view)
+                self._on_floor(c.form, view, c.size, c.side, c.depth,
+                               x, y, w, h, hues, wobble=wob,
+                               seed=int(t * 20) + k, faded=faded)
             else:
-                    self._shape(c.segs, view, x + w / 2, y + h * 0.52,
-                            min(w, h) * 0.4, ch, wobble=0.012 * o,
-                            seed=int(t * 20) + k,
-                            faded=judged and k != p.answer)
+                view = c.view
+                if level.tumble and any(c.spin):
+                    view = model.matmul(model.axis_turn(c.spin, t * 0.7),
+                                        c.view)
+                elif not p.sound_cards:
+                    view = self._sway(c.view, t, k)
+                self._turntable(c.form, view, x + w / 2, y + h * 0.52,
+                                min(w, h) * 0.4, hues, wobble=wob,
+                                seed=int(t * 20) + k, faded=faded)
             badge = min(w, h) * 0.09
             polish.disc(d, batch, x + badge * 1.4, y + h - badge * 1.4,
                         badge, (250, 220, 90), group=self.top_group)
@@ -379,6 +653,42 @@ class DrShape(ClockedTask):
             if run.result is None:
                 self.hits.append((x, y, w, h,
                                   lambda k=k: self.steer(k)))
+
+    def _show(self, p, run, left, bottom, width, height, t, o) -> None:
+        """The trial before the cards: the turtle drawing, a place, or
+        only a sound."""
+        cx, cy = left + width / 2, bottom + height * 0.5
+        size = min(width, height) * 0.3
+        if p.heard:
+            self._speaker(cx, cy, size, t)
+            return
+        if p.scene:
+            w, h = min(width * 0.7, height * 1.6), height * 0.9
+            sung = {i for i, a, _b in p.parts if a <= t}
+            self._scene(p, p.layout, p.look, cx - w / 2, bottom, w, h, t,
+                        show=sung, wobble=0.01 * o, seed=int(t * 20))
+            return
+        hue = self._hue(p.hues, p.form.tints[min(len(p.form.tints) - 1,
+                                                 int(run.strokes()))])
+        if p.floor:
+            w, h = min(width * 0.75, height * 1.7), height * 0.92
+            x, y = cx - w / 2, bottom + height * 0.02
+            polish.card(self.drawn, self.batch, x, y, w, h, (32, 24, 62),
+                        radius=14, edge=(120, 90, 200), shade=None,
+                        group=self.card_group)
+            self._floor(x, y, w, h)
+            pen = self._on_floor(p.form, self._sway(p.view, t), 1.0, 0.0,
+                                 model.SHOW_DEPTH, x, y, w, h, p.hues,
+                                 upto=run.strokes(), wobble=0.01 * o,
+                                 seed=int(t * 20))
+            scale = min(w, h) * 0.9 / model.SHOW_DEPTH
+        else:
+            pen = self._turntable(p.form, self._sway(p.view, t), cx, cy,
+                                  size, p.hues, upto=run.strokes(),
+                                  wobble=0.01 * o, seed=int(t * 20))
+            scale = size
+        if pen is not None and run.strokes() < len(p.shape):
+            self._turtle(pen, scale, t, hue, p.mode != 'sing')
 
     def _turtle(self, pen, size, t, hue, sounding=True) -> None:
         d, batch = self.drawn, self.batch
@@ -404,7 +714,7 @@ class DrShape(ClockedTask):
         never where or how high."""
         d, batch = self.drawn, self.batch
         loud = sum(n.gain for n in self.run.puzzle.notes
-                   if n.t <= t <= n.t + n.dur and n.who == -1)
+                   if n.t <= t <= n.t + n.dur and (n.who == -1 or n.who <= -10))
         polish.glow(d, batch, cx, cy, size * (0.5 + 0.3 * min(1, loud)),
                     (120, 200, 255), strength=90, group=self.body_group)
         polish.disc(d, batch, cx, cy, size * 0.25, (60, 70, 140),
@@ -533,6 +843,10 @@ class DrShape(ClockedTask):
         p = self.run.puzzle
         what = _('choosing') if self.run.choosing else (
             _('listening') if p.heard else _('watching'))
+        if p.scene:
+            return _('rung %d  %d/%d   %d places   %s') % (
+                self.rung, self.trial, self.total_trials, len(p.candidates),
+                what)
         return _('rung %d  %d/%d   %d candidates   %s') % (
             self.rung, self.trial, self.total_trials, len(p.candidates),
             what)

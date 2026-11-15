@@ -1631,45 +1631,52 @@ stroke it draws is also a note: the stroke's **height is its pitch**,
 its **left–right place is where it sits between the ears** -- and the
 note slides from one ear toward the other as the stroke does (level and
 a fraction-of-a-millisecond delay, so it sounds placed, not panned) --
-its **nearness is how loud and bright** it rings, and its length is how
-long it lasts. Every shape has a sound, and the sound is the shape heard.
-Pick the matching card with 1–6 or a click. A trial is one of four
-kinds:
+its **nearness is how loud and bright** it rings, its length is how long
+it lasts, and **its colour is its instrument**. A thing far off sounds
+quieter, duller, a few milliseconds late and full of the room's echoes.
+Every shape has a sound, and the sound is the shape heard. Pick the
+matching card with 1–6 or a click.
+
+What has to be understood grows rung by rung: a shape however it is
+turned; a shape and its mirror; which colour goes where; how big a thing
+really is when it might be near or far; and where several things stand
+in a place seen from somewhere else -- or only heard.
 
 | Kind | You get | The cards are | Pick |
 | --- | --- | --- | --- |
 | **See** | the turtle drawing, with its song | shapes | the same shape |
 | **Hear** | only the song | shapes | the shape that sounds like that |
 | **Sing** | the turtle drawing in silence | sounds, played in turn, twice | the sound that is the shape |
-| **Echo** | only the song | sounds, on another instrument and in another key | the same tune |
+| **Echo** | only the song | sounds, each colour on another instrument, in another key | the same tune |
+| **Scene** | three things on a platform by a striped beacon, each singing from where it stands | the platform seen from elsewhere | the one where everything stands where it stood |
+| **Hear scene** | only the three songs, placed by ear | platforms | the one you heard |
 
+Shapes are paths, spirals, coils and branches, curves (torus knots,
+Lissajous loops, helices) and solids (twisted and tapered prisms, leaning
+pyramids, stretched tetrahedra, cubes and octahedra), drawn as lit tubes
+with shaded see-through faces, fogging with distance, casting shadows.
 After a pick, sound cards turn into the shapes they were.
-
-Each trial deals its own instruments, synthesised as they play, from a
-bank of eighteen kinds -- sine, flute, organ, glass, clarinet, pluck,
-bell, wood, pad, brass, metal, chirp, growl, square, sub, alien, zap and
-hiss -- each with its own small differences; higher up they are bent
-with vibrato, tremolo, drive, wave folding, ring modulation, glides and
-echoes.
 
 | Rung | What it adds |
 | --- | --- |
 | 1–2 | Flat polygons and stars; the shape stays in view; three cards; see only |
 | 3–4 | From memory; spirals; cards turned in the plane; echoes in the same instrument and key |
-| 5–7 | Paths through space, turned every which way; sing trials; more instruments |
-| 8–10 | Mirror images, look-alikes with one stroke bent; echoes change key |
-| 11–13 | Knots and coils, five cards, colours that mean nothing; echoes change instrument; bent instruments |
+| 5–7 | Paths and curves through space, turned every which way; sing trials; more instruments |
+| 8–10 | Mirror images, look-alikes with one part changed, prisms; **two colours**, and look-alikes with the colours moved; echoes change key |
+| 11–13 | Solids, pyramids, knots and coils; **three colours**; five cards; echoes change instruments; bent instruments |
 | 14–16 | Hear, sing and echo trials only: every trial turns on the ear |
-| 17–19 | All four kinds; picture cards tumble and each sings its own shape |
-| 20+ | Sensory overload: branching shapes, six cards, sparks, flicker, shaking cards, hiss and decoy chirps in both ears, instruments that change under the strokes, a faster turtle -- worse every rung |
+| 17–19 | **Near and far**: picture cards are floors running to the horizon, each shape standing somewhere on one; some look-alikes are the same shape bigger or smaller, set nearer or farther so they look the same size -- only where they meet the floor, their shadow and the fog tell; cards turn and sing |
+| 20–22 | **Scenes**: three things on a platform, the cards seen from another side; look-alikes swap two things, move one, mirror the place or put a different thing in |
+| 23+ | Everything; scenes only heard; each scene card seen from its own side; sensory overload -- branching shapes, six cards, sparks, flicker, shaking cards, hiss and decoy chirps in both ears, instruments that change under the strokes, a faster turtle -- worse every rung |
 
-A mirror image is never the answer, and no rotation turns one into the
-other, so mirrors are only dealt for shapes that are truly handed; by ear
-a mirror is the same tune with left and right swapped. Wherever the ear
-has to decide, no two cards sing the same tune. The agent gets the
-stereo samples made since the last frame with every frame -- 22.05 kHz,
-two channels -- and six ports, one per card. Clocked: the turtle draws
-and the choosing time runs out whatever the agent does.
+No look-alike is ever the same thing in disguise: a mirror is only dealt
+for a shape that is truly handed, a recolouring only when no turn of the
+shape would undo it, a scene only when no thing stands where it stood.
+Wherever the ear has to decide, no two cards sing the same tune. The
+agent gets the stereo samples made since the last frame with every
+frame -- 22.05 kHz, two channels -- and six ports, one per card.
+Clocked: the turtle draws and the choosing time runs out whatever the
+agent does.
 
 #### Winning Move
 

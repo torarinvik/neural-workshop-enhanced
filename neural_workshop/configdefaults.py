@@ -752,10 +752,10 @@ GAMBLE_TRIALS = 5
 GAMBLE_ADAPTIVE = True
 
 # Dr Shape: a 3D turtle draws and sings a shape; pick it out from
-# look-alikes, or pick its sound. Echoes from rung 3, space paths and
-# sound cards from 5, mirror images from 8, knots and new instruments
-# from 11, heard-only shapes from 14, tumbling chorus from 17, sensory
-# overload from 20.
+# look-alikes, or pick its sound. Echoes from rung 3, space curves and
+# sound cards from 5, mirrors and colours from 8, solids from 11,
+# heard-only from 14, near and far from 17, scenes from 20, everything
+# with sensory overload from 23.
 DRSHAPE_RUNG = 1
 DRSHAPE_TRIALS = 5
 DRSHAPE_ADAPTIVE = True

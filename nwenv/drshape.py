@@ -3,8 +3,9 @@
 
 Six ports: 0-5 pick card 1-6 (only as many as are shown; a pick
 before the turtle finishes does nothing). Green means the pick was the
-shape the turtle drew -- or, when the cards are sounds, the sound that
-shape makes. Each frame also carries the stereo sound made since the
+shape the turtle drew, at its size -- or, when the cards are sounds, the
+sound that shape makes; or, for a scene, the place with every thing
+where it stood. Each frame also carries the stereo sound made since the
 last one: every stroke is a note, its height the pitch, its left-right
 place the pan (sliding as the stroke does), its nearness the loudness.
 
