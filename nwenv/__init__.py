@@ -110,6 +110,14 @@ from .sonar import SonarEnv  # noqa: E402
 from .hiddenrule import HiddenRuleEnv  # noqa: E402
 from .dispatch import DispatchEnv  # noqa: E402
 from .gamble import GambleEnv  # noqa: E402
+from .whytheyfeel import WhyTheyFeelEnv  # noqa: E402
+from .readingpeople import ReadingPeopleEnv  # noqa: E402
+from .howstrongly import HowStronglyEnv  # noqa: E402
+from .whichfeeling import WhichFeelingEnv  # noqa: E402
+from .emotion import EmotionEnv  # noqa: E402
+from .morninground import MorningRoundEnv  # noqa: E402
+from .missingword import MissingWordEnv  # noqa: E402
+from .fullstop import FullStopEnv  # noqa: E402
 from .proofreader import ProofreaderEnv  # noqa: E402
 from .cipherabyss import CipherAbyssEnv  # noqa: E402
 from .crazycog import CrazyCogEnv  # noqa: E402
@@ -249,7 +257,7 @@ __all__ = [
     'CrossedWiresEnv', 'CrosswordEnv', 'CustodyEnv', 'DonkeyEnv',
     'GraphMappingEnv',
     'GoEnv', 'make_go_env', 'verify_go_outcome',
-    'HanoiEnv', 'InTheDarkEnv', 'JigsawEnv', 'VideoSequenceEnv', 'VideoJigsawEnv', 'CameraEnv', 'SonarEnv', 'BluffEnv', 'FormsEnv', 'WiringEnv', 'GambleEnv', 'ProofreaderEnv', 'CipherAbyssEnv', 'CrazyCogEnv', 'NightWatchEnv', 'ShadowPuppetsEnv', 'SemaphoreEnv', 'AirHockeyEnv', 'LockPickEnv', 'BartenderEnv', 'SignPainterEnv', 'TightropeEnv', 'ConductorEnv', 'PottersWheelEnv', 'GunslingerEnv', 'LoadingDockEnv', 'StagehandEnv', 'SafecrackerEnv', 'FieldManualEnv', 'DroneHoopsEnv', 'CaptchaEnv', 'EchoCaveEnv', 'CatchEnv', 'ShadowPlayEnv', 'TunerEnv', 'GliderEnv', 'HoldItEnv', 'TimeItEnv', 'KeepTheBeatEnv', 'CrossingsEnv', 'TouchingEnv', 'InsideOrOutEnv', 'DrShapeEnv', 'DamKeeperEnv', 'CrossroadsEnv', 'BalanceEnv', 'JugglerEnv', 'FerryEnv', 'CraneEnv', 'KitchenEnv', 'SokobanLiveEnv', 'EscortEnv', 'FirebreakEnv', 'AirTrafficEnv', 'RailYardEnv', 'SpreadsheetEnv', 'LanderEnv', 'ExploreOrExploitEnv', 'DelayEnv', 'StopAndSwitchEnv', 'WhereWasItEnv', 'WhoKnowsWhatEnv', 'PointOfViewEnv', 'FoldItEnv', 'ShapeFromMotionEnv', 'WhichIsNearerEnv', 'SameOrMirrorEnv', 'ErrandsEnv', 'SignalsEnv', 'WillItFallEnv', 'BrowserEnv', 'NotebookEnv', 'ManualEnv', 'WhatNextEnv', 'TriageEnv', 'HiddenRuleEnv', 'DispatchEnv', 'DesktopEnv', 'LookoutEnv',
+    'HanoiEnv', 'InTheDarkEnv', 'JigsawEnv', 'VideoSequenceEnv', 'VideoJigsawEnv', 'CameraEnv', 'SonarEnv', 'BluffEnv', 'FormsEnv', 'WiringEnv', 'GambleEnv', 'WhyTheyFeelEnv', 'ReadingPeopleEnv', 'HowStronglyEnv', 'WhichFeelingEnv', 'EmotionEnv', 'MorningRoundEnv', 'MissingWordEnv', 'FullStopEnv', 'ProofreaderEnv', 'CipherAbyssEnv', 'CrazyCogEnv', 'NightWatchEnv', 'ShadowPuppetsEnv', 'SemaphoreEnv', 'AirHockeyEnv', 'LockPickEnv', 'BartenderEnv', 'SignPainterEnv', 'TightropeEnv', 'ConductorEnv', 'PottersWheelEnv', 'GunslingerEnv', 'LoadingDockEnv', 'StagehandEnv', 'SafecrackerEnv', 'FieldManualEnv', 'DroneHoopsEnv', 'CaptchaEnv', 'EchoCaveEnv', 'CatchEnv', 'ShadowPlayEnv', 'TunerEnv', 'GliderEnv', 'HoldItEnv', 'TimeItEnv', 'KeepTheBeatEnv', 'CrossingsEnv', 'TouchingEnv', 'InsideOrOutEnv', 'DrShapeEnv', 'DamKeeperEnv', 'CrossroadsEnv', 'BalanceEnv', 'JugglerEnv', 'FerryEnv', 'CraneEnv', 'KitchenEnv', 'SokobanLiveEnv', 'EscortEnv', 'FirebreakEnv', 'AirTrafficEnv', 'RailYardEnv', 'SpreadsheetEnv', 'LanderEnv', 'ExploreOrExploitEnv', 'DelayEnv', 'StopAndSwitchEnv', 'WhereWasItEnv', 'WhoKnowsWhatEnv', 'PointOfViewEnv', 'FoldItEnv', 'ShapeFromMotionEnv', 'WhichIsNearerEnv', 'SameOrMirrorEnv', 'ErrandsEnv', 'SignalsEnv', 'WillItFallEnv', 'BrowserEnv', 'NotebookEnv', 'ManualEnv', 'WhatNextEnv', 'TriageEnv', 'HiddenRuleEnv', 'DispatchEnv', 'DesktopEnv', 'LookoutEnv',
     'MatrixReasoningEnv', 'MazeEnv', 'MovingTargetsEnv', 'MrTimeEnv',
     'NCupMonteEnv',
     'PursuitEnv', 'RecognitionEnv', 'ReflexEnv', 'RemovalsEnv',

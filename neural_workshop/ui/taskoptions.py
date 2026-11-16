@@ -2565,6 +2565,174 @@ PROOF = TaskSpec(
     note=proofreader_note)
 
 
+def fullstop_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import fullstop
+    level = fullstop.grade(int(chosen['STOP_RUNG']))
+    said = [_('Rung %d: %d sentences run together.') % (level.rung, level.sentences)]
+    return '  '.join(said)
+
+
+STOP = TaskSpec(
+    title=_('Full Stop options'),
+    options=(
+        Option('STOP_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('STOP_TRIALS', _('Runs per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('STOP_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=fullstop_note)
+
+
+def missingword_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import missingword
+    level = missingword.grade(int(chosen['GAPW_RUNG']))
+    said = [_('Rung %d: %d sentence(s), %d mistake(s) to mend.') % (level.rung, level.sentences, level.errors)]
+    return '  '.join(said)
+
+
+GAPW = TaskSpec(
+    title=_('The Missing Word options'),
+    options=(
+        Option('GAPW_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('GAPW_TRIALS', _('Passages per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('GAPW_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=missingword_note)
+
+
+def morninground_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import morninground
+    level = morninground.grade(int(chosen['ROUND_RUNG']))
+    said = [_('Rung %d: %d rule(s), %d block(s), %d mistake(s) allowed.') % (level.rung, level.deck, level.blocks, level.slack)]
+    return '  '.join(said)
+
+
+ROUND = TaskSpec(
+    title=_('Morning Round options'),
+    options=(
+        Option('ROUND_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('ROUND_TRIALS', _('Rounds per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('ROUND_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=morninground_note)
+
+
+def emotion_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import emotion
+    level = emotion.grade(int(chosen['EMO_RUNG']))
+    said = [_('Rung %d: %d emotions to tell apart.') % (level.rung, len(level.options))]
+    return '  '.join(said)
+
+
+EMO = TaskSpec(
+    title=_('Emotion options'),
+    options=(
+        Option('EMO_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('EMO_TRIALS', _('Rounds per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('EMO_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=emotion_note)
+
+
+def whichfeeling_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import whichfeeling
+    level = whichfeeling.grade(int(chosen['FEEL_RUNG']))
+    said = [_('Rung %d: %d answers to choose from.') % (level.rung, level.options)]
+    return '  '.join(said)
+
+
+FEEL = TaskSpec(
+    title=_('Which Feeling options'),
+    options=(
+        Option('FEEL_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('FEEL_TRIALS', _('Rounds per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('FEEL_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=whichfeeling_note)
+
+
+def howstrongly_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import howstrongly
+    level = howstrongly.grade(int(chosen['STRONG_RUNG']))
+    said = [_('Rung %d: within %d points of the reference.') % (level.rung, level.tolerance)] if not level.strongest else [_('Rung %d: which emotion is strongest.') % level.rung]
+    return '  '.join(said)
+
+
+STRONG = TaskSpec(
+    title=_('How Strongly options'),
+    options=(
+        Option('STRONG_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('STRONG_TRIALS', _('Rounds per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('STRONG_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=howstrongly_note)
+
+
+def readingpeople_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import readingpeople
+    level = readingpeople.grade(int(chosen['READ_RUNG']))
+    said = [_('Rung %d: %s.') % (level.rung, ', '.join(level.kinds))]
+    return '  '.join(said)
+
+
+READ = TaskSpec(
+    title=_('Reading People options'),
+    options=(
+        Option('READ_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('READ_TRIALS', _('Rounds per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('READ_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=readingpeople_note)
+
+
+def whytheyfeel_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import whytheyfeel
+    level = whytheyfeel.grade(int(chosen['WHY_RUNG']))
+    said = [_('Rung %d: %d answers to choose from.') % (level.rung, level.options)]
+    return '  '.join(said)
+
+
+WHY = TaskSpec(
+    title=_('Why They Feel options'),
+    options=(
+        Option('WHY_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('WHY_TRIALS', _('Rounds per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('WHY_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=whytheyfeel_note)
+
+
 def wiring_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung wires up."""
     from .. import wiring
@@ -4364,6 +4532,14 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'forms': FORMS,
     'wiring': WIRING,
     'gamble': GAMBLE,
+    'why_they_feel': WHY,
+    'reading_people': READ,
+    'how_strongly': STRONG,
+    'which_feeling': FEEL,
+    'emotion': EMO,
+    'morning_round': ROUND,
+    'missing_word': GAPW,
+    'full_stop': STOP,
     'proofreader': PROOF,
     'cipher_abyss': CIPHER,
     'crazy_cog': COG,

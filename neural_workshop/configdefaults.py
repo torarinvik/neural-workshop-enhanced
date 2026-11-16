@@ -751,6 +751,64 @@ GAMBLE_RUNG = 1
 GAMBLE_TRIALS = 5
 GAMBLE_ADAPTIVE = True
 
+# Why They Feel: made-up stories built by appraisal theory. Happy or
+# sad at rung 1; hopes, reliefs, pride, gratitude, envy up the ladder;
+# what one person thinks another feels from 15.
+WHY_RUNG = 1
+WHY_TRIALS = 5
+WHY_ADAPTIVE = True
+
+# Reading People: EmoBench stories. What the subject feels at rung 1,
+# and why from 4, the most helpful thing to do from 7, all mixed from 10.
+READ_RUNG = 1
+READ_TRIALS = 5
+READ_ADAPTIVE = True
+
+# How Strongly: how strongly a character in a dialogue feels four
+# emotions (EQ-Bench). The strongest one up to rung 3, then each
+# intensity, closer and closer to the reference.
+STRONG_RUNG = 1
+STRONG_TRIALS = 5
+STRONG_ADAPTIVE = True
+
+# Which Feeling: name the emotion in a Reddit comment (GoEmotions).
+# Two far-apart answers at rung 1, four of a kind from 8, eight from 14.
+FEEL_RUNG = 1
+FEEL_TRIALS = 5
+FEEL_ADAPTIVE = True
+
+# Emotion: name the emotion a face shows (FER-2013 photographs with
+# FERPlus votes). Happy or sad at rung 1, all eight emotions from 6,
+# faces covered after a moment from 8, eyes or mouth only from 10,
+# the two strongest emotions from 14.
+EMO_RUNG = 1
+EMO_TRIALS = 5
+EMO_ADAPTIVE = True
+
+# Morning Round: deliver papers up a street by the rulebook. Stars in
+# the window at rung 1, one written rule 2-4, rules switched by signs at
+# crossroads 5-6, switched unseen from 7, rules that look at other
+# houses from 10, the rulebook put away after the depot from 11.
+ROUND_RUNG = 1
+ROUND_TRIALS = 5
+ROUND_ADAPTIVE = True
+
+# The Missing Word: a passage of real English has lost words (and from
+# rung 7 gained some it never had). Put back the missing, strike out the
+# extra. More sentences at rungs 4, 10 and 16; the other words on offer
+# as common as the right one from 13; no count of the mistakes from 19.
+GAPW_RUNG = 1
+GAPW_TRIALS = 5
+GAPW_ADAPTIVE = True
+
+# Full Stop: sentences of real English run together, stops and capitals
+# gone; click the last word of each sentence. Two sentences at rung 1,
+# one more every two rungs up to twelve; names lose their capitals from
+# rung 14, short sentences from 20, a shorter clock from 22.
+STOP_RUNG = 1
+STOP_TRIALS = 5
+STOP_ADAPTIVE = True
+
 # The Proofreader: a damaged passage of real English to mend. Swapped
 # words from rung 1, scrambled words 2, sentences out of order 4, a
 # word swapped for another 7, wrong forms 10, words moved far 13.

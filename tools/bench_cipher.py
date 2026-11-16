@@ -218,12 +218,7 @@ def main(argv=None):
     worst, worst_ref = 0.0, 1.0
     for r in rungs_from(a.rungs):
         row = bench(r, a.machines, a.seed)
-        # On the two gentle rungs one look may be enough and there are
-        # only a handful of machines, so the players that guess a rule
-        # are let off there; the blind ones never are.
-        easy = M.gentle(M.grade(r))
-        shortcut = max(row[n] for n in names
-                       if not (easy and n in ('commonest', 'greedy')))
+        shortcut = max(row[n] for n in names)
         worst = max(worst, shortcut)
         worst_ref = min(worst_ref, row['ref_dealt'])
         print('%4d %6d %5.1f %7.3f %5.1f %6.1f  ' % (

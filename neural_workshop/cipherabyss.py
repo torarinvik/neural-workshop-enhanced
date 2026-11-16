@@ -175,9 +175,10 @@ def grade(rung: int) -> Grade:
                  min(1200.0, 300.0 + 30.0 * r))
 
 
-def gentle(level: Grade) -> bool:
-    """The first two rungs: one plain step, nothing hidden behind it, and
-    a single good experiment may well be enough."""
+def plain(level: Grade) -> bool:
+    """The first two rungs: a short row, one plain step and a quirk on a
+    row of one colour, and two questions. Short, but one look is still
+    never enough."""
     return level.stage == 1 and level.step < 2
 
 
@@ -403,8 +404,6 @@ def _one_look(level: Grade):
     nothing when for some experiment that would be the real rule (one
     look must never be enough). Worked out once a rung over a fixed set
     of random inputs."""
-    if gentle(level):                        # there one look may be enough
-        return {t: frozenset() for t in truths(level)}
     fam = family(level)
     k = level.k
     draw = random.Random(level.rung * 31 + 7)
@@ -470,7 +469,7 @@ def _quirked(level: Grade, plain: Sequence) -> List:
 def _families(level: Grade):
     hyp, truths = _raw(level)
     hyp = list(hyp) + _background(level)
-    if level.stage in QUIRKS and not gentle(level):
+    if level.stage in QUIRKS:
         quirky = _quirked(level, truths)
         hyp += quirky
         truths = quirky
@@ -859,8 +858,7 @@ def build(level: Grade, draw: random.Random) -> Optional[Machine]:
     # Shortcut players must lose too: the rung's commonest rule, and the
     # rule a player would settle on after one stray experiment.
     rivals.update(r for r in truths(level)[:3] if r != rule)
-    if not gentle(level):
-        rivals.update(_twins(level, rule))
+    rivals.update(_twins(level, rule))
     seed = draw.randrange(1 << 30)
     mind = Mind(level, seed)
     if rule not in mind.alive:

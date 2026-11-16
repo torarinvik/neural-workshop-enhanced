@@ -2612,7 +2612,7 @@ experiment fewer).
 
 | Rung | Stage | What the machine can do |
 |---|---|---|
-| 1–3 | Patterns | Two colours. Rung 1 is the gentle start: a row of three, and the machine does one of five plain things (reverse, rotate by one or two, swap neighbours, flip the colours), two questions. Rung 2: a row of four and one named move or one flip. Rung 3: a move and a flip together, with a hidden quirk |
+| 1–3 | Patterns | Two colours. Rung 1 is the gentle start: a row of three, one plain thing (reverse, rotate by one or two, swap neighbours, flip the colours) and a different one on a row of one colour, two questions. Rung 2: a row of four, one named move or flip, the same kind of quirk. Rung 3: a move and a flip together, with a hidden quirk |
 | 4–6 | Transformations | Three symbols mod 3: shifts, multiplying, affine maps, running sums, differences, sorting, counting runs, adding each to its mirror |
 | 7–9 | Conditions | One transformation or another, picked by a hidden test of the input |
 | 10–12 | Composition | Two transformations chained |
@@ -2624,7 +2624,7 @@ experiment fewer).
 | 28–39 | Adversarial | A hidden exception for a row of one symbol (always asked about); rules that drop repeats, double up or halve the row; six symbols, longer rows, fewer experiments |
 | 40+ | Open-ended | No ceiling. Programs grown at random from the whole language (held-out family included). Chains lengthen with the square root of the climb and branches nest with its logarithm, so the machines grow for ever: about 10 steps at rung 40, 70 at rung 100, over a thousand at rung 2000. Symbols rise to eight, rows to twelve, questions to six, and experiments fall to four |
 
-On the patterns (from rung 3), transformations, composition,
+On the patterns, transformations, composition,
 hidden-language and cryptography stages every machine also has a **quirk**: on a rare kind
 of row (one symbol throughout, a row that reads the same both ways, a
 row already in order) it does something else, and the test asks about
@@ -2698,16 +2698,16 @@ player's experiments:
   wrong (a wrong-length answer counts only as far as the row goes, and
   at most one test row is a single symbol throughout).
 
-On rungs 1 and 2 the guarantees are deliberately looser: one good
-experiment may be enough, and with so few machines a guess is sometimes
-right, so the greedy and commonest-rule players pass a good share
-there. The blind players (idle, random, identity, repeat) still fail.
+Rungs 1 and 2 are short (rows of three and four, one plain step, two
+questions) but hold the same guarantees as the rest: the quirk on a row
+of one colour means one look is never enough, so the greedy and
+commonest-rule players fail there too.
 
 **Measured** (`tools/bench_cipher.py`, 30 machines a rung on every
 other rung from 1 to 59 and on 64, 70, 80, 100, 150 and 300). The
 reference player passes every round dealt, and every machine built
-before the filter too. Past the gentle rungs no shortcut player passes
-more than 3.3% of rounds on any rung. A deal takes 0.37 s on average:
+before the filter too. No shortcut player passes more than 3.3% of
+rounds on any rung. A deal takes 0.37 s on average:
 under 0.6 s up to rung 64, and about 1 s on the far rungs, where the
 machines run to dozens of steps. Before this work the greedy player
 passed 6–97% of rounds (53% on average) and the commonest rule up to
@@ -2899,6 +2899,56 @@ of handwritten passages is used.
 For the agent, ports 0–11 move the pointer, 12 presses and 13 lets go,
 14 hands the passage in and 15 resets it. Sounds mark a lift, a drop
 and a pick but never say whether a change was right. Clocked.
+
+#### Full Stop
+
+A few sentences of real text run together, with every full stop and
+every capital taken out. **Click the last word of each sentence** to
+put a stop after it (click again to take it away); the next word gets
+its capital. The stop after the last word is already there. **Enter**
+hands it in, **R** takes every stop away. It passes when every stop is
+where it was written and there are no others.
+
+| Rung | What changes |
+|---|---|
+| 1 | Two sentences, and one more every two rungs, up to twelve at rung 21 |
+| 1–9 | The number of sentences is shown, with a running count |
+| 14+ | Names lose their capitals too, so a capital is no clue |
+| 20+ | Short sentences (four to eight words), so more stops in the same words |
+| 22+ | The clock (a little under a second a word) shortens without end |
+
+A passage is only dealt if every true break joins two words that never
+stand side by side inside any sentence of the corpus, so English never
+runs on across a break. Ports as in The Proofreader: 0–11 move, 12
+presses, 13 lets go, 14 hands in, 15 resets. Clocked.
+
+#### The Missing Word
+
+A passage of real text, one sentence a line, has lost some words and,
+from rung 7, gained some it never had. Under every gap between two
+words is a small **caret**. **Click a caret** to see four words that
+could go there and click one to put it in. **Click a word** to strike
+it out. **Enter** hands it in, **R** puts the passage back as dealt. It
+passes when it reads exactly as written.
+
+The first and last words of a line are never missing, and no two
+missing words were next to each other. A word is only taken out where
+the two words it leaves side by side never appear together in the
+corpus. A word is only put in where it makes such a pair on both
+sides. Every caret offers four words, drawn the same way whether a
+word is missing there or not, so the offer doesn't give the gaps away.
+
+| Rung | What changes |
+|---|---|
+| 1 | One sentence, one missing word; one more mistake every three rungs |
+| 4 | Two sentences |
+| 7 | Extra words that don't belong |
+| 10 | Three sentences; four or more from 16 |
+| 13 | The other words on offer are as common as the right one |
+| 19 | No count of the mistakes |
+| 25+ | Once a quarter of the words are wrong, the clock shortens without end |
+
+Ports as in The Proofreader. Clocked.
 
 ### Planning
 
@@ -4312,6 +4362,58 @@ the time asked for, passes.
 
 One agent port, held. Clocked, with the tone in the agent's audio.
 
+#### Morning Round
+
+A paper round up a street, seen from above. The bicycle rides near the
+bottom and the houses come down past it, left and right. **Left /
+Right** (or **A / D**) steer, **Up / Down** (or **W / S**) pedal faster
+or slower, **Z** throws a paper to the left and **X** to the right. A
+paper flies straight across to the lawns and lands where the bicycle
+has got to by then, so throw a little before a house comes level.
+
+Every house shows what it is: its door colour, its number, a pointed or
+flat roof, a dog in the yard, the mailbox flag up or down, lit or dark
+windows, a cat on the step. The **rulebook** on the left says which
+houses take a paper. Riding is the easy part; the rules are the task.
+
+| Rung | The rules |
+|---|---|
+| 1 | Subscribers have a star in the window. Slow, nothing in the road, two mistakes allowed |
+| 2–4 | One written rule for the whole street: one feature ("blue door"), then two ("cat and not red door") |
+| 5–6 | Two rules, A and B, and blocks between crossroads; a sign at each crossroads says which rule holds from there |
+| 7–8 | No signs. The rulebook names the rule to start with; at any crossroads the rule may silently change to the other one (as often as not it does) |
+| 9 | Three rules; house numbers (even, divisible by three) and the side of the street |
+| 10 | Rules that look elsewhere: the house across the street ("across from: dog"), every second house of a kind, a door the colour of the last one on its side |
+| 11+ | The rulebook is shown at the depot, then put away: ride from memory |
+| 12+ | The block's landmark (a church on the corner) in the rules; four blocks |
+| 13+ | No ceiling on the climb: more rules (up to six), more parts to each (up to nine), more blocks (up to eight), a faster bicycle and less time at the depot |
+
+When the rule is not told, the houses are all there is to go by. A
+subscriber thanks you for a paper (a chime and a tick), a house that
+wanted none shouts (a cross), and a subscriber passed without one
+complains (a horn and an exclamation mark). A house passed in silence
+wanted none. The new rule has to be worked out from that, on the move.
+
+A round passes when the street is done with no more mistakes than it
+allows (a paper to the wrong house or a missed subscriber each count)
+and without three falls. It allows one, two on the first two rungs,
+and two more for every crossroads where the rule might change unseen.
+Cones, bins and parked cars are in the road from rung 3, and from
+rung 8 cyclists come the other way.
+
+Every round dealt is passed by a reference rider that knows the
+rulebook but not the hidden rule: it weighs the rules still possible
+in each block by what the houses have said. A round is only dealt if
+throwing at every house, at none, or keeping the first rule through
+every crossroads would make too many mistakes; throwing at random
+fails too. Each rule changes something on the street in
+every part, and every two rules disagree about at least two houses in
+every block.
+
+For the agent: ports 0–1 steer, 2–3 pedal faster or slower (each for the
+step it is sent in), 4 throws left, 5 throws right. Clocked.
+
+
 ### Decision making
 
 Choosing under uncertainty: what to find out, when to stop finding out
@@ -4880,6 +4982,111 @@ Par is the fewest clicks with a little slack, and the slack shrinks
 from 40% to 10% up the ladder. The tools only help the player who knows
 which one the question needs: scrolling 60 rows and adding up in your
 head is correct and over par.
+
+### Emotion
+
+Reading feeling: in a face, in what people write, in a dialogue, and in
+what a situation is bound to make someone feel. All five tasks share
+one screen. The item (a face, or text on a sheet) is shown in the
+middle, the question under it, and the answers on buttons: click one
+or press its number (**1–8**). Some items ask two or four things in
+turn. After each item the right answer turns green (and a wrong pick
+red) for a moment, with a chime or a low note. A row of dots along the
+top shows the round so far. A round passes when enough items are right
+that guessing, or giving the same answer every time, would almost
+never do it (no more than 3% of rounds), and no fewer than the rung's
+share for a careful reader. For the agent, ports 0–7 pick answers 1–8.
+All five are clocked: each item has its own time.
+
+The material is public data, fetched once into the data directory and
+never bundled:
+
+```bash
+python -m neural_workshop.emotiondata              # all four
+python -m neural_workshop.emotiondata faces         # or one of them
+```
+
+| Source | What it is | Licence |
+|---|---|---|
+| FER-2013 faces, with Microsoft's FERPlus labels | 34,484 photographs (48 by 48 pixels, grey), each read by ten people | FERPlus labels MIT; FER-2013 is a research challenge set with no stated licence, so it is only downloaded on request |
+| GoEmotions | 33,457 Reddit comments with a single emotion of 27, or neutral | Apache 2.0 |
+| EQ-Bench | 170 dialogues: how strongly a character feels four emotions, 0–10 | MIT |
+| EmoBench | 400 English stories: how someone feels and why, or what would help | MIT |
+
+Without them each task still runs on what is built in: faces drawn from
+a few lines, and a handful of comments, dialogues and stories.
+
+#### Emotion
+
+Which emotion is the face showing? The right answer is what most of
+the ten FERPlus readers said, and the ladder starts on faces nearly all
+of them read the same way.
+
+| Rung | Faces |
+|---|---|
+| 1 | Happy or sad, on faces at least 90% of readers agreed on |
+| 2–3 | Surprised; then angry and neutral |
+| 4–5 | All seven basic emotions (afraid, disgusted), 80% agreement |
+| 6–7 | Contempt too: eight answers, 70% agreement |
+| 8 | The face is covered after a moment (1.6 s, shrinking to 0.15 s) |
+| 9+ | Faces fewer readers agreed on: 60 to 85% |
+| 10+ | Some faces show only the eyes or only the mouth |
+| 14+ | Faces with two emotions in them: name the strongest, then the next |
+| 15+ | Down to faces only half the readers agreed on, and less time each, without end |
+
+#### Which Feeling
+
+What does the writer of a Reddit comment feel? GoEmotions' raters say.
+The ladder is how close the other answers are to the right one.
+
+| Rung | The answers |
+|---|---|
+| 1–2 | Two, of opposite feeling (joy or anger) |
+| 3–4 | Three, one of them neither good nor bad (surprise, curiosity) |
+| 5–7 | Four, one a near neighbour of the right one |
+| 8–10 | Four, all of the same kind (anger, annoyance, disapproval, disgust) |
+| 11–13 | Six of the same kind, and neutral |
+| 14+ | Eight, and less time to read each rung |
+
+#### How Strongly
+
+A short dialogue from EQ-Bench, and four emotions. Up to rung 3: which
+of the four does the character feel most at the end? From rung 4: how
+strongly they feel each, on a scale of 0, 2, 4, 6, 8, 10. The four
+answers together may be off from EQ-Bench's reference by 8 points at
+rung 4, two fewer every two rungs, and not at all from rung 11. Only
+dialogues where giving the same answer to all four would fail are
+dealt.
+
+#### Reading People
+
+Stories from EmoBench. Rungs 1–3 ask how the subject feels; rungs 4–6
+how they feel and then why; rungs 7–9 what would be the most helpful
+thing for them to do; from rung 10 all of these, mixed, with less time
+to read each rung.
+
+#### Why They Feel
+
+Short stories made up for the task, each built so that one emotion
+follows from it by the appraisal theory of Ortony, Clore and Collins:
+an emotion is how a person sees what happened. Was it good or bad for
+what they wanted? Has it happened yet? Who did it, and was it right?
+Did it happen to someone they like?
+
+| Rung | Stories |
+|---|---|
+| 1–2 | What they wanted happened, or did not: happy or sad |
+| 3–4 | It is still to come, and the signs are good or bad: hopeful or worried |
+| 5–6 | They feared it, and it went well; they hoped for it, and it went badly: relieved or disappointed |
+| 7–8 | They did it (proud, ashamed, remorseful), or someone else did (admiring, disapproving, grateful, angry) |
+| 9–11 | News about a friend or a rival: glad for them, sorry for them, resentful, gloating |
+| 12+ | People who want what others would not, like the player who hopes the match is rained off |
+| 15+ | What one person thinks another feels, when they heard it wrong: "What does Cal think Bo thinks Ana feels?" One more level every five rungs, up to four |
+
+Answers that would also be fair (someone relieved is happy too) are
+never offered against each other. The number of answers grows from two
+to eight, and the time per story shrinks with every rung.
+
 
 ### Window size, full screen, and the two coordinate spaces
 

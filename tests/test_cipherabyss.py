@@ -33,16 +33,17 @@ class TheLadder(unittest.TestCase):
                          list(range(1, len(starts) + 1)))
         self.assertLess(M.grade(60).budget, M.grade(40).budget)
 
-    def test_the_first_rungs_are_gentle(self):
+    def test_the_first_rungs_are_short_and_plain(self):
         one, two, three = M.grade(1), M.grade(2), M.grade(3)
-        self.assertTrue(M.gentle(one) and M.gentle(two))
-        self.assertFalse(M.gentle(three))
+        self.assertTrue(M.plain(one) and M.plain(two))
+        self.assertFalse(M.plain(three))
         self.assertEqual((one.length, one.tests), (3, 2))
-        self.assertEqual(len(M.truths(one)), 5)
-        for level in (one, two):              # one plain step, no "if"
-            self.assertTrue(all(isinstance(r, L.Seq) and len(r.parts) == 1
-                                for r in M.truths(level)))
-        self.assertTrue(any(isinstance(r, L.If) for r in M.truths(three)))
+        for rung in (1, 2):                   # one plain step, one quirk
+            for seed in range(6):
+                r = M.deal(rung, seed=seed).rule
+                self.assertIsInstance(r, L.If)
+                for arm in (r.then, r.other):
+                    self.assertEqual(len(arm.parts), 1)
 
     def test_the_open_top_never_stops_growing(self):
         def biggest(rung):
@@ -106,7 +107,7 @@ class TheGuarantees(unittest.TestCase):
                              min(L.size(r) for r in mind.alive))
 
     def test_one_look_is_never_enough(self):
-        for rung in (3, 4, 10):               # past the gentle rungs
+        for rung in (1, 2, 3, 4, 10):
             m = M.deal(rung, seed=5)
             self.assertTrue(M._one_look(m.level)[m.rule])
 

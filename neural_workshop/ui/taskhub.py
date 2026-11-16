@@ -31,6 +31,7 @@ CATEGORIES: Sequence[Tuple[str, str]] = (
     ('self_control', _('Self-control')),
     ('decisions', _('Decision making')),
     ('computer', _('Computer use')),
+    ('emotion', _('Emotion')),
 )
 
 #: Category id → list of (task id, label).
@@ -130,6 +131,8 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('crazy_cog', _('Crazy Cog')),
         ('cipher_abyss', _('The Cipher Abyss')),
         ('proofreader', _('The Proofreader')),
+        ('full_stop', _('Full Stop')),
+        ('missing_word', _('The Missing Word')),
     ],
     'planning': [
         ('tower_of_hanoi', _('Tower of Hanoi')),
@@ -157,6 +160,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('stop_and_switch', _('Stop & Switch')),
         ('delay', _('Delay')),
         ('hold_it', _('Hold It')),
+        ('morning_round', _('Morning Round')),
     ],
     # Choosing under uncertainty: what to find out, when to stop finding
     # out and commit, what a wrong commitment costs, and what waiting
@@ -181,6 +185,15 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('browser', _('Browser')),
         ('errands', _('Errands')),
         ('spreadsheet', _('Spreadsheet')),
+    ],
+    # Reading feeling: in a face, in what people write and say, and in
+    # what a situation is bound to make someone feel.
+    'emotion': [
+        ('emotion', _('Emotion')),
+        ('which_feeling', _('Which Feeling')),
+        ('how_strongly', _('How Strongly')),
+        ('reading_people', _('Reading People')),
+        ('why_they_feel', _('Why They Feel')),
     ],
 }
 
@@ -903,6 +916,38 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'proofreader':
         from .proofreader import Proofreader
         Proofreader()
+        return
+    if task_id == 'full_stop':
+        from .fullstop import FullStop
+        FullStop()
+        return
+    if task_id == 'missing_word':
+        from .missingword import MissingWord
+        MissingWord()
+        return
+    if task_id == 'morning_round':
+        from .morninground import MorningRound
+        MorningRound()
+        return
+    if task_id == 'emotion':
+        from .emotion import Emotion
+        Emotion()
+        return
+    if task_id == 'which_feeling':
+        from .whichfeeling import WhichFeeling
+        WhichFeeling()
+        return
+    if task_id == 'how_strongly':
+        from .howstrongly import HowStrongly
+        HowStrongly()
+        return
+    if task_id == 'reading_people':
+        from .readingpeople import ReadingPeople
+        ReadingPeople()
+        return
+    if task_id == 'why_they_feel':
+        from .whytheyfeel import WhyTheyFeel
+        WhyTheyFeel()
         return
     if task_id == 'gamble':
         from .gamble import Gamble

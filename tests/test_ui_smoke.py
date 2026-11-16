@@ -31,6 +31,14 @@ if __name__ == '__main__':
     from test_sonar import *           # noqa: F401,F403,E402
     from test_hiddenrule import *      # noqa: F401,F403,E402
     from test_gamble import *  # noqa: F401,F403,E402
+    from test_whytheyfeel import *  # noqa: F401,F403,E402
+    from test_readingpeople import *  # noqa: F401,F403,E402
+    from test_howstrongly import *  # noqa: F401,F403,E402
+    from test_whichfeeling import *  # noqa: F401,F403,E402
+    from test_emotion import *  # noqa: F401,F403,E402
+    from test_morninground import *  # noqa: F401,F403,E402
+    from test_missingword import *  # noqa: F401,F403,E402
+    from test_fullstop import *  # noqa: F401,F403,E402
     from test_proofreader import *  # noqa: F401,F403,E402
     from test_cipherabyss import *  # noqa: F401,F403,E402
     from test_crazycog import *  # noqa: F401,F403,E402
