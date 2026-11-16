@@ -2492,6 +2492,56 @@ WATCH = TaskSpec(
     note=nightwatch_note)
 
 
+def crazycog_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import crazycog
+    level = crazycog.grade(int(chosen['COG_RUNG']))
+    said = [_('Rung %d: a load of %.1f.') % (level.rung, level.load)]
+    if level.chains:
+        said.append(_('Chains.'))
+    if level.walls:
+        said.append(_('%d walls.') % level.walls)
+    if level.layers > 1:
+        said.append(_('A back layer and shared axles.'))
+    if level.fan:
+        said.append(_('A fan to turn.'))
+    return '  '.join(said)
+
+
+COG = TaskSpec(
+    title=_('Crazy Cog options'),
+    options=(
+        Option('COG_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('COG_TRIALS', _('Machines per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('COG_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=crazycog_note)
+
+
+def cipherabyss_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import cipherabyss
+    level = cipherabyss.grade(int(chosen['CIPHER_RUNG']))
+    said = [_('Rung %d: %d symbols, rows of %d, %d experiments.') % (level.rung, level.k, level.length, level.budget)]
+    return '  '.join(said)
+
+
+CIPHER = TaskSpec(
+    title=_('The Cipher Abyss options'),
+    options=(
+        Option('CIPHER_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('CIPHER_TRIALS', _('Machines per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('CIPHER_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=cipherabyss_note)
+
+
 def wiring_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung wires up."""
     from .. import wiring
@@ -4291,6 +4341,8 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'forms': FORMS,
     'wiring': WIRING,
     'gamble': GAMBLE,
+    'cipher_abyss': CIPHER,
+    'crazy_cog': COG,
     'night_watch': WATCH,
     'shadow_puppets': PUPPET,
     'semaphore': SEMA,

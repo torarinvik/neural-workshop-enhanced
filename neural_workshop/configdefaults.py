@@ -751,6 +751,22 @@ GAMBLE_RUNG = 1
 GAMBLE_TRIALS = 5
 GAMBLE_ADAPTIVE = True
 
+# The Cipher Abyss: find out what the hidden machine does, by
+# experiment, then answer for it. Patterns from rung 1, transformations
+# 4, conditions 7, composition 10, state 13, modular arithmetic 16,
+# nested rules 20, adversarial exceptions 25.
+CIPHER_RUNG = 1
+CIPHER_TRIALS = 5
+CIPHER_ADAPTIVE = True
+
+# Crazy Cog: gear the motor to the winch and lift the bucket. Idlers,
+# chains and the winch's direction from rung 4, a heavy bucket from 7,
+# walls from 10, a back layer and shared axles from 13, a fan and a
+# tight clock from 16, compound gearing and the fan's speed from 20.
+COG_RUNG = 1
+COG_TRIALS = 5
+COG_ADAPTIVE = True
+
 # Night Watch: find the thieves by torchlight and by ear before one
 # reaches the safe. A guard and a cat from rung 4, a floor wider than
 # the view from 7, colours that change from 10, steps that all sound

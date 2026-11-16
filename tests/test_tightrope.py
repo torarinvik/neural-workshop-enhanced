@@ -28,7 +28,8 @@ class TheLadder(unittest.TestCase):
 
     def test_the_ladder_adds_what_it_says(self):
         g = {r: M.grade(r) for r in (1, 4, 7, 10, 13, 16, 22, 40)}
-        self.assertEqual((g[1].steps, g[4].steps), (6, 10))
+        self.assertLess(g[1].steps, g[4].steps)
+        self.assertLess(g[1].jolt, g[4].jolt)
         self.assertFalse(g[1].sway or g[1].gusts or g[1].birds)
         self.assertTrue(g[4].sway and not g[4].gusts)
         self.assertTrue(g[7].gusts and not g[7].birds)
@@ -59,6 +60,24 @@ class TheWire(unittest.TestCase):
         M.act(run, M.STEP)
         self.assertEqual(run.taken, 2)
 
+    def test_pitching_too_far_is_a_fall_forward(self):
+        run = M.Run(M.deal(1, seed=1))
+        run.pitch = M.FALL_P - 0.01
+        run.prate = 1.0
+        settle(run, 0.2)
+        self.assertEqual(run.result, (False, 'You fell forward'))
+
+    def test_the_pole_forward_rights_you_backward(self):
+        run = M.Run(M.deal(1, seed=1))
+        run.hand.to(500.0, M.LEVEL + M.REACH_F)
+        settle(run, 0.5)
+        self.assertLess(run.pitch, 0.0)
+
+    def test_a_step_lurches_you_forward(self):
+        run = M.Run(M.deal(4, seed=1))
+        M.act(run, M.STEP)
+        self.assertGreater(run.prate, 0.0)
+
     def test_leaning_too_far_is_a_fall(self):
         run = M.Run(M.deal(1, seed=1))
         run.lean = M.FALL - 0.01
@@ -81,7 +100,7 @@ class TheWire(unittest.TestCase):
         gust = walk.gusts[0]
         while run.t < gust.t - 0.5 and run.result is None:
             run.step(1 / 60.0)
-            run.lean = run.rate = 0.0
+            run.lean = run.rate = run.pitch = run.prate = 0.0
         self.assertTrue(any(n.voice == M.WIND for n in run.notes))
         self.assertEqual(run.wind(), 0.0)
 

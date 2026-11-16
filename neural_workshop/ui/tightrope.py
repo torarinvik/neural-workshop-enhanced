@@ -10,7 +10,9 @@ shows as streaks and as the flag on the far tower, and a bird that
 lands on the pole sits where it has to be clicked off. Along the top is
 how far across you are.
 
-Mouse: left and right carries the pole; click a bird to shoo it.
+Mouse: left and right carries the pole across, up and down carries it
+forward and back; click a bird to shoo it. The bubble in the corner
+shows how far you lean and pitch.
 Keys: Space (or Up, or W) takes a step.
 
 For the agent boundary: ports 0-11 move the drawn pointer (up, down,
@@ -48,7 +50,7 @@ class Tightrope(HandTask):
     EVENT_KEYS = {key.SPACE: model.STEP, key.UP: model.STEP,
                   key.W: model.STEP}
     BACK = (30, 40, 70)
-    FOOTNOTE = _('Mouse left and right: the pole   Space: a step   '
+    FOOTNOTE = _('Mouse: the pole, across and forward   Space: a step   '
                  'Click a bird to shoo it   Esc: menu')
 
     def _deal(self) -> bool:
@@ -188,10 +190,14 @@ class Tightrope(HandTask):
         lean = run.lean
         base = P(fx, fy, walk_z)
 
+        pitch = run.pitch
+
         def up(h: float, side: float = 0.0):
             sx = side * math.cos(lean) + h * math.sin(lean)
             sy = h * math.cos(lean) - side * math.sin(lean)
-            p = P(fx + sx, fy + sy, walk_z)
+            sz = sy * math.sin(pitch)            # forward is away from us
+            sy = sy * math.cos(pitch)
+            p = P(fx + sx, fy + sy, walk_z + sz)
             return p if p is not None else base
         k = f / self.BACK_OFF / 162.0
         gg = self.g()
@@ -220,7 +226,8 @@ class Tightrope(HandTask):
         tilt = math.tan(lean) * 0.5
 
         def pole(x: float):
-            return (x, 250.0 - (x - 500.0) * tilt)
+            return (x, model.LEVEL + model.FWD_PX * run.held_f
+                    - (x - 500.0) * tilt)
         self.line(pole(mid - 0.75 * model.REACH),
                   pole(mid + 0.75 * model.REACH), 9, (150, 140, 110), gg)
         self.line(pole(mid - 0.75 * model.REACH),
@@ -244,9 +251,29 @@ class Tightrope(HandTask):
         self.rect(250, 606, 500 * share, 10, (110, 220, 140), hud)
         self.words(_('%d of %d steps') % (run.taken, level.steps), 500, 588,
                    12, group=hud, colour=(255, 255, 255, 230))
-        if abs(lean) / model.FALL > 0.5:
-            self.words(_('LEANING'), 500, 560, 14, bold=True, group=hud,
-                       colour=(255, 120, 90, 255))
+        # A spirit level: the bubble shows the lean and the pitch.
+        bx, by, br = 930.0, 560.0, 42.0
+        danger = max(abs(lean) / model.FALL, abs(pitch) / model.FALL_P)
+        self.disc((bx, by), br + 3, (20, 24, 40, 220), hud)
+        self.disc((bx, by), br, polish.mix((70, 120, 80), (180, 60, 50),
+                                            min(1.0, danger)), hud)
+        self.disc((bx, by), br * 0.5, polish.mix((90, 150, 100),
+                                                  (200, 80, 60),
+                                                  min(1.0, danger)), hud)
+        self.line((bx - br, by), (bx + br, by), 1, (20, 30, 20), hud)
+        self.line((bx, by - br), (bx, by + br), 1, (20, 30, 20), hud)
+        ux = max(-1.0, min(1.0, lean / model.FALL))
+        uy = max(-1.0, min(1.0, pitch / model.FALL_P))
+        self.disc((bx + ux * (br - 8), by + uy * (br - 8)), 8,
+                  (240, 250, 220), hud)
+        self.words(_('forward'), bx, by + br + 10, 8, group=hud,
+                   colour=(255, 255, 255, 200))
+        if danger > 0.5:
+            self.words(_('LEANING') if abs(lean) / model.FALL >
+                       abs(pitch) / model.FALL_P else
+                       (_('TIPPING FORWARD') if pitch > 0
+                        else _('TIPPING BACK')), 500, 560, 14, bold=True,
+                       group=hud, colour=(255, 120, 90, 255))
 
     def _facts(self) -> str:
         run = self.run

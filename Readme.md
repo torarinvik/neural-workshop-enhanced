@@ -2590,6 +2590,87 @@ that means something else has stopped the page from saying it.
 cd tests && PYTHONPATH=.. ../.venv/bin/python bench_syllogism.py
 ```
 
+#### The Cipher Abyss
+
+A laboratory with a machine in it. The machine takes a row of coloured
+symbols (each with a shape, a number and a note) and gives back
+another row; what it does is hidden. **Click** symbols from the
+palette (or type **1–6**) to build an input, **Enter** to run it, and
+read the result in the notebook on the right. Experiments are limited.
+When you are ready, or the experiments are spent, **T** starts the
+test: the machine shows inputs it has never shown before and you must
+give its answer to every one. The end of each round says what the
+machine was, in words.
+
+The rules are written in a small language that grows up the ladder,
+and what was learned below stays useful above:
+
+| Rung | Stage | What the machine can do |
+|---|---|---|
+| 1–3 | Patterns | Two colours, rows of four: reverse, rotate, swap neighbours, swap the colours |
+| 4–6 | Transformations | Three symbols: shifts, substitutions, multiplying, running sums, differences, sorting |
+| 7–9 | Conditions | One transformation or another, picked by a hidden test of the input |
+| 10–12 | Composition | Two transformations chained |
+| 13–15 | State | What it does depends on how many times it has run, or on its last input |
+| 16–19 | Arithmetic | Five symbols mod 5: each output a weighted sum of its input and the one before |
+| 20–24 | Nested | The hidden test may look at the machine's own last answer, or its run count |
+| 25+ | Adversarial | A hidden exception only a rare input sets off (and the test asks about it); three-step chains, six symbols, longer rows, fewer experiments |
+
+Every machine dealt can be pinned down from the experiments allowed:
+the reference player keeps every rule of the rung's language still
+consistent with what it has seen, runs whichever input splits them
+most evenly, and the machine is only dealt if that player then answers
+the whole test. A random experimenter cannot.
+
+Twenty-three agent ports. Ports 0–11 move the drawn pointer (up, down,
+left, right by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses
+its button and 13 lets it go; 14–19 add symbols 0–5, 20 takes the last
+one out, 21 runs (or answers) and 22 starts the test. The agent hears
+every answer as a short tune. Clocked, but the clock is long.
+
+#### Crazy Cog
+
+A motor turns on the left of a workshop pegboard, a winch with a bucket
+on its rope waits to the right, and along the bottom is a tray of cogs
+of five sizes, each marked with its teeth (hover over one to see it at
+its true size), and a coil of chain. **Drag** a cog onto the board:
+dropped beside other cogs it snaps into mesh with them, dropped over an
+axle (the motor's, the winch's, the fan's) it goes on it. Meshed cogs
+turn opposite ways, and a smaller cog turns faster by the ratio of
+their sizes. A **chain**, dragged onto one cog and then clicked onto
+another at any distance, turns them the same way by the same ratio.
+The motor is strong at a crawl and weak at speed, so a small cog on
+the motor driving a big one on the winch lifts a heavy bucket slowly,
+and the other way round stalls. Turn the winch the wrong way and the
+bucket stays put; close a ring of cogs that cannot all turn and the
+train jams. A cog in the hand shows a green or red ghost of where it
+will land; drag a placed cog to move it, or **R** to clear the board.
+
+The board has depth: from rung 13 there is a back layer behind the
+front one, and **Tab** switches which one the hand works on. Cogs on
+different layers pass over each other, walls may stand on one layer
+only, and a cog dropped on the other layer over a cog's middle goes on
+the same axle and turns with it: a compound gear, the only way to gear
+down far enough for the heaviest buckets.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | The motor and the winch side by side: two cogs that fit |
+| 4–6 | Further apart: idlers and chains between, and the winch must turn the right way |
+| 7–9 | A heavy bucket: gear down or the motor stalls |
+| 10–12 | Walls on the board to build around |
+| 13–15 | A back layer, front walls across the way, axles between the layers |
+| 16–19 | A fan that must turn the way its arrow shows, and a tight clock |
+| 20+ | Buckets only a compound gear lifts, the fan's speed on its dial's green, walls on both layers, less time every rung |
+
+Sixteen agent ports. Ports 0–11 move the drawn pointer (up, down, left, right
+by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses its button
+and 13 lets it go; 14 clears the board and 15 switches the layer. The
+agent hears each cog go down (higher when it meshes), a chain hooked
+on, the motor's hum rising with its speed and groaning when it stalls,
+a grind when the train jams, and the winch ticking as the bucket
+rises. Clocked.
+
 ### Planning
 
 Every task in the *Planning* category is scored the same honest way:
@@ -3488,23 +3569,29 @@ and 13 lets it go; 14 is louder and 15 softer. Clocked.
 
 Seen in 3D from just behind your shoulders, you are on a wire strung
 between two towers high over a city, holding a long pole. Move the
-**mouse** left and right and the heavy pole follows a moment behind, which tips you
-back the other way: when you lean left, put the pole out to the right.
-**Space** (or Up, or W) takes a step, and every step jolts you. Lean
-too far and you are off. A gust of wind is heard coming, from the side
-it will blow from, a second before it hits. Birds land on the pole and
-weigh that end down until you **click** them off, which means reaching
-out to them.
+**mouse** left and right and the heavy pole follows a moment behind,
+which tips you back the other way: when you lean left, put the pole
+out to the right. You can fall forward and backward too: every step
+lurches you forward, and moving the mouse **up** carries the pole
+forward, which rights you backward (down carries it back). A spirit
+level in the corner shows both. **Space** (or Up, or W) takes a step.
+A gust of wind is heard coming, from the side it will blow from, a
+second before it hits. Birds land on the pole and weigh that end down
+until you **click** them off, which means reaching out to them.
 
-| Rung | What it adds |
+Every rung is a little harder than the one below (more steps, sharper
+jolts, quicker tipping, less time), and each new trouble comes in
+gently and grows:
+
+| From rung | What comes in |
 |---|---|
-| 1–3 | Six steps, gentle jolts, plenty of time |
-| 4–6 | Ten steps; the wire sways under you |
-| 7–9 | Gusts of wind |
-| 10–12 | Birds on the pole |
-| 13–15 | Fourteen steps, a livelier wire, stronger gusts, and a breeze that keeps shifting |
-| 16–19 | A springy wire that swings sideways: your steps set it going, your lean shoves it, its swing throws you |
-| 20+ | The wire bounces too, and a high bounce makes a lean grow faster; more steps, wind, swing, bounce and birds, less time every rung |
+| 1 | Five steps, soft jolts, a slow lean, plenty of time |
+| 4 | The wire sways under you |
+| 7 | Gusts of wind |
+| 10 | Birds on the pole |
+| 13 | A breeze that keeps shifting, sideways and fore and aft |
+| 16 | A springy wire that swings sideways: your steps set it going, your lean shoves it, its swing throws you |
+| 20 | The wire bounces too: a high bounce makes a lean grow faster and rocks you forward and back |
 
 Fifteen agent ports. Ports 0–11 move the drawn pointer (up, down, left, right
 by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses its button

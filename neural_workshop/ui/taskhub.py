@@ -127,6 +127,8 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('signals', _('Signals')),
         ('fold_it', _('Fold It')),
         ('who_knows_what', _('Who Knows What?')),
+        ('crazy_cog', _('Crazy Cog')),
+        ('cipher_abyss', _('The Cipher Abyss')),
     ],
     'planning': [
         ('tower_of_hanoi', _('Tower of Hanoi')),
@@ -888,6 +890,14 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'night_watch':
         from .nightwatch import NightWatch
         NightWatch()
+        return
+    if task_id == 'crazy_cog':
+        from .crazycog import CrazyCog
+        CrazyCog()
+        return
+    if task_id == 'cipher_abyss':
+        from .cipherabyss import CipherAbyss
+        CipherAbyss()
         return
     if task_id == 'gamble':
         from .gamble import Gamble
