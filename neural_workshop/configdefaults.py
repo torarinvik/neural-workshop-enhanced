@@ -751,6 +751,13 @@ GAMBLE_RUNG = 1
 GAMBLE_TRIALS = 5
 GAMBLE_ADAPTIVE = True
 
+# The Proofreader: a damaged passage of real English to mend. Swapped
+# words from rung 1, scrambled words 2, sentences out of order 4, a
+# word swapped for another 7, wrong forms 10, words moved far 13.
+PROOF_RUNG = 1
+PROOF_TRIALS = 5
+PROOF_ADAPTIVE = True
+
 # The Cipher Abyss: find out what the hidden machine does, by
 # experiment, then answer for it. Patterns from rung 1, transformations
 # 4, conditions 7, composition 10, state 13, a hidden language 16,

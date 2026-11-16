@@ -2544,6 +2544,27 @@ CIPHER = TaskSpec(
     note=cipherabyss_note)
 
 
+def proofreader_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import proofreader
+    level = proofreader.grade(int(chosen['PROOF_RUNG']))
+    said = [_('Rung %d: %d sentence(s), %d mistake(s) to mend.') % (level.rung, level.sentences, level.errors)]
+    return '  '.join(said)
+
+
+PROOF = TaskSpec(
+    title=_('The Proofreader options'),
+    options=(
+        Option('PROOF_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('PROOF_TRIALS', _('Passages per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('PROOF_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=proofreader_note)
+
+
 def wiring_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung wires up."""
     from .. import wiring
@@ -4343,6 +4364,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'forms': FORMS,
     'wiring': WIRING,
     'gamble': GAMBLE,
+    'proofreader': PROOF,
     'cipher_abyss': CIPHER,
     'crazy_cog': COG,
     'night_watch': WATCH,

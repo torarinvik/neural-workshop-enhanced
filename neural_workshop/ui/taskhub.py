@@ -129,6 +129,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('who_knows_what', _('Who Knows What?')),
         ('crazy_cog', _('Crazy Cog')),
         ('cipher_abyss', _('The Cipher Abyss')),
+        ('proofreader', _('The Proofreader')),
     ],
     'planning': [
         ('tower_of_hanoi', _('Tower of Hanoi')),
@@ -898,6 +899,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'cipher_abyss':
         from .cipherabyss import CipherAbyss
         CipherAbyss()
+        return
+    if task_id == 'proofreader':
+        from .proofreader import Proofreader
+        Proofreader()
         return
     if task_id == 'gamble':
         from .gamble import Gamble

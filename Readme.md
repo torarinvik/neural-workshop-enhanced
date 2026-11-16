@@ -2852,6 +2852,54 @@ on, the motor's hum rising with its speed and groaning when it stalls,
 a grind when the train jams, and the winch ticking as the bucket
 rises. Clocked.
 
+#### The Proofreader
+
+A passage of real text, damaged. Each sentence sits on its own line and
+each word on its own tile. Mend the passage until it reads exactly as
+it was written, then press **DONE** (or **Enter**). **R** puts the
+damage back.
+
+- **Drag a word** along its line to move it. Words never change lines.
+- **Drag a sentence by its number** to move the whole line.
+- **Click a word** to see four forms it could take (for example *walk*,
+  *walks*, *walked*, *walking*, or a word of similar rank), then click
+  one to write it. The forms are drawn the same way for every word, so
+  they don't tell you which words are wrong.
+
+The first word of each line is shown with a capital and the last with a
+full stop wherever they move, so neither gives the answer away. Names
+are never damaged.
+
+| Rung | What can go wrong |
+|---|---|
+| 1 | Two neighbouring words swapped, in a single sentence |
+| 2 | Plus a word with its letters scrambled |
+| 4 | Two sentences, and the sentences out of order |
+| 7 | Plus an intruder: a word replaced by another word |
+| 10 | Three sentences. Plus a broken agreement: the wrong form of the right word (*was* for *were*, *walk* for *walked*, *a* for *an*) |
+| 13 | Plus a word moved far from its place |
+| 16+ | Four sentences and more (up to six). Scrambles move the first letter too |
+| 19+ | No count of the mistakes. The intruders and wrong forms are close in rank to the true word, so the forms on offer look plausible |
+
+Mistakes grow by one every three rungs up to rung 30, then one every
+four rungs without end, capped at a third of the words. Past rung 25
+the time shrinks once the mistakes have reached their cap.
+
+Every damage is checked against the text banks: a damaged word never
+makes a pair of words that appears anywhere in the corpus, and a
+scramble never spells a known word. The aim is one right answer.
+Grading is an exact match with the original.
+
+The sentences come from Simple English Wikipedia (CC BY-SA 3.0), the
+same source as the sentence tasks. The bank of passages (runs of two to
+six sentences from one article) is fetched once with
+`python -m neural_workshop.passages`. Without it, a small built-in set
+of handwritten passages is used.
+
+For the agent, ports 0–11 move the pointer, 12 presses and 13 lets go,
+14 hands the passage in and 15 resets it. Sounds mark a lift, a drop
+and a pick but never say whether a change was right. Clocked.
+
 ### Planning
 
 Every task in the *Planning* category is scored the same honest way:

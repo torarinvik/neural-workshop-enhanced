@@ -62,6 +62,8 @@ class Scripted:
             x = self.experiment(run) if run.left() > 0 else None
             if x is None:
                 return [M.TEST]
+        elif run.twins_q:              # the cheapest guess: the same
+            return [M.SUBMIT]
         else:
             x = self.answer(run, run.question())
         self.queue = _type(run, x)
