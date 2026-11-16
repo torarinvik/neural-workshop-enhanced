@@ -2525,7 +2525,9 @@ def cipherabyss_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung is like."""
     from .. import cipherabyss
     level = cipherabyss.grade(int(chosen['CIPHER_RUNG']))
-    said = [_('Rung %d: %d symbols, rows of %d, %d experiments.') % (level.rung, level.k, level.length, level.budget)]
+    said = [_('Rung %d (%s): %d symbols, rows of %d, %d experiments.') % (
+        level.rung, _(cipherabyss.stage_name(level)), level.k, level.length,
+        level.budget)]
     return '  '.join(said)
 
 

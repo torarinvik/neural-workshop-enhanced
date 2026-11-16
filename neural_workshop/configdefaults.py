@@ -753,8 +753,9 @@ GAMBLE_ADAPTIVE = True
 
 # The Cipher Abyss: find out what the hidden machine does, by
 # experiment, then answer for it. Patterns from rung 1, transformations
-# 4, conditions 7, composition 10, state 13, modular arithmetic 16,
-# nested rules 20, adversarial exceptions 25.
+# 4, conditions 7, composition 10, state 13, a hidden language 16,
+# cryptography 19, rules that change rules 22, nested 25, adversarial
+# 28, open-ended 40.
 CIPHER_RUNG = 1
 CIPHER_TRIALS = 5
 CIPHER_ADAPTIVE = True

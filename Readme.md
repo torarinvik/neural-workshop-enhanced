@@ -2595,38 +2595,201 @@ cd tests && PYTHONPATH=.. ../.venv/bin/python bench_syllogism.py
 A laboratory with a machine in it. The machine takes a row of coloured
 symbols (each with a shape, a number and a note) and gives back
 another row; what it does is hidden. **Click** symbols from the
-palette (or type **1–6**) to build an input, **Enter** to run it, and
+palette (or type **1–8**) to build an input, **Enter** to run it, and
 read the result in the notebook on the right. Experiments are limited.
 When you are ready, or the experiments are spent, **T** starts the
-test: the machine shows inputs it has never shown before and you must
+test. The test starts the machine afresh (its run count and memory
+back to nothing), shows inputs it has never shown before, and you must
 give its answer to every one. The end of each round says what the
 machine was, in words.
 
-The rules are written in a small language that grows up the ladder,
-and what was learned below stays useful above:
+The machines are programs in a small language
+(`neural_workshop/cipherlang.py`) that grows up the ladder; what was
+learned below stays in the language above, as the simpler look-alikes
+each machine has to be told apart from. Each stage starts gently and
+grows inside itself (a longer row, one more kind of piece, an
+experiment fewer).
 
 | Rung | Stage | What the machine can do |
 |---|---|---|
-| 1–3 | Patterns | Two colours, rows of four: reverse, rotate, swap neighbours, swap the colours |
-| 4–6 | Transformations | Three symbols: shifts, substitutions, multiplying, running sums, differences, sorting |
+| 1–3 | Patterns | Two colours: positions moved about (reverse, rotate, swap neighbours, reverse each half, weave, sort), the colours flipped everywhere or at odd places |
+| 4–6 | Transformations | Three symbols mod 3: shifts, multiplying, affine maps, running sums, differences, sorting, counting runs, adding each to its mirror |
 | 7–9 | Conditions | One transformation or another, picked by a hidden test of the input |
 | 10–12 | Composition | Two transformations chained |
-| 13–15 | State | What it does depends on how many times it has run, or on its last input |
-| 16–19 | Arithmetic | Five symbols mod 5: each output a weighted sum of its input and the one before |
-| 20–24 | Nested | The hidden test may look at the machine's own last answer, or its run count |
-| 25+ | Adversarial | A hidden exception only a rare input sets off (and the test asks about it); three-step chains, six symbols, longer rows, fewer experiments |
+| 13–15 | State | What it does depends on its run count or its last input |
+| 16–18 | Hidden language | Some symbols are instructions with hidden meanings, the rest data; each instruction is applied in turn to the data, so the answer is shorter |
+| 19–21 | Cryptography | Affine maps and weighted sums mod 4, xor and multiplication in GF(4) and GF(8), Feistel rounds, after a reshuffle of positions |
+| 22–24 | Rules that change rules | A list of rules worked through, moving on after every input that passes a hidden test |
+| 25–27 | Nested | The test that picks the rule may look at the machine's own last answer or its run count; the branches are chains |
+| 28–39 | Adversarial | A hidden exception for a row of one symbol (always asked about); rules that drop repeats, double up or halve the row; six symbols, longer rows, fewer experiments |
+| 40+ | Open-ended | Programs grown at random from the whole language (held-out family included): chains a step longer every six rungs, branches inside branches every twelve, up to a ceiling (five-step chains, two levels of branches, reached by rung 64), after which the machines stay as hard and as quick to deal, only new |
 
-Every machine dealt can be pinned down from the experiments allowed:
-the reference player keeps every rule of the rung's language still
-consistent with what it has seen, runs whichever input splits them
-most evenly, and the machine is only dealt if that player then answers
-the whole test. A random experimenter cannot.
+On the patterns, transformations, composition, hidden-language and
+cryptography stages every machine also has a **quirk**: on a rare kind
+of row (one symbol throughout, a row that reads the same both ways, a
+row already in order) it does something else, and the test asks about
+it. So the simplest explanation of one experiment is never the whole
+story.
 
-Twenty-three agent ports. Ports 0–11 move the drawn pointer (up, down,
+**The language.** Every machine is a program; the end of a round
+prints it in this notation. Each step works on a whole row, symbols
+counted mod k:
+
+| Step | In words | `0 1 1 3 2 0` gives (four symbols) |
+|---|---|---|
+| `rev` | reverse | `0 2 3 1 1 0` |
+| `swap` | swap neighbours | `1 0 3 1 0 2` |
+| `rot(2)` | rotate right 2 | `2 0 0 1 1 3` |
+| `mirror` | reverse each half | `1 1 0 0 2 3` |
+| `weave` | evens first, then odds | `0 1 2 1 3 0` |
+| `unweave` | deal into evens and odds | `0 3 1 2 1 0` |
+| `perm([2,0,1,5,3,4])` | shuffle positions 201534 | `1 0 1 0 3 2` |
+| `stride(5)` | read every 5-th place, wrapping round | `0 0 2 3 1 1` |
+| `shift(1)` | add 1 to each | `1 2 2 0 3 1` |
+| `mul(3)` | multiply each by 3 | `0 3 3 1 2 0` |
+| `affine(3,1)` | multiply by 3 and add 1 | `1 0 0 2 3 1` |
+| `sub([1,0,3,2])` | substitute 1032 | `1 0 0 2 3 1` |
+| `prefix` | running sum | `0 1 2 1 3 3` |
+| `diff` | differences | `0 1 0 2 3 2` |
+| `sort` | sort | `0 0 1 1 2 3` |
+| `conv(1,2,0)` | out = 1*this + 2*before + 0 | `0 1 3 1 0 0` |
+| `runs` | count each run | `1 1 2 1 1 1` |
+| `oddshift(1)` | add 1 at odd places | `0 2 1 0 2 1` |
+| `fold` | add each to its mirror | `0 3 0 0 3 0` |
+| `xor(1)` | xor each with 1 | `1 0 0 2 3 1` |
+| `gf(2)` | multiply each by 2 in GF(k) | `0 2 2 1 3 0` |
+| `feistel(seq(shift(1)))` | a Feistel round of (add 1 to each) | `3 2 0 0 0 2` |
+| `dedupe` | drop repeats | `0 1 3 2 0` |
+| `double` | double each | `0 0 1 1 1 1 3 3 2 2 0 0` |
+| `halve` | keep every other | `0 1 2` |
+| `tshift(1)` | add 1 more each run | `1 2 2 0 3 1` (second run, after `1 2 3 0 1 2`) |
+| `mem` | add the last input | `1 3 0 3 3 2` (second run, after `1 2 3 0 1 2`) |
+
+Steps chain with `seq(a,b,...)`, and five forms combine them:
+`if(test,a,b)` (a when the test holds, else b), `alt(a,b)` (a on even
+runs, b on odd ones), `except(a,b)` (a, but b on a row of one symbol
+throughout), `meta(test,a,b,...)` (a until an input passes the test,
+then b, and so on round) and `prog(s:a,t:b)` (symbols s and t are
+instructions meaning a and b, the rest data: each instruction in the
+row is applied to the data in turn). The tests: `first(v)`, `last(v)`,
+`has(v)`, `evens(v)` (an even number of v), `sumeven`, `rises`,
+`same`, `pal`, `sorted`, and the stateful `tparity` (the run count is
+even) and `echo(v)` (the last answer started with v). `tshift`, `mem`,
+`alt`, `meta`, `tparity` and `echo` are why the test starts the machine
+afresh. `perm` and `feistel` are defined for one row length only, so
+machines using them get no longer-row question.
+
+**Every machine dealt can be pinned down, and needs to be.** The
+reference player keeps every rule of the rung's language still
+consistent with what it has seen and runs whichever input splits them
+most evenly. A machine is only dealt when, after the reference
+player's experiments:
+
+* every rule still standing gives the same answer to every test
+  question (so the answer follows from the experiments);
+* no simpler rule than the real one still fits (so the honest
+  explanation is the shortest one);
+* for every random first experiment, the simplest rule that fits it is
+  some other rule (so one look is never enough), and the test asks a
+  question each of those rules gets wrong, and questions that rules
+  which fitted a few experiments earlier get wrong;
+* the rung's commonest rule, and the rules most often mistaken for the
+  real one after a single stray experiment, each get a test question
+  wrong (a wrong-length answer counts only as far as the row goes, and
+  at most one test row is a single symbol throughout).
+
+**Measured** (`tools/bench_cipher.py`, 40 machines a rung on rungs
+1–60, 64, 70, 80 and 100). The reference player passes every round
+dealt. No shortcut player passes more than 2.5% of rounds on any rung.
+The shortcut players are: idle, random, always the identity, repeating
+the last answer, the rung's commonest rule, and a greedy player that
+runs one random experiment and commits to the first rule that fits.
+A deal takes 0.23 s on average and at most about half a second on any
+rung. Before
+this work the greedy player passed 6–97% of rounds (53% on average)
+and the commonest rule up to 30%.
+
+**The laboratory.** Above the intake row is the *hypothesis board*:
+write down a guess at the rule from blocks (two steps in a row, if …
+then … else, a rule per run, the rung's tests and transformations).
+The menu only offers blocks that fit the next empty slot, so whatever
+is on the board is a well-formed start of a program. **Check** (C) runs
+the finished guess over every row of the notebook from a fresh start
+and marks each row green or red. From rung 10 **Submit** (S) gives the
+guess itself as the answer: it wins when it behaves exactly like the
+machine on a large hidden set of inputs run in order (and on longer
+rows where both allow it), however it is written. **Predict** (P) makes
+you type what the machine will give before each run; the notebook
+ticks or crosses each guess. The notebook scrolls (PageUp/PageDown),
+sorts by time or by input (O), marks rows (M, or a click), shows a dot
+over every place the output changed, and shows each symbol's number
+under it (N hides them); shapes always tell the symbols apart, so
+colour is never needed. The machine's answer comes out symbol by
+symbol, each with its note, while the gears turn. The end of a round
+shows the machine in words and in its formal notation, how many bits
+each experiment told (the rung's rules standing before and after it),
+which told most, and the inputs a careful experimenter ran. On the
+very first round at rung 1 arrows walk you through it (remembered in
+the data folder).
+
+**Harder questions.** From rung 25 the last test question is on a row
+two symbols longer than any experiment, so a table of the rows seen
+cannot answer it: only the rule can. From rung 10 about one round in
+four is a *two machines* round: after the test, a second machine is
+described in words. It is either yours written another way (a step
+split in two, two steps that commute swapped) or one that differs from
+yours on only a few rows. Press **S** if they are the same, or give an
+input on which they differ. Whether they are the same always follows
+from the experiments. On the cryptography stage (rungs 19–21) some
+rounds are *invert it*: the machine is one-to-one, the test shows an
+output and asks for the input that gives it.
+
+**What it remembers.** Each operator you crack (rotate, shift, xor,
+...) goes into a small library in the data folder
+(`cipher_abyss_library.json`) with the rung where you first cracked it.
+Higher stages bring the same operators back inside new structure, and
+the end of a round says "you met rot at rung 4" when it does. One
+family is *held out*: reading every s-th place, wrapping round
+(`stride`), appears in no machine and no look-alike below rung 30, so
+the first time you meet it is a test of transfer, not of memory. **X**
+saves the notebook as plain numbers (`cipher_abyss_notebook.txt`) for
+keeping. Nothing is written in agent or test runs, and the first-time
+arrows only show in a visible session, so agent runs stay deterministic.
+
+**Scoring the reasoning, not only the result.** The ladder stays pass
+or fail. Beside it, every round is measured: test accuracy, experiments
+used against the reference player's, bits gained per experiment (the
+rung's rules standing before and after each one), the size of a
+submitted rule against the machine's, and the time taken. The end
+screen shows them, and a visible session appends one JSON object per
+round to `cipher_abyss_rounds.jsonl` in the data folder, with the
+fields `rung, stage, kind (crack, twins or invert), won, accuracy,
+questions, experiments, reference_experiments, bits,
+bits_per_experiment, rule, rule_size, submitted, submitted_size,
+seconds`. An agent sees these only as the end screen's pixels: the
+agent boundary gives the learner pixels, sound and the pass/fail
+scalar, nothing else, so they are never a reward.
+`tools/score_cipher.py` is the benchmark: a fixed list of rounds (the
+first rung and two rungs into every stage, rungs 30, 46 and 52 for the
+held-out family and the open top, the same seeds every time), played
+by any player given as `module:function` (default: the reference
+player), or scores a results file with `--rounds`.
+
+Keys: **1–8** symbols, **Backspace** takes one out, **Enter** runs or
+answers, **T** starts the test, **Up/Down** and **Space** pick a block,
+**Z** takes one off, **C** checks, **S** submits, **P** predicts,
+**PageUp/PageDown**, **M**, **N**, **O** for the notebook. Everything
+can also be clicked.
+
+Thirty-seven agent ports. Ports 0–11 move the drawn pointer (up, down,
 left, right by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses
-its button and 13 lets it go; 14–19 add symbols 0–5, 20 takes the last
-one out, 21 runs (or answers) and 22 starts the test. The agent hears
-every answer as a short tune. Clocked, but the clock is long.
+its button and 13 lets it go; 14–21 add symbols 0–7, 22 takes the last
+one out, 23 runs (or answers) and 24 starts the test. The hypothesis
+board is ports too: 25/26 move down/up the block menu, 27 adds the
+block, 28 takes one off, 29 checks, 30 submits; 31 turns predicting on
+or off, 32/33 scroll the notebook, 34 marks its last row, 35 toggles
+numbers and 36 sorts. The agent hears every answer as a short tune.
+Clocked, but the clock is long.
 
 #### Crazy Cog
 
