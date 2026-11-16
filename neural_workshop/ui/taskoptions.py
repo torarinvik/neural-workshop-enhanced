@@ -2246,6 +2246,252 @@ GUN = TaskSpec(
     note=gunslinger_note)
 
 
+def potter_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import potter
+    level = potter.grade(int(chosen['POTTER_RUNG']))
+    said = [_('Rung %d: %d bands.') % (level.rung, level.bands)]
+    if level.dry:
+        said.append(_('The clay dries.'))
+    if level.ghost != 'over':
+        said.append(_('The pot wanted is not drawn over the clay.'))
+    return '  '.join(said)
+
+
+POTTER = TaskSpec(
+    title=_("Potter's Wheel options"),
+    options=(
+        Option('POTTER_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('POTTER_TRIALS', _('Pots per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('POTTER_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=potter_note)
+
+
+def conductor_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import conductor
+    level = conductor.grade(int(chosen['CONDUCT_RUNG']))
+    said = [_('Rung %d: %d beats, %d cues.') % (level.rung, level.beats, level.cues)]
+    if level.bend:
+        said.append(_('The tempo wanders.'))
+    return '  '.join(said)
+
+
+CONDUCT = TaskSpec(
+    title=_('Conductor options'),
+    options=(
+        Option('CONDUCT_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('CONDUCT_TRIALS', _('Pieces per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('CONDUCT_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=conductor_note)
+
+
+def tightrope_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import tightrope
+    level = tightrope.grade(int(chosen['ROPE_RUNG']))
+    said = [_('Rung %d: %d steps.') % (level.rung, level.steps)]
+    if level.gusts:
+        said.append(_('%d gusts.') % level.gusts)
+    if level.birds:
+        said.append(_('%d birds.') % level.birds)
+    return '  '.join(said)
+
+
+ROPE = TaskSpec(
+    title=_('Tightrope options'),
+    options=(
+        Option('ROPE_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('ROPE_TRIALS', _('Crossings per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('ROPE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=tightrope_note)
+
+
+def signpainter_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import signpainter
+    level = signpainter.grade(int(chosen['SIGN_RUNG']))
+    said = [_('Rung %d.') % level.rung]
+    if level.colour:
+        said.append(_('In the colour asked for.'))
+    if level.swing:
+        said.append(_('The board swings.'))
+    if level.guide != 'outline':
+        said.append(_('No outline.'))
+    return '  '.join(said)
+
+
+SIGN = TaskSpec(
+    title=_('Sign Painter options'),
+    options=(
+        Option('SIGN_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('SIGN_TRIALS', _('Signs per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('SIGN_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=signpainter_note)
+
+
+def bartender_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import bartender
+    level = bartender.grade(int(chosen['BAR_RUNG']))
+    said = [_('Rung %d: %d customers, %d bottles.') % (level.rung, level.customers, level.bottles)]
+    if level.pewter:
+        said.append(_('Pour by ear.'))
+    if level.usual:
+        said.append(_('Remember the usual.'))
+    return '  '.join(said)
+
+
+BAR = TaskSpec(
+    title=_('Bartender options'),
+    options=(
+        Option('BAR_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('BAR_TRIALS', _('Nights per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('BAR_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=bartender_note)
+
+
+def lockpick_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import lockpick
+    level = lockpick.grade(int(chosen['PICK_RUNG']))
+    said = [_('Rung %d: %d pins.') % (level.rung, level.pins)]
+    if level.false:
+        said.append(_('Some clicks are false.'))
+    if level.hidden:
+        said.append(_('The pins are not shown.'))
+    return '  '.join(said)
+
+
+PICK = TaskSpec(
+    title=_('Lock Pick options'),
+    options=(
+        Option('PICK_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('PICK_TRIALS', _('Locks per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('PICK_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=lockpick_note)
+
+
+def airhockey_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import airhockey
+    level = airhockey.grade(int(chosen['HOCKEY_RUNG']))
+    said = [_('Rung %d: first to %d; %d against loses.') % (level.rung, level.need, level.allow)]
+    if level.swing:
+        said.append(_('The camera swings.'))
+    if level.flips:
+        said.append(_('At times you look from the far end.'))
+    return '  '.join(said)
+
+
+HOCKEY = TaskSpec(
+    title=_('Air Hockey options'),
+    options=(
+        Option('HOCKEY_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('HOCKEY_TRIALS', _('Games per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('HOCKEY_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=airhockey_note)
+
+
+def semaphore_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import semaphore
+    level = semaphore.grade(int(chosen['SEMA_RUNG']))
+    said = [_('Rung %d: %d letters, %.1f seconds each.') % (level.rung, level.letters, level.hold)]
+    if level.turns:
+        said.append(_('The signaller sometimes turns their back.'))
+    if level.help == 'none':
+        said.append(_('No chart.'))
+    return '  '.join(said)
+
+
+SEMA = TaskSpec(
+    title=_('Semaphore options'),
+    options=(
+        Option('SEMA_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('SEMA_TRIALS', _('Messages per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('SEMA_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=semaphore_note)
+
+
+def shadowpuppets_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import shadowpuppets
+    level = shadowpuppets.grade(int(chosen['PUPPET_RUNG']))
+    said = [_('Rung %d: %d shadows, within %d degrees.') % (level.rung, level.shadows, level.near)]
+    if level.hidden:
+        said.append(_('The figure is hidden.'))
+    return '  '.join(said)
+
+
+PUPPET = TaskSpec(
+    title=_('Shadow Puppets options'),
+    options=(
+        Option('PUPPET_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('PUPPET_TRIALS', _('Figures per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('PUPPET_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=shadowpuppets_note)
+
+
+def nightwatch_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import nightwatch
+    level = nightwatch.grade(int(chosen['WATCH_RUNG']))
+    said = [_('Rung %d: %d thieves, %d others.') % (level.rung, level.thieves, level.others)]
+    if not level.fixed:
+        said.append(_('Read the orders: the colours change.'))
+    return '  '.join(said)
+
+
+WATCH = TaskSpec(
+    title=_('Night Watch options'),
+    options=(
+        Option('WATCH_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('WATCH_TRIALS', _('Nights per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('WATCH_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=nightwatch_note)
+
+
 def wiring_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung wires up."""
     from .. import wiring
@@ -4045,6 +4291,16 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'forms': FORMS,
     'wiring': WIRING,
     'gamble': GAMBLE,
+    'night_watch': WATCH,
+    'shadow_puppets': PUPPET,
+    'semaphore': SEMA,
+    'air_hockey': HOCKEY,
+    'lock_pick': PICK,
+    'bartender': BAR,
+    'sign_painter': SIGN,
+    'tightrope': ROPE,
+    'conductor': CONDUCT,
+    'potters_wheel': POTTER,
     'gunslinger': GUN,
     'loading_dock': DOCK,
     'stagehand': STAGE,

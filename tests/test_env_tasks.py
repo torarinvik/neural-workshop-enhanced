@@ -755,7 +755,7 @@ class TheBoundaryKnowsWhichTasksHaveAClock(unittest.TestCase):
                         'chain_of_custody', 'cookie_thief', 'donkey',
                         'two_hands', 'tetris', 'overrun', 'marble_maze',
                         'video_sequence', 'video_jigsaw', 'what_next',
-                        'which_is_nearer', 'shape_from_motion', 'stop_and_switch', 'delay', 'lander', 'rail_yard', 'air_traffic', 'firebreak', 'escort', 'sokoban_live', 'kitchen', 'crane', 'ferry', 'juggler', 'balance', 'crossroads', 'dam_keeper', 'dr_shape', 'keep_the_beat', 'time_it', 'hold_it', 'glider', 'tuner', 'shadow_play', 'catch', 'echo_cave', 'drone_hoops', 'field_manual', 'safecracker', 'stagehand', 'loading_dock', 'gunslinger', 'dispatch'):
+                        'which_is_nearer', 'shape_from_motion', 'stop_and_switch', 'delay', 'lander', 'rail_yard', 'air_traffic', 'firebreak', 'escort', 'sokoban_live', 'kitchen', 'crane', 'ferry', 'juggler', 'balance', 'crossroads', 'dam_keeper', 'dr_shape', 'keep_the_beat', 'time_it', 'hold_it', 'glider', 'tuner', 'shadow_play', 'catch', 'echo_cave', 'drone_hoops', 'field_manual', 'safecracker', 'stagehand', 'loading_dock', 'gunslinger', 'potters_wheel', 'conductor', 'tightrope', 'sign_painter', 'bartender', 'lock_pick', 'air_hockey', 'semaphore', 'shadow_puppets', 'night_watch', 'dispatch'):
             self.assertTrue(self.clocked(task_id), task_id)
 
     def test_the_ports_are_the_ones_the_task_has(self):

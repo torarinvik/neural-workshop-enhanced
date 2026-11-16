@@ -54,10 +54,13 @@ class MenuTests(unittest.TestCase):
                               'keep_the_beat', 'glider', 'catch',
                               'echo_cave', 'drone_hoops', 'field_manual',
                               'safecracker', 'stagehand', 'loading_dock',
-                              'gunslinger'])
+                              'gunslinger', 'potters_wheel', 'conductor',
+                              'tightrope', 'sign_painter',
+                              'bartender', 'lock_pick', 'air_hockey', 'semaphore',
+                              'shadow_puppets', 'night_watch'])
             hub.set_category('attention')
             self.assertEqual(hub.category, 'attention')
-            self.assertEqual(len(hub.task_rects), 25)
+            self.assertEqual(len(hub.task_rects), 35)
             hub.set_category('long_term_memory')
             self.assertEqual(hub.category, 'long_term_memory')
             self.assertEqual(len(hub.task_rects), 5)

@@ -168,3 +168,29 @@ def play(run, pilot: Callable, events: Tuple[int, ...], act: Callable,
             port = None
         run.step(dt, port)
     return run.result
+
+
+def act(run, port: int) -> None:
+    """The usual ports: 0-11 move, 12 presses, 13 lets go, and anything
+    after goes to the run's ``key``."""
+    if port < PRESS:
+        run.hand.move(port)
+    elif port == PRESS:
+        run.press()
+    elif port == RELEASE:
+        run.release()
+    else:
+        run.key(port)
+
+
+def deal(module, rung: int, seed: Optional[int] = None, rng=None,
+         tries: int = 80):
+    """A round of *module* at *rung* that its reference player finishes."""
+    import random
+    draw = random.Random(seed) if seed is not None else (rng or random)
+    level = module.grade(rung)
+    for _try in range(tries):
+        dealt = module.build(level, random.Random(draw.getrandbits(32)))
+        if dealt is not None and module.play(dealt)[0]:
+            return dealt
+    raise RuntimeError('%s: no round for rung %d' % (module.__name__, rung))

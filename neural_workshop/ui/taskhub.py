@@ -76,6 +76,16 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('stagehand', _('Stagehand')),
         ('loading_dock', _('Loading Dock')),
         ('gunslinger', _('Gunslinger')),
+        ('potters_wheel', _("Potter's Wheel")),
+        ('conductor', _('Conductor')),
+        ('tightrope', _('Tightrope')),
+        ('sign_painter', _('Sign Painter')),
+        ('bartender', _('Bartender')),
+        ('lock_pick', _('Lock Pick')),
+        ('air_hockey', _('Air Hockey')),
+        ('semaphore', _('Semaphore')),
+        ('shadow_puppets', _('Shadow Puppets')),
+        ('night_watch', _('Night Watch')),
     ],
     'perception': [
         ('count', _('Count')),
@@ -838,6 +848,46 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'gunslinger':
         from .gunslinger import Gunslinger
         Gunslinger()
+        return
+    if task_id == 'potters_wheel':
+        from .potter import PottersWheel
+        PottersWheel()
+        return
+    if task_id == 'conductor':
+        from .conductor import Conductor
+        Conductor()
+        return
+    if task_id == 'tightrope':
+        from .tightrope import Tightrope
+        Tightrope()
+        return
+    if task_id == 'sign_painter':
+        from .signpainter import SignPainter
+        SignPainter()
+        return
+    if task_id == 'bartender':
+        from .bartender import Bartender
+        Bartender()
+        return
+    if task_id == 'lock_pick':
+        from .lockpick import LockPick
+        LockPick()
+        return
+    if task_id == 'air_hockey':
+        from .airhockey import AirHockey
+        AirHockey()
+        return
+    if task_id == 'semaphore':
+        from .semaphore import Semaphore
+        Semaphore()
+        return
+    if task_id == 'shadow_puppets':
+        from .shadowpuppets import ShadowPuppets
+        ShadowPuppets()
+        return
+    if task_id == 'night_watch':
+        from .nightwatch import NightWatch
+        NightWatch()
         return
     if task_id == 'gamble':
         from .gamble import Gamble

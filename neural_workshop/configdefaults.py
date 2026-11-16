@@ -751,6 +751,78 @@ GAMBLE_RUNG = 1
 GAMBLE_TRIALS = 5
 GAMBLE_ADAPTIVE = True
 
+# Night Watch: find the thieves by torchlight and by ear before one
+# reaches the safe. A guard and a cat from rung 4, a floor wider than
+# the view from 7, colours that change from 10, steps that all sound
+# alike from 13.
+WATCH_RUNG = 1
+WATCH_TRIALS = 5
+WATCH_ADAPTIVE = True
+
+# Shadow Puppets: turn the block figure until its shadow is the shape
+# asked for. A shape from every side from rung 4, the shape on a card
+# from 7, two shadows from 10, shapes only named from 13, the figure
+# hidden from 16.
+PUPPET_RUNG = 1
+PUPPET_TRIALS = 5
+PUPPET_ADAPTIVE = True
+
+# Semaphore: copy the far signaller's flags with yours and type the
+# letter. No letter written from rung 4, a rolling ship from 7, a chart
+# that goes away from 10, a turned back from 13, no chart from 16, fog
+# from 20.
+SEMA_RUNG = 1
+SEMA_TRIALS = 5
+SEMA_ADAPTIVE = True
+
+# Air Hockey: score with the mallet under the pointer, keep goal with
+# the keys. More goals to win from rung 4, a quicker opponent from 7, a
+# swinging camera from 13, views from the far end from 16.
+HOCKEY_RUNG = 1
+HOCKEY_TRIALS = 5
+HOCKEY_ADAPTIVE = True
+
+# Lock Pick: hold the tension in its band and lift each pin until it
+# sets. Any binding order and no glow from rung 4, no tone from 7, false
+# clicks from 10, pins unseen from 13.
+PICK_RUNG = 1
+PICK_TRIALS = 5
+PICK_ADAPTIVE = True
+
+# Bartender: pour what each customer ordered and slide it to their
+# seat. Doubles from rung 4, ice from 7, a pewter mug you cannot see
+# into from 10, 'the usual' from 13.
+BAR_RUNG = 1
+BAR_TRIALS = 5
+BAR_ADAPTIVE = True
+
+# Sign Painter: paint the word asked for on the hanging board. A colour
+# from rung 4, only corners marked and a brush that runs dry from 7, a
+# swinging board from 10, a bare board from 13, a dragging brush from 16.
+SIGN_RUNG = 1
+SIGN_TRIALS = 5
+SIGN_ADAPTIVE = True
+
+# Tightrope: step across, balancing with the pole. A sway from rung 4,
+# gusts from 7, birds on the pole from 10, all sharper after.
+ROPE_RUNG = 1
+ROPE_TRIALS = 5
+ROPE_ADAPTIVE = True
+
+# Conductor: beat time with the pointer and give the written cues on
+# their beats. Louder and softer from rung 4, fewer beat numbers and
+# cuts from 7, strict time from 10, a wandering tempo from 16.
+CONDUCT_RUNG = 1
+CONDUCT_TRIALS = 5
+CONDUCT_ADAPTIVE = True
+
+# Potter's Wheel: shape the turning clay to the pot shown. More bands
+# and clay that dries from rung 4, the pot beside the clay from 7, a
+# wobble at speed from 10, the pot shown only briefly from 13.
+POTTER_RUNG = 1
+POTTER_TRIALS = 5
+POTTER_ADAPTIVE = True
+
 # Gunslinger: a duel. Fire when he draws, not before, and shoot first.
 # Cock the hammer from rung 4, several men and feints from 7, his hat
 # from 10, pacing men from 13, dust and a drifting camera from 16.

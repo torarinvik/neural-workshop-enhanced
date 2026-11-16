@@ -105,6 +105,7 @@ class HandTask(Tones, ClockedTask):
         polish.card(d, batch, ox - 4, oy - 4, hand.W * s + 8, hand.H * s + 8,
                     self.BACK, radius=14, shade=(0, 0, 0, 60),
                     group=polish.STAGE)
+        self.layer = 0
         self._scene(run, s)
         top = pyglet.graphics.Group(order=195)
         share = max(0.0, (run.end - run.t) / run.end)
@@ -175,7 +176,23 @@ class HandTask(Tones, ClockedTask):
             x, y, max(1.0, r * self.fit[2]), color=colour, batch=self.batch,
             group=group))
 
+    def g(self):
+        """The next layer up: scenes paint back to front."""
+        self.layer += 1
+        return pyglet.graphics.Group(order=self.layer)
+
+    def oval(self, p, rx: float, ry: float, colour, group, n: int = 20
+             ) -> None:
+        self.poly([(p[0] + rx * math.cos(a), p[1] + ry * math.sin(a))
+                   for a in (2 * math.pi * k / n for k in range(n))],
+                  colour, group)
+
     def rect(self, x, y, w, h, colour, group) -> None:
+        x1, y1 = min(hand.W, x + w), min(hand.H, y + h)
+        x, y = max(0.0, x), max(0.0, y)
+        w, h = x1 - x, y1 - y
+        if w <= 0 or h <= 0:
+            return
         ax, ay = self.px(x, y)
         s = self.fit[2]
         self.drawn.append(pyglet.shapes.Rectangle(

@@ -3434,6 +3434,250 @@ Fifteen agent ports. Ports 0–11 move the sight (up, down, left, right
 by 80, 20 or 5 units of a 1000 by 640 screen), 12 pulls the trigger
 and 13 lets it go; 14 cocks the hammer. Clocked.
 
+#### Potter's Wheel
+
+A lump of clay turns on the wheel. **Hold the mouse button** against it
+at some height and the clay there moves, slowly, to where the pointer
+is: in to narrow it, out to widen it. Shape it to the pot you are
+shown, foot to rim, and take your hands off. **Up** and **Down** change
+the wheel's speed (a faster wheel shapes faster and wobbles more);
+**Space** wets the clay, which dries as it turns and will not move when
+dry. Press a band to nothing, or draw it out too far, and the pot
+collapses.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Four bands, the pot drawn over the clay, clay that stays wet |
+| 4–6 | Six bands; the clay dries; moving a band drags its neighbours |
+| 7–9 | Eight bands; the pot is drawn beside the clay, not over it |
+| 10–12 | The wheel wobbles at speed; a finer match |
+| 13–19 | Ten bands; the pot is shown for a few seconds and taken away |
+| 20+ | More bands, a finer match, quicker drying and less time every rung |
+
+Seventeen agent ports. Ports 0–11 move the drawn pointer (up, down, left, right
+by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses its button
+and 13 lets it go; 14 spins the wheel faster, 15 slower, 16 wets
+the clay. Clocked.
+
+#### Conductor
+
+The orchestra from the podium: strings to the left, woodwind in the
+middle, brass to the right, drums at the back. The drummer gives the
+pulse. **Flick the pointer down** on every beat. The score along the
+top says what else is wanted and when: "Beat 5: bring in the brass"
+(**click** that section, on that beat), "Beat 9: louder" (**Up**),
+"Beat 12: softer" (**Down**), "Beat 14: cut the strings" (click them
+again). A section that has been brought in is heard; one that has not
+is silent. A missed beat, a missed cue or a wrong one is a slip.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Eight slow beats, one cue, the beat number shown, three slips forgiven |
+| 4–6 | Twelve beats, two cues, louder and softer |
+| 7–9 | The beat number only on the first of each four; cuts as well as entries |
+| 10–12 | Quicker; a stray beat now counts as a slip |
+| 13–15 | No beat numbers after the first four |
+| 16–19 | The tempo bends: follow the drummer |
+| 20+ | Longer pieces, more cues, a quicker pulse, a narrower moment, fewer slips forgiven |
+
+Sixteen agent ports. Ports 0–11 move the drawn pointer (up, down, left, right
+by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses its button
+and 13 lets it go; 14 is louder and 15 softer. Clocked.
+
+#### Tightrope
+
+You are on a wire between two towers with a long pole. Move the
+**mouse** left and right and the pole slides that way, which tips you
+back the other way: when you lean left, put the pole out to the right.
+**Space** (or Up, or W) takes a step, and every step jolts you. Lean
+too far and you are off. A gust of wind is heard coming, from the side
+it will blow from, a second before it hits. Birds land on the pole and
+weigh that end down until you **click** them off, which means reaching
+out to them.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Six steps, gentle jolts, plenty of time |
+| 4–6 | Ten steps; the wire sways under you |
+| 7–9 | Gusts of wind |
+| 10–12 | Birds on the pole |
+| 13–19 | Fourteen steps, a livelier wire, stronger gusts |
+| 20+ | More steps, harder jolts, more wind and birds, less time every rung |
+
+Fifteen agent ports. Ports 0–11 move the drawn pointer (up, down, left, right
+by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses its button
+and 13 lets it go; 14 takes a step. Clocked.
+
+#### Sign Painter
+
+A board hangs on two chains and the job is written above it: "Paint
+TENT in blue." The letters are made of straight strokes: put the brush
+down at the start of a stroke (**hold the button**), draw it along to
+its end, lift. Wander off a stroke with the brush down, or paint in
+the wrong colour, and you have smudged the sign; three smudges ruin
+it. **1–4** (or R, G, B, Y) take up red, green, blue and yellow;
+**Space** dips the brush when it runs dry.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Two or three letters, drawn faintly on the board; a wide brush; any colour |
+| 4–6 | The colour named in the job |
+| 7–9 | Only the corners of each letter are marked; the brush runs dry |
+| 10–12 | Four letters; the board swings on its chains |
+| 13–15 | Nothing is marked: you know your letters |
+| 16–19 | Five letters, and a brush that drags behind the hand |
+| 20+ | A finer brush, a wider swing, less paint and less time every rung |
+
+Nineteen agent ports. Ports 0–11 move the drawn pointer (up, down, left, right
+by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses its button
+and 13 lets it go; 14–17 pick red, green, blue and yellow, 18
+dips the brush. Clocked.
+
+#### Bartender
+
+You stand at the near end of a long bar with bottles on the shelf and
+one glass. Orders come up in words: "Seat 3: a double red on the
+rocks." **Hold a bottle over the glass** to pour: the glass sings a
+higher note the fuller it gets. A single is half a glass, a double a
+full one; over the brim is a spill. **Space** puts ice in. Then **take
+the glass, draw it back, push it forward and let go**: it slides four
+times as far as you pushed it, and has to stop in front of the
+customer who ordered it. A wrong drink, a spill, a glass off the end
+of the bar or a customer who gives up waiting is a strike.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | One customer, two bottles, singles |
+| 4–6 | Two customers; doubles |
+| 7–9 | Three customers; ice |
+| 10–12 | A pewter mug: the level has to be heard; only two strikes |
+| 13–15 | Four customers, and regulars who ask for "the usual": what that hat had last time |
+| 16–19 | Five customers, less patient |
+| 20+ | More customers, more bottles, less patience |
+
+Fifteen agent ports. Ports 0–11 move the drawn pointer (up, down, left, right
+by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses its button
+and 13 lets it go; 14 is the ice. Clocked.
+
+#### Lock Pick
+
+A lock cut open, its pins in a row, and two hands' work. One holds
+tension on the plug: **hold Space** (or T) and it builds, let go and it
+eases, and it has to stay in the band on the gauge -- too little and
+set pins drop back, too much and the wrench slips. The other works the
+pick: put its tip under a pin, **hold the button**, and raise it. Only
+one pin binds at a time. Raise that one to its own height and it sets
+with a click; shove it past and the lock jams and every pin drops.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Three pins that bind left to right; the binding pin glows; a tone climbs as it nears its height |
+| 4–6 | Four pins in any order; no glow -- the binding pin sounds stiff when touched |
+| 7–9 | Five pins; no climbing tone, only the click; a narrower band |
+| 10–12 | Pins that are not binding give false clicks, higher than the true one |
+| 13–19 | Six pins, and the pins cannot be seen |
+| 20+ | More pins, finer heights, a narrower band, less time every rung |
+
+Fifteen agent ports. Ports 0–11 move the drawn pointer (up, down, left, right
+by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses its button
+and 13 lets it go; port 14, held, tightens the wrench. Clocked.
+
+#### Air Hockey
+
+A table seen from your end. Your mallet goes where the **mouse** is on
+your half; knock the puck into the far goal. Your own goal is kept by
+a short bar that slides across its mouth on **Left / A** and **Right /
+D**, so one hand attacks while the other defends. A puck that meets a
+still mallet goes dead: it has to be struck. First to the goals wanted
+wins; let in too many and you have lost.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | One goal wins, three lose; a slow puck and opponent |
+| 4–6 | Two goals to win; a quicker puck |
+| 7–9 | A wider goal to keep; a quicker opponent |
+| 10–12 | Three goals to win, two lose |
+| 13–15 | The camera swings from side to side over the table |
+| 16–19 | And at times looks from the far end |
+| 20+ | A faster puck and opponent every rung; one goal against loses |
+
+Sixteen agent ports. Ports 0–11 move the drawn pointer (up, down, left, right
+by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses its button
+and 13 lets it go; ports 14 and 15, held, slide the bar left and
+right. Clocked.
+
+#### Semaphore
+
+A signaller on a far ship holds two flags; each pair of positions is a
+letter in the workshop's own code. **Drag your own two flags** by their
+tips to the same pose, then **type the letter**, before the signaller
+moves on. A wrong letter, flags that do not match, or a signal let
+pass is a strike. When the signaller's back is to you, what you see is
+the mirror of the letter, and yours must be the letter itself.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Four slow letters of a word, each written beside the signaller: learn the code |
+| 4–6 | No letter written; the code chart is on the screen |
+| 7–9 | The ship rolls, so nothing is quite upright |
+| 10–12 | The chart shows only at the start of each signal; two strikes lose |
+| 13–15 | The signaller sometimes turns their back |
+| 16–19 | No chart, and letters that spell nothing |
+| 20+ | Fog, more letters, and a faster hand every rung |
+
+Forty agent ports. Ports 0–11 move the drawn pointer (up, down, left, right
+by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses its button
+and 13 lets it go; ports 14–39 are the letters A to Z. Clocked.
+
+#### Shadow Puppets
+
+A lamp throws the shadow of a figure made of blocks on the wall.
+**Drag** to turn the figure (across spins it, up and down tips it) and
+roll it with **Q** and **E**. Bring its shadow to the shape asked for
+and hold it there a moment. The same figure throws quite different
+shadows from different sides.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | A flat figure, the wanted shadow drawn on the wall under the real one, a tone that rises as you near it |
+| 4–6 | A figure with a different shape from every side |
+| 7–9 | The wanted shadow is on a card, not on the wall |
+| 10–12 | Two shadows one after the other; no tone |
+| 13–15 | The shape is only named: "Cast a T" |
+| 16–19 | The figure is behind a screen: you see its shadow alone |
+| 20+ | Three shadows and more, a finer fit every rung |
+
+Sixteen agent ports. Ports 0–11 move the drawn pointer (up, down, left, right
+by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses its button
+and 13 lets it go; 14 and 15 roll the figure a little left and
+right. Clocked.
+
+#### Night Watch
+
+A dark warehouse and one torch: you see only the round of light at the
+**mouse**. People come in at the doors -- thieves, who walk to the
+safe; the guard on his round; the cat -- and every footstep sounds
+from the side it falls on. The night's orders, along the top, say what
+a thief wears. **Click** a thief to catch them. Clicking anyone else
+is a strike, a click on nobody wastes one of your few whistle blasts,
+and a thief who reaches the safe ends the night. When the floor is
+wider than the view, **Left / A** and **Right / D** turn you along it.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Two slow thieves in red caps, a floor you see whole, a wide torch |
+| 4–6 | Three thieves, with a guard and a cat about; the guard's keys jingle |
+| 7–9 | A floor wider than the view |
+| 10–12 | The orders name tonight's colours, which change; a narrower torch; two strikes lose |
+| 13–15 | Every step sounds the same |
+| 16–19 | A wider floor yet, and thieves who do not walk straight |
+| 20+ | More thieves, quicker, in a smaller light every rung; one strike loses |
+
+Sixteen agent ports. Ports 0–11 move the drawn pointer (up, down, left, right
+by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses its button
+and 13 lets it go; ports 14 and 15, held, turn the view left and
+right. Clocked.
+
 #### Rail Yard
 
 Trains leave a tunnel one after another, each painted the colour of the

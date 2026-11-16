@@ -31,6 +31,16 @@ if __name__ == '__main__':
     from test_sonar import *           # noqa: F401,F403,E402
     from test_hiddenrule import *      # noqa: F401,F403,E402
     from test_gamble import *  # noqa: F401,F403,E402
+    from test_nightwatch import *  # noqa: F401,F403,E402
+    from test_shadowpuppets import *  # noqa: F401,F403,E402
+    from test_semaphore import *  # noqa: F401,F403,E402
+    from test_airhockey import *  # noqa: F401,F403,E402
+    from test_lockpick import *  # noqa: F401,F403,E402
+    from test_bartender import *  # noqa: F401,F403,E402
+    from test_signpainter import *  # noqa: F401,F403,E402
+    from test_tightrope import *  # noqa: F401,F403,E402
+    from test_conductor import *  # noqa: F401,F403,E402
+    from test_potter import *  # noqa: F401,F403,E402
     from test_gunslinger import *  # noqa: F401,F403,E402
     from test_loadingdock import *  # noqa: F401,F403,E402
     from test_stagehand import *  # noqa: F401,F403,E402
