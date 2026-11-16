@@ -33,11 +33,27 @@ class TheLadder(unittest.TestCase):
                          list(range(1, len(starts) + 1)))
         self.assertLess(M.grade(60).budget, M.grade(40).budget)
 
-    def test_the_open_top_has_a_ceiling(self):
-        hi, top = M.grade(200), M.grade(100)
-        self.assertEqual(hi[3:7], top[3:7])     # k, length, budget, tests
-        biggest = max(L.size(r) for r in M.truths(hi))
-        self.assertLessEqual(biggest, 60)
+    def test_the_first_rungs_are_gentle(self):
+        one, two, three = M.grade(1), M.grade(2), M.grade(3)
+        self.assertTrue(M.gentle(one) and M.gentle(two))
+        self.assertFalse(M.gentle(three))
+        self.assertEqual((one.length, one.tests), (3, 2))
+        self.assertEqual(len(M.truths(one)), 5)
+        for level in (one, two):              # one plain step, no "if"
+            self.assertTrue(all(isinstance(r, L.Seq) and len(r.parts) == 1
+                                for r in M.truths(level)))
+        self.assertTrue(any(isinstance(r, L.If) for r in M.truths(three)))
+
+    def test_the_open_top_never_stops_growing(self):
+        def biggest(rung):
+            return max(L.size(r) for r in M.truths(M.grade(rung)))
+        sizes = [biggest(r) for r in (40, 100, 400, 1600)]
+        self.assertEqual(sizes, sorted(sizes))
+        self.assertGreater(sizes[-1], 4 * sizes[0])
+        far = M.grade(100000)
+        self.assertEqual((far.k, far.length, far.budget, far.tests),
+                         (8, 12, 4, 6))
+        self.assertTrue(M.play(M.deal(700, seed=1))[0])
 
     def test_every_stage_has_machines(self):
         for start, _name in M.STAGES:
@@ -90,7 +106,7 @@ class TheGuarantees(unittest.TestCase):
                              min(L.size(r) for r in mind.alive))
 
     def test_one_look_is_never_enough(self):
-        for rung in (1, 4, 10):
+        for rung in (3, 4, 10):               # past the gentle rungs
             m = M.deal(rung, seed=5)
             self.assertTrue(M._one_look(m.level)[m.rule])
 

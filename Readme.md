@@ -2612,7 +2612,7 @@ experiment fewer).
 
 | Rung | Stage | What the machine can do |
 |---|---|---|
-| 1–3 | Patterns | Two colours: positions moved about (reverse, rotate, swap neighbours, reverse each half, weave, sort), the colours flipped everywhere or at odd places |
+| 1–3 | Patterns | Two colours. Rung 1 is the gentle start: a row of three, and the machine does one of five plain things (reverse, rotate by one or two, swap neighbours, flip the colours), two questions. Rung 2: a row of four and one named move or one flip. Rung 3: a move and a flip together, with a hidden quirk |
 | 4–6 | Transformations | Three symbols mod 3: shifts, multiplying, affine maps, running sums, differences, sorting, counting runs, adding each to its mirror |
 | 7–9 | Conditions | One transformation or another, picked by a hidden test of the input |
 | 10–12 | Composition | Two transformations chained |
@@ -2622,10 +2622,10 @@ experiment fewer).
 | 22–24 | Rules that change rules | A list of rules worked through, moving on after every input that passes a hidden test |
 | 25–27 | Nested | The test that picks the rule may look at the machine's own last answer or its run count; the branches are chains |
 | 28–39 | Adversarial | A hidden exception for a row of one symbol (always asked about); rules that drop repeats, double up or halve the row; six symbols, longer rows, fewer experiments |
-| 40+ | Open-ended | Programs grown at random from the whole language (held-out family included): chains a step longer every six rungs, branches inside branches every twelve, up to a ceiling (five-step chains, two levels of branches, reached by rung 64), after which the machines stay as hard and as quick to deal, only new |
+| 40+ | Open-ended | No ceiling. Programs grown at random from the whole language (held-out family included). Chains lengthen with the square root of the climb and branches nest with its logarithm, so the machines grow for ever: about 10 steps at rung 40, 70 at rung 100, over a thousand at rung 2000. Symbols rise to eight, rows to twelve, questions to six, and experiments fall to four |
 
-On the patterns, transformations, composition, hidden-language and
-cryptography stages every machine also has a **quirk**: on a rare kind
+On the patterns (from rung 3), transformations, composition,
+hidden-language and cryptography stages every machine also has a **quirk**: on a rare kind
 of row (one symbol throughout, a row that reads the same both ways, a
 row already in order) it does something else, and the test asks about
 it. So the simplest explanation of one experiment is never the whole
@@ -2698,16 +2698,20 @@ player's experiments:
   wrong (a wrong-length answer counts only as far as the row goes, and
   at most one test row is a single symbol throughout).
 
-**Measured** (`tools/bench_cipher.py`, 40 machines a rung on rungs
-1–60, 64, 70, 80 and 100). The reference player passes every round
-dealt. No shortcut player passes more than 2.5% of rounds on any rung.
-The shortcut players are: idle, random, always the identity, repeating
-the last answer, the rung's commonest rule, and a greedy player that
-runs one random experiment and commits to the first rule that fits.
-A deal takes 0.23 s on average and at most about half a second on any
-rung. Before
-this work the greedy player passed 6–97% of rounds (53% on average)
-and the commonest rule up to 30%.
+On rungs 1 and 2 the guarantees are deliberately looser: one good
+experiment may be enough, and with so few machines a guess is sometimes
+right, so the greedy and commonest-rule players pass a good share
+there. The blind players (idle, random, identity, repeat) still fail.
+
+**Measured** (`tools/bench_cipher.py`, 30 machines a rung on every
+other rung from 1 to 59 and on 64, 70, 80, 100, 150 and 300). The
+reference player passes every round dealt, and every machine built
+before the filter too. Past the gentle rungs no shortcut player passes
+more than 3.3% of rounds on any rung. A deal takes 0.37 s on average:
+under 0.6 s up to rung 64, and about 1 s on the far rungs, where the
+machines run to dozens of steps. Before this work the greedy player
+passed 6–97% of rounds (53% on average) and the commonest rule up to
+30%.
 
 **The laboratory.** Above the intake row is the *hypothesis board*:
 write down a guess at the rule from blocks (two steps in a row, if …

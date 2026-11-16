@@ -565,15 +565,23 @@ class CipherAbyss(HandTask):
         self.words(_('CRACKED') if ok else _('NOT CRACKED'), 260, y1 - 20,
                    14, bold=True, colour=((120, 220, 140, 255) if ok
                                           else (240, 120, 100, 255)))
-        self.words(_('The machine: ') + info['words'], 260, y1 - 50, 9,
+        # A machine of the far rungs runs to hundreds of steps: the screen
+        # shows how it begins, the notebook export (X) has all of it.
+        words, code_ = info['words'], info['code']
+        if len(words) > 150:
+            words = words[:150] + _('... (%d pieces in all; X saves it)') \
+                % model.L.size(run.machine.rule)
+        if len(code_) > 62:
+            code_ = code_[:62] + "..."
+        self.words(_('The machine: ') + words, 260, y1 - 56, 9,
                    width=440, colour=(230, 235, 250, 255))
-        self.words(info['code'], 260, y1 - 92, 8, width=440,
+        self.words(code_, 260, y1 - 104, 8, width=440,
                    colour=(170, 190, 230, 255))
         met = getattr(run, 'met', None) or []
         if met:
             self.words(_('You met %s at rung %d') % (
                 ', '.join(op for op, _r in met[:3]), min(r for _o, r in met)),
-                260, y1 - 120, 8, colour=(250, 220, 120, 255))
+                260, y1 - 130, 8, colour=(250, 220, 120, 255))
         # what each experiment told, in bits
         bits = info['bits']
         self.words(_('What each experiment told (bits)'), 140, 300, 8,

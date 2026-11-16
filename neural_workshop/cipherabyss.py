@@ -151,19 +151,34 @@ def grade(rung: int) -> Grade:
     if stage == 7 and step == 2:
         k = 8                                  # GF(8)
     length = (4, 5, 5, 6, 6, 7, 6, 6, 6, 6, 7)[stage - 1]
+    if stage == 1 and step == 0:
+        length = 3                             # the gentlest start
     if stage == 2:
         length = 4 + min(step, 1)
     if stage == 10:
         length += min(2, step // 4)
-    if stage == 11:
-        length += min(2, step // 8)
     budget = (8, 8, 9, 9, 9, 9, 9, 9, 10, 10, 10)[stage - 1]
     budget -= min(2, step // 2) if stage < 10 else min(4, step // 3)
-    if stage == 11:
-        budget = max(6, 10 - step // 6)
     tests = (3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4)[stage - 1]
+    if stage == 1 and step < 2:
+        budget, tests = 8, 2
+    if stage == 11:
+        # The open top never stops getting harder. What the screen can
+        # hold saturates (eight symbols, rows of twelve, four experiments,
+        # six questions); the machines themselves (see _open) grow for
+        # ever.
+        k = min(SYMBOLS, 6 + step // 20)
+        length = min(12, 7 + step // 8)
+        budget = max(4, 10 - step // 6)
+        tests = min(6, 4 + step // 30)
     return Grade(r, stage, step, k, length, max(4, budget), tests,
                  min(1200.0, 300.0 + 30.0 * r))
+
+
+def gentle(level: Grade) -> bool:
+    """The first two rungs: one plain step, nothing hidden behind it, and
+    a single good experiment may well be enough."""
+    return level.stage == 1 and level.step < 2
 
 
 def stage_name(level: Grade) -> str:
@@ -235,7 +250,14 @@ def _raw(level: Grade):
         moves = [Prim('perm', (p,)) for p in itertools.permutations(range(n))]
         hyp = [_seq(m) if f is None else _seq(m, f)
                for m in moves for f in flips]
+        if j == 0:                             # one of five plain things
+            easy = [Prim('rev'), Prim('rot', (1,)), Prim('rot', (2,)),
+                    Prim('swap'), Prim('shift', (1,))]
+            return hyp + [_seq(p) for p in easy], [_seq(p) for p in easy]
         named = places(n) + [Prim('sort')]
+        if j == 1:                             # one named move or one flip
+            single = [_seq(p) for p in named + flips[1:]]
+            return hyp + single, single
         truths = [_seq(m) if f is None else _seq(m, f)
                   for m in named for f in flips] + \
             [_seq(f) for f in flips[1:]]
@@ -333,22 +355,17 @@ def _raw(level: Grade):
     return _open(level)
 
 
-#: The open top's ceiling: chains of at most this many steps, branches
-#: nested at most this deep. Past the rung where both are reached the
-#: machines stay as hard (and as costly to deal) as there, only new.
-MAX_CHAIN, MAX_NEST = 5, 2
-
-
 def _open(level: Grade):
-    """From rung 40: random programs from the whole language, longer
-    chains every six rungs and branches inside branches every twelve, up
-    to a ceiling."""
+    """From rung 40: random programs from the whole language, and no
+    ceiling. Chains lengthen with the square root of the climb and
+    branches nest with its logarithm, so the machines grow for ever, and
+    a deal still gets done."""
     k, n, j = level.k, level.length, level.step
     draw = random.Random(level.rung * 7 + 1)
     w = places(n) + values(k) + [Prim('dedupe'), Prim('halve')] + \
         strides(n)
-    depth = min(MAX_CHAIN, 2 + j // 6)
-    nest = min(MAX_NEST, 1 + j // 12)
+    depth = 2 + int(math.sqrt(j / 3.0))
+    nest = 1 + int(math.log2(1.0 + j / 10.0))
     ts = tests(k, state=True)
 
     def chain():
@@ -364,8 +381,11 @@ def _open(level: Grade):
             return Except(grow(level_ - 1), chain())
         return Meta((grow(level_ - 1), chain()), draw.choice(ts[:k]))
 
+    # Bigger machines cost more to run, so there are fewer of them to
+    # tell apart: the work of a deal stays within reach at any rung.
+    count = max(500, int(4000 / (1.0 + j / 20.0)))
     rules = set()
-    while len(rules) < 4000:
+    while len(rules) < count:
         rules.add(grow(nest))
     rules = sorted(rules, key=L.code)
     return rules, rules
@@ -383,6 +403,8 @@ def _one_look(level: Grade):
     nothing when for some experiment that would be the real rule (one
     look must never be enough). Worked out once a rung over a fixed set
     of random inputs."""
+    if gentle(level):                        # there one look may be enough
+        return {t: frozenset() for t in truths(level)}
     fam = family(level)
     k = level.k
     draw = random.Random(level.rung * 31 + 7)
@@ -448,7 +470,7 @@ def _quirked(level: Grade, plain: Sequence) -> List:
 def _families(level: Grade):
     hyp, truths = _raw(level)
     hyp = list(hyp) + _background(level)
-    if level.stage in QUIRKS:
+    if level.stage in QUIRKS and not gentle(level):
         quirky = _quirked(level, truths)
         hyp += quirky
         truths = quirky
@@ -837,7 +859,8 @@ def build(level: Grade, draw: random.Random) -> Optional[Machine]:
     # Shortcut players must lose too: the rung's commonest rule, and the
     # rule a player would settle on after one stray experiment.
     rivals.update(r for r in truths(level)[:3] if r != rule)
-    rivals.update(_twins(level, rule))
+    if not gentle(level):
+        rivals.update(_twins(level, rule))
     seed = draw.randrange(1 << 30)
     mind = Mind(level, seed)
     if rule not in mind.alive:
