@@ -12,20 +12,27 @@ where it will land, green if it fits and red if it does not.
 
 Every cog in the tray is marked with its teeth, and hovering over one
 shows it at its true size just above the tray. Chains run between two
-cogs as a belt with its links moving. From rung 13 the board has a
-back layer: the one not in hand is drawn faint, the front one casts
-shadows on the back, and a cog on the same axle as one on the other
-layer shows a brass hub.
+cogs as a belt with its links moving.
+
+From rung 10 the machine is a box with depth: up to five glass planes,
+one behind the other, the motor on the front one and the winch on the
+deepest. The plane in hand is drawn full size where the board is; the
+planes behind it shrink toward a vanishing point at the back, each
+dimmer than the last, and the planes in front of it are ghosts, so the
+whole train can be seen in depth. Shafts run back through the planes
+from a cog to the cog on the same axle behind it, with a brass hub on
+each. The scene swings a little toward the plane in hand.
 
 Mouse: drag a cog from the tray onto the board; drag a placed cog to
 move it or back to the tray; drag the chain onto one cog, then click
 the cog it runs to.
-Keys: R clears the board; Tab (or F) switches the layer.
+Keys: R clears the board; Tab (or F) goes a plane deeper, G (or
+Shift+Tab) a plane nearer; 1-5 jump straight to a plane.
 
 For the agent boundary: ports 0-11 move the drawn pointer (up, down,
 left, right by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses
-its button and 13 lets go; 14 clears the board; 15 switches the
-layer.
+its button and 13 lets go; 14 clears the board; 15 goes a plane deeper
+(from the back, round to the front) and 16 a plane nearer.
 
 SPDX-License-Identifier: GPL-2.0-or-later
 """
@@ -58,17 +65,35 @@ class CrazyCog(HandTask):
     FEEDBACK = 2.5
     MODEL = model
     EVENT_KEYS = {key.R: model.CLEAR, key.TAB: model.LAYER,
-                  key.F: model.LAYER}
+                  key.F: model.LAYER, key.G: model.NEARER}
     BACK = (66, 50, 40)
-    FOOTNOTE = _('Drag cogs and chains from the tray   Tab: front or back '
-                 'layer   R: clear   Esc: menu')
+    FOOTNOTE = _('Drag cogs and chains from the tray   Tab/G: deeper or '
+                 'nearer plane   R: clear   Esc: menu')
+    #: Where the planes recede to, and how much smaller each plane back.
+    VANISH = (640.0, 470.0)
+    SHRINK = 0.84
+
+    def on_key_press(self, symbol, modifiers):
+        run = self.run
+        if run is not None and self.phase == self.PLAY:
+            if symbol == key.TAB and modifiers & key.MOD_SHIFT:
+                model.act(run, model.NEARER)
+                return True
+            if key._1 <= symbol <= key._5:
+                want = symbol - key._1
+                if want < run.level.layers:
+                    while run.layer != want:
+                        model.act(run, model.LAYER)
+                return True
+        return super().on_key_press(symbol, modifiers)
 
     def _deal(self) -> bool:
         ok = super()._deal()
         self.message = _('Gear the motor to the winch: lift the bucket')
         if self.run is not None and self.run.level.layers > 1:
-            self.message = _('Gear it to the winch: Tab works on the '
-                             'back layer')
+            self.message = _('The winch is on plane %d, at the back: '
+                             'carry the drive there on shared axles') % (
+                                 self.run.level.layers)
         if self.run is not None and self.run.machine.fan is not None:
             self.message = _('Lift the bucket, and turn the fan its way')
         return ok
@@ -116,7 +141,8 @@ class CrazyCog(HandTask):
                            y + max(5.0, r * 0.2) * math.sin(turn)), 2,
                   (240, 240, 240, alpha), group)
 
-    def chain(self, run, a, b, alpha=255, group=None) -> None:
+    def chain(self, run, a, b, alpha=255, group=None,
+              turn=None) -> None:
         """A chain round two cogs: the two straight runs, links moving
         along them as the cogs turn."""
         dx, dy = b.x - a.x, b.y - a.y
@@ -125,7 +151,7 @@ class CrazyCog(HandTask):
             return
         th = math.atan2(dy, dx)
         beta = math.acos((a.r - b.r) / d)
-        move = run.angle.get(a, 0.0) * a.r
+        move = run.angle.get(a, 0.0) * a.r if turn is None else turn
         for side in (-1, 1):
             ang = th + side * beta
             pa = (a.x + a.r * math.cos(ang), a.y + a.r * math.sin(ang))
@@ -166,65 +192,115 @@ class CrazyCog(HandTask):
         mc = run.machine
         l, b, rt, t = model.BOARD
         g = self.g()
-        self.rect(l, b, rt - l, t - b, (196, 164, 120), g)     # pegboard
-        for gx in range(int(l) + 20, int(rt), 40):
-            for gy in range(int(b) + 20, int(t), 40):
-                self.disc((gx, gy), 2.5, (150, 120, 86), g)
+        n = run.level.layers
+        if n == 1:
+            self.rect(l, b, rt - l, t - b, (196, 164, 120), g)  # pegboard
+            for gx in range(int(l) + 20, int(rt), 40):
+                for gy in range(int(b) + 20, int(t), 40):
+                    self.disc((gx, gy), 2.5, (150, 120, 86), g)
+        else:
+            # A box seen into: the pegboard is its back wall, behind the
+            # deepest plane; dark sides lead back to it.
+            self.rect(l, b, rt - l, t - b, (58, 46, 38), g)
+            k, ox, oy = self.depth(run, n)
+            self.rect(ox + l * k, oy + b * k, (rt - l) * k, (t - b) * k,
+                      (150, 124, 92), g)
+            for gx in range(int(l) + 20, int(rt), 40):
+                for gy in range(int(b) + 20, int(t), 40):
+                    self.disc((ox + gx * k, oy + gy * k), 2.0 * k,
+                              (115, 92, 66), g)
         self.rect(0, 0, 1000, b - 6, (52, 40, 32), g)           # the tray
         self.rect(0, b - 8, 1000, 4, (30, 24, 20), g)
-        # The bucket, its rope and the flag it has to reach.
+        if run.level.layers > 1:                 # the box's floor and sides
+            n = run.level.layers - 1
+            for corner in ((l, b), (rt, b), (l, t), (rt, t)):
+                self.line(self.at(run, corner[0], corner[1], 0),
+                          self.at(run, corner[0], corner[1], n), 1,
+                          (90, 70, 50, 160), g)
+        # The winch on its plane: the bucket, its rope and the flag.
+        wz = mc.winch_z
+        k, _ox, _oy = self.depth(run, wz)
+        al = self.fade(run, wz) if wz != run.layer else 255
+
+        def T(x, y, z=wz):
+            return self.at(run, x, y, z)
         g = self.g()
         wx, wy = mc.winch
         rope_x = wx + model.DRUM
         top_y = model.FLOOR + mc.lift
         bucket_y = model.FLOOR + run.height
-        self.rect(rope_x - 24, model.FLOOR - 4, 48, 4, (90, 70, 50), g)
-        self.line((rope_x + 4, top_y + 26), (rope_x + 70, top_y + 26), 2,
-                  (60, 140, 70), g)
-        self.poly([(rope_x + 70, top_y + 26), (rope_x + 70, top_y + 46),
-                   (rope_x + 90, top_y + 38)], (80, 190, 90), g)
-        self.line((rope_x, wy), (rope_x, bucket_y + 30), 2, (90, 70, 40), g)
-        self.line((rope_x - 14, bucket_y + 22), (rope_x, bucket_y + 30), 2,
-                  (60, 60, 60), g)
-        self.line((rope_x + 14, bucket_y + 22), (rope_x, bucket_y + 30), 2,
-                  (60, 60, 60), g)
-        self.poly([(rope_x - 16, bucket_y + 22), (rope_x + 16, bucket_y + 22),
-                   (rope_x + 12, bucket_y), (rope_x - 12, bucket_y)],
-                  (110, 120, 140), g)
-        self.rect(rope_x - 16, bucket_y + 19, 32, 3, (160, 170, 190), g)
+        self.poly([T(rope_x - 24, model.FLOOR - 4), T(rope_x + 24,
+                   model.FLOOR - 4), T(rope_x + 24, model.FLOOR),
+                   T(rope_x - 24, model.FLOOR)], (90, 70, 50, al), g)
+        self.line(T(rope_x + 4, top_y + 26), T(rope_x + 70, top_y + 26), 2,
+                  (60, 140, 70, al), g)
+        self.poly([T(rope_x + 70, top_y + 26), T(rope_x + 70, top_y + 46),
+                   T(rope_x + 90, top_y + 38)], (80, 190, 90, al), g)
+        self.line(T(rope_x, wy), T(rope_x, bucket_y + 30), 2,
+                  (90, 70, 40, al), g)
+        self.line(T(rope_x - 14, bucket_y + 22), T(rope_x, bucket_y + 30), 2,
+                  (60, 60, 60, al), g)
+        self.line(T(rope_x + 14, bucket_y + 22), T(rope_x, bucket_y + 30), 2,
+                  (60, 60, 60, al), g)
+        self.poly([T(rope_x - 16, bucket_y + 22), T(rope_x + 16, bucket_y + 22),
+                   T(rope_x + 12, bucket_y), T(rope_x - 12, bucket_y)],
+                  (110, 120, 140, al), g)
         if run.level.load > 0.5:
-            self.words('%.1f' % run.level.load, rope_x, bucket_y + 8, 9,
-                       colour=(255, 255, 255, 230), group=g)
-        # The motor's case and the fan's blades, under the cogs.
+            self.words('%.1f' % run.level.load, *T(rope_x, bucket_y + 8),
+                       9 * max(0.7, k), colour=(255, 255, 255, 230), group=g)
+        # The motor's case on the front plane, the drum, the fan.
         g = self.g()
         mx, my = mc.motor
-        self.rect(mx - 46, my - 46, 92, 92, (60, 70, 90), g)
-        self.rect(mx - 42, my - 42, 84, 84, (80, 92, 116), g)
-        self.words(_('MOTOR'), mx, my - 60, 10, bold=True,
-                   colour=(40, 40, 50, 255), group=g)
-        self.disc((wx, wy), model.DRUM + 4, (90, 70, 50), g)    # drum
-        self.disc((wx, wy), model.DRUM, (150, 120, 80), g)
-        self.words(_('WINCH'), wx, wy + 84, 10, bold=True,
-                   colour=(40, 40, 50, 255), group=g)
+        km, _a, _b = self.depth(run, 0)
+        am = self.fade(run, 0) if run.layer else 255
+        cx, cy = self.at(run, mx, my, 0)
+        self.rect(cx - 46 * km, cy - 46 * km, 92 * km, 92 * km,
+                  (60, 70, 90, am), g)
+        self.rect(cx - 42 * km, cy - 42 * km, 84 * km, 84 * km,
+                  (80, 92, 116, am), g)
+        if run.layer == 0:
+            self.words(_('MOTOR'), cx, cy - 60 * km, 10, bold=True,
+                       colour=(230, 220, 200, 255) if run.level.layers > 1
+                       else (40, 40, 50, 255), group=g)
+        dx, dy = T(wx, wy)
+        self.disc((dx, dy), (model.DRUM + 4) * k, (90, 70, 50, al), g)
+        self.disc((dx, dy), model.DRUM * k, (150, 120, 80, al), g)
+        if wz >= run.layer:
+            self.words(_('WINCH') + ('' if run.level.layers == 1 else
+                                     ' (%d)' % (wz + 1)),
+                       dx, dy + 84 * k, 10 * max(0.75, k), bold=True,
+                       colour=(230, 220, 200, 255) if run.level.layers > 1
+                       else (40, 40, 50, 255), group=g)
         if mc.fan is not None:
-            fx, fy = mc.fan
-            f = run.on(mc.fan)
+            fz = mc.fan_z
+            kf, _a, _b = self.depth(run, fz)
+            af = self.fade(run, fz) if fz != run.layer else 255
+            fx, fy = self.at(run, mc.fan[0], mc.fan[1], fz)
+            f = run.on(mc.fan, fz)
             spin = run.angle.get(f, 0.0) if f is not None else 0.0
-            for k in range(3):
-                a = spin * 1.0 + 2 * math.pi * k / 3
-                self.poly([(fx, fy), (fx + 50 * math.cos(a - 0.3),
-                                      fy + 50 * math.sin(a - 0.3)),
-                           (fx + 56 * math.cos(a + 0.1),
-                            fy + 56 * math.sin(a + 0.1))],
-                          (180, 210, 230), g)
-            self.arrow(fx, fy, 66, mc.fan_way, (40, 120, 200), g)
-            self.words(_('FAN'), fx, fy + 80, 10, bold=True,
-                       colour=(40, 40, 50, 255), group=g)
-        self.arrow(mx, my, 34, -1, (240, 200, 70), g)
-        for p in run.pegs:                                      # axles
-            if run.on(p, run.layer) is None:
-                self.disc(p, 8, (60, 50, 40), g)
-                self.disc(p, 5, (200, 180, 120), g)
+            for i_ in range(3):
+                a = spin * 1.0 + 2 * math.pi * i_ / 3
+                self.poly([(fx, fy), (fx + 50 * kf * math.cos(a - 0.3),
+                                      fy + 50 * kf * math.sin(a - 0.3)),
+                           (fx + 56 * kf * math.cos(a + 0.1),
+                            fy + 56 * kf * math.sin(a + 0.1))],
+                          (180, 210, 230, af), g)
+            self.arrow(fx, fy, 66 * kf, mc.fan_way, (40, 120, 200, af), g)
+            if fz >= run.layer:
+                self.words(_('FAN') + ('' if run.level.layers == 1 else
+                                       ' (%d)' % (fz + 1)),
+                           fx, fy + 80 * kf, 10 * max(0.75, kf), bold=True,
+                           colour=(230, 220, 200, 255)
+                           if run.level.layers > 1 else (40, 40, 50, 255),
+                           group=g)
+        self.arrow(cx, cy, 34 * km, -1, (240, 200, 70, am), g)
+        for p, pz in zip(run.pegs, run.peg_z):                  # axles
+            if run.on(p, pz) is None:
+                kp, _a, _b = self.depth(run, pz)
+                q = self.at(run, p[0], p[1], pz)
+                ap = 255 if pz == run.layer else self.fade(run, pz)
+                self.disc(q, 8 * kp, (60, 50, 40, ap), g)
+                self.disc(q, 5 * kp, (200, 180, 120, ap), g)
         self._layers(run)
         self._tray(run)
         # The cog in the hand, and a ghost of where it will land.
@@ -260,63 +336,130 @@ class CrazyCog(HandTask):
         if mc.fan is not None and run.level.fan >= 2:
             self.dial(run, hud)
 
-    def _layers(self, run) -> None:
-        """The back layer, then the front one raised over it: each
-        layer's walls, cogs and chains; the layer not in hand is faint."""
+    # --- depth ---------------------------------------------------------
+
+    def depth(self, run, z: int):
+        """How plane *z* is drawn: (scale, shift x, shift y), the plane in
+        hand at full size where the board is."""
+        d = z - run.layer
+        # Behind: smaller toward the vanishing point. In front: only a
+        # little larger, so a ghost of the near planes stays in the frame.
+        k = self.SHRINK ** d if d >= 0 else 1.0 - 0.05 * d
+        vx, vy = self.VANISH
+        return k, vx * (1 - k), vy * (1 - k)
+
+    def at(self, run, x: float, y: float, z: int):
+        k, ox, oy = self.depth(run, z)
+        return ox + x * k, oy + y * k
+
+    def seen(self, run, c):
+        """A cog as drawn on its plane."""
+        k, ox, oy = self.depth(run, c.z)
+        return model.Cog(ox + c.x * k, oy + c.y * k, c.r * k, c.z)
+
+    def fade(self, run, z: int) -> int:
+        d = z - run.layer
+        if d == 0 or run.level.layers == 1:
+            return 255
+        return 40 if d < 0 else max(80, 200 - 40 * d)
+
+    def _plane(self, run, z: int) -> None:
+        """A glass plane: its edge and a faint pane, its walls."""
         mc = run.machine
-        two = run.level.layers > 1
-        for z in (1, 0) if two else (0,):
-            mine = z == run.layer
-            alpha = 255 if mine or not two else (150 if z == 1 else 120)
+        l, b, rt, t = model.BOARD
+        k, ox, oy = self.depth(run, z)
+        alpha = self.fade(run, z)
+        g = self.g()
+        if run.level.layers > 1 and z != run.layer:
+            x0, y0 = ox + l * k, oy + b * k
+            w, h = (rt - l) * k, (t - b) * k
+            self.rect(x0, y0, w, h, (150, 190, 220, alpha // 6), g)
+            edge = (200, 230, 255, min(255, alpha + 40))
+            for p, q in (((x0, y0), (x0 + w, y0)), ((x0, y0 + h),
+                         (x0 + w, y0 + h)), ((x0, y0), (x0, y0 + h)),
+                         ((x0 + w, y0), (x0 + w, y0 + h))):
+                self.line(p, q, 1.5, edge, g)
+            if z > run.layer:                    # its number, at the edge
+                self.words(str(z + 1), x0 + 10, y0 + h - 10, 9, bold=True,
+                           colour=(230, 240, 255, alpha), group=g)
+        for w in mc.walls:
+            if w[4] != z:
+                continue
+            wx, wy, ww, wh = w[:4]
+            px, py = ox + wx * k, oy + wy * k
+            base = (90, 94, 104) if z == 0 else (80, 70, 62)
+            self.rect(px, py, ww * k, wh * k, base + (alpha,), g)
+            self.rect(px + 3 * k, py + 3 * k, (ww - 6) * k, (wh - 6) * k,
+                      polish.lighter(base, 0.2) + (alpha,), g)
+
+    def _shafts(self, run) -> None:
+        """Steel shafts from each cog back to the cog on its axle behind,
+        and from the motor, winch and fan cases to their planes."""
+        g = self.g()
+        cogs = run.cogs
+        for a in cogs:
+            for b in cogs:
+                if b.z > a.z and model.same_axle(a, b):
+                    pa = self.at(run, a.x, a.y, a.z)
+                    pb = self.at(run, b.x, b.y, b.z)
+                    al = max(self.fade(run, a.z), self.fade(run, b.z))
+                    self.line(pa, pb, 6, (60, 64, 72, al), g)
+                    self.line(pa, pb, 3, (190, 196, 210, al), g)
+
+    def _layers(self, run) -> None:
+        """Back to front: each plane, its walls, cogs and chains; shafts
+        between them; the plane in hand last but for the ones in front."""
+        n = run.level.layers
+        order = sorted(range(n), key=lambda z: (-(z >= run.layer), -z, z))
+        behind = [z for z in order if z > run.layer]
+        front = [z for z in range(n) if z < run.layer]
+        for z in behind + [run.layer] + sorted(front, reverse=True):
+            if z == run.layer:
+                self._shafts(run)
+            self._plane(run, z)
+            alpha = self.fade(run, z)
             g = self.g()
-            if z == 0 and two:                   # shadows on the back
+            if n > 1 and z == run.layer:         # shadows on the plane behind
                 for c in run.cogs:
-                    if c.z == 0:
-                        self.disc((c.x + 7, c.y - 7), c.r, (0, 0, 0, 55), g)
-                for w in mc.walls:
-                    if w[4] == 0:
-                        self.rect(w[0] + 7, w[1] - 7, w[2], w[3],
-                                  (0, 0, 0, 55), g)
-            g = self.g()
-            for w in mc.walls:
-                if w[4] != z:
-                    continue
-                wx, wy, ww, wh = w[:4]
-                base = (90, 94, 104) if z == 0 else (70, 60, 52)
-                self.rect(wx, wy, ww, wh, base + (alpha,), g)
-                self.rect(wx + 3, wy + 3, ww - 6, wh - 6,
-                          polish.lighter(base, 0.2) + (alpha,), g)
-                for k in range(int(wh // 30) + 1):
-                    self.disc((wx + ww / 2, wy + 10 + k * 30), 2.5,
-                              (50, 50, 56, alpha), g)
-            g = self.g()
+                    if c.z == z:
+                        sc = self.seen(run, c)
+                        self.disc((sc.x + 6, sc.y - 6), sc.r,
+                                  (0, 0, 0, 40), g)
             for c in run.cogs:
                 if c.z != z:
                     continue
+                sc = self.seen(run, c)
                 colour = METALS.get(c.r, (180, 180, 180))
-                if z == 1:
-                    colour = polish.mix(colour, (60, 50, 44), 0.3)
-                self.cog(c.x, c.y, c.r, run.angle.get(c, 0.0), colour, g,
+                if z > run.layer:
+                    colour = polish.mix(colour, (40, 50, 70),
+                                        0.15 * (z - run.layer))
+                self.cog(sc.x, sc.y, sc.r, run.angle.get(c, 0.0), colour, g,
                          alpha=alpha)
                 if any(model.same_axle(c, o) for o in run.cogs):
-                    self.disc((c.x, c.y), 9, (230, 200, 90, alpha), g)
-                    self.disc((c.x, c.y), 4, (60, 50, 30, alpha), g)
+                    self.disc((sc.x, sc.y), 9 * sc.r / c.r,
+                              (230, 200, 90, alpha), g)
+                    self.disc((sc.x, sc.y), 4 * sc.r / c.r,
+                              (60, 50, 30, alpha), g)
             g = self.g()
             for a, b in run.chains:
                 if a.z == z:
-                    self.chain(run, a, b, alpha, g)
-        if two:
+                    self.chain(run, self.seen(run, a), self.seen(run, b),
+                               alpha, g, turn=run.angle.get(a, 0.0) * a.r)
+        if n > 1:
             hud = pyglet.graphics.Group(order=890)
-            for k, (z, name) in enumerate(((0, _('FRONT')), (1, _('BACK')))):
+            for z in range(n):
                 on = z == run.layer
-                x0 = 40 + 84 * k
-                self.rect(x0, 600, 78, 22, ((240, 200, 70) if on
-                                            else (90, 80, 70)), hud)
-                self.words(name, x0 + 39, 611, 10, bold=True, group=hud,
+                x0 = 36 + 46 * z
+                w = 40
+                self.rect(x0, 600, w, 22, ((240, 200, 70) if on
+                                           else (90, 80, 70)), hud)
+                self.words(str(z + 1), x0 + w / 2, 611, 10, bold=True,
+                           group=hud,
                            colour=(30, 26, 20, 255) if on
                            else (200, 190, 180, 255))
-            self.words(_('Tab: switch layer'), 300, 611, 10, group=hud,
-                       colour=(255, 255, 255, 220))
+            self.words(_('plane %d of %d   Tab: deeper   G: nearer') % (
+                run.layer + 1, n), 46 + 46 * n, 611, 9, group=hud,
+                anchor='left', colour=(255, 255, 255, 220))
 
     def _coil(self, x, y, group, n: Optional[int] = None) -> None:
         for k in range(3):

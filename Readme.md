@@ -2813,26 +2813,40 @@ bucket stays put; close a ring of cogs that cannot all turn and the
 train jams. A cog in the hand shows a green or red ghost of where it
 will land; drag a placed cog to move it, or **R** to clear the board.
 
-The board has depth: from rung 13 there is a back layer behind the
-front one, and **Tab** switches which one the hand works on. Cogs on
-different layers pass over each other, walls may stand on one layer
-only, and a cog dropped on the other layer over a cog's middle goes on
-the same axle and turns with it: a compound gear, the only way to gear
-down far enough for the heaviest buckets.
+**The machine has depth.** From rung 10 it is a box of glass planes,
+one behind the other (two at rung 10, three at 16, four at 24, five
+from 32). The motor turns on the front plane; the winch, its axle and
+its bucket stand on the deepest. **Tab** (or **F**) moves your hand one
+plane deeper, **G** (or **Shift+Tab**) one nearer, and **1–5** jump to a
+plane. The plane in hand is drawn full size; the planes behind it
+shrink toward a vanishing point at the back of the box, dimmer the
+deeper they are, and the planes in front are faint ghosts, so the whole
+train can be seen in depth, with steel shafts running back between
+cogs that share an axle. Cogs on different planes pass over each other,
+walls stand on one plane only, and a cog dropped on a plane over the
+middle of a cog on another plane goes on its axle and turns with it.
+That shared axle is the only way the drive travels back through the
+box, so from rung 10 every train is carried down plane by plane, and a
+cog on the winch's spot on the wrong plane turns nothing. Shared axles
+are also compound gears, the only way to gear down far enough for the
+heaviest buckets.
 
 | Rung | What it adds |
 |---|---|
 | 1–3 | The motor and the winch side by side: two cogs that fit |
 | 4–6 | Further apart: idlers and chains between, and the winch must turn the right way |
 | 7–9 | A heavy bucket: gear down or the motor stalls |
-| 10–12 | Walls on the board to build around |
-| 13–15 | A back layer, front walls across the way, axles between the layers |
-| 16–19 | A fan that must turn the way its arrow shows, and a tight clock |
-| 20+ | Buckets only a compound gear lifts, the fan's speed on its dial's green, walls on both layers, less time every rung |
+| 10–12 | Two planes, the winch on the back one; walls to build around |
+| 13–15 | Front walls across the direct way |
+| 16–19 | Three planes; a fan that must turn the way its arrow shows, and a tight clock |
+| 20–23 | Buckets only a compound gear lifts, the fan's speed on its dial's green, walls on every plane, less time every rung |
+| 24–31 | Four planes |
+| 32+ | Five planes, and the train runs back through all of them |
 
-Sixteen agent ports. Ports 0–11 move the drawn pointer (up, down, left, right
+Seventeen agent ports. Ports 0–11 move the drawn pointer (up, down, left, right
 by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses its button
-and 13 lets it go; 14 clears the board and 15 switches the layer. The
+and 13 lets it go; 14 clears the board, 15 moves a plane deeper (from
+the deepest, round to the front) and 16 a plane nearer. The
 agent hears each cog go down (higher when it meshes), a chain hooked
 on, the motor's hum rising with its speed and groaning when it stalls,
 a grind when the train jams, and the winch ticking as the bucket

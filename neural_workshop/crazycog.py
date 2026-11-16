@@ -12,12 +12,17 @@ it, by the ratio of their sizes. A chain from one cog to another, at
 any distance, turns them the same way, by the same ratio. Drag a placed
 cog to take it back; R (port 14) clears the board.
 
-The board has depth. From rung 13 there is a back layer behind the
-front one: Tab (port 15) switches which one the hand works on. Cogs on
-different layers pass over each other without touching, walls may
-stand on one layer only, and a cog dropped on the other layer right
-over a cog's middle goes on the same axle: the two turn together, a
-compound gear, which is how a big gearing down is made.
+The machine has depth. From rung 10 it is a box of glass planes, one
+behind the other (two at rung 10, three at 16, four at 24, five from
+32): the motor turns on the front plane and the winch, its bucket and
+its axle stand on the deepest. Tab (port 15) moves the hand a plane
+deeper and G (port 16) a plane nearer. Cogs on different planes pass
+over each other without touching, walls stand on one plane only, and a
+cog dropped on a plane right over the middle of a cog on another plane
+goes on the same axle: the two turn together. That is the only way the
+drive travels back through the box, so every train from rung 10 on
+carries it down, plane by plane, on shared axles, and a cog put on the
+winch's spot on the wrong plane turns nothing.
 
 The motor is strong at a crawl and weak at speed. A small cog on the
 motor driving a big cog on the winch lifts a heavy bucket slowly; the
@@ -31,14 +36,16 @@ The ladder:
 * rungs 4-6: further apart: idlers or chains between, and the winch
   has to turn the right way;
 * rungs 7-9: a heavy bucket: gear down or the motor stalls;
-* rungs 10-12: walls on the board to build around;
-* rungs 13-15: a back layer, walls on the front one in the way, and
-  axles to carry the train from one layer to the other;
+* rungs 10-15: walls to build around, and a second plane behind the
+  first with the winch on it: carry the drive back on a shared axle;
+* rungs 13-15: walls on the front plane in the direct way;
 * rungs 16-19: a fan that must also turn, the way its arrow shows, and
   a tight clock, so not too slow either;
+* from rung 16 a third plane, from 24 a fourth, from 32 a fifth, each
+  with walls of its own from rung 20;
 * from rung 20: buckets too heavy for any two cogs (only a compound
-  gear lifts them), the fan's speed on its dial's green, walls on both
-  layers, and less time every rung.
+  gear lifts them), the fan's speed on its dial's green, and less time
+  every rung.
 
 SPDX-License-Identifier: GPL-2.0-or-later
 """
@@ -52,8 +59,10 @@ from . import hand as H
 from .i18n import _
 
 CLEAR = H.KEYS
-LAYER = H.KEYS + 1
-PORTS = H.KEYS + 2
+LAYER = H.KEYS + 1             # one plane deeper (from the back: the front)
+NEARER = H.KEYS + 2            # one plane nearer
+PORTS = H.KEYS + 3
+DEPTH = 5                      # planes at most, front to back
 EVENTS = tuple(range(PORTS))
 SIZES = (22.0, 30.0, 40.0, 52.0, 66.0)    # cog radii, screen units
 PITCH = 9.0                    # screen units a tooth
@@ -86,19 +95,27 @@ class Grade(NamedTuple):
     place: float               # seconds allowed a part to put it down
 
 
+def planes(r: int) -> int:
+    """How many planes deep the board is at rung *r*."""
+    return 1 if r < 10 else 2 if r < 16 else 3 if r < 24 else \
+        4 if r < 32 else DEPTH
+
+
 def grade(rung: int) -> Grade:
     r = max(1, int(rung))
     top = max(0, r - 20)
+    deep = planes(r)
+    links = 1 if r < 4 else 3 if r < 13 else 4 if r < 20 \
+        else min(7, 5 + top // 6)
     return Grade(
         rung=r,
-        links=1 if r < 4 else 3 if r < 13 else 4 if r < 20
-        else min(7, 5 + top // 6),
+        links=max(links, 2 * deep - 1),       # an axle down to each plane
         chains=r >= 4,
-        layers=1 if r < 13 else 2,
+        layers=deep,
         load=(0.3 if r < 7 else 1.0 if r < 13 else 1.2 if r < 20
               else min(3.6, 3.1 + 0.03 * top)),
         walls=0 if r < 10 else 2 if r < 20 else min(4, 2 + top // 6),
-        walls_back=0 if r < 20 else min(3, 1 + top // 8),
+        walls_back=0 if r < 20 else min(2, 1 + top // 10),
         fan=0 if r < 16 else 1 if r < 20 else 2,
         spare=4 if r < 7 else 3 if r < 16 else 2 if r < 20
         else max(1, 2 - top // 8),
@@ -133,13 +150,15 @@ class Machine(NamedTuple):
     plan_chains: Tuple[Link, ...]
     lift: float
     seconds: float
+    winch_z: int = 0           # the plane the winch is on (the motor: 0)
+    fan_z: int = 0
 
 
 def teeth(r: float) -> int:
     return max(8, int(round(2 * math.pi * r / PITCH)))
 
 
-TRAY_MAX = 12
+TRAY_MAX = 14
 
 
 def gap(n: int) -> float:
@@ -213,8 +232,8 @@ def _sign(kinds) -> int:
 
 def _place(prev: Cog, kind: str, r: float, a: float,
            draw: random.Random) -> Cog:
-    if kind == 'axle':
-        return Cog(prev.x, prev.y, r, 1 - prev.z)
+    if kind == 'axle':                         # one plane deeper
+        return Cog(prev.x, prev.y, r, prev.z + 1)
     gap = draw.uniform(60.0, 170.0) if kind == CHAIN else 0.0
     d = prev.r + r + gap
     return Cog(prev.x + d * math.cos(a), prev.y + d * math.sin(a), r, prev.z)
@@ -239,19 +258,20 @@ def _kinds(level: Grade, draw: random.Random) -> List[str]:
     if n == 1:
         return ['mesh']
     pool = ['mesh', 'mesh'] + ([CHAIN] if level.chains else [])
-    for _try in range(60):
+    axles = level.layers - 1                   # the winch is on the back
+    for _try in range(200):
         kinds = [draw.choice(pool) for _k in range(n)]
-        if level.layers > 1:
-            kinds[draw.randrange(1, n - 1)] = 'axle'
-            if level.load > 3.0 and n > 4:          # a second compound
-                kinds[draw.randrange(1, n - 1)] = 'axle'
+        spots = list(range(1, n - 1))
+        draw.shuffle(spots)
+        for k in spots[:axles]:
+            kinds[k] = 'axle'
+        if kinds.count('axle') != axles:
+            continue
         if kinds[-1] == 'axle' or kinds[0] == 'axle':
             continue
         if any(a == b == 'axle' for a, b in zip(kinds, kinds[1:])):
             continue
         if kinds[-1] == 'mesh' and kinds[-2] == 'axle':
-            continue
-        if level.layers > 1 and 'axle' not in kinds:
             continue
         if _sign(kinds) == -1:
             return kinds
@@ -301,7 +321,7 @@ def build(level: Grade, draw: random.Random) -> Optional[Machine]:
     if rope_x + 40 > BOARD[2]:
         return None
     if any(o.x - o.r < rope_x + 26 and rope_x - 26 < o.x + o.r
-           and o.y < wc.y and o.z == 0 for o in plan[:-1]):
+           and o.y < wc.y and o.z == wc.z for o in plan[:-1]):
         return None
     pegs.append((wc.x, wc.y))
     links = list(zip(plan, plan[1:], kinds))
@@ -347,7 +367,7 @@ def build(level: Grade, draw: random.Random) -> Optional[Machine]:
         if math.hypot(fc.x - motor.x, fc.y - motor.y) < 130.0 or \
                 math.hypot(fc.x - wc.x, fc.y - wc.y) < 110.0 or \
                 fc.y > 540.0 or not 90.0 < fc.x < 910.0 or \
-                (fc.x + fc.r > rope_x - 10 and fc.y < wc.y and fc.z == 0):
+                (fc.x + fc.r > rope_x - 10 and fc.y < wc.y and fc.z == wc.z):
             return None
         fan, fan_way = (fc.x, fc.y), way
         motor_speed = lift_speed(ratio, level.load) * ratio
@@ -356,7 +376,8 @@ def build(level: Grade, draw: random.Random) -> Optional[Machine]:
     every = plan + [p[0] for p in fan_parts]
     walls: List[Wall] = []
     line = (motor.x, motor.y, wc.x, wc.y)
-    want = [(0, level.walls), (1, level.walls_back)]
+    want = [(0, level.walls)] + [(z, level.walls_back)
+                                 for z in range(1, level.layers)]
     for z, count in want:
         got = 0
         for _try in range(300):
@@ -382,7 +403,7 @@ def build(level: Grade, draw: random.Random) -> Optional[Machine]:
             if any(in_wall(p[0], p[1], 75.0, wall) for p in pegs) or \
                     in_wall(wc.x, wc.y + 84, 20.0, wall):
                 continue
-            if z == 0 and wall[0] < rope_x + 40 and \
+            if z == wc.z and wall[0] < rope_x + 40 and \
                     wall[0] + ww > rope_x - 30 and wall[1] < wc.y:
                 continue
             if any(o[4] == z and wall[0] < o[0] + o[2] + 20 and
@@ -426,9 +447,10 @@ def build(level: Grade, draw: random.Random) -> Optional[Machine]:
     travel = lift / (lift_speed(ratio, level.load) * DRUM) + SETTLE * 4
     seconds = level.place * (len(order) + len(chains)) + \
         travel * level.slack + 3.0
+    fan_z = fan_parts[0][0].z if fan_parts else 0
     return Machine(level, (motor.x, motor.y), (wc.x, wc.y), fan, fan_way,
                    band, tuple(walls), tuple(tray), n_chain, tuple(order),
-                   tuple(chains), lift, seconds)
+                   tuple(chains), lift, seconds, wc.z, fan_z)
 
 
 def deal(rung: int, seed: Optional[int] = None, rng=None) -> Machine:
@@ -456,6 +478,10 @@ class Run(H.HandRun):
         self.tick_at = 0.0
         self.pegs = [machine.motor, machine.winch] + (
             [machine.fan] if machine.fan else [])
+        # Each axle stands on one plane: the motor's on the front, the
+        # winch's on its plane at the back.
+        self.peg_z = [0, machine.winch_z] + (
+            [machine.fan_z] if machine.fan else [])
 
     # --- the board -----------------------------------------------------
 
@@ -480,8 +506,8 @@ class Run(H.HandRun):
         """Where a cog of radius *r* dropped at (x, y) on layer *z* comes
         to rest."""
         z = self.layer if z is None else z
-        for p in self.pegs:
-            if math.hypot(x - p[0], y - p[1]) <= SNAP and \
+        for p, pz in zip(self.pegs, self.peg_z):
+            if pz == z and math.hypot(x - p[0], y - p[1]) <= SNAP and \
                     self.on(p, z) is None:
                 return Cog(p[0], p[1], r, z)
         for o in self.cogs:                     # onto another's axle
@@ -605,10 +631,11 @@ class Run(H.HandRun):
     def key(self, port: int) -> None:
         if self.result is not None:
             return
-        if port == LAYER:
-            if self.level.layers > 1:
-                self.layer = 1 - self.layer
-                self.note(0.05, 400.0 if self.layer else 600.0, TICK, 0.25)
+        if port in (LAYER, NEARER):
+            n = self.level.layers
+            if n > 1:
+                self.layer = (self.layer + (1 if port == LAYER else -1)) % n
+                self.note(0.05, 600.0 - 80.0 * self.layer, TICK, 0.25)
             return
         if port != CLEAR:
             return
@@ -626,9 +653,9 @@ class Run(H.HandRun):
         the motor; and whether the train jams."""
         self.ratio = {}
         self.jammed = False
-        drive = [c for c in self.cogs
-                 if math.hypot(c.x - self.machine.motor[0],
-                               c.y - self.machine.motor[1]) < 1.0]
+        drive = [c for c in self.cogs if c.z == 0 and
+                 math.hypot(c.x - self.machine.motor[0],
+                            c.y - self.machine.motor[1]) < 1.0]
         if not drive:
             return
         for m in drive:
@@ -658,7 +685,7 @@ class Run(H.HandRun):
 
     def gearing(self) -> Optional[float]:
         """The winch's turn per motor turn, anticlockwise positive."""
-        w = self.on(self.machine.winch)
+        w = self.on(self.machine.winch, self.machine.winch_z)
         if w is None or w not in self.ratio or self.jammed:
             return None
         return self.ratio[w]
@@ -678,7 +705,7 @@ class Run(H.HandRun):
         return self.ratio.get(c, 0.0) * self.motor_speed()
 
     def fan_speed(self) -> float:
-        f = self.on(self.machine.fan)
+        f = self.on(self.machine.fan, self.machine.fan_z)
         return 0.0 if f is None else self.turning(f)
 
     def fan_ok(self) -> bool:

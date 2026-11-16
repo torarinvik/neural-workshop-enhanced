@@ -51,8 +51,10 @@ class TheLadder(unittest.TestCase):
         self.assertTrue(g[4].links >= 3 and g[4].load < 0.5)
         self.assertGreater(g[7].load, 0.5)
         self.assertTrue(g[4].chains and not g[1].chains)
-        self.assertTrue(g[10].walls and g[10].layers == 1)
-        self.assertEqual((g[13].layers, g[13].fan), (2, 0))
+        self.assertTrue(g[7].layers == 1 and g[10].walls)
+        self.assertEqual((g[10].layers, g[13].fan), (2, 0))
+        self.assertEqual([M.grade(r).layers for r in (9, 10, 16, 24, 32)],
+                         [1, 2, 3, 4, 5])
         self.assertEqual((g[16].fan, g[20].fan), (1, 2))
         self.assertLess(g[16].slack, g[13].slack)
         self.assertGreater(g[20].load, 3.0)          # past any two cogs
@@ -120,6 +122,31 @@ class TheCogs(unittest.TestCase):
         c = run.cogs[-1]
         self.assertEqual((c.x, c.y, c.z), (388.0, 350.0, 1))
         self.assertEqual(run.ratio[c], run.ratio[run.cogs[1]])
+
+    def test_the_winch_is_on_the_deepest_plane(self):
+        for rung in (10, 16, 24, 32):
+            m = M.deal(rung, seed=2)
+            self.assertEqual(m.winch_z, m.level.layers - 1, rung)
+            self.assertEqual(max(c.z for c in m.plan), m.winch_z)
+            self.assertTrue(M.play(m)[0], rung)
+
+    def test_a_cog_on_the_winch_axle_but_the_wrong_plane_does_nothing(self):
+        run = open_board(16)
+        mc = run.machine
+        put(run, mc.winch[0], mc.winch[1], 30.0)     # on the front plane
+        self.assertIsNone(run.on(mc.winch, mc.winch_z))
+        self.assertIsNone(run.gearing())
+
+    def test_planes_go_round_both_ways(self):
+        run = open_board(24)
+        seen = []
+        for _k in range(5):
+            M.act(run, M.LAYER)
+            seen.append(run.layer)
+        self.assertEqual(seen, [1, 2, 3, 0, 1])
+        M.act(run, M.NEARER)
+        M.act(run, M.NEARER)
+        self.assertEqual(run.layer, 3)
 
     def test_cogs_on_different_layers_pass_each_other(self):
         run = open_board(13)
