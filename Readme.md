@@ -3486,8 +3486,9 @@ and 13 lets it go; 14 is louder and 15 softer. Clocked.
 
 #### Tightrope
 
-You are on a wire between two towers with a long pole. Move the
-**mouse** left and right and the pole slides that way, which tips you
+Seen in 3D from just behind your shoulders, you are on a wire strung
+between two towers high over a city, holding a long pole. Move the
+**mouse** left and right and the heavy pole follows a moment behind, which tips you
 back the other way: when you lean left, put the pole out to the right.
 **Space** (or Up, or W) takes a step, and every step jolts you. Lean
 too far and you are off. A gust of wind is heard coming, from the side
@@ -3501,8 +3502,9 @@ out to them.
 | 4–6 | Ten steps; the wire sways under you |
 | 7–9 | Gusts of wind |
 | 10–12 | Birds on the pole |
-| 13–19 | Fourteen steps, a livelier wire, stronger gusts |
-| 20+ | More steps, harder jolts, more wind and birds, less time every rung |
+| 13–15 | Fourteen steps, a livelier wire, stronger gusts, and a breeze that keeps shifting |
+| 16–19 | A springy wire that swings sideways: your steps set it going, your lean shoves it, its swing throws you |
+| 20+ | The wire bounces too, and a high bounce makes a lean grow faster; more steps, wind, swing, bounce and birds, less time every rung |
 
 Fifteen agent ports. Ports 0–11 move the drawn pointer (up, down, left, right
 by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses its button

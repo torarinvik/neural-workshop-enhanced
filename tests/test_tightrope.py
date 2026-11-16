@@ -15,7 +15,7 @@ from uisupport import needs_ui
 from neural_workshop import hand as H
 from neural_workshop import tightrope as M
 
-RUNGS = (1, 4, 7, 10, 13, 16, 22, 35)
+RUNGS = (1, 4, 7, 10, 13, 16, 20, 22, 28, 35)
 
 
 class TheLadder(unittest.TestCase):
@@ -27,22 +27,27 @@ class TheLadder(unittest.TestCase):
         self.assertLessEqual(len(rand), 1)
 
     def test_the_ladder_adds_what_it_says(self):
-        g = {r: M.grade(r) for r in (1, 4, 7, 10, 13, 40)}
+        g = {r: M.grade(r) for r in (1, 4, 7, 10, 13, 16, 22, 40)}
         self.assertEqual((g[1].steps, g[4].steps), (6, 10))
         self.assertFalse(g[1].sway or g[1].gusts or g[1].birds)
         self.assertTrue(g[4].sway and not g[4].gusts)
         self.assertTrue(g[7].gusts and not g[7].birds)
         self.assertTrue(g[10].birds)
         self.assertGreater(g[40].steps, g[13].steps)
+        self.assertTrue(g[13].breeze and not g[13].spring)
+        self.assertTrue(g[16].spring and not g[16].bounce)
+        self.assertTrue(g[22].bounce)
 
 
 class TheWire(unittest.TestCase):
 
     def test_the_pole_out_to_the_right_tips_you_left(self):
         run = M.Run(M.deal(1, seed=1))
-        run.hand.to(900.0, 300.0)
-        self.assertEqual(run.pole(), 1.0)
+        run.hand.to(990.0, 300.0)
+        self.assertEqual(run.aim(), 1.0)
+        self.assertEqual(run.pole(), 0.0)    # the pole is heavy
         settle(run, 0.5)
+        self.assertGreater(run.pole(), 0.9)
         self.assertLess(run.lean, 0.0)
 
     def test_steps_cannot_be_run(self):
@@ -79,6 +84,23 @@ class TheWire(unittest.TestCase):
             run.lean = run.rate = 0.0
         self.assertTrue(any(n.voice == M.WIND for n in run.notes))
         self.assertEqual(run.wind(), 0.0)
+
+    def test_a_springy_wire_swings_when_you_step(self):
+        run = M.Run(M.deal(16, seed=1))
+        M.act(run, M.STEP)
+        settle(run, 0.2)
+        self.assertNotEqual(run.swing, 0.0)
+        flat = M.Run(M.deal(4, seed=1))
+        M.act(flat, M.STEP)
+        settle(flat, 0.2)
+        self.assertEqual(flat.swing, 0.0)
+
+    def test_a_bounce_makes_a_lean_grow_faster(self):
+        run = M.Run(M.deal(22, seed=1))
+        calm = run.tip()
+        M.act(run, M.STEP)
+        settle(run, 0.1)
+        self.assertGreater(run.tip(), calm)
 
 @needs_ui
 class TheBoundary(unittest.TestCase):
