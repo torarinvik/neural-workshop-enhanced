@@ -93,6 +93,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('steadicam', _('Steadicam')),
         ('free_kick', _('Free Kick')),
         ('glove', _('Glove')),
+        ('brick_breaker_3d', _('3D Brick Breaker')),
     ],
     'perception': [
         ('count', _('Count')),
@@ -1323,6 +1324,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'matrix_3d':
         from .matrix3d import Matrix3D
         Matrix3D()
+        return
+    if task_id == 'brick_breaker_3d':
+        from .brickbreaker import BrickBreaker
+        BrickBreaker()
         return
     if task_id == 'gamble':
         from .gamble import Gamble

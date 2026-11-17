@@ -5003,6 +5003,63 @@ by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses its button
 and 13 lets it go; ports 14 and 15, held, slide the bar left and
 right. Clocked.
 
+#### 3D Brick Breaker
+
+A ball in a box that runs away from you, a wall of bricks at the far
+end, and a paddle across the near one. The **mouse** slides the paddle
+across the opening; the **arrow keys** tilt it -- Left and Right turn
+its face that way, Up and Down tip it -- and the ball leaves a tilted
+paddle the way light leaves a mirror, which is how a brick is aimed
+at. **Enter** levels the paddle; **Space** changes its colour, where
+colour matters; **W A S D** slide it too. The paddle is a frame, to be
+seen through, with a rod standing out of it that shows which way it
+faces; the ball's shadow on the floor tells how far back it is.
+
+A ball that gets past the paddle costs a life. A board is cleared when
+every brick that has to go is gone, before the lives or the time run
+out. The first ball is served a second after the paddle is first
+touched.
+
+| Brick | Looks | What it does |
+|---|---|---|
+| Plain | pale | Breaks |
+| Tough | a raised plate for each extra hit | Takes two or three hits |
+| Mine | black, a red stud | Costs a life when touched; need not be cleared |
+| Steel | grey metal | Never breaks; need not be cleared |
+| Numbered | a number; the next one lit | Breaks only when its number is the lowest left |
+| Coloured | red, green or blue | Breaks only for a ball of its colour; the ball takes the paddle's colour each time it is returned |
+| Bomb | orange, a black stud | Takes its neighbours with it -- mines too, and safely |
+
+| Rung | What is added |
+|---|---|
+| 1–3 | Four to six plain bricks, a slow ball, a wide paddle |
+| 4–6 | Seven bricks, some tough |
+| 7–9 | Mines; a smaller paddle |
+| 10–12 | Two layers, steel, three numbered bricks |
+| 13–15 | Two colours, bombs |
+| 16–18 | Gravity; the wall of bricks slides from side to side |
+| 19–21 | A wind that comes and goes; three colours; three layers; a ball that quickens with every return; a smaller paddle |
+| 22+ | Two balls; more bricks and mines, faster, a stronger wind |
+
+So the top rungs ask for more than quick hands: which brick may be
+broken next, what colour the ball must be when it gets there, whether
+a bomb will clear the mines round it, and where a falling, drifting
+ball will come back -- all while a second ball is on its way.
+
+An agent plays through fourteen ports: eight slide the paddle (the
+four ways and the diagonals), four turn its face, one levels it and
+one changes its colour.
+
+A reference pilot that gets under the ball and tilts the paddle for a
+brick worth hitting, one port a step, clears every board in forty on
+rungs 1-12, 35 to 39 in forty on rungs 13-21, and then 23 at rung 22,
+19 at rung 26 and 12 at rung 30. Doing nothing never clears a board;
+pressing ports at random cleared one in forty at rung 1 and almost
+none above. A paddle that only follows the ball and never tilts clears
+about half the boards up to rung 15 -- there, keeping the ball in play
+is most of the job -- one in forty at rung 19 and none from 22, where
+the mines find it.
+
 #### Semaphore
 
 A signaller on a far ship holds two flags; each pair of positions is a

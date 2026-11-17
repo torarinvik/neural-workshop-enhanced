@@ -4306,6 +4306,26 @@ MATRIX3D = TaskSpec(
     note=matrix3d_note)
 
 
+def brickbreaker_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import brickbreaker
+    level = brickbreaker.grade(int(chosen['BRICKS3D_RUNG']))
+    return _('Rung %d.  %d bricks, %d mines, %d lives, %.0f seconds.') % (level.rung, level.bricks, level.mines, level.lives, level.seconds)
+
+
+BRICKS3D = TaskSpec(
+    title=_('3D Brick Breaker options'),
+    options=(
+        Option('BRICKS3D_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('BRICKS3D_TRIALS', _('Boards per run'), 5,
+               values=(1, 3, 5, 8, 12, 20)),
+        Option('BRICKS3D_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=brickbreaker_note)
+
+
 def wiring_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung wires up."""
     from .. import wiring
@@ -6105,6 +6125,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'forms': FORMS,
     'wiring': WIRING,
     'gamble': GAMBLE,
+    'brick_breaker_3d': BRICKS3D,
     'matrix_3d': MATRIX3D,
     'piano_man': PIANOMAN,
     'live_claw_machine': LIVECLAW,

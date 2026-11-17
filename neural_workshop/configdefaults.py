@@ -751,6 +751,16 @@ GAMBLE_RUNG = 1
 GAMBLE_TRIALS = 5
 GAMBLE_ADAPTIVE = True
 
+# 3D Brick Breaker: a ball in a box, bricks at the far end, a paddle
+# that slides and tilts. A few plain bricks from rung 1; tough ones
+# from 4; mines that cost a life from 7; steel, two layers and
+# numbered bricks from 10; coloured bricks and bombs from 13; gravity
+# and a sliding wall from 16; wind, three colours, a smaller paddle
+# and a ball that quickens from 19; two balls from 22.
+BRICKS3D_RUNG = 1
+BRICKS3D_TRIALS = 5
+BRICKS3D_ADAPTIVE = True
+
 # 3D Matrix: a three-by-three matrix of constructions drawn in 3D,
 # the ninth missing. One rule (by row or column) from rung 1, two from
 # 4, each-once rules and six answers from 7, three rules and

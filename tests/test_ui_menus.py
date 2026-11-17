@@ -58,10 +58,11 @@ class MenuTests(unittest.TestCase):
                               'tightrope', 'sign_painter',
                               'bartender', 'lock_pick', 'air_hockey', 'semaphore',
                               'shadow_puppets', 'night_watch', 'kerbside',
-                              'steadicam', 'free_kick', 'glove'])
+                              'steadicam', 'free_kick', 'glove',
+                              'brick_breaker_3d'])
             hub.set_category('attention')
             self.assertEqual(hub.category, 'attention')
-            self.assertEqual(len(hub.task_rects), 39)
+            self.assertEqual(len(hub.task_rects), 40)
             hub.set_category('long_term_memory')
             self.assertEqual(hub.category, 'long_term_memory')
             self.assertEqual(len(hub.task_rects), 5)
