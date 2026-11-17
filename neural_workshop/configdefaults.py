@@ -751,6 +751,154 @@ GAMBLE_RUNG = 1
 GAMBLE_TRIALS = 5
 GAMBLE_ADAPTIVE = True
 
+# Same or Different?: the same relation in seven guises -- shape, count,
+# orientation, colour, size, pitch, rhythm. Differences shrink every
+# rung; other respects differ from 4; one after the other from 10.
+# SAMEDIFF_GUISE keeps a run to one guise ("mixed" for all).
+SAMEDIFF_RUNG = 1
+SAMEDIFF_TRIALS = 20
+SAMEDIFF_ADAPTIVE = True
+SAMEDIFF_GUISE = 'mixed'
+
+# Behind the Screen: things go behind it, some come out; how many now?
+# Staying from rung 1, leaving from 4, two colours from 7, two screens
+# from 10, more and faster from 13.
+BEHIND_RUNG = 1
+BEHIND_TRIALS = 20
+BEHIND_ADAPTIVE = True
+
+# Longer or Sooner?: which lasted longer; which came first? Two to one
+# from rung 1, onset order from 4, misleading strength from 7, ever
+# closer from 13.
+HOWLONG_RUNG = 1
+HOWLONG_TRIALS = 20
+HOWLONG_ADAPTIVE = True
+
+# Find It: was the target among them? A target alone in its colour from
+# rung 1, colour-and-shape search from 4, orientation from 10, more
+# figures and a shorter look from 13.
+FINDIT_RUNG = 1
+FINDIT_TRIALS = 20
+FINDIT_ADAPTIVE = True
+
+# Spot the Change: two pictures flicker; one thing differs. Four parts
+# from rung 1, a blank between from 4, any change from 7, sixteen parts
+# from 10, more figures and less time from 13.
+SPOT_RUNG = 1
+SPOT_TRIALS = 20
+SPOT_ADAPTIVE = True
+
+# More or Less: which has more dots, too quick to count? Two to one from
+# rung 1, ink misleads from 4, conservation columns from 7, mixed clouds
+# from 10, closer ratios and shorter flashes from 13.
+MORELESS_RUNG = 1
+MORELESS_TRIALS = 20
+MORELESS_ADAPTIVE = True
+
+# Holds More: which container holds the most? Plain jars from rung 1,
+# tall-thin against short-wide from 4, curved shapes from 7, three from
+# 10, pouring from 13, a narrowing margin from 16.
+HOLDS_RUNG = 1
+HOLDS_TRIALS = 20
+HOLDS_ADAPTIVE = True
+
+# Will It Fit?: does the piece go into the hole? The same way up from
+# rung 1, turned from 4, mirror-image holes from 7, three holes from 10,
+# bigger pieces from 13.
+FIT_RUNG = 1
+FIT_TRIALS = 20
+FIT_ADAPTIVE = True
+
+# Tangram: which set of pieces makes the shape? Two pieces from rung 1,
+# three from 4, near misses from 7, two wrong pieces from 10, more pieces
+# from 13.
+TANGRAM_RUNG = 1
+TANGRAM_TRIALS = 20
+TANGRAM_ADAPTIVE = True
+
+# Symmetric?: is the pattern its own mirror image? Down the middle from
+# rung 1, across from 4, diagonals from 7, one cell off from 10, the
+# half turn from 13, bigger grids from 16.
+SYMMETRY_RUNG = 1
+SYMMETRY_TRIALS = 20
+SYMMETRY_ADAPTIVE = True
+
+# Which Block?: find what makes the machine go, by trying. Three blocks
+# from rung 1, a misleading history from 4, two blocks needed from 10,
+# a misfiring machine from 16.
+BLICKET_RUNG = 1
+BLICKET_TRIALS = 10
+BLICKET_ADAPTIVE = True
+
+# Button Box: find what each button does; match the target. Two buttons
+# from rung 1, four from 4, five or six from 7, buttons that do two
+# things from 10, more and farther from 13.
+BUTTONBOX_RUNG = 1
+BUTTONBOX_TRIALS = 20
+BUTTONBOX_ADAPTIVE = True
+
+# Grid Change: see what was done to some grids; do it to a new one.
+# Flips and turns from rung 1, recolouring and moves from 4, two steps
+# from 7, piece operations from 10, three steps from 13.
+GRIDCHANGE_RUNG = 1
+GRIDCHANGE_TRIALS = 20
+GRIDCHANGE_ADAPTIVE = True
+
+# Which Urn?: from which kind of urn were these balls drawn? Far-apart
+# urns from rung 1, closer from 4, three colours from 7, unequal numbers
+# of urns from 10, no putting back from 13, a narrowing margin from 16.
+URNS_RUNG = 1
+URNS_TRIALS = 20
+URNS_ADAPTIVE = True
+
+# Who Lives Where?: houses, picture clues, one question. Three houses
+# from rung 1, more kinds of clue from 4 and 7, four houses from 7, five
+# from 13, six from 16, weaker clues from 22.
+ZEBRA_RUNG = 1
+ZEBRA_TRIALS = 10
+ZEBRA_ADAPTIVE = True
+
+# Triples: three cards all alike or all unlike in every property. Two
+# varying properties from rung 1, three from 4, four from 7, counting
+# triples on a table from 10.
+TRIPLES_RUNG = 1
+TRIPLES_TRIALS = 20
+TRIPLES_ADAPTIVE = True
+
+# Card Sort: sort by a hidden rule that changes without warning. Two
+# keys from rung 1 (changes are announced), three from 4, four from 7,
+# fill from 10, changes back from 13, changes at random from 16.
+CARDSORT_RUNG = 1
+CARDSORT_TRIALS = 40
+CARDSORT_ADAPTIVE = True
+
+# Pecking Order: who beats whom, from pairs. Three creatures from rung 1,
+# shuffled clues from 4, spare clues from 7, "loses to" from 10, places
+# in the order from 16.
+PECKING_RUNG = 1
+PECKING_TRIALS = 20
+PECKING_ADAPTIVE = True
+
+# Odd One Out: all panels but one share something. Three panels from
+# rung 1, four from 4, pairs from 7, five from 10, more from 13.
+ODDONE_RUNG = 1
+ODDONE_TRIALS = 20
+ODDONE_ADAPTIVE = True
+
+# Which Side?: six panels follow a rule, six do not. Values from rung 1,
+# negations from 4, "and" from 7, "or" from 10, pairs from 13, fewer
+# examples from 16.
+SIDE_RUNG = 1
+SIDE_TRIALS = 20
+SIDE_ADAPTIVE = True
+
+# Analogies: A is to B as C is to which? One change from rung 1, turning
+# and shape from 4, two changes from 7, stepped values that differ from
+# 10, places from 13, more changes and candidates from 16.
+ANALOGY_RUNG = 1
+ANALOGY_TRIALS = 20
+ANALOGY_ADAPTIVE = True
+
 # Glove: catch pitches while the camera cuts between angles. A new
 # angle each pitch from rung 2, cuts in flight from 4, curveballs from
 # 7, and cuts ever more often from 13.

@@ -3168,6 +3168,459 @@ GLOVE = TaskSpec(
     note=glove_note)
 
 
+def analogy_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import analogy
+    level = analogy.grade(int(chosen['ANALOGY_RUNG']))
+    said = [_('Rung %d.') % level.rung,
+            _('%d change(s), %d candidates.') % (level.changes, level.choices)]
+    return '  '.join(said)
+
+
+ANALOGY = TaskSpec(
+    title=_('Analogies options'),
+    options=(
+        Option('ANALOGY_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('ANALOGY_TRIALS', _('Puzzles per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('ANALOGY_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=analogy_note)
+
+
+def oddoneout_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import oddoneout
+    level = oddoneout.grade(int(chosen['ODDONE_RUNG']))
+    said = [_('Rung %d.') % level.rung, _('%d panels.') % level.panels]
+    if level.pairs:
+        said.append(_('Pairs: the odd pair breaks a relation.'))
+    return '  '.join(said)
+
+
+ODDONE = TaskSpec(
+    title=_('Odd One Out options'),
+    options=(
+        Option('ODDONE_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('ODDONE_TRIALS', _('Puzzles per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('ODDONE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=oddoneout_note)
+
+
+def whichside_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import whichside
+    level = whichside.grade(int(chosen['SIDE_RUNG']))
+    kinds = [_('a value')]
+    if level.negate:
+        kinds.append(_('its opposite'))
+    if level.conj:
+        kinds.append(_('two at once'))
+    if level.disj:
+        kinds.append(_('either of two'))
+    return _('Rung %d.  Rules: %s.  %d examples a side.') % (level.rung, ', '.join(kinds), level.examples)
+
+
+SIDE = TaskSpec(
+    title=_('Which Side? options'),
+    options=(
+        Option('SIDE_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('SIDE_TRIALS', _('Puzzles per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('SIDE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=whichside_note)
+
+
+def peckingorder_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import peckingorder
+    level = peckingorder.grade(int(chosen['PECKING_RUNG']))
+    said = [_('Rung %d.') % level.rung, _('%d creatures.') % level.count]
+    if level.place:
+        said.append(_('Asks a place in the order.'))
+    return '  '.join(said)
+
+
+PECKING = TaskSpec(
+    title=_('Pecking Order options'),
+    options=(
+        Option('PECKING_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('PECKING_TRIALS', _('Puzzles per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('PECKING_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=peckingorder_note)
+
+
+def cardsort_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import cardsort
+    level = cardsort.grade(int(chosen['CARDSORT_RUNG']))
+    return _('Rung %d.  %d keys, %d properties; the rule changes after %d-%d right.') % (level.rung, level.keys, level.dims, level.after[0], level.after[1])
+
+
+CARDSORT = TaskSpec(
+    title=_('Card Sort options'),
+    options=(
+        Option('CARDSORT_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('CARDSORT_TRIALS', _('Cards per run'), 40,
+               values=(5, 10, 20, 40, 80)),
+        Option('CARDSORT_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=cardsort_note)
+
+
+def triples_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import triples
+    level = triples.grade(int(chosen['TRIPLES_RUNG']))
+    if level.table:
+        return _('Rung %d.  Count the triples among %d cards.') % (level.rung, level.table)
+    return _('Rung %d.  Complete the pair; %d properties vary.') % (level.rung, level.vary)
+
+
+TRIPLES = TaskSpec(
+    title=_('Triples options'),
+    options=(
+        Option('TRIPLES_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('TRIPLES_TRIALS', _('Puzzles per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('TRIPLES_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=triples_note)
+
+
+def zebra_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import zebra
+    level = zebra.grade(int(chosen['ZEBRA_RUNG']))
+    return _('Rung %d.  %d houses, %d kinds of thing.') % (level.rung, level.houses, level.kinds)
+
+
+ZEBRA = TaskSpec(
+    title=_('Who Lives Where? options'),
+    options=(
+        Option('ZEBRA_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('ZEBRA_TRIALS', _('Puzzles per run'), 10,
+               values=(1, 3, 5, 10, 20)),
+        Option('ZEBRA_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=zebra_note)
+
+
+def urns_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import urns
+    level = urns.grade(int(chosen['URNS_RUNG']))
+    said = [_('Rung %d.') % level.rung, _('%d colours.') % level.colours]
+    if level.priors:
+        said.append(_('More urns of one kind.'))
+    if not level.replace:
+        said.append(_('Not put back.'))
+    return '  '.join(said)
+
+
+URNS = TaskSpec(
+    title=_('Which Urn? options'),
+    options=(
+        Option('URNS_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('URNS_TRIALS', _('Questions per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('URNS_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=urns_note)
+
+
+def gridchange_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import gridchange
+    level = gridchange.grade(int(chosen['GRIDCHANGE_RUNG']))
+    return _('Rung %d.  %d-%d step(s), %d candidates.') % (level.rung, level.steps[0], level.steps[1], level.candidates)
+
+
+GRIDCHANGE = TaskSpec(
+    title=_('Grid Change options'),
+    options=(
+        Option('GRIDCHANGE_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('GRIDCHANGE_TRIALS', _('Puzzles per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('GRIDCHANGE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=gridchange_note)
+
+
+def buttonbox_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import buttonbox
+    level = buttonbox.grade(int(chosen['BUTTONBOX_RUNG']))
+    return _('Rung %d.  %d buttons; the target %d press(es) away; %d spare.') % (level.rung, level.buttons, level.distance, level.spare)
+
+
+BUTTONBOX = TaskSpec(
+    title=_('Button Box options'),
+    options=(
+        Option('BUTTONBOX_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('BUTTONBOX_TRIALS', _('Boxes per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('BUTTONBOX_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=buttonbox_note)
+
+
+def blicket_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import blicket
+    level = blicket.grade(int(chosen['BLICKET_RUNG']))
+    said = [_('Rung %d.') % level.rung, _('%d blocks.') % level.blocks]
+    if level.pair:
+        said.append(_('Two needed together.'))
+    if level.misfire:
+        said.append(_('The machine misfires.'))
+    return '  '.join(said)
+
+
+BLICKET = TaskSpec(
+    title=_('Which Block? options'),
+    options=(
+        Option('BLICKET_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('BLICKET_TRIALS', _('Machines per run'), 10,
+               values=(1, 3, 5, 10, 20)),
+        Option('BLICKET_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=blicket_note)
+
+
+def symmetry_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import symmetry
+    level = symmetry.grade(int(chosen['SYMMETRY_RUNG']))
+    return _('Rung %d.  Grids of %d-%d; %d cell(s) off.') % (level.rung, level.size[0], level.size[1], level.off)
+
+
+SYMMETRY = TaskSpec(
+    title=_('Symmetric? options'),
+    options=(
+        Option('SYMMETRY_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('SYMMETRY_TRIALS', _('Patterns per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('SYMMETRY_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=symmetry_note)
+
+
+def tangram_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import tangram
+    level = tangram.grade(int(chosen['TANGRAM_RUNG']))
+    return _('Rung %d.  %d-%d pieces of %d-%d squares.') % (level.rung, level.pieces[0], level.pieces[1], level.size[0], level.size[1])
+
+
+TANGRAM = TaskSpec(
+    title=_('Tangram options'),
+    options=(
+        Option('TANGRAM_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('TANGRAM_TRIALS', _('Puzzles per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('TANGRAM_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=tangram_note)
+
+
+def willitfit_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import willitfit
+    level = willitfit.grade(int(chosen['FIT_RUNG']))
+    return _('Rung %d.  Pieces of %d squares; %d hole(s).') % (level.rung, level.size, level.holes)
+
+
+FIT = TaskSpec(
+    title=_('Will It Fit? options'),
+    options=(
+        Option('FIT_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('FIT_TRIALS', _('Puzzles per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('FIT_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=willitfit_note)
+
+
+def holdsmore_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import holdsmore
+    level = holdsmore.grade(int(chosen['HOLDS_RUNG']))
+    return _('Rung %d.  %d containers; margin %.0f%%.') % (level.rung, level.count, (level.margin - 1) * 100)
+
+
+HOLDS = TaskSpec(
+    title=_('Holds More options'),
+    options=(
+        Option('HOLDS_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('HOLDS_TRIALS', _('Puzzles per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('HOLDS_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=holdsmore_note)
+
+
+def moreorless_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import moreorless
+    level = moreorless.grade(int(chosen['MORELESS_RUNG']))
+    return _('Rung %d.  Ratio %.2f; %.2f s to look.') % (level.rung, level.ratio, level.flash)
+
+
+MORELESS = TaskSpec(
+    title=_('More or Less options'),
+    options=(
+        Option('MORELESS_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('MORELESS_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('MORELESS_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=moreorless_note)
+
+
+def spotchange_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import spotchange
+    level = spotchange.grade(int(chosen['SPOT_RUNG']))
+    return _('Rung %d.  %d parts, %d figures.') % (level.rung, level.parts ** 2, level.items)
+
+
+SPOT = TaskSpec(
+    title=_('Spot the Change options'),
+    options=(
+        Option('SPOT_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('SPOT_TRIALS', _('Pictures per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('SPOT_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=spotchange_note)
+
+
+def findit_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import findit
+    level = findit.grade(int(chosen['FINDIT_RUNG']))
+    return _('Rung %d.  %d figures, %.1f s.') % (level.rung, level.items, level.show)
+
+
+FINDIT = TaskSpec(
+    title=_('Find It options'),
+    options=(
+        Option('FINDIT_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('FINDIT_TRIALS', _('Searches per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('FINDIT_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=findit_note)
+
+
+def howlong_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import howlong
+    level = howlong.grade(int(chosen['HOWLONG_RUNG']))
+    return _('Rung %d.  Durations %.2f to 1; onsets %.0f ms apart.') % (level.rung, level.ratio, level.gap * 1000)
+
+
+HOWLONG = TaskSpec(
+    title=_('Longer or Sooner? options'),
+    options=(
+        Option('HOWLONG_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('HOWLONG_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('HOWLONG_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=howlong_note)
+
+
+def behindscreen_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import behindscreen
+    level = behindscreen.grade(int(chosen['BEHIND_RUNG']))
+    return _('Rung %d.  %d-%d balls, %d screen(s).') % (level.rung, level.balls[0], level.balls[1], level.screens)
+
+
+BEHIND = TaskSpec(
+    title=_('Behind the Screen options'),
+    options=(
+        Option('BEHIND_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('BEHIND_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('BEHIND_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=behindscreen_note)
+
+
+def samediff_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import samediff
+    level = samediff.grade(int(chosen['SAMEDIFF_RUNG']))
+    said = [_('Rung %d.') % level.rung, _('Difference %.0f%% of plain.') % (level.ease * 100)]
+    if level.sequential:
+        said.append(_('One after the other.'))
+    return '  '.join(said)
+
+
+SAMEDIFF = TaskSpec(
+    title=_('Same or Different? options'),
+    options=(
+        Option('SAMEDIFF_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('SAMEDIFF_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('SAMEDIFF_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+        Option('SAMEDIFF_GUISE', _('Guise'), 'mixed',
+               values=('mixed', 'shape', 'count', 'orientation', 'colour',
+                       'size', 'pitch', 'rhythm')),
+    ),
+    note=samediff_note)
+
+
 def wiring_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung wires up."""
     from .. import wiring
@@ -4967,6 +5420,27 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'forms': FORMS,
     'wiring': WIRING,
     'gamble': GAMBLE,
+    'same_or_different': SAMEDIFF,
+    'behind_the_screen': BEHIND,
+    'longer_or_sooner': HOWLONG,
+    'find_it': FINDIT,
+    'spot_the_change': SPOT,
+    'more_or_less': MORELESS,
+    'holds_more': HOLDS,
+    'will_it_fit': FIT,
+    'tangram': TANGRAM,
+    'symmetric': SYMMETRY,
+    'which_block': BLICKET,
+    'button_box': BUTTONBOX,
+    'grid_change': GRIDCHANGE,
+    'which_urn': URNS,
+    'who_lives_where': ZEBRA,
+    'triples': TRIPLES,
+    'card_sort': CARDSORT,
+    'pecking_order': PECKING,
+    'which_side': SIDE,
+    'odd_one_out': ODDONE,
+    'analogies': ANALOGY,
     'glove': GLOVE,
     'unicycle': UNI,
     'free_kick': KICK,

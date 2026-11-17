@@ -1251,9 +1251,156 @@ are easy from the front; how far in is the whole difficulty.
 
 Pass: the claw closes on the gold prize.
 
+#### Symmetric?
+
+Is the pattern its own mirror image? Patterns that are not are, past
+the first rungs, symmetric ones with a few cells spoilt -- down to one,
+swapped rather than recoloured so the colour counts give nothing away.
+Cells are drawn as squares, dots or tiles, in several palettes.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Folded down the middle; the others plainly lopsided |
+| 4–6 | Across as well; three cells off |
+| 7–9 | Diagonals too; two cells off |
+| 10–12 | Bigger grids; one cell off |
+| 13–15 | Or: the same turned upside down? |
+| 16+ | Grids to 24, four colours, a swapped cell |
+
+#### Tangram
+
+A silhouette and a few sets of pieces: which set covers it, every piece
+turned or flipped as needed, with no gaps or overlaps? The other sets
+have the same area. Pieces are squares joined edge to edge, so the
+answer is exact.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Two small pieces; three sets |
+| 4–6 | Three pieces |
+| 7–9 | Three or four; near-miss pieces |
+| 10–12 | Four pieces; two wrong ones keeping the area; four sets |
+| 13+ | A piece more every three rungs, to eight |
+
+#### Will It Fit?
+
+A flat piece and a hole in a board. The piece may be turned on the
+table but not turned over. Does it go in? Higher up: which of several
+holes does it go into?
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Small pieces the way up the hole is |
+| 4–6 | The piece shown turned |
+| 7–9 | Mirror-image holes, which would need turning over |
+| 10–12 | Three holes |
+| 13+ | Four holes, bigger pieces, wrong holes a square short |
+
+#### Holds More
+
+Containers seen side on, each round about its middle: which holds the
+most? Higher up, water in one is poured into another: which mark does
+it reach? Volumes are exact; tall and thin against short and wide is
+the old trap.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Two plain jars, one bigger every way |
+| 4–6 | Tall and thin against short and wide |
+| 7–9 | Cones, bowls, vases |
+| 10–12 | Three containers |
+| 13–15 | Pouring |
+| 16+ | The margin narrows from a fifth to a twentieth; four containers |
+
+#### More or Less
+
+Two clouds of dots flash and are covered: which had more? Too quick to
+count past the first rungs, and the more numerous dots are the smaller,
+so the ink is no guide. From rung 7 some trials are Piaget's
+conservation question: two matched columns, then one spreads out while
+you watch -- has either got more, or are they the same?
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Two to one; three seconds -- countable |
+| 4–6 | Three to two; a second and a half; ink controlled |
+| 7–9 | Four to three; a second; conservation columns |
+| 10–12 | One mixed cloud in two colours |
+| 13+ | The ratio closes toward 1.06; the flash toward a quarter second |
+
+#### Spot the Change
+
+Two pictures flicker, one thing different. Without a blank between them
+the change jumps out; with one, it has to be found figure by figure
+(change blindness). Click the part of the picture it is in.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Four parts; a figure vanishes; no blank |
+| 4–6 | Nine parts, a blank, colour and shape changes |
+| 7–9 | Any change: moved, grown, turned |
+| 10–12 | Sixteen parts, twenty figures |
+| 13+ | Up to forty figures, shorter pictures, less time |
+
+#### Find It
+
+The target is shown; a crowd flashes and is covered. Was it there? A
+target alone in its colour pops out; one that shares a colour with some
+and a shape with others must be looked for; one that differs only in
+which way it points is slowest of all.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Six figures; the target alone in its colour; four seconds |
+| 4–6 | Twelve; colour-and-shape search |
+| 7–9 | Eighteen; a second and a half |
+| 10–12 | The target differs only in how it is turned |
+| 13+ | Up to sixty, a shorter look, turns a step apart |
+
+#### Longer or Sooner?
+
+Which lasted longer, the first or the second? Which came first, the
+left or the right? Asked of lights and of tones (the tones in the left
+and right ear). Higher up the shorter one is the brighter, bigger or
+higher -- which makes it seem longer -- and the later onset the
+stronger.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Which lasted longer, two to one |
+| 4–6 | Three to two; which came first, a third of a second apart |
+| 7–9 | Thirteen to ten; a twelfth of a second; the shorter one stronger |
+| 10–12 | Six to five; a twentieth |
+| 13+ | Toward 1.03 and eight thousandths of a second |
+
+#### Behind the Screen
+
+Balls roll in and go behind a screen; some roll on out, some come back.
+How many are behind it now?
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | One to three go behind and stay |
+| 4–6 | Some leave out the far side |
+| 7–9 | Two colours; the question is about one |
+| 10–12 | Two screens, balls crossing between them |
+| 13+ | More balls, faster, more of them moving at once |
+
+#### Same or Different?
+
+Two things: the same or different in one named respect, while others
+may differ -- the same relation in seven guises: **shape**, **count**,
+**orientation**, **colour**, **size**, **pitch** and **rhythm** (the
+last two heard). **S** / **D** answer. The ladder is the same in every
+guise: the difference shrinks every rung toward the limits of
+perception, other respects differ from rung 4, and from rung 10 the two
+are shown one after the other. ``SAMEDIFF_GUISE`` keeps a run to one
+guise, so whether "same" learned in one carries to another can be
+tested.
+
 ### Reasoning
 
-The *Reasoning* category holds 28 tasks.
+The *Reasoning* category holds 39 tasks.
 
 #### Graph Mapping
 
@@ -3125,6 +3272,193 @@ four of four from rung 7, each to be answered right.
 Pass: every board right. From rung 4 the crate slowest off the mark is
 the answer only by chance; the slowing after release gives the floor,
 and the two together give the mass.
+
+#### Analogies
+
+A is to B as C is to which? Three glyph panels and a row of candidates.
+What turned A into B -- a colour, a size, a number of copies, a turn, a
+fill, a shape, a move across the panel -- has to be done to C. Colour,
+fill and shape *become* B's value; size, count, turn and place *step*
+as A stepped, and from rung 10 the two readings would differ, so only
+the step is offered.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | One change; three candidates |
+| 4–6 | Turning and shape; four candidates |
+| 7–9 | Two changes at once |
+| 10–12 | Stepped values differ from A's; five candidates, most one property off |
+| 13–15 | Three changes; glyphs placed across the panel, and moving |
+| 16+ | A change more every four rungs to six; up to eight candidates |
+
+#### Odd One Out
+
+Every panel but one shares something; click the one that does not.
+Every feature a panel can have is tried, and a deal is kept only when
+the panel it means is the only one any feature singles out.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Three panels, alike in all but one or two properties |
+| 4–6 | Four panels, every other property free |
+| 7–9 | Pairs: the odd pair breaks a relation (the two share a colour...) |
+| 10–12 | Five panels; the odd pair may be the one that keeps it |
+| 13+ | A panel more every three rungs to eight; from 16 the odd panel is one property away from another |
+
+#### Which Side?
+
+Six panels left of a line follow a rule; six right of it do not. Does a
+new panel go left or right (**Left** / **Right**)? Every rule the rung
+allows is checked against the examples, and a deal is kept only when
+all the rules they leave standing send the new panel the same way.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | One property's value: "red", "three copies" |
+| 4–6 | Or its opposite |
+| 7–9 | Or two at once |
+| 10–12 | Or either of two |
+| 13–15 | Pairs, and rules about the pair |
+| 16+ | Fewer examples a side, down to three; the new panel a property from one of them |
+
+#### Pecking Order
+
+Creatures in an order nobody shows; clues are pairs, "this one beats
+that one". Who wins a pair the clues never put together? Higher up:
+which creature stands *k*-th?
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Three creatures, clues in order |
+| 4–6 | Four, clues shuffled, the pair two steps apart |
+| 7–9 | Five, and a spare clue |
+| 10–12 | Six, and "loses to" clues |
+| 13–15 | Seven or eight, the pair far apart |
+| 16+ | A creature's place in the order, among up to twelve |
+
+#### Card Sort
+
+Key cards differ from each other in every property. Each card goes
+under one; only "right" or "wrong" is said, and after a run of right
+answers the rule (colour, shape, count, fill) **changes without
+warning**. A run keeps the rule and the streak across trials.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Two keys, colour or shape, changes after six right and announced |
+| 4–6 | Three keys and count; changes no longer announced |
+| 7–9 | Four keys; changes after five right |
+| 10–12 | Fill as well; after four |
+| 13–15 | After three to five, and it may change back |
+| 16+ | It changes after two to six cards, right or not |
+
+Pass: the card under the key the rule in force says. A reference player
+that keeps the rules the answers allow stays above 70% at every rung;
+sticking to one rule, or guessing, falls below 60% and 50%.
+
+#### Triples
+
+Cards in colour, shape, number and fill, each one of three ways. Three
+make a **triple** when, property by property, they are all alike or all
+unlike. Which card completes the pair? Higher up: how many triples are
+on the table?
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Two properties vary; two or three candidates |
+| 4–6 | Three properties; four candidates |
+| 7–9 | Four properties; the wrong ones a property off |
+| 10–12 | Count the triples among six cards |
+| 13+ | A card more every two rungs, to twelve |
+
+#### Who Lives Where?
+
+Houses in a row; each has one of every kind of thing. Picture clues:
+``=`` same house, ``≠`` not, ``|`` just left of, ``…`` somewhere left
+of, ``↔`` next to, ``@ n`` at house *n*. Which house has the asked
+thing? The clues always settle it, and none can be dropped.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Three houses, two kinds of thing, "same" and "at" |
+| 4–6 | Three kinds; "not" and "just left of" |
+| 7–9 | Four houses; "next to", "somewhere left of" |
+| 10–12 | Four kinds |
+| 13–15 | Five houses |
+| 16+ | Six houses; from 22 a fifth kind and ever weaker clues |
+
+#### Which Urn?
+
+Two kinds of urn, their balls shown, and how many of each kind. Some
+balls were drawn from one: from which kind, more likely? The answer is
+the posterior by Bayes -- not whichever urn was really picked -- and a
+deal is kept only when one kind is ahead by the rung's margin.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Nine to one against one to nine; one to three balls |
+| 4–6 | Seven to three; up to five balls |
+| 7–9 | Three colours |
+| 10–12 | More urns of one kind: the prior and the draw may disagree |
+| 13–15 | Small urns, drawn without putting back |
+| 16+ | The margin narrows; more balls |
+
+#### Grid Change
+
+Two or three pairs of coloured grids, a before and an after, the same
+change made to each; then a new grid and candidates. The changes are
+flips, turns, recolourings, falls, shifts, filling holes, keeping the
+largest piece, framing, doubling and mirroring -- and chains of them.
+Every chain the rung allows is tried on the examples, and a deal is
+kept only when all those that fit do the same to the new grid.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | One flip or turn; small grids; three candidates |
+| 4–6 | Recolouring, falling, shifting; four candidates |
+| 7–9 | Two operations in a row |
+| 10–12 | Operations on pieces |
+| 13–15 | Up to three; grids to seven |
+| 16+ | Two examples; bigger grids; candidates a cell off |
+
+#### Button Box
+
+A figure, a target, and a row of buttons, each doing one hidden thing
+(turn, recolour, grow, move, change shape) -- dealt afresh every trial.
+Press to find out; **R** resets the figure for free. Match the target
+before the presses run out. Every property wraps round, so every press
+can be undone.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Two or three buttons, the target a press away, presses to spare |
+| 4–6 | Four buttons, two presses away |
+| 7–9 | Five or six, three away; a button may do nothing |
+| 10–12 | Buttons that do two things; no presses to spare |
+| 13+ | A button more every two rungs to twelve; the target farther, to ten |
+
+Pass: matched within the presses -- which are exactly what a player who
+tries each button once and then takes the shortest way needs, plus the
+rung's spare. Random pressing wins about three trials in four at rung 1
+and almost none from rung 13.
+
+#### Which Block?
+
+Blocks, and a machine that lights for some. Earlier tries are shown;
+the player may put blocks on and **Run** it (a try), then name the block
+that makes it go. Past rung 3 the earlier tries are dealt so that
+watching cannot tell -- the block that works was always seen with
+another -- and only a try can: the difference between seeing two things
+together and testing whether one makes the other happen.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Three blocks; a try already shows it alone |
+| 4–6 | Four; the cause always seen with a decoy |
+| 7–9 | Five; two decoys |
+| 10–12 | Two blocks needed together; name both |
+| 13–15 | Six or seven blocks, tries only just enough |
+| 16+ | Up to eight; the machine sometimes fails to light |
 
 ### Planning
 

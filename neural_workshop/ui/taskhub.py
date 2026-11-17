@@ -115,6 +115,16 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('piano_tuner', _('Piano Tuner')),
         ('cricket_hunt', _('Cricket Hunt')),
         ('claw_machine', _('Claw Machine')),
+        ('symmetric', _('Symmetric?')),
+        ('tangram', _('Tangram')),
+        ('will_it_fit', _('Will It Fit?')),
+        ('holds_more', _('Holds More')),
+        ('more_or_less', _('More or Less')),
+        ('spot_the_change', _('Spot the Change')),
+        ('find_it', _('Find It')),
+        ('longer_or_sooner', _('Longer or Sooner?')),
+        ('behind_the_screen', _('Behind the Screen')),
+        ('same_or_different', _('Same or Different?')),
     ],
     'reasoning': [
         ('graph_mapping', _('Graph Mapping')),
@@ -145,6 +155,17 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('missing_word', _('The Missing Word')),
         ('figures_of_speech', _('Figures of Speech')),
         ('heavier', _('Heavier')),
+        ('analogies', _('Analogies')),
+        ('odd_one_out', _('Odd One Out')),
+        ('which_side', _('Which Side?')),
+        ('pecking_order', _('Pecking Order')),
+        ('card_sort', _('Card Sort')),
+        ('triples', _('Triples')),
+        ('who_lives_where', _('Who Lives Where?')),
+        ('which_urn', _('Which Urn?')),
+        ('grid_change', _('Grid Change')),
+        ('button_box', _('Button Box')),
+        ('which_block', _('Which Block?')),
     ],
     'planning': [
         ('tower_of_hanoi', _('Tower of Hanoi')),
@@ -1048,6 +1069,90 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'glove':
         from .glove import Glove
         Glove()
+        return
+    if task_id == 'analogies':
+        from .analogy import Analogy
+        Analogy()
+        return
+    if task_id == 'odd_one_out':
+        from .oddoneout import OddOneOut
+        OddOneOut()
+        return
+    if task_id == 'which_side':
+        from .whichside import WhichSide
+        WhichSide()
+        return
+    if task_id == 'pecking_order':
+        from .peckingorder import PeckingOrder
+        PeckingOrder()
+        return
+    if task_id == 'card_sort':
+        from .cardsort import CardSort
+        CardSort()
+        return
+    if task_id == 'triples':
+        from .triples import Triples
+        Triples()
+        return
+    if task_id == 'who_lives_where':
+        from .zebra import Zebra
+        Zebra()
+        return
+    if task_id == 'which_urn':
+        from .urns import Urns
+        Urns()
+        return
+    if task_id == 'grid_change':
+        from .gridchange import GridChange
+        GridChange()
+        return
+    if task_id == 'button_box':
+        from .buttonbox import ButtonBox
+        ButtonBox()
+        return
+    if task_id == 'which_block':
+        from .blicket import Blicket
+        Blicket()
+        return
+    if task_id == 'symmetric':
+        from .symmetry import Symmetry
+        Symmetry()
+        return
+    if task_id == 'tangram':
+        from .tangram import Tangram
+        Tangram()
+        return
+    if task_id == 'will_it_fit':
+        from .willitfit import WillItFit
+        WillItFit()
+        return
+    if task_id == 'holds_more':
+        from .holdsmore import HoldsMore
+        HoldsMore()
+        return
+    if task_id == 'more_or_less':
+        from .moreorless import MoreOrLess
+        MoreOrLess()
+        return
+    if task_id == 'spot_the_change':
+        from .spotchange import SpotChange
+        SpotChange()
+        return
+    if task_id == 'find_it':
+        from .findit import FindIt
+        FindIt()
+        return
+    if task_id == 'longer_or_sooner':
+        from .howlong import HowLong
+        HowLong()
+        return
+    if task_id == 'behind_the_screen':
+        from .behindscreen import BehindScreen
+        BehindScreen()
+        return
+    if task_id == 'same_or_different':
+        from .samediff import SameDiff
+        SameDiff()
         return
     if task_id == 'gamble':
         from .gamble import Gamble

@@ -31,6 +31,27 @@ if __name__ == '__main__':
     from test_sonar import *           # noqa: F401,F403,E402
     from test_hiddenrule import *      # noqa: F401,F403,E402
     from test_gamble import *  # noqa: F401,F403,E402
+    from test_samediff import *  # noqa: F401,F403,E402
+    from test_behindscreen import *  # noqa: F401,F403,E402
+    from test_howlong import *  # noqa: F401,F403,E402
+    from test_findit import *  # noqa: F401,F403,E402
+    from test_spotchange import *  # noqa: F401,F403,E402
+    from test_moreorless import *  # noqa: F401,F403,E402
+    from test_holdsmore import *  # noqa: F401,F403,E402
+    from test_willitfit import *  # noqa: F401,F403,E402
+    from test_tangram import *  # noqa: F401,F403,E402
+    from test_symmetry import *  # noqa: F401,F403,E402
+    from test_blicket import *  # noqa: F401,F403,E402
+    from test_buttonbox import *  # noqa: F401,F403,E402
+    from test_gridchange import *  # noqa: F401,F403,E402
+    from test_urns import *  # noqa: F401,F403,E402
+    from test_zebra import *  # noqa: F401,F403,E402
+    from test_triples import *  # noqa: F401,F403,E402
+    from test_cardsort import *  # noqa: F401,F403,E402
+    from test_peckingorder import *  # noqa: F401,F403,E402
+    from test_whichside import *  # noqa: F401,F403,E402
+    from test_oddoneout import *  # noqa: F401,F403,E402
+    from test_analogy import *  # noqa: F401,F403,E402
     from test_glove import *  # noqa: F401,F403,E402
     from test_unicycle import *  # noqa: F401,F403,E402
     from test_freekick import *  # noqa: F401,F403,E402
