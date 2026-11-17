@@ -36,11 +36,18 @@ def _unit(v: Vec) -> Vec:
 
 class Lens:
     def __init__(self, eye: Vec, target: Vec, focal: float, cx: float,
-                 cy: float, up: Vec = (0.0, 1.0, 0.0)) -> None:
+                 cy: float, up: Vec = (0.0, 1.0, 0.0),
+                 x_right: bool = False) -> None:
+        """*x_right* is for a world laid out with x to the right of a
+        viewer who looks along z with y up (the other hand from the
+        one this lens takes by default): it turns the picture round so
+        that such a world's right is the screen's right."""
         self.eye = eye
         self.f = _unit(_sub(target, eye))
         self.r = _unit(_cross(self.f, up))
         self.u = _cross(self.r, self.f)
+        if x_right:
+            self.r = (-self.r[0], -self.r[1], -self.r[2])
         self.focal = focal
         self.cx, self.cy = cx, cy
 

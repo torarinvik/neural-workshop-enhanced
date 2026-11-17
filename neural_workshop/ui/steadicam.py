@@ -90,7 +90,7 @@ class Steadicam(LiveTask):
         look = (math.sin(run.yaw) * math.cos(run.pitch), math.sin(run.pitch),
                 math.cos(run.yaw) * math.cos(run.pitch))
         lens = self.camera((0.0, model.EYE, 0.0), look, x0, y0, w, h,
-                           math.degrees(run.fov))
+                           math.degrees(run.fov), x_right=True)
         g = self.layer()
         self.rect(x0, y0, w, h, (150, 190, 230), g)
         g = self.layer()

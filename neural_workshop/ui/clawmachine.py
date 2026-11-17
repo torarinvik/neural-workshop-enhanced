@@ -65,7 +65,8 @@ class ClawMachine(LiveTask):
         eye = (0.0, 1.15, -2.9) if run.level.low else (0.0, 2.3, -2.5)
         aim = (0.0, 0.55, 0.8)
         look = tuple(a - e for a, e in zip(aim, eye))
-        lens = self.camera(eye, look, left, bottom, width, height, 52.0)
+        lens = self.camera(eye, look, left, bottom, width, height, 52.0,
+                           x_right=True)
         g = self.layer()
         self.face(lens, [(-H, 0, D), (H, 0, D), (H, 2.0, D), (-H, 2.0, D)],
                   (70, 40, 80), g)

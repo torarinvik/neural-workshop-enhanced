@@ -67,7 +67,7 @@ class CricketHunt(LiveTask):
             return
         self.frame(left, bottom, width, height)
         lens = self.camera(run.eye(), model._look(run.yaw, run.pitch), left,
-                           bottom, width, height)
+                           bottom, width, height, x_right=True)
         s = run.level.room
         g = self.layer()
         self.face(lens, [(0, 0, 0), (s, 0, 0), (s, 0, s), (0, 0, s)],

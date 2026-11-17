@@ -254,9 +254,10 @@ class LiveTask(Pointer, Tones, ClockedTask):
                       tuple(colour[3:]), group)
 
     @staticmethod
-    def camera(eye, look, left, bottom, width, height, fov: float = 70.0):
+    def camera(eye, look, left, bottom, width, height, fov: float = 70.0,
+               x_right: bool = False):
         """A lens at *eye* looking along *look*, filling the rectangle,
-        *fov* degrees across."""
+        *fov* degrees across. *x_right*: see :class:`Lens`."""
         import math
         from .lens import Lens
         focal = width / (2 * math.tan(math.radians(fov) / 2))
@@ -265,4 +266,4 @@ class LiveTask(Pointer, Tones, ClockedTask):
         if abs(look[1]) > 0.999 * math.sqrt(sum(c * c for c in look)):
             up = (0.0, 0.0, 1.0)
         return Lens(eye, target, focal, left + width / 2, bottom + height / 2,
-                    up=up)
+                    up=up, x_right=x_right)

@@ -76,7 +76,8 @@ class Docking(LiveTask):
         up = model.body_to_world((0, 1, 0), *att)
         focal = width / (2 * math.tan(math.radians(30)))
         lens = Lens(eye, tuple(e + f for e, f in zip(eye, fwd)), focal,
-                    left + width / 2, bottom + height / 2, up=up)
+                    left + width / 2, bottom + height / 2, up=up,
+                    x_right=True)
         g = self.layer()
         for sx, sy, b in STARS:
             p = lens.see((eye[0] + 400 * sx, eye[1] + 400 * sy, eye[2] + 400))

@@ -66,7 +66,8 @@ class Rover(LiveTask):
         ground = model.height(g0, s.x, s.z)
         eye = (s.x - 9 * fx, ground + 3.4, s.z - 9 * fz)
         look = (12 * fx, -1.6, 12 * fz)
-        lens = self.camera(eye, look, left, bottom, width, height, 64)
+        lens = self.camera(eye, look, left, bottom, width, height, 64,
+                           x_right=True)
         # the sky above the horizon
         h = lens.see((eye[0] + 900 * fx, eye[1], eye[2] + 900 * fz))
         if h is not None and h[1] < bottom + height:

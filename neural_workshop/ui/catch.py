@@ -110,12 +110,13 @@ class Catch(Pointer, Tones, ClockedTask):
         for a in {-wide, wide, 0.0}:
             e = (pivot[0] - math.sin(a) * back, high,
                  pivot[2] - math.cos(a) * back)
-            probe = Lens(e, (0.0, 0.0, 19.0), 1.0, 0.0, 0.0)
+            probe = Lens(e, (0.0, 0.0, 19.0), 1.0, 0.0, 0.0,
+                         x_right=True)
             frame += [probe.see(p) and p for p in
                       ((-H, 0, 0), (H, 0, 0), (-H, 0, L), (H, 0, L),
                        (0, 10.5, L * 0.55), (0, 3.0, L + 1))]
         frame = [p for p in frame if p]
-        lens = Lens(eye, (0.0, 0.0, 19.0), 1.0, 0.0, 0.0)
+        lens = Lens(eye, (0.0, 0.0, 19.0), 1.0, 0.0, 0.0, x_right=True)
         return lens.fit(frame, left, bottom, width, height)
 
     def _draw(self, left, bottom, width, height) -> None:
