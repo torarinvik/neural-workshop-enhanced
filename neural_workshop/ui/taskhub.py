@@ -162,6 +162,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
     'reasoning': [
         ('graph_mapping', _('Graph Mapping')),
         ('matrix_reasoning', _('Matrix Reasoning')),
+        ('matrix_3d', _('3D Matrix')),
         ('hidden_rule', _('Hidden Rule')),
         ('wiring', _('Hidden Wiring')),
         ('jigsaw', _('Jigsaw Puzzle')),
@@ -1318,6 +1319,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'piano_man':
         from .pianoman import PianoMan
         PianoMan()
+        return
+    if task_id == 'matrix_3d':
+        from .matrix3d import Matrix3D
+        Matrix3D()
         return
     if task_id == 'gamble':
         from .gamble import Gamble

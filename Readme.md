@@ -2093,6 +2093,52 @@ colour work above and the near-miss idea — which was itself a strategy
 the Sandia tool declared, as `MODIFIED_CORRECT_ANSWER`, and never
 wrote.
 
+#### 3D Matrix
+
+Matrix Reasoning with solid things. Each cell of a three-by-three
+matrix holds a small construction -- blocks stacked on a table, a ball
+or a cone on them, a small cube on the very top, a yellow ramp leaning
+on one side, a blue ring round the foot -- drawn in 3D with light and
+shadow from some viewpoint. The ninth cell is missing: click the
+construction that completes the matrix, or press its number. Once it
+is judged the missing cell is filled in and the rules are named.
+
+Eight things can differ between cells: the ring, the small cube, the
+ramp's side (right, front, left), the colour, what sits on top, the
+block's shape (cube, drum, tub), how many blocks, and the viewpoint
+(from the right, from the left, from above). Each follows one rule:
+
+| Rule | What it means |
+|---|---|
+| The same everywhere | |
+| Set by the row | One value a row |
+| Set by the column | One value a column |
+| Each once | Three values, each once in every row and column |
+| In just one | There in the third cell of a row when it is in exactly one of the first two (the ring, the small cube) |
+
+| Rung | Rules at work | In play | Answers |
+|---|---|---|---|
+| 1–3 | 1, by row or column | Ring, small cube, ramp, colour | 4 |
+| 4–6 | 2, one by row and one by column | + what sits on top | 4 |
+| 7–9 | 2, each-once too | + the block's shape | 6 |
+| 10–12 | 3, in-just-one too | + how many blocks | 6 |
+| 13–15 | 3 | + the viewpoint | 6 |
+| 16–18 | 4 | everything | 8 |
+| 19–24 | 5 | | 8 |
+| 25+ | 6 | | 8 |
+
+A matrix is dealt only if the eight cells shown settle the ninth under
+every rule they obey, and a solver that reads nothing but those eight
+cells agrees with every deal. The answers give nothing away on their
+own: they are corners of a cube over two or three of the attributes,
+so each value an answer has appears in as many answers as its
+alternative. From two rules up the answer is never a cell already on
+show. Two shortcuts remain and are measured: on rungs 1-3, where one
+rule cannot avoid it, the answer is one of the two answers that are on
+show; and from rung 4 to 15 picking among the answers *not* on show
+wins about one time in three or four where chance is one in four or
+six. From rung 16 that is at chance too.
+
 #### Hidden Rule
 
 Matrix Reasoning asks which of eight pictures finishes a pattern; this

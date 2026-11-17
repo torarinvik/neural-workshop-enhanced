@@ -4286,6 +4286,26 @@ PIANOMAN = TaskSpec(
     note=pianoman_note)
 
 
+def matrix3d_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import matrix3d
+    level = matrix3d.grade(int(chosen['MATRIX3D_RUNG']))
+    return _('Rung %d.  %d rule(s) over %d attributes; %d answers.') % (level.rung, level.vary, len(level.pool), level.choices)
+
+
+MATRIX3D = TaskSpec(
+    title=_('3D Matrix options'),
+    options=(
+        Option('MATRIX3D_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('MATRIX3D_TRIALS', _('Matrices per run'), 12,
+               values=(6, 12, 24, 48)),
+        Option('MATRIX3D_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=matrix3d_note)
+
+
 def wiring_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung wires up."""
     from .. import wiring
@@ -6085,6 +6105,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'forms': FORMS,
     'wiring': WIRING,
     'gamble': GAMBLE,
+    'matrix_3d': MATRIX3D,
     'piano_man': PIANOMAN,
     'live_claw_machine': LIVECLAW,
     'the_artist': ARTIST,

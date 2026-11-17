@@ -751,6 +751,15 @@ GAMBLE_RUNG = 1
 GAMBLE_TRIALS = 5
 GAMBLE_ADAPTIVE = True
 
+# 3D Matrix: a three-by-three matrix of constructions drawn in 3D,
+# the ninth missing. One rule (by row or column) from rung 1, two from
+# 4, each-once rules and six answers from 7, three rules and
+# there-in-just-one from 10, the viewpoint in play from 13, four rules
+# and eight answers from 16, five from 19, six from 25.
+MATRIX3D_RUNG = 1
+MATRIX3D_TRIALS = 12
+MATRIX3D_ADAPTIVE = True
+
 # Piano Man: hear a melody in a real scale, play it back on the
 # keyboard. Two notes whose keys light from rung 1, three with the
 # first key marked from 4, four in any key from 7, five on two octaves
