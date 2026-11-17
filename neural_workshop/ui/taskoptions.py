@@ -4326,6 +4326,26 @@ BRICKS3D = TaskSpec(
     note=brickbreaker_note)
 
 
+def linguist_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import linguist
+    level = linguist.grade(int(chosen['LINGUIST_RUNG']))
+    return _('Rung %d.  %s; %d answers.') % (level.rung, ', '.join(level.has) or _('matching words'), level.options)
+
+
+LINGUIST = TaskSpec(
+    title=_('The Linguist options'),
+    options=(
+        Option('LINGUIST_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('LINGUIST_TRIALS', _('Languages per run'), 8,
+               values=(4, 8, 12, 20, 40)),
+        Option('LINGUIST_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=linguist_note)
+
+
 def wiring_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung wires up."""
     from .. import wiring
@@ -6125,6 +6145,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'forms': FORMS,
     'wiring': WIRING,
     'gamble': GAMBLE,
+    'the_linguist': LINGUIST,
     'brick_breaker_3d': BRICKS3D,
     'matrix_3d': MATRIX3D,
     'piano_man': PIANOMAN,

@@ -751,6 +751,16 @@ GAMBLE_RUNG = 1
 GAMBLE_TRIALS = 5
 GAMBLE_ADAPTIVE = True
 
+# The Linguist: a new language every trial, worked out from a few
+# pictured sentences. Matching written words from rung 1; words and
+# describing words from 4; word order from 7; more-than-one and big,
+# and building a sentence, from 10; agreement from 13; a letter said
+# twice from 16; marked roles with free order from 19; a clause inside
+# a clause from 22, and one deeper every three rungs from 25.
+LINGUIST_RUNG = 1
+LINGUIST_TRIALS = 8
+LINGUIST_ADAPTIVE = True
+
 # 3D Brick Breaker: a ball in a box, bricks at the far end, a paddle
 # that slides and tilts. A few plain bricks from rung 1; tough ones
 # from 4; mines that cost a life from 7; steel, two layers and

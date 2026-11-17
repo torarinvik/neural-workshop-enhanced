@@ -31,6 +31,7 @@ if __name__ == '__main__':
     from test_sonar import *           # noqa: F401,F403,E402
     from test_hiddenrule import *      # noqa: F401,F403,E402
     from test_gamble import *  # noqa: F401,F403,E402
+    from test_linguist import *  # noqa: F401,F403,E402
     from test_brickbreaker import *  # noqa: F401,F403,E402
     from test_matrix3d import *  # noqa: F401,F403,E402
     from test_pianoman import *  # noqa: F401,F403,E402

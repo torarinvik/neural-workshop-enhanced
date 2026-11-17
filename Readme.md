@@ -2139,6 +2139,53 @@ show; and from rung 4 to 15 picking among the answers *not* on show
 wins about one time in three or four where chance is one in four or
 six. From rung 16 that is at chance too.
 
+#### The Linguist
+
+Every trial deals a language nobody has seen, written in letters made
+up for that trial. A few sentences are shown, each under a picture of
+what it says; then comes one question about a new picture or a new
+sentence. Nothing carries over from one trial to the next except how
+languages are put together.
+
+In a picture, an arrow runs from the doer to the done-to and its kind
+-- plain, dashed, doubled -- is the deed; three of a thing is more
+than one; a large one is big; grey has no colour said.
+
+| Question | What to do |
+|---|---|
+| Which is the same word? | Rungs 1-3: find the written word among near-copies |
+| Which sentence says this picture? | Pick it; the others each go wrong in one way or two |
+| Which picture does this sentence say? | Pick it |
+| Say this picture | From rung 10: click the word tiles in order (a few do not belong); **Backspace** takes one back, **Enter** is done |
+
+| Rung | What the language may do |
+|---|---|
+| 1–3 | Nothing yet: matching written words of three, four and five letters |
+| 4–6 | Words for things and colours; the describing word before or after its thing |
+| 7–9 | Who does what to whom: the six orders of doer, deed and done-to |
+| 10–12 | "More than one" and "big", each a letter before the word or after it |
+| 13–15 | The deed-word agrees in number with the doer, with the done-to, or with neither; describing words may agree too. Six answers |
+| 16–18 | "More than one" may be the word's own first or last letter said twice |
+| 19–21 | The doer or the done-to is marked on the word itself, and the order is free |
+| 22–24 | A clause inside a clause -- "the square pushes the circle that sees the star" -- before or after its thing |
+| 25+ | Another clause deeper every three rungs, without end |
+
+A trial is dealt only if its examples settle the answer: of the up to
+2,560 ways a language of the rung can be put together, every one that
+accounts for all the examples must give the same answer. The solver
+is that learner -- it reads the examples and the question and nothing
+else -- and it agrees with every deal. Examples the answer does not
+hang on are then taken away, so every one shown is needed: four or
+five on most rungs, seven or eight at the deepest.
+
+The wrong answers are corners of a cube over two or three single
+faults -- roles swapped, a number or colour or deed changed, the
+describing word on the wrong side, agreement with the wrong one -- so
+each fault is in as many answers as are free of it.
+
+Not in it: sound rules beyond a letter said twice, and exceptions to
+a language's own rules.
+
 #### Hidden Rule
 
 Matrix Reasoning asks which of eight pictures finishes a pattern; this

@@ -201,6 +201,7 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('grid_change', _('Grid Change')),
         ('button_box', _('Button Box')),
         ('which_block', _('Which Block?')),
+        ('the_linguist', _('The Linguist')),
     ],
     'planning': [
         ('tower_of_hanoi', _('Tower of Hanoi')),
@@ -1328,6 +1329,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'brick_breaker_3d':
         from .brickbreaker import BrickBreaker
         BrickBreaker()
+        return
+    if task_id == 'the_linguist':
+        from .linguist import Linguist
+        Linguist()
         return
     if task_id == 'gamble':
         from .gamble import Gamble
