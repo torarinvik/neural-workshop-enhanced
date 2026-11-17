@@ -1398,6 +1398,479 @@ are shown one after the other. ``SAMEDIFF_GUISE`` keeps a run to one
 guise, so whether "same" learned in one carries to another can be
 tested.
 
+#### Live Claw Machine
+
+An arcade crane simulated as the thing itself (MuJoCo), drawn in real
+3D. A gantry carries a winch about the top of a glass cabinet; from it
+hangs a rope, and on the rope a claw of three hinged, sprung fingers,
+which swings when the gantry starts and stops and comes to rest on
+whatever is under it. The prizes -- balls, eggs, boxes, pucks -- are
+loose bodies heaped in the pit; they lean on one another, get pushed
+aside by a finger that lands on them, and slide out of a grip that is
+not square on them. Arrows or **WASD** drive the gantry, **Space** is
+the button, **V** walks round to the side window.
+
+One play is a play on the machine: steer while the time runs, press
+(or run out of time), and the machine does the rest -- lets the claw
+down until the rope goes slack, closes it, winds it up, drives home
+over the chute and opens it. Whatever falls down the chute is won. How
+hard the fingers close, and how much of that is kept once the claw is
+up, are the operator's settings, as on a real machine.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | One ball in an empty pit; a firm grip that holds; a rope that hardly swings |
+| 4–6 | Three prizes of different shapes |
+| 7–9 | Six prizes; the grip slackens to 70% once the claw is up |
+| 10–12 | A heap of ten; a rope that swings freely; 30 seconds |
+| 13–15 | Only the gold prize counts |
+| 16+ | A weaker grip, heavier prizes, more of them, less time |
+
+A pilot that steers dead over the best-placed prize and waits for the
+claw to hang still wins about 19 plays in 20 on rungs 1-6, 17 on 7-9,
+16 on 10-12, 14 where it must be the gold one, about one in three at
+rung 16 and one in ten by rung 30: the rest are the machine's. Doing nothing, and pressing at random, win
+nothing: the claw starts over the chute, where there is no prize.
+
+#### The Artist
+
+A picture on the left, a blank canvas on the right, and a plain paint
+box: pencil, brush, line, box, filled block, filled round, fill, a
+colour picker, four widths, undo and clear. Copy the picture as closely
+as you can, then press **Done**. Drag on the canvas to draw; **1**-**8**
+choose a tool, **[** and **]** the width, **Z** undoes, **K** checks how
+alike the two are without ending the trial, **Enter** is Done. A right
+click on the picture takes the colour there.
+
+How alike is measured, pixel by pixel, against the best that one flat
+colour could do: ``alike = 1 - error(canvas) / error(best flat
+colour)``. A blank canvas, or a canvas filled with any one colour,
+scores nought or less; a perfect copy scores 1. Below rung 13 both are
+blurred a little and the canvas is tried a pixel over in every
+direction, so a slip of a pixel costs little or nothing.
+
+| Rung | The picture | Passes at |
+|---|---|---|
+| 1–3 | 8 × 8: one filled block in one of three colours | 25% |
+| 4–6 | 12 × 12: two shapes | 55% |
+| 7–9 | 16 × 16: three shapes -- blocks, rounds, lines | 60% |
+| 10–12 | 24 × 24: four shapes, outlines and brush strokes too | 65% |
+| 13–15 | 32 × 32: five or six shapes over one another | 70% |
+| 16–18 | 48 × 48: a landscape in twelve flat colours | 60% |
+| 19–24 | 64 × 64: a photograph in sixteen colours | 60% |
+| 25–29 | 96 × 96: a photograph in thirty-two colours | 70% |
+| 30+ | 128 × 128: a photograph in full colour | 80%, rising a point a rung to 95% |
+
+The photographs come from the downloaded libraries (the jigsaw
+photographs, else the memory games'); where there are none the upper
+rungs paint a shaded landscape of their own, never the same twice. An
+agent draws through fifteen ports -- a cursor, a pen that goes down
+and up, the next tool, colour and width, pick, undo, done -- and a
+reference pilot that knows how each picture of shapes was made passes
+those rungs through the same ports.
+
+#### Piano Man
+
+A melody plays; then play it back on the keyboard, note for note. Click
+the keys, or use the computer's own: **Z X C V B N M** are the white
+keys of the lower octave with **S D G H J** its black ones, **Q W E R T
+Y U** and **2 3 5 6 7** the upper octave, **I** the top C. **Space**
+plays the melody again, where that is allowed, and only before your
+first note. One wrong key ends the trial; the rhythm is not judged,
+only the notes and their order. Once it is judged the melody's keys
+are numbered and the scale is named.
+
+Every melody is drawn from a real scale -- major and minor pentatonic,
+major, natural and harmonic minor, blues, Dorian, Mixolydian -- and
+moves the way tunes do: mostly by step, a leap now and then, no
+trills, and from five notes on it comes home to the keynote.
+
+| Rung | The melody | The help |
+|---|---|---|
+| 1–3 | 2 notes, C major pentatonic, one octave | Each key lights as it sounds; first note marked; the scale's keys tinted; heard again twice |
+| 4–6 | 3 notes, pentatonic or major | The keys no longer light |
+| 7–9 | 4 notes, minor scales too, in any key | |
+| 10–12 | 5 notes on two octaves, uneven rhythm | The scale is no longer tinted |
+| 13–15 | 6 notes; blues and the modes; other instruments | Heard again once |
+| 16+ | 7 notes and one more every two rungs, to 24; quicker | Only the keynote is marked; from rung 22 heard once only |
+
+The melody reaches an agent only as sound (and, on rungs 1-3, as the
+lit keys); it answers through twenty-six ports, one a key and the last
+to hear it again, and hears its own keys as it plays them.
+
+#### Thirty judgements by eye and ear
+
+The thirty tasks from *Brighter* to *Flash and Beep* are each one quick
+judgement, asked again and again: a run is twenty of them, each judged
+on its own, and at the first rung a guess is right a half or a third of
+the time. Every deal draws its own look, and the right answer's place
+comes from its own stream. Each task's model describes its picture as
+a list of plain shapes (``neural_workshop/scenes.py``), so what was
+shown can be checked without a window, and each has a reference that
+answers from the picture or the sound itself -- measuring the areas,
+finding the chain, reading the pile -- which must agree with every
+deal. The six heard tasks reach the agent only as sound.
+
+#### Brighter
+
+Grey patches, each on its own ground: which patch is the lighter? A grey looks lighter on a dark ground and darker on a light one, so from rung 4 the grounds are dealt to argue against the truth.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Two patches on like grounds, a fifth apart |
+| 4–6 | Grounds that mislead |
+| 7–9 | Closer greys on graded grounds |
+| 10–12 | Patches of different sizes |
+| 13+ | Three patches, four from 19; the step narrowing toward one in a hundred |
+
+#### Colour Match
+
+A sample and a row of swatches; exactly one is the sample's colour, the others a step off in hue, strength or lightness.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Three swatches, far off |
+| 4–6 | Four, each on a ground of its own colour |
+| 7–9 | Closer |
+| 10–12 | Different shapes and sizes |
+| 13+ | Five swatches, six from 19; ever closer |
+
+#### Longer Line
+
+Which line is the longest? Arrowheads make a line look shorter and tails longer (Müller-Lyer); between converging rails the line nearer the narrow end looks longer (Ponzo). The fins are dealt against the truth.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Two level lines, one half as long again |
+| 4–6 | Any angle; a fifth longer |
+| 7–9 | Fins that mislead; an eighth |
+| 10–12 | Rails that mislead; a twelfth |
+| 13+ | Three lines, four from 19; toward one part in fifty |
+
+#### Steeper
+
+Two slopes: which is nearer upright?
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | 25 degrees apart |
+| 4–6 | 12; different lengths |
+| 7–9 | 6; one climbs each way |
+| 10–12 | 4; each in a tilted frame |
+| 13+ | Narrowing toward half a degree |
+
+#### Bigger Area
+
+Which shape covers the most paper? A long shape looks bigger than a compact one of the same area, so the smaller shapes are the longer ones.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Two like shapes, one bigger by three fifths |
+| 4–6 | Compact against long; by a third |
+| 7–9 | Free outlines; by a fifth |
+| 10–12 | Turned any way; by an eighth |
+| 13+ | Three shapes, four from 19; toward one part in thirty |
+
+#### Midpoint
+
+A line with numbered marks across it: which is exactly halfway?
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Three marks, an eighth of the line apart |
+| 4–6 | Any angle; a twelfth |
+| 7–9 | Fins at the ends that make one half look longer |
+| 10–12 | No line, only its ends; four marks |
+| 13+ | Five marks, toward one part in a hundred |
+
+#### Parallel?
+
+Two long lines: parallel or not quite? From rung 7 short hatches cross them, slanted to hide a real tilt or to fake one (Zöllner).
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Level lines; 8 degrees off or parallel |
+| 4–6 | Any angle; 4 degrees |
+| 7–9 | Hatching; 2.5 |
+| 10–12 | 1.5 |
+| 13+ | Toward a quarter of a degree |
+
+#### Hidden Figure
+
+A small figure of a few strokes and some busier drawings; exactly one contains it, the same way up and the same size. A deal is kept only when a search of every position finds it in one drawing and no other.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Three strokes among three more; two drawings |
+| 4–6 | Four among six; three drawings |
+| 7–9 | Among nine; the wrong drawings miss it by one stroke |
+| 10–12 | Five among twelve on a bigger lattice; four drawings |
+| 13+ | More strokes around it; six-stroke figures from 16 |
+
+#### Contour
+
+A field of short strokes pointing every way; in one part some lie end to end along a smooth path. Which part? The path is kept only when it is the longest chain a chain-finder can find anywhere in the field.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Left or right; ten strokes dead in line |
+| 4–6 | Nine, each a little off true |
+| 7–9 | Four quarters; eight strokes |
+| 10–12 | More off true, a tighter curve |
+| 13+ | Seven strokes, up to fifteen degrees off |
+
+#### Same Line?
+
+Lines cross the page through a tangle, all in one ink. Are the two dots on the same line? Higher up: which end does the marked line come out at?
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Three lines, two stretches; same or not |
+| 4–6 | Four lines, three stretches |
+| 7–9 | Which end? |
+| 10–12 | Five lines, four stretches |
+| 13+ | Six lines; a longer tangle every three rungs |
+
+#### Texture Edge
+
+A page of small strokes that all lean one way, except in one square patch. No outline is drawn. Which part of the page is it in? From rung 7 the texture is sometimes crosses among corners -- the same two strokes, arranged differently.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Left or right; a big patch at right angles |
+| 4–6 | Four quarters; 60 degrees; untidy strokes |
+| 7–9 | 45 degrees, a smaller patch; figures too |
+| 10–12 | 30 degrees |
+| 13+ | A patch of four strokes, toward 10 degrees |
+
+#### What Is Behind
+
+A shape with a screen across it, and whole shapes below: exactly one agrees with the parts that show.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | A third hidden; two shapes, quite unlike |
+| 4–6 | Two fifths hidden; three shapes |
+| 7–9 | Half hidden behind two screens; closer shapes |
+| 10–12 | Four shapes |
+| 13+ | The whole shapes turned round, and ever closer |
+
+#### Top Card
+
+Numbered cards dropped one on another. Where one card's edge runs unbroken across another it lies over it, and the whole order can be read. A deal is kept only when what can be seen settles the order.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Three cards: which is on top? |
+| 4–6 | Four cards |
+| 7–9 | The bottom card too |
+| 10–12 | Five cards; second from the top |
+| 13+ | Six cards of one colour, seven from 19; third from the top |
+
+#### Bump or Dent
+
+Round marks shaded from one side to the other. A bump is lit on the side facing the lamp and a dent on the side away, so the same picture upside down changes from one to the other.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | One mark; the lamp above or below |
+| 4–6 | The lamp anywhere round |
+| 7–9 | No lamp: a mark labelled as a bump shows the light |
+| 10–12 | Four to six marks and a lamp: how many are bumps? |
+| 13+ | Counting from a labelled bump; more marks, fainter shading |
+
+#### Far Size
+
+Posts on flat ground running to the horizon: which is really the tallest? A post whose top just reaches the horizon is as tall as the eye is high, wherever it stands.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Two posts, one half as tall again, and it looks it |
+| 4–6 | The taller post is farther, and drawn smaller |
+| 7–9 | Different thicknesses; a quarter taller |
+| 10–12 | Three posts; an eighth |
+| 13+ | Four posts from 16; no ground lines from 19 |
+
+#### Reflection
+
+A figure and a mirror: which figure is what the mirror shows? The others are the figure itself, turned half round, or mirrored the other way.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | An upright mirror; two figures |
+| 4–6 | A level mirror; three |
+| 7–9 | A slanted mirror; four |
+| 10–12 | A mirror at any angle |
+| 13+ | One of the others is a reflection with a stroke wrong |
+
+#### Gaze
+
+A face and numbered things around it. Each eye points at the thing for itself, so the two converge on it. Which thing?
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Three things, 60 degrees apart or more |
+| 4–6 | Four, 40 degrees |
+| 7–9 | Five, 25 degrees |
+| 10–12 | Six; one lies on the same line as the thing looked at, nearer or farther |
+| 13+ | Eight, toward 6 degrees apart |
+
+#### Which Way
+
+A field of short-lived dots; some all drift one way, the rest every way. Which way is the drift?
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Left or right; nine in ten together |
+| 4–6 | Half |
+| 7–9 | Four ways; a third |
+| 10–12 | A quarter; shorter lives |
+| 13+ | Eight ways; toward one in sixteen |
+
+#### Faster
+
+Two windows of moving dots: in which are they faster?
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | One dot each; three fifths faster |
+| 4–6 | Three dots; the faster ones bigger; a third |
+| 7–9 | Eight dots moving different ways; a fifth |
+| 10–12 | An eighth |
+| 13+ | One window after the other; toward one part in thirty |
+
+#### Walker
+
+Eleven lights on the joints of someone walking on the spot. Which way does the figure face? Knees lead and elbows trail.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | The limbs are drawn in |
+| 4–6 | Lights only |
+| 7–9 | Eight stray lights that move as joints do; a smaller walker |
+| 10–12 | Sixteen |
+| 13+ | More every rung, to sixty |
+
+#### Collision Course
+
+Two balls roll toward where their ways cross and are covered before they get there. Will they hit?
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Their ways are drawn; square on or a miss by four widths |
+| 4–6 | No ways drawn |
+| 7–9 | Unlike speeds; a miss by two and a half |
+| 10–12 | Covered sooner; nearer misses, hits that only clip |
+| 13+ | Sooner still; a miss by one and a fifth |
+
+#### Heading
+
+Dots stream outward from the point being headed for. Which numbered mark is it?
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Two marks, far apart |
+| 4–6 | Three |
+| 7–9 | Four; one dot in five strays |
+| 10–12 | Five; three in ten; short-lived dots |
+| 13+ | Seven marks closing up; more strays |
+
+#### Number Line
+
+A line with a number at each end and a mark along it: what number is at the mark? From rung 7 also the other way: which mark is at a given number.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Nought to a hundred; three answers, 30 apart |
+| 4–6 | Four answers, 15 apart |
+| 7–9 | Any ends; a tenth of the line apart |
+| 10–12 | 7 parts in a hundred |
+| 13+ | Five answers, six from 16; toward 1.5 in a hundred |
+
+#### What Share
+
+A bar, a round or a scatter of dots, part coloured: what share is that?
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | A bar or a round; three answers a quarter apart |
+| 4–6 | Four answers, 15 apart; the round starts anywhere |
+| 7–9 | 10 apart; the coloured part in two pieces |
+| 10–12 | 7 apart; scatters of dots too |
+| 13+ | Five answers, six from 16; toward 3 in a hundred |
+
+#### Louder
+
+Tones in turn: which was the loudest? Heard, not seen; the whole trial is played now quietly, now loudly.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Two tones, one twice as strong |
+| 4–6 | Half as strong again; the quieter one higher |
+| 7–9 | A quarter; the quieter one longer |
+| 10–12 | Three tones; an eighth |
+| 13+ | Toward one part in thirty |
+
+#### Which Ear
+
+A tone between the ears: left or right? Higher up, two tones: was the second left or right of the first?
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Far to one side |
+| 4–6 | Halfway |
+| 7–9 | Two tones, a quarter of the way apart |
+| 10–12 | An eighth; different pitches |
+| 13+ | Toward one part in forty |
+
+#### Up or Down
+
+Two tones: did it go up or down? From rung 10 three tones: which was highest?
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | A fifth apart |
+| 4–6 | A third; the lower tone brighter |
+| 7–9 | A semitone |
+| 10–12 | The highest of three |
+| 13+ | Toward a twentieth of a semitone |
+
+#### How Many Beeps
+
+A run of beeps: how many?
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | One to three, slow |
+| 4–6 | Up to five, quicker |
+| 7–9 | Up to six, unevenly spaced |
+| 10–12 | Up to seven, on different notes |
+| 13+ | Up to nine, among low knocks that do not count |
+
+#### Same Instrument
+
+Two notes: one instrument or two? From rung 10 three notes: which was on the other instrument?
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | The same note; instruments of different families |
+| 4–6 | Notes up to a third apart |
+| 7–9 | Sometimes instruments of one family |
+| 10–12 | The odd one of three |
+| 13+ | Always one family; an octave apart; shorter notes |
+
+#### Flash and Beep
+
+A lamp flashes and a beep sounds: which came first? Higher up the lamp flashes a few times among a different number of beeps: how many flashes?
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | 0.4 s apart |
+| 4–6 | 0.14 s |
+| 7–9 | 0.07 s; counting one or two flashes |
+| 10–12 | 0.04 s; up to three |
+| 13+ | Up to four, quicker; toward 0.01 s |
+
 ### Reasoning
 
 The *Reasoning* category holds 39 tasks.

@@ -125,6 +125,39 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('longer_or_sooner', _('Longer or Sooner?')),
         ('behind_the_screen', _('Behind the Screen')),
         ('same_or_different', _('Same or Different?')),
+        ('brighter', _('Brighter')),
+        ('colour_match', _('Colour Match')),
+        ('longer_line', _('Longer Line')),
+        ('steeper', _('Steeper')),
+        ('bigger_area', _('Bigger Area')),
+        ('midpoint', _('Midpoint')),
+        ('parallel', _('Parallel?')),
+        ('hidden_figure', _('Hidden Figure')),
+        ('contour', _('Contour')),
+        ('same_line', _('Same Line?')),
+        ('texture_edge', _('Texture Edge')),
+        ('whats_behind', _('What Is Behind')),
+        ('top_card', _('Top Card')),
+        ('bump_or_dent', _('Bump or Dent')),
+        ('far_size', _('Far Size')),
+        ('reflection', _('Reflection')),
+        ('gaze', _('Gaze')),
+        ('which_way', _('Which Way')),
+        ('faster', _('Faster')),
+        ('walker', _('Walker')),
+        ('collision_course', _('Collision Course')),
+        ('heading', _('Heading')),
+        ('number_line', _('Number Line')),
+        ('what_share', _('What Share')),
+        ('louder', _('Louder')),
+        ('which_ear', _('Which Ear')),
+        ('up_or_down', _('Up or Down')),
+        ('how_many_beeps', _('How Many Beeps')),
+        ('same_instrument', _('Same Instrument')),
+        ('flash_and_beep', _('Flash and Beep')),
+        ('the_artist', _('The Artist')),
+        ('live_claw_machine', _('Live Claw Machine')),
+        ('piano_man', _('Piano Man')),
     ],
     'reasoning': [
         ('graph_mapping', _('Graph Mapping')),
@@ -1153,6 +1186,138 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'same_or_different':
         from .samediff import SameDiff
         SameDiff()
+        return
+    if task_id == 'brighter':
+        from .brighter import Brighter
+        Brighter()
+        return
+    if task_id == 'colour_match':
+        from .colourmatch import ColourMatch
+        ColourMatch()
+        return
+    if task_id == 'longer_line':
+        from .longerline import LongerLine
+        LongerLine()
+        return
+    if task_id == 'steeper':
+        from .steeper import Steeper
+        Steeper()
+        return
+    if task_id == 'bigger_area':
+        from .biggerarea import BiggerArea
+        BiggerArea()
+        return
+    if task_id == 'midpoint':
+        from .midpoint import Midpoint
+        Midpoint()
+        return
+    if task_id == 'parallel':
+        from .parallel import Parallel
+        Parallel()
+        return
+    if task_id == 'hidden_figure':
+        from .hiddenfigure import HiddenFigure
+        HiddenFigure()
+        return
+    if task_id == 'contour':
+        from .contour import Contour
+        Contour()
+        return
+    if task_id == 'same_line':
+        from .sameline import SameLine
+        SameLine()
+        return
+    if task_id == 'texture_edge':
+        from .textureedge import TextureEdge
+        TextureEdge()
+        return
+    if task_id == 'whats_behind':
+        from .whatsbehind import WhatsBehind
+        WhatsBehind()
+        return
+    if task_id == 'top_card':
+        from .topcard import TopCard
+        TopCard()
+        return
+    if task_id == 'bump_or_dent':
+        from .bumpdent import BumpDent
+        BumpDent()
+        return
+    if task_id == 'far_size':
+        from .farsize import FarSize
+        FarSize()
+        return
+    if task_id == 'reflection':
+        from .reflection import Reflection
+        Reflection()
+        return
+    if task_id == 'gaze':
+        from .gaze import Gaze
+        Gaze()
+        return
+    if task_id == 'which_way':
+        from .whichway import WhichWay
+        WhichWay()
+        return
+    if task_id == 'faster':
+        from .faster import Faster
+        Faster()
+        return
+    if task_id == 'walker':
+        from .walker import Walker
+        Walker()
+        return
+    if task_id == 'collision_course':
+        from .collision import Collision
+        Collision()
+        return
+    if task_id == 'heading':
+        from .heading import Heading
+        Heading()
+        return
+    if task_id == 'number_line':
+        from .numberline import NumberLine
+        NumberLine()
+        return
+    if task_id == 'what_share':
+        from .whatshare import WhatShare
+        WhatShare()
+        return
+    if task_id == 'louder':
+        from .louder import Louder
+        Louder()
+        return
+    if task_id == 'which_ear':
+        from .whichear import WhichEar
+        WhichEar()
+        return
+    if task_id == 'up_or_down':
+        from .upordown import UpOrDown
+        UpOrDown()
+        return
+    if task_id == 'how_many_beeps':
+        from .howmanybeeps import HowManyBeeps
+        HowManyBeeps()
+        return
+    if task_id == 'same_instrument':
+        from .sameinstrument import SameInstrument
+        SameInstrument()
+        return
+    if task_id == 'flash_and_beep':
+        from .flashbeep import FlashBeep
+        FlashBeep()
+        return
+    if task_id == 'the_artist':
+        from .artist import Artist
+        Artist()
+        return
+    if task_id == 'live_claw_machine':
+        from .liveclaw import LiveClaw
+        LiveClaw()
+        return
+    if task_id == 'piano_man':
+        from .pianoman import PianoMan
+        PianoMan()
         return
     if task_id == 'gamble':
         from .gamble import Gamble

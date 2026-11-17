@@ -31,6 +31,39 @@ if __name__ == '__main__':
     from test_sonar import *           # noqa: F401,F403,E402
     from test_hiddenrule import *      # noqa: F401,F403,E402
     from test_gamble import *  # noqa: F401,F403,E402
+    from test_pianoman import *  # noqa: F401,F403,E402
+    from test_liveclaw import *  # noqa: F401,F403,E402
+    from test_artist import *  # noqa: F401,F403,E402
+    from test_flashbeep import *  # noqa: F401,F403,E402
+    from test_sameinstrument import *  # noqa: F401,F403,E402
+    from test_howmanybeeps import *  # noqa: F401,F403,E402
+    from test_upordown import *  # noqa: F401,F403,E402
+    from test_whichear import *  # noqa: F401,F403,E402
+    from test_louder import *  # noqa: F401,F403,E402
+    from test_whatshare import *  # noqa: F401,F403,E402
+    from test_numberline import *  # noqa: F401,F403,E402
+    from test_heading import *  # noqa: F401,F403,E402
+    from test_collision import *  # noqa: F401,F403,E402
+    from test_walker import *  # noqa: F401,F403,E402
+    from test_faster import *  # noqa: F401,F403,E402
+    from test_whichway import *  # noqa: F401,F403,E402
+    from test_gaze import *  # noqa: F401,F403,E402
+    from test_reflection import *  # noqa: F401,F403,E402
+    from test_farsize import *  # noqa: F401,F403,E402
+    from test_bumpdent import *  # noqa: F401,F403,E402
+    from test_topcard import *  # noqa: F401,F403,E402
+    from test_whatsbehind import *  # noqa: F401,F403,E402
+    from test_textureedge import *  # noqa: F401,F403,E402
+    from test_sameline import *  # noqa: F401,F403,E402
+    from test_contour import *  # noqa: F401,F403,E402
+    from test_hiddenfigure import *  # noqa: F401,F403,E402
+    from test_parallel import *  # noqa: F401,F403,E402
+    from test_midpoint import *  # noqa: F401,F403,E402
+    from test_biggerarea import *  # noqa: F401,F403,E402
+    from test_steeper import *  # noqa: F401,F403,E402
+    from test_longerline import *  # noqa: F401,F403,E402
+    from test_colourmatch import *  # noqa: F401,F403,E402
+    from test_brighter import *  # noqa: F401,F403,E402
     from test_samediff import *  # noqa: F401,F403,E402
     from test_behindscreen import *  # noqa: F401,F403,E402
     from test_howlong import *  # noqa: F401,F403,E402

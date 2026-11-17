@@ -110,6 +110,39 @@ from .sonar import SonarEnv  # noqa: E402
 from .hiddenrule import HiddenRuleEnv  # noqa: E402
 from .dispatch import DispatchEnv  # noqa: E402
 from .gamble import GambleEnv  # noqa: E402
+from .pianoman import PianoManEnv  # noqa: E402
+from .liveclaw import LiveClawEnv  # noqa: E402
+from .artist import ArtistEnv  # noqa: E402
+from .flashbeep import FlashBeepEnv  # noqa: E402
+from .sameinstrument import SameInstrumentEnv  # noqa: E402
+from .howmanybeeps import HowManyBeepsEnv  # noqa: E402
+from .upordown import UpOrDownEnv  # noqa: E402
+from .whichear import WhichEarEnv  # noqa: E402
+from .louder import LouderEnv  # noqa: E402
+from .whatshare import WhatShareEnv  # noqa: E402
+from .numberline import NumberLineEnv  # noqa: E402
+from .heading import HeadingEnv  # noqa: E402
+from .collision import CollisionEnv  # noqa: E402
+from .walker import WalkerEnv  # noqa: E402
+from .faster import FasterEnv  # noqa: E402
+from .whichway import WhichWayEnv  # noqa: E402
+from .gaze import GazeEnv  # noqa: E402
+from .reflection import ReflectionEnv  # noqa: E402
+from .farsize import FarSizeEnv  # noqa: E402
+from .bumpdent import BumpDentEnv  # noqa: E402
+from .topcard import TopCardEnv  # noqa: E402
+from .whatsbehind import WhatsBehindEnv  # noqa: E402
+from .textureedge import TextureEdgeEnv  # noqa: E402
+from .sameline import SameLineEnv  # noqa: E402
+from .contour import ContourEnv  # noqa: E402
+from .hiddenfigure import HiddenFigureEnv  # noqa: E402
+from .parallel import ParallelEnv  # noqa: E402
+from .midpoint import MidpointEnv  # noqa: E402
+from .biggerarea import BiggerAreaEnv  # noqa: E402
+from .steeper import SteeperEnv  # noqa: E402
+from .longerline import LongerLineEnv  # noqa: E402
+from .colourmatch import ColourMatchEnv  # noqa: E402
+from .brighter import BrighterEnv  # noqa: E402
 from .samediff import SameDiffEnv  # noqa: E402
 from .behindscreen import BehindScreenEnv  # noqa: E402
 from .howlong import HowLongEnv  # noqa: E402
@@ -296,7 +329,7 @@ __all__ = [
     'CrossedWiresEnv', 'CrosswordEnv', 'CustodyEnv', 'DonkeyEnv',
     'GraphMappingEnv',
     'GoEnv', 'make_go_env', 'verify_go_outcome',
-    'HanoiEnv', 'InTheDarkEnv', 'JigsawEnv', 'VideoSequenceEnv', 'VideoJigsawEnv', 'CameraEnv', 'SonarEnv', 'BluffEnv', 'FormsEnv', 'WiringEnv', 'GambleEnv', 'SameDiffEnv', 'BehindScreenEnv', 'HowLongEnv', 'FindItEnv', 'SpotChangeEnv', 'MoreOrLessEnv', 'HoldsMoreEnv', 'WillItFitEnv', 'TangramEnv', 'SymmetryEnv', 'BlicketEnv', 'ButtonBoxEnv', 'GridChangeEnv', 'UrnsEnv', 'ZebraEnv', 'TriplesEnv', 'CardSortEnv', 'PeckingOrderEnv', 'WhichSideEnv', 'OddOneOutEnv', 'AnalogyEnv', 'GloveEnv', 'UnicycleEnv', 'FreeKickEnv', 'HeavierEnv', 'RoverEnv', 'DockingEnv', 'ClawMachineEnv', 'SteadicamEnv', 'CricketHuntEnv', 'KerbsideEnv', 'PianoTunerEnv', 'ByEarEnv', 'ToneOfVoiceEnv', 'SecondThoughtsEnv', 'BadArgumentEnv', 'FiguresOfSpeechEnv', 'SocialSenseEnv', 'BetweenTheLinesEnv', 'WhyTheyFeelEnv', 'ReadingPeopleEnv', 'HowStronglyEnv', 'WhichFeelingEnv', 'EmotionEnv', 'MorningRoundEnv', 'MissingWordEnv', 'FullStopEnv', 'ProofreaderEnv', 'CipherAbyssEnv', 'CrazyCogEnv', 'NightWatchEnv', 'ShadowPuppetsEnv', 'SemaphoreEnv', 'AirHockeyEnv', 'LockPickEnv', 'BartenderEnv', 'SignPainterEnv', 'TightropeEnv', 'ConductorEnv', 'PottersWheelEnv', 'GunslingerEnv', 'LoadingDockEnv', 'StagehandEnv', 'SafecrackerEnv', 'FieldManualEnv', 'DroneHoopsEnv', 'CaptchaEnv', 'EchoCaveEnv', 'CatchEnv', 'ShadowPlayEnv', 'TunerEnv', 'GliderEnv', 'HoldItEnv', 'TimeItEnv', 'KeepTheBeatEnv', 'CrossingsEnv', 'TouchingEnv', 'InsideOrOutEnv', 'DrShapeEnv', 'DamKeeperEnv', 'CrossroadsEnv', 'BalanceEnv', 'JugglerEnv', 'FerryEnv', 'CraneEnv', 'KitchenEnv', 'SokobanLiveEnv', 'EscortEnv', 'FirebreakEnv', 'AirTrafficEnv', 'RailYardEnv', 'SpreadsheetEnv', 'LanderEnv', 'ExploreOrExploitEnv', 'DelayEnv', 'StopAndSwitchEnv', 'WhereWasItEnv', 'WhoKnowsWhatEnv', 'PointOfViewEnv', 'FoldItEnv', 'ShapeFromMotionEnv', 'WhichIsNearerEnv', 'SameOrMirrorEnv', 'ErrandsEnv', 'SignalsEnv', 'WillItFallEnv', 'BrowserEnv', 'NotebookEnv', 'ManualEnv', 'WhatNextEnv', 'TriageEnv', 'HiddenRuleEnv', 'DispatchEnv', 'DesktopEnv', 'LookoutEnv',
+    'HanoiEnv', 'InTheDarkEnv', 'JigsawEnv', 'VideoSequenceEnv', 'VideoJigsawEnv', 'CameraEnv', 'SonarEnv', 'BluffEnv', 'FormsEnv', 'WiringEnv', 'GambleEnv', 'PianoManEnv', 'LiveClawEnv', 'ArtistEnv', 'FlashBeepEnv', 'SameInstrumentEnv', 'HowManyBeepsEnv', 'UpOrDownEnv', 'WhichEarEnv', 'LouderEnv', 'WhatShareEnv', 'NumberLineEnv', 'HeadingEnv', 'CollisionEnv', 'WalkerEnv', 'FasterEnv', 'WhichWayEnv', 'GazeEnv', 'ReflectionEnv', 'FarSizeEnv', 'BumpDentEnv', 'TopCardEnv', 'WhatsBehindEnv', 'TextureEdgeEnv', 'SameLineEnv', 'ContourEnv', 'HiddenFigureEnv', 'ParallelEnv', 'MidpointEnv', 'BiggerAreaEnv', 'SteeperEnv', 'LongerLineEnv', 'ColourMatchEnv', 'BrighterEnv', 'SameDiffEnv', 'BehindScreenEnv', 'HowLongEnv', 'FindItEnv', 'SpotChangeEnv', 'MoreOrLessEnv', 'HoldsMoreEnv', 'WillItFitEnv', 'TangramEnv', 'SymmetryEnv', 'BlicketEnv', 'ButtonBoxEnv', 'GridChangeEnv', 'UrnsEnv', 'ZebraEnv', 'TriplesEnv', 'CardSortEnv', 'PeckingOrderEnv', 'WhichSideEnv', 'OddOneOutEnv', 'AnalogyEnv', 'GloveEnv', 'UnicycleEnv', 'FreeKickEnv', 'HeavierEnv', 'RoverEnv', 'DockingEnv', 'ClawMachineEnv', 'SteadicamEnv', 'CricketHuntEnv', 'KerbsideEnv', 'PianoTunerEnv', 'ByEarEnv', 'ToneOfVoiceEnv', 'SecondThoughtsEnv', 'BadArgumentEnv', 'FiguresOfSpeechEnv', 'SocialSenseEnv', 'BetweenTheLinesEnv', 'WhyTheyFeelEnv', 'ReadingPeopleEnv', 'HowStronglyEnv', 'WhichFeelingEnv', 'EmotionEnv', 'MorningRoundEnv', 'MissingWordEnv', 'FullStopEnv', 'ProofreaderEnv', 'CipherAbyssEnv', 'CrazyCogEnv', 'NightWatchEnv', 'ShadowPuppetsEnv', 'SemaphoreEnv', 'AirHockeyEnv', 'LockPickEnv', 'BartenderEnv', 'SignPainterEnv', 'TightropeEnv', 'ConductorEnv', 'PottersWheelEnv', 'GunslingerEnv', 'LoadingDockEnv', 'StagehandEnv', 'SafecrackerEnv', 'FieldManualEnv', 'DroneHoopsEnv', 'CaptchaEnv', 'EchoCaveEnv', 'CatchEnv', 'ShadowPlayEnv', 'TunerEnv', 'GliderEnv', 'HoldItEnv', 'TimeItEnv', 'KeepTheBeatEnv', 'CrossingsEnv', 'TouchingEnv', 'InsideOrOutEnv', 'DrShapeEnv', 'DamKeeperEnv', 'CrossroadsEnv', 'BalanceEnv', 'JugglerEnv', 'FerryEnv', 'CraneEnv', 'KitchenEnv', 'SokobanLiveEnv', 'EscortEnv', 'FirebreakEnv', 'AirTrafficEnv', 'RailYardEnv', 'SpreadsheetEnv', 'LanderEnv', 'ExploreOrExploitEnv', 'DelayEnv', 'StopAndSwitchEnv', 'WhereWasItEnv', 'WhoKnowsWhatEnv', 'PointOfViewEnv', 'FoldItEnv', 'ShapeFromMotionEnv', 'WhichIsNearerEnv', 'SameOrMirrorEnv', 'ErrandsEnv', 'SignalsEnv', 'WillItFallEnv', 'BrowserEnv', 'NotebookEnv', 'ManualEnv', 'WhatNextEnv', 'TriageEnv', 'HiddenRuleEnv', 'DispatchEnv', 'DesktopEnv', 'LookoutEnv',
     'MatrixReasoningEnv', 'MazeEnv', 'MovingTargetsEnv', 'MrTimeEnv',
     'NCupMonteEnv',
     'PursuitEnv', 'RecognitionEnv', 'ReflexEnv', 'RemovalsEnv',

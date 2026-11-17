@@ -751,6 +751,243 @@ GAMBLE_RUNG = 1
 GAMBLE_TRIALS = 5
 GAMBLE_ADAPTIVE = True
 
+# Piano Man: hear a melody in a real scale, play it back on the
+# keyboard. Two notes whose keys light from rung 1, three with the
+# first key marked from 4, four in any key from 7, five on two octaves
+# from 10, six in blues and modes from 13, then a note more every two
+# rungs with only the keynote marked.
+PIANOMAN_RUNG = 1
+PIANOMAN_TRIALS = 10
+PIANOMAN_ADAPTIVE = True
+
+# Live Claw Machine: a simulated arcade crane -- a claw of three
+# fingers on a rope, loose prizes, a chute. One ball and a firm grip
+# from rung 1, three prizes from 4, a grip that slackens from 7, a heap
+# and a swinging rope from 10, only the gold prize from 13, a weaker
+# grip and heavier prizes from 16.
+LIVECLAW_RUNG = 1
+LIVECLAW_TRIALS = 5
+LIVECLAW_ADAPTIVE = True
+
+# The Artist: copy a picture with a paint box. One block on 8 by 8
+# pixels from rung 1, more shapes and pixels to 32 by 32 by rung 13, a
+# flat-colour landscape from 16, photographs in 16 colours from 19, 32
+# from 25, and 128 by 128 in full colour from 30. Photographs come from
+# the downloaded libraries; without them a landscape is painted.
+ARTIST_RUNG = 1
+ARTIST_TRIALS = 5
+ARTIST_ADAPTIVE = True
+
+# Flash and Beep: which came first, the flash or the beep? 0.4 s apart
+# from rung 1, 0.14 from 4, counting flashes among misleading beeps
+# from 7, up to three from 10 and four from 13.
+FLASHBEEP_RUNG = 1
+FLASHBEEP_TRIALS = 20
+FLASHBEEP_ADAPTIVE = True
+
+# Same Instrument: one instrument or two? The same note from rung 1,
+# different notes from 4, instruments of one family from 7, the odd one
+# of three from 10, an octave apart and shorter from 13.
+SAMEINSTR_RUNG = 1
+SAMEINSTR_TRIALS = 20
+SAMEINSTR_ADAPTIVE = True
+
+# How Many Beeps: count them. Up to three slow ones from rung 1, five
+# quicker from 4, uneven from 7, on different notes from 10, up to nine
+# among knocks that do not count from 13.
+BEEPS_RUNG = 1
+BEEPS_TRIALS = 20
+BEEPS_ADAPTIVE = True
+
+# Up or Down: did the second tone go up or down? A fifth from rung 1, a
+# third with a misleading brightness from 4, a semitone from 7, the
+# highest of three from 10, closing toward a twentieth of a semitone.
+UPORDOWN_RUNG = 1
+UPORDOWN_TRIALS = 20
+UPORDOWN_ADAPTIVE = True
+
+# Which Ear: is the tone to the left or the right? Far aside from rung
+# 1, halfway from 4, the second of two against the first from 7,
+# different pitches from 10, closing from 13.
+WHICHEAR_RUNG = 1
+WHICHEAR_TRIALS = 20
+WHICHEAR_ADAPTIVE = True
+
+# Louder: which tone was the loudest? Twice as strong from rung 1, the
+# quieter one higher from 4 and longer from 7, three tones from 10, the
+# difference closing from 13.
+LOUDER_RUNG = 1
+LOUDER_TRIALS = 20
+LOUDER_ADAPTIVE = True
+
+# What Share: how much is coloured? A bar or a round and three answers
+# from rung 1, four from 4, two pieces from 7, scatters of dots from
+# 10, five answers from 13 and six from 16.
+WHATSHARE_RUNG = 1
+WHATSHARE_TRIALS = 20
+WHATSHARE_ADAPTIVE = True
+
+# Number Line: what number is at the mark? Nought to a hundred and
+# three answers from rung 1, four from 4, any ends and which-mark
+# questions from 7, five answers from 13 and six from 16.
+NUMBERLINE_RUNG = 1
+NUMBERLINE_TRIALS = 20
+NUMBERLINE_ADAPTIVE = True
+
+# Heading: which mark is the flow of dots coming from? Two marks from
+# rung 1, three from 4, four and stray dots from 7, five from 10, seven
+# closing up from 13.
+HEADING_RUNG = 1
+HEADING_TRIALS = 20
+HEADING_ADAPTIVE = True
+
+# Collision Course: will the two balls hit? Ways drawn from rung 1, not
+# from 4, unlike speeds from 7, covered sooner and nearer misses from
+# 10 and 13.
+COLLISION_RUNG = 1
+COLLISION_TRIALS = 20
+COLLISION_ADAPTIVE = True
+
+# Walker: which way does the figure of lights face? Limbs drawn from
+# rung 1, lights only from 4, stray lights from 7, more from 10 and
+# every rung from 13.
+WALKER_RUNG = 1
+WALKER_TRIALS = 20
+WALKER_ADAPTIVE = True
+
+# Faster: in which window are the dots moving faster? One dot each from
+# rung 1, sizes that mislead from 4, different ways from 7, one after
+# the other from 13, the difference closing.
+FASTER_RUNG = 1
+FASTER_TRIALS = 20
+FASTER_ADAPTIVE = True
+
+# Which Way: which way is the crowd of dots drifting? Left or right
+# with nine in ten together from rung 1, half from 4, four ways from 7,
+# a quarter from 10, eight ways and ever fewer from 13.
+WHICHWAY_RUNG = 1
+WHICHWAY_TRIALS = 20
+WHICHWAY_ADAPTIVE = True
+
+# Gaze: what is the face looking at? Three things from rung 1, four
+# from 4, five from 7, six with one on the same line from 10, eight
+# closing toward six degrees apart from 13.
+GAZE_RUNG = 1
+GAZE_TRIALS = 20
+GAZE_ADAPTIVE = True
+
+# Reflection: which figure is the mirror image? An upright mirror from
+# rung 1, a level one from 4, slanted from 7, any angle from 10, a
+# reflection with one stroke wrong among the others from 13.
+REFLECTION_RUNG = 1
+REFLECTION_TRIALS = 20
+REFLECTION_ADAPTIVE = True
+
+# Far Size: which post is really the tallest, drawn in perspective? Two
+# posts from rung 1, the taller one farther from 4, thicknesses from 7,
+# three posts from 10, four from 16, no ground lines from 19.
+FARSIZE_RUNG = 1
+FARSIZE_TRIALS = 20
+FARSIZE_ADAPTIVE = True
+
+# Bump or Dent: read shape from shading. One mark under a lamp from
+# rung 1, the lamp anywhere from 4, a labelled bump for a lamp from 7,
+# counting bumps from 10, more marks and fainter shading from 13.
+BUMPDENT_RUNG = 1
+BUMPDENT_TRIALS = 20
+BUMPDENT_ADAPTIVE = True
+
+# Top Card: read a pile's order from which card covers which. Three
+# cards from rung 1, four from 4, the bottom card from 7, five cards and
+# second from the top from 10, six of one colour from 13, seven from 19.
+TOPCARD_RUNG = 1
+TOPCARD_TRIALS = 20
+TOPCARD_ADAPTIVE = True
+
+# What Is Behind: which whole shape is the one partly hidden? A third
+# hidden and two shapes from rung 1, three from 4, two screens from 7,
+# four shapes from 10, turned and ever closer from 13.
+WHATSBEHIND_RUNG = 1
+WHATSBEHIND_TRIALS = 20
+WHATSBEHIND_ADAPTIVE = True
+
+# Texture Edge: which part holds the patch whose texture differs? Left
+# or right at right angles from rung 1, quarters and 60 degrees from 4,
+# figures too from 7, 30 degrees from 10, a small patch closing toward
+# 10 degrees from 13.
+TEXEDGE_RUNG = 1
+TEXEDGE_TRIALS = 20
+TEXEDGE_ADAPTIVE = True
+
+# Same Line?: follow one line through a tangle. Three lines and yes or
+# no from rung 1, four lines from 4, which end from 7, five lines from
+# 10, six and longer tangles from 13.
+SAMELINE_RUNG = 1
+SAMELINE_TRIALS = 20
+SAMELINE_ADAPTIVE = True
+
+# Contour: which part of a field of strokes holds the path of aligned
+# ones? Left or right from rung 1, strokes off true from 4, four
+# quarters from 7, tighter curves from 10, shorter and rougher from 13.
+CONTOUR_RUNG = 1
+CONTOUR_TRIALS = 20
+CONTOUR_ADAPTIVE = True
+
+# Hidden Figure: which drawing contains the small figure? Three strokes
+# among three from rung 1, four among six from 4, near misses from 7,
+# four drawings and a bigger lattice from 10, more strokes from 13.
+HIDDENFIG_RUNG = 1
+HIDDENFIG_TRIALS = 20
+HIDDENFIG_ADAPTIVE = True
+
+# Parallel?: are the two lines parallel? Level and 8 degrees off from
+# rung 1, any angle from 4, misleading hatching from 7, narrowing toward
+# a quarter of a degree from 13.
+PARALLEL_RUNG = 1
+PARALLEL_TRIALS = 20
+PARALLEL_ADAPTIVE = True
+
+# Midpoint: which mark is halfway? Three marks from rung 1, any angle
+# from 4, fins from 7, no line and four marks from 10, five from 13.
+MIDPOINT_RUNG = 1
+MIDPOINT_TRIALS = 20
+MIDPOINT_ADAPTIVE = True
+
+# Bigger Area: which shape covers the most? Like shapes from rung 1,
+# compact against long from 4, free outlines from 7, turned from 10,
+# three shapes from 13 and four from 19.
+BIGGERAREA_RUNG = 1
+BIGGERAREA_TRIALS = 20
+BIGGERAREA_ADAPTIVE = True
+
+# Steeper: which line is nearer upright? 25 degrees apart from rung 1,
+# lengths from 4, mirrored slopes from 7, tilted frames from 10,
+# narrowing toward half a degree from 13.
+STEEPER_RUNG = 1
+STEEPER_TRIALS = 20
+STEEPER_ADAPTIVE = True
+
+# Longer Line: which line is the longest? Level lines from rung 1, any
+# angle from 4, misleading fins from 7, converging rails from 10, three
+# lines from 13 and four from 19.
+LONGERLINE_RUNG = 1
+LONGERLINE_TRIALS = 20
+LONGERLINE_ADAPTIVE = True
+
+# Colour Match: which swatch is the sample's colour? Three far-off
+# swatches from rung 1, coloured grounds from 4, closer from 7, shapes
+# and sizes from 10, five swatches from 13 and six from 19.
+COLOURMATCH_RUNG = 1
+COLOURMATCH_TRIALS = 20
+COLOURMATCH_ADAPTIVE = True
+
+# Brighter: which grey patch is the lighter? Like grounds from rung 1,
+# misleading grounds from 4, gradients from 7, sizes from 10, three
+# patches from 13 and four from 19, the step narrowing.
+BRIGHTER_RUNG = 1
+BRIGHTER_TRIALS = 20
+BRIGHTER_ADAPTIVE = True
+
 # Same or Different?: the same relation in seven guises -- shape, count,
 # orientation, colour, size, pitch, rhythm. Differences shrink every
 # rung; other respects differ from 4; one after the other from 10.

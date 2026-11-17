@@ -3621,6 +3621,671 @@ SAMEDIFF = TaskSpec(
     note=samediff_note)
 
 
+def brighter_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import brighter
+    level = brighter.grade(int(chosen['BRIGHTER_RUNG']))
+    return _('Rung %d.  %d patches, %.0f%% apart.') % (level.rung, level.patches, level.step * 100)
+
+
+BRIGHTER = TaskSpec(
+    title=_('Brighter options'),
+    options=(
+        Option('BRIGHTER_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('BRIGHTER_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('BRIGHTER_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=brighter_note)
+
+
+def colourmatch_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import colourmatch
+    level = colourmatch.grade(int(chosen['COLOURMATCH_RUNG']))
+    return _('Rung %d.  %d swatches; the others %.0f%% of a long way off.') % (level.rung, level.swatches, level.step * 100)
+
+
+COLOURMATCH = TaskSpec(
+    title=_('Colour Match options'),
+    options=(
+        Option('COLOURMATCH_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('COLOURMATCH_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('COLOURMATCH_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=colourmatch_note)
+
+
+def longerline_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import longerline
+    level = longerline.grade(int(chosen['LONGERLINE_RUNG']))
+    return _('Rung %d.  %d lines; the longest by %.0f%%.') % (level.rung, level.lines, (level.ratio - 1) * 100)
+
+
+LONGERLINE = TaskSpec(
+    title=_('Longer Line options'),
+    options=(
+        Option('LONGERLINE_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('LONGERLINE_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('LONGERLINE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=longerline_note)
+
+
+def steeper_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import steeper
+    level = steeper.grade(int(chosen['STEEPER_RUNG']))
+    return _('Rung %d.  %.1f degrees apart.') % (level.rung, level.apart)
+
+
+STEEPER = TaskSpec(
+    title=_('Steeper options'),
+    options=(
+        Option('STEEPER_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('STEEPER_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('STEEPER_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=steeper_note)
+
+
+def biggerarea_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import biggerarea
+    level = biggerarea.grade(int(chosen['BIGGERAREA_RUNG']))
+    return _('Rung %d.  %d shapes; the biggest by %.0f%%.') % (level.rung, level.shapes, (level.ratio - 1) * 100)
+
+
+BIGGERAREA = TaskSpec(
+    title=_('Bigger Area options'),
+    options=(
+        Option('BIGGERAREA_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('BIGGERAREA_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('BIGGERAREA_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=biggerarea_note)
+
+
+def midpoint_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import midpoint
+    level = midpoint.grade(int(chosen['MIDPOINT_RUNG']))
+    return _('Rung %d.  %d marks, %.1f%% of the line apart.') % (level.rung, level.marks, level.apart * 100)
+
+
+MIDPOINT = TaskSpec(
+    title=_('Midpoint options'),
+    options=(
+        Option('MIDPOINT_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('MIDPOINT_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('MIDPOINT_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=midpoint_note)
+
+
+def parallel_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import parallel
+    level = parallel.grade(int(chosen['PARALLEL_RUNG']))
+    return _('Rung %d.  Off by %.2f degrees when they are not.') % (level.rung, level.off)
+
+
+PARALLEL = TaskSpec(
+    title=_('Parallel? options'),
+    options=(
+        Option('PARALLEL_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('PARALLEL_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('PARALLEL_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=parallel_note)
+
+
+def hiddenfigure_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import hiddenfigure
+    level = hiddenfigure.grade(int(chosen['HIDDENFIG_RUNG']))
+    return _('Rung %d.  %d strokes among %d more; %d drawings.') % (level.rung, level.strokes, level.extra, level.drawings)
+
+
+HIDDENFIG = TaskSpec(
+    title=_('Hidden Figure options'),
+    options=(
+        Option('HIDDENFIG_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('HIDDENFIG_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('HIDDENFIG_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=hiddenfigure_note)
+
+
+def contour_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import contour
+    level = contour.grade(int(chosen['CONTOUR_RUNG']))
+    return _('Rung %d.  %d parts; a path of %d strokes, up to %.0f degrees off true.') % (level.rung, level.regions, level.strokes, level.jitter)
+
+
+CONTOUR = TaskSpec(
+    title=_('Contour options'),
+    options=(
+        Option('CONTOUR_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('CONTOUR_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('CONTOUR_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=contour_note)
+
+
+def sameline_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import sameline
+    level = sameline.grade(int(chosen['SAMELINE_RUNG']))
+    return _('Rung %d.  %d lines over %d stretches.') % (level.rung, level.lines, level.stretches)
+
+
+SAMELINE = TaskSpec(
+    title=_('Same Line? options'),
+    options=(
+        Option('SAMELINE_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('SAMELINE_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('SAMELINE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=sameline_note)
+
+
+def textureedge_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import textureedge
+    level = textureedge.grade(int(chosen['TEXEDGE_RUNG']))
+    return _('Rung %d.  %d parts; a patch %d strokes across, leaning %.0f degrees.') % (level.rung, level.regions, level.patch, level.lean)
+
+
+TEXEDGE = TaskSpec(
+    title=_('Texture Edge options'),
+    options=(
+        Option('TEXEDGE_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('TEXEDGE_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('TEXEDGE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=textureedge_note)
+
+
+def whatsbehind_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import whatsbehind
+    level = whatsbehind.grade(int(chosen['WHATSBEHIND_RUNG']))
+    return _('Rung %d.  %d shapes; %.0f%% hidden behind %d screen(s).') % (level.rung, level.shapes, level.hidden * 100, level.screens)
+
+
+WHATSBEHIND = TaskSpec(
+    title=_('What Is Behind options'),
+    options=(
+        Option('WHATSBEHIND_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('WHATSBEHIND_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('WHATSBEHIND_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=whatsbehind_note)
+
+
+def topcard_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import topcard
+    level = topcard.grade(int(chosen['TOPCARD_RUNG']))
+    return _('Rung %d.  %d cards.') % (level.rung, level.cards)
+
+
+TOPCARD = TaskSpec(
+    title=_('Top Card options'),
+    options=(
+        Option('TOPCARD_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('TOPCARD_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('TOPCARD_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=topcard_note)
+
+
+def bumpdent_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import bumpdent
+    level = bumpdent.grade(int(chosen['BUMPDENT_RUNG']))
+    return _('Rung %d.  %d-%d mark(s); %s.') % (level.rung, level.marks[0], level.marks[1], _('a lamp is shown') if level.lamp else _('a labelled bump shows the light'))
+
+
+BUMPDENT = TaskSpec(
+    title=_('Bump or Dent options'),
+    options=(
+        Option('BUMPDENT_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('BUMPDENT_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('BUMPDENT_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=bumpdent_note)
+
+
+def farsize_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import farsize
+    level = farsize.grade(int(chosen['FARSIZE_RUNG']))
+    return _('Rung %d.  %d posts; the tallest by %.0f%%.') % (level.rung, level.posts, (level.ratio - 1) * 100)
+
+
+FARSIZE = TaskSpec(
+    title=_('Far Size options'),
+    options=(
+        Option('FARSIZE_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('FARSIZE_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('FARSIZE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=farsize_note)
+
+
+def reflection_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import reflection
+    level = reflection.grade(int(chosen['REFLECTION_RUNG']))
+    return _('Rung %d.  %d figures of %d strokes.') % (level.rung, level.figures, level.strokes)
+
+
+REFLECTION = TaskSpec(
+    title=_('Reflection options'),
+    options=(
+        Option('REFLECTION_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('REFLECTION_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('REFLECTION_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=reflection_note)
+
+
+def gaze_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import gaze
+    level = gaze.grade(int(chosen['GAZE_RUNG']))
+    return _('Rung %d.  %d things, %.0f degrees apart or more.') % (level.rung, level.things, level.apart)
+
+
+GAZE = TaskSpec(
+    title=_('Gaze options'),
+    options=(
+        Option('GAZE_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('GAZE_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('GAZE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=gaze_note)
+
+
+def whichway_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import whichway
+    level = whichway.grade(int(chosen['WHICHWAY_RUNG']))
+    return _('Rung %d.  %d ways; %.0f%% drift together.') % (level.rung, level.ways, level.together * 100)
+
+
+WHICHWAY = TaskSpec(
+    title=_('Which Way options'),
+    options=(
+        Option('WHICHWAY_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('WHICHWAY_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('WHICHWAY_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=whichway_note)
+
+
+def faster_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import faster
+    level = faster.grade(int(chosen['FASTER_RUNG']))
+    return _('Rung %d.  %.0f%% faster.') % (level.rung, (level.ratio - 1) * 100)
+
+
+FASTER = TaskSpec(
+    title=_('Faster options'),
+    options=(
+        Option('FASTER_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('FASTER_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('FASTER_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=faster_note)
+
+
+def walker_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import walker
+    level = walker.grade(int(chosen['WALKER_RUNG']))
+    return _('Rung %d.  %d stray lights.') % (level.rung, level.strays)
+
+
+WALKER = TaskSpec(
+    title=_('Walker options'),
+    options=(
+        Option('WALKER_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('WALKER_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('WALKER_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=walker_note)
+
+
+def collision_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import collision
+    level = collision.grade(int(chosen['COLLISION_RUNG']))
+    return _('Rung %d.  A miss is by %.1f ball-widths or more; covered %.1f s before.') % (level.rung, level.miss, level.lead)
+
+
+COLLISION = TaskSpec(
+    title=_('Collision Course options'),
+    options=(
+        Option('COLLISION_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('COLLISION_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('COLLISION_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=collision_note)
+
+
+def heading_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import heading
+    level = heading.grade(int(chosen['HEADING_RUNG']))
+    return _('Rung %d.  %d marks; %.0f%% of dots stray.') % (level.rung, level.marks, level.stray * 100)
+
+
+HEADING = TaskSpec(
+    title=_('Heading options'),
+    options=(
+        Option('HEADING_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('HEADING_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('HEADING_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=heading_note)
+
+
+def numberline_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import numberline
+    level = numberline.grade(int(chosen['NUMBERLINE_RUNG']))
+    return _('Rung %d.  %d answers, %.1f%% of the line apart.') % (level.rung, level.answers, level.apart * 100)
+
+
+NUMBERLINE = TaskSpec(
+    title=_('Number Line options'),
+    options=(
+        Option('NUMBERLINE_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('NUMBERLINE_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('NUMBERLINE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=numberline_note)
+
+
+def whatshare_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import whatshare
+    level = whatshare.grade(int(chosen['WHATSHARE_RUNG']))
+    return _('Rung %d.  %d answers, %d in a hundred apart.') % (level.rung, level.answers, level.apart)
+
+
+WHATSHARE = TaskSpec(
+    title=_('What Share options'),
+    options=(
+        Option('WHATSHARE_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('WHATSHARE_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('WHATSHARE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=whatshare_note)
+
+
+def louder_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import louder
+    level = louder.grade(int(chosen['LOUDER_RUNG']))
+    return _('Rung %d.  %d tones; the loudest by %.0f%%.') % (level.rung, level.tones, (level.ratio - 1) * 100)
+
+
+LOUDER = TaskSpec(
+    title=_('Louder options'),
+    options=(
+        Option('LOUDER_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('LOUDER_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('LOUDER_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=louder_note)
+
+
+def whichear_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import whichear
+    level = whichear.grade(int(chosen['WHICHEAR_RUNG']))
+    return _('Rung %d.  %.0f%% of the way to one side.') % (level.rung, level.aside * 100)
+
+
+WHICHEAR = TaskSpec(
+    title=_('Which Ear options'),
+    options=(
+        Option('WHICHEAR_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('WHICHEAR_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('WHICHEAR_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=whichear_note)
+
+
+def upordown_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import upordown
+    level = upordown.grade(int(chosen['UPORDOWN_RUNG']))
+    return _('Rung %d.  %d tones, %.2f semitones apart.') % (level.rung, level.tones, level.apart)
+
+
+UPORDOWN = TaskSpec(
+    title=_('Up or Down options'),
+    options=(
+        Option('UPORDOWN_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('UPORDOWN_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('UPORDOWN_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=upordown_note)
+
+
+def howmanybeeps_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import howmanybeeps
+    level = howmanybeeps.grade(int(chosen['BEEPS_RUNG']))
+    return _('Rung %d.  Up to %d beeps, %.2f s apart.') % (level.rung, level.most, level.gap)
+
+
+BEEPS = TaskSpec(
+    title=_('How Many Beeps options'),
+    options=(
+        Option('BEEPS_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('BEEPS_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('BEEPS_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=howmanybeeps_note)
+
+
+def sameinstrument_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import sameinstrument
+    level = sameinstrument.grade(int(chosen['SAMEINSTR_RUNG']))
+    return _('Rung %d.  %d notes up to %.0f semitones apart.') % (level.rung, level.notes, level.spread)
+
+
+SAMEINSTR = TaskSpec(
+    title=_('Same Instrument options'),
+    options=(
+        Option('SAMEINSTR_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('SAMEINSTR_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('SAMEINSTR_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=sameinstrument_note)
+
+
+def flashbeep_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import flashbeep
+    level = flashbeep.grade(int(chosen['FLASHBEEP_RUNG']))
+    return _('Rung %d.  Flash and beep %.0f ms apart.') % (level.rung, level.gap * 1000)
+
+
+FLASHBEEP = TaskSpec(
+    title=_('Flash and Beep options'),
+    options=(
+        Option('FLASHBEEP_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('FLASHBEEP_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 80)),
+        Option('FLASHBEEP_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=flashbeep_note)
+
+
+def artist_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import artist
+    level = artist.grade(int(chosen['ARTIST_RUNG']))
+    return _('Rung %d.  %d by %d pixels, %d colours; passes at %d%% alike.') % (level.rung, level.size, level.size, level.colours, round(level.need * 100))
+
+
+ARTIST = TaskSpec(
+    title=_('The Artist options'),
+    options=(
+        Option('ARTIST_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('ARTIST_TRIALS', _('Pictures per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('ARTIST_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=artist_note)
+
+
+def liveclaw_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import liveclaw
+    level = liveclaw.grade(int(chosen['LIVECLAW_RUNG']))
+    said = [_('Rung %d.') % level.rung, _('%d prize(s); %.0f s at the stick.') % (level.prizes, level.seconds)]
+    if level.gold:
+        said.append(_('Only the gold prize counts.'))
+    if level.hold < 1:
+        said.append(_('The grip slackens to %d%% once the claw is up.') % round(level.hold * 100))
+    return '  '.join(said)
+
+
+LIVECLAW = TaskSpec(
+    title=_('Live Claw Machine options'),
+    options=(
+        Option('LIVECLAW_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('LIVECLAW_TRIALS', _('Plays per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('LIVECLAW_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=liveclaw_note)
+
+
+def pianoman_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import pianoman
+    level = pianoman.grade(int(chosen['PIANOMAN_RUNG']))
+    return _('Rung %d.  %d notes on %d keys; heard again %d time(s).') % (level.rung, level.notes, level.keys, level.listens)
+
+
+PIANOMAN = TaskSpec(
+    title=_('Piano Man options'),
+    options=(
+        Option('PIANOMAN_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('PIANOMAN_TRIALS', _('Melodies per run'), 10,
+               values=(5, 10, 20, 40, 80)),
+        Option('PIANOMAN_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=pianoman_note)
+
+
 def wiring_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung wires up."""
     from .. import wiring
@@ -5420,6 +6085,39 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'forms': FORMS,
     'wiring': WIRING,
     'gamble': GAMBLE,
+    'piano_man': PIANOMAN,
+    'live_claw_machine': LIVECLAW,
+    'the_artist': ARTIST,
+    'flash_and_beep': FLASHBEEP,
+    'same_instrument': SAMEINSTR,
+    'how_many_beeps': BEEPS,
+    'up_or_down': UPORDOWN,
+    'which_ear': WHICHEAR,
+    'louder': LOUDER,
+    'what_share': WHATSHARE,
+    'number_line': NUMBERLINE,
+    'heading': HEADING,
+    'collision_course': COLLISION,
+    'walker': WALKER,
+    'faster': FASTER,
+    'which_way': WHICHWAY,
+    'gaze': GAZE,
+    'reflection': REFLECTION,
+    'far_size': FARSIZE,
+    'bump_or_dent': BUMPDENT,
+    'top_card': TOPCARD,
+    'whats_behind': WHATSBEHIND,
+    'texture_edge': TEXEDGE,
+    'same_line': SAMELINE,
+    'contour': CONTOUR,
+    'hidden_figure': HIDDENFIG,
+    'parallel': PARALLEL,
+    'midpoint': MIDPOINT,
+    'bigger_area': BIGGERAREA,
+    'steeper': STEEPER,
+    'longer_line': LONGERLINE,
+    'colour_match': COLOURMATCH,
+    'brighter': BRIGHTER,
     'same_or_different': SAMEDIFF,
     'behind_the_screen': BEHIND,
     'longer_or_sooner': HOWLONG,
