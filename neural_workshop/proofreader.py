@@ -74,7 +74,7 @@ FROM = {'swap': 1, 'scramble': 2, 'order': 4, 'intruder': 7,
 ROW_TOP = 540.0
 TEXT_X = (96.0, 980.0)
 HANDLE_X = 54.0
-CHAR, PAD, GAP, TILE_H = 10.5, 16.0, 8.0, 34.0
+CHAR, PAD, GAP, TILE_H = 12.0, 14.0, 8.0, 34.0   # CHAR: a 15 pt letter
 OPT_Y = 112.0
 OPT_W = 150.0
 DONE_AT = (900.0, 44.0)
@@ -437,8 +437,10 @@ def row_y(k: int, n: int) -> float:
 
 
 def widths(row) -> Tuple[List[float], float]:
-    """Each tile's width in a line, and the scale the line is drawn at."""
-    ws = [len(t.text) * CHAR + PAD for t in row]
+    """Each tile's width in a line, and the scale the line is drawn at:
+    wide enough for the word as shown, the last one's full stop too."""
+    ws = [(len(t.text) + (i == len(row) - 1)) * CHAR + PAD
+          for i, t in enumerate(row)]
     total = sum(ws) + GAP * max(0, len(ws) - 1)
     room = TEXT_X[1] - TEXT_X[0]
     k = min(1.0, room / total) if total else 1.0

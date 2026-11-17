@@ -36,6 +36,10 @@ SHOW = 1.4                     # seconds the right answer stays up
 # The answer buttons on the 1000 by 640 screen.
 OPT_Y = (112.0, 56.0)          # two rows
 OPT_H = 44.0
+#: Wide answers: a stack of full-width rows, the first centred here.
+WIDE_Y, WIDE_H, WIDE_GAP = 236.0, 34.0, 40.0
+#: Over wide answers, the question sits here and the text box ends above.
+WIDE_ASK_Y, WIDE_BOX = 278.0, (60.0, 300.0, 880.0, 262.0)
 
 
 class Step(NamedTuple):
@@ -43,6 +47,7 @@ class Step(NamedTuple):
     options: Tuple[str, ...]
     answer: int
     value: Tuple[float, ...] = ()  # for intensities: what each option is
+    wide: bool = False             # long answers: one full-width row each
 
 
 class Item(NamedTuple):
@@ -63,9 +68,12 @@ class Round(NamedTuple):
     need: int
 
 
-def option_rect(k: int, n: int) -> Tuple[float, float, float, float]:
+def option_rect(k: int, n: int, wide: bool = False
+                ) -> Tuple[float, float, float, float]:
     """(x, y, w, h) of answer button *k* of *n*: one row up to four, two
-    rows above that."""
+    rows above that; or, for *wide* answers, one full-width row each."""
+    if wide:
+        return 60.0, WIDE_Y - k * WIDE_GAP - WIDE_H / 2, 880.0, WIDE_H
     per = n if n <= 4 else math.ceil(n / 2)
     row, col = divmod(k, per)
     if n <= 4:
@@ -131,7 +139,7 @@ class Run(H.HandRun):
             return
         x, y = self.hand.x, self.hand.y
         for k in range(len(st.options)):
-            bx, by, bw, bh = option_rect(k, len(st.options))
+            bx, by, bw, bh = option_rect(k, len(st.options), st.wide)
             if bx <= x <= bx + bw and by <= y <= by + bh:
                 return self.choose(k)
 
@@ -225,6 +233,25 @@ def at_random(seed: int):
 def play(rnd: Round, pilot=autopilot, dt: float = 1 / 30.0
          ) -> Tuple[bool, str]:
     return H.play(Run(rnd), pilot, EVENTS, act, dt)
+
+
+def need_mixed(chances: Sequence[float], ceiling: float = 0.03) -> int:
+    """The fewest right answers out of ``len(chances)`` items, item *i*
+    guessed right with ``chances[i]``, that guessing reaches no more
+    than *ceiling* of the time."""
+    dist = [1.0]
+    for c in chances:
+        nxt = [0.0] * (len(dist) + 1)
+        for j, p in enumerate(dist):
+            nxt[j] += p * (1 - c)
+            nxt[j + 1] += p * c
+        dist = nxt
+    tail = 0.0
+    for need in range(len(dist) - 1, -1, -1):
+        if tail + dist[need] > ceiling:
+            return need + 1
+        tail += dist[need]
+    return 0
 
 
 def need_for(n: int, chance: float, ceiling: float = 0.03) -> int:

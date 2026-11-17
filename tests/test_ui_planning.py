@@ -320,7 +320,8 @@ class PlanningHubTests(unittest.TestCase):
                                   'maze', 'you_are_here', 'sokoban_3d',
                                   'tetris', 'n_in_a_row', 'rail_yard',
                                   'air_traffic', 'escort', 'sokoban_live',
-                                  'kitchen', 'crane', 'ferry'])
+                                  'kitchen', 'crane', 'ferry',
+                                  'docking', 'rover', 'unicycle'])
 
     def test_the_hub_can_launch_both(self):
         from neural_workshop.ui.taskhub import launch_task

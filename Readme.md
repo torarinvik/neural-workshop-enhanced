@@ -985,6 +985,83 @@ still ahead; the beads are spaced against the furthest one tick could
 ever carry the loop, so one action moves the count by one at most and
 the signal is a potential in the sense of Ng et al. rather than a hint.
 
+#### Kerbside
+
+A street you cannot see. Cars pass from left and right, each heard as
+it comes: louder as it nears, higher in pitch as it approaches and
+lower once past, in the ear of the side it is on. **Up** walks
+forward, **Down** steps back; the lines between lanes are safe to
+stand on. Cross to the far kerb without being struck.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | One lane, slow cars, long gaps |
+| 4–6 | Two lanes, faster |
+| 7–9 | Quiet electric cars |
+| 10–12 | Vans that muffle the cars behind them |
+| 13+ | More lanes, denser and faster traffic, wind over everything |
+
+Pass: the far kerb, unhurt. Every street is dealt only when a player
+who waits a fixed time and then walks cannot cross it, so the ears
+have to do the work.
+
+#### Steadicam
+
+Keep a moving subject inside the framing box. **Arrows** (or WASD)
+pan and tilt, **Q / E** or the wheel zoom. The subject walks, stops and turns; the take counts the
+share of time it was framed.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | One walker, a wide box |
+| 4–6 | A size rule: the subject must fill the box properly |
+| 7–9 | A heavy head that keeps turning after you let go |
+| 10–12 | Lead room: leave space on the side the subject faces |
+| 13+ | Several people and cues to switch to another; faster walkers |
+
+Pass: framed for the share the rung asks. Holding any one control, or
+none, fails every dealt take.
+
+#### Free Kick
+
+The ball on the grass, the goal ahead with a ring lit in its mouth.
+Set the kick -- **Left / Right** aim, **Up / Down** height, **A / D**
+curl, **W / S** power -- and **Space** kicks. The air slows the ball,
+spin bends it, wind carries it; it must cross the line inside the ring,
+past the wall and out of the keeper's reach. One kick a round.
+
+| Rung | What it adds |
+|---|---|
+| 1–2 | The flight is drawn before kicking (rung 1 and 2); a big ring |
+| 3 | No drawn flight |
+| 4–6 | A wall and a keeper |
+| 7–9 | Wind, shown by a flag |
+| 10–12 | Kicks from off to the side; the wall jumps |
+| 13+ | The ring shrinks every rung, the wind strengthens, the keeper quickens |
+
+Pass: in the ring. The reference finds a scoring kick by solving the
+flight and sets the dials to it; the kick as first set never scores.
+
+#### Glove
+
+A pitcher throws ball after ball; move the glove -- mouse or arrows --
+to meet each one at the plate. The camera will not hold still: it cuts
+without warning between seven angles (behind the catcher, behind the
+pitcher, both sides, down low, overhead, high to one side), and the
+glove always moves the way the screen shows it, so every cut turns the
+controls with the picture.
+
+| Rung | What it adds |
+|---|---|
+| 1 | One camera; slow lobs; a big glove; one miss allowed |
+| 2–3 | A new angle for each pitch, never during one |
+| 4–6 | Cuts in flight, about once a second |
+| 7–9 | Curveballs that bend late |
+| 10–12 | Overhead and ground-level views |
+| 13+ | Cuts ever more often, faster pitches, a smaller glove |
+
+Pass: every pitch caught, bar the misses allowed.
+
 ### Perception
 
 The *Perception* category holds two tasks. One asks about what is in
@@ -1109,9 +1186,74 @@ policy that knows the answer to a paid match at rung 25, about a
 millimetre. The task is turn-based, so it takes the think clock: study
 the photograph longer, or start walking sooner.
 
+#### By Ear
+
+A short melody plays on a keyboard; play it back. Click the keys, or
+type them on the home row laid out like a piano: A W S E D F T G Y H U
+J K from C up to the next C.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Two or three notes, close together |
+| 4–9 | Longer melodies, wider steps |
+| 10–12 | Play it back starting from the lit key |
+| 13+ | Notes in pairs, played together |
+
+Pass: every note right and in order. A wrong note ends the round.
+
+#### Piano Tuner
+
+A reference string and one to tune, heard together. Turn the pin --
+**Up / Down**, slowly with **Shift** -- until the beating between them
+stops, then press **Enter**.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Tune to the same note, a wide allowance |
+| 4–6 | Tune to an interval: an octave, a fifth |
+| 7–12 | Stiff strings, whose overtones sit sharp, so the beats lie |
+| 13+ | The allowance narrows every rung |
+
+Pass: within the allowance when done is called. The pin's position on
+screen says nothing; only the sound does.
+
+#### Cricket Hunt
+
+A dark room and crickets chirping somewhere in it. Walk and turn
+(**WASD**), look up and down, and grab (**Space**) when one is within
+reach in front of you. The chirp comes from its side, brighter in front
+than behind and louder when faced.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | One cricket in a small room |
+| 4–6 | Two, a bigger room |
+| 7–9 | A hum under the chirps |
+| 10+ | Crickets that hop when you come near |
+
+Pass: every cricket caught with at most three misses.
+
+#### Claw Machine
+
+A glass cabinet from the front, prizes on its floor, a claw on a cable.
+Move the trolley left and right, in and out (**arrows**; **Up** is
+in), and drop with **Space**. Left and right
+are easy from the front; how far in is the whole difficulty.
+
+| Rung | What it adds |
+|---|---|
+| 1 | A side view as well, and the claw's shadow |
+| 2–3 | The shadow only |
+| 4–6 | Neither: depth only from perspective |
+| 7–9 | The claw swings when the trolley moves |
+| 10–12 | A low camera and prizes of different sizes |
+| 13+ | A moving floor; a smaller allowance every rung |
+
+Pass: the claw closes on the gold prize.
+
 ### Reasoning
 
-The *Reasoning* category holds ten tasks.
+The *Reasoning* category holds 28 tasks.
 
 #### Graph Mapping
 
@@ -2950,6 +3092,40 @@ word is missing there or not, so the offer doesn't give the gaps away.
 
 Ports as in The Proofreader. Clocked.
 
+#### Figures of Speech
+
+Words that do not mean what they say, from BIG-bench (see
+[Social](#social) for the source and how to fetch it). It runs on the
+same screen as the Emotion tasks.
+
+| Rung | Questions |
+|---|---|
+| 1–3 | A sentence with a metaphor; pick the plain words that could take its place ("Her joy was ___": overwhelming, hidden...) |
+| 4–6 | Also: which figure of speech a sentence uses, from four (simile, metaphor, personification, hyperbole...) |
+| 7–9 | Also: the moral of a fable, from five; six figures to choose from |
+| 10+ | Also: which of five sentences is not a metaphor of the kind the others are; eight figures; less time to read |
+
+#### Heavier
+
+Crates that look alike stand in lanes. Push one -- hold it with the
+mouse, or hold **1-4** -- and it goes off as fast as its mass and the
+floor under it let it; let go and it slides until the floor stops it.
+Answer which crate is heaviest with the button at the end of its lane
+(or **Z / X / C / V**). A round is five boards of three crates, or
+four of four from rung 7, each to be answered right.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Three crates, one far heavier, the same floor under all |
+| 4–6 | A floor of its own under each crate: slow to start may mean grip, not mass -- watch it slow as well |
+| 7–9 | Four crates; some boards ask for the slipperiest floor |
+| 10–12 | Crates of different sizes, which say nothing of mass |
+| 13+ | The heaviest is heavier by less every rung; the push weakens |
+
+Pass: every board right. From rung 4 the crate slowest off the mark is
+the answer only by chance; the slowing after release gives the floor,
+and the two together give the mass.
+
 ### Planning
 
 Every task in the *Planning* category is scored the same honest way:
@@ -4190,6 +4366,65 @@ as the shift asks, without touching a barge or running aground.
 The model's skipper waits at each lane's edge for a gap and crosses
 nearly every shift through rung 16.
 
+#### Docking
+
+The view from a ship's cockpit: the station's face, its port a ring
+with a cross on a post standing out of it. Lined up, the cross sits in
+the middle of the ring. **WASD** thrust across and up, **R / F**
+forward and back, the **arrows** turn the nose, **Q / E** roll. Dock
+centred, square and slow, before the fuel runs out.
+
+| Rung | What it adds |
+|---|---|
+| 1–3 | Start near the line; range and closing speed shown |
+| 4–6 | Drift, and the nose turned off |
+| 7–12 | No readouts; spin; the station turns |
+| 13+ | Tighter limits; fuel closer to what the best approach uses |
+
+Pass: docked within the limits. The fuel is the reference's own use
+times a slack that shrinks with the rung.
+
+#### Rover
+
+A rover on another world. What you send reaches it some time later,
+and what its camera sees reaches you late again: half the delay each
+way, and the screen shows the rover as it was. Drive to each flag in
+turn (**W** drive, **S** brake and back up, **A / D** steer) without
+hitting a rock or tipping over on a slope. The bar along the bottom
+shows the commands still on their way.
+
+| Rung | What it adds |
+|---|---|
+| 1 | A fifth of a second; one flag on open ground |
+| 2–3 | Half a second; two flags |
+| 4–6 | A second; rocks |
+| 7–9 | Up to two seconds; slopes that tip a rover driven across them |
+| 10–12 | Up to three seconds, and the delay wanders |
+| 13+ | Three tenths of a second more every rung; more rocks |
+
+Pass: every flag reached. The reference plans a route on a grid clear
+of rocks and steep cross-slopes and steers from where the rover will
+be when its command lands.
+
+#### Unicycle
+
+Side on, a rider on one wheel, joined to it by a springy body, so every
+bump shakes them and every pedal stroke rocks them back. **Up / Down**
+pedal and back-pedal, **Left / Right** lean; hold both to do both. If
+the head touches the ground the ride is over. Reach the flag in time.
+
+| Rung | What it adds |
+|---|---|
+| 1 | Flat ground, plenty of time |
+| 2–3 | Gentle hills |
+| 4–6 | Steeper hills, small bumps |
+| 7–9 | Steps up and down |
+| 10–12 | Ledges to ride off |
+| 13+ | Longer, rougher rides; the time allowed closes in on the reference's |
+
+Pass: the flag, in time, head up. The time allowed is the reference
+rider's own time with a slack that shrinks toward a tenth.
+
 ### Self-control
 
 A category of its own rather than a sixth attention task, and the
@@ -4985,18 +5220,18 @@ head is correct and over par.
 
 ### Emotion
 
-Reading feeling: in a face, in what people write, in a dialogue, and in
-what a situation is bound to make someone feel. All five tasks share
-one screen. The item (a face, or text on a sheet) is shown in the
-middle, the question under it, and the answers on buttons: click one
-or press its number (**1–8**). Some items ask two or four things in
+Reading feeling: in a face, in a voice, in what people write, in a
+dialogue, and in what a situation is bound to make someone feel. All six
+tasks share one screen. The item (a face, or text on a sheet) is shown
+in the middle, the question under it, and the answers on buttons: click
+one or press its number (**1–8**). Some items ask two or four things in
 turn. After each item the right answer turns green (and a wrong pick
 red) for a moment, with a chime or a low note. A row of dots along the
 top shows the round so far. A round passes when enough items are right
-that guessing, or giving the same answer every time, would almost
-never do it (no more than 3% of rounds), and no fewer than the rung's
-share for a careful reader. For the agent, ports 0–7 pick answers 1–8.
-All five are clocked: each item has its own time.
+that guessing, or giving the same answer every time, would almost never
+do it (no more than 3% of rounds), and no fewer than the rung's share
+for a careful reader. For the agent, ports 0–7 pick answers 1–8. All six
+are clocked: each item has its own time.
 
 The material is public data, fetched once into the data directory and
 never bundled:
@@ -5087,6 +5322,124 @@ Answers that would also be fair (someone relieved is happy too) are
 never offered against each other. The number of answers grows from two
 to eight, and the time per story shrinks with every rung.
 
+
+#### Tone of Voice
+
+An actor says an ordinary sentence ("It's eleven o'clock") angry,
+disgusted, afraid, happy, sad or plainly. The words are shown, and
+they are the same whatever the feeling, so only the voice tells. Each
+clip plays twice; the time to answer runs after the second. The clips
+are CREMA-D's (see [Social](#social)): 91 actors, and only clips that
+listeners who heard them, without seeing the face, took for the
+emotion the actor meant. How many of them agreed sets how plain a clip
+is.
+
+| Rung | Voices |
+|---|---|
+| 1 | Two emotions to choose between, on clips at least 85% of listeners agreed on; 20 clips, 16 needed |
+| 2–3 | Three, 80% agreement |
+| 4–6 | Four, 70% |
+| 7–9 | All six, the plain voice among them, 65% |
+| 10–12 | A hiss behind the voice, 55% |
+| 13–15 | Only the first 1.2 s of each clip, a louder hiss |
+| 16+ | 0.9 s, the loudest hiss, clips half the listeners agreed on |
+
+Without the clips the voice is a hum made here: six syllables whose
+pitch, pace, loudness and fall follow what is known of how each
+emotion sounds. The voice also goes to an agent on the audio channel.
+
+### Social
+
+Reading people past their words. Both tasks run on the Emotion screen
+(the text in the middle, answers on buttons, **1–8** or a click), and so
+do Figures of Speech (under Reasoning) and the two Rationality tasks.
+Answers are shuffled, and a round where pressing the same number every
+time would pass is dealt again. The bar is set where guessing passes no
+more than 3% of rounds, and never under the rung's share for a careful
+reader. Long answers get a full-width row each. Time to read follows the
+length of the text, and shrinks with the rung.
+
+The material is fetched once into the data directory and never
+bundled:
+
+```bash
+python -m neural_workshop.socialdata              # all three
+python -m neural_workshop.socialdata voices        # or one of them
+```
+
+| Source | What it is | Licence |
+|---|---|---|
+| BIG-bench (`tasksource/bigbench`) | 492 indirect replies, 181 pairs of remarks (one sarcastic), 99 ironic or plain sentences, 213 metaphors, 59 figures of speech, 173 fables, 41 odd-metaphor-out questions, 1,400 short arguments and 3,000 syllogisms with negations | Apache 2.0 |
+| Social IQa (AI2) | 35,172 everyday situations, each with a question about motives, feelings or what follows, and three answers | published by AI2 for research; see its site for terms |
+| CREMA-D | 1,859 voice clips of 6 emotions, from 91 actors, each rated by listeners who only heard it | Open Database License |
+
+Without them each task still runs on a handful of questions written
+here (and Tone of Voice on its hum).
+
+#### Between the Lines
+
+What someone means, not what they say. Every question has two answers,
+so a round has twenty and needs fifteen.
+
+| Rung | Questions |
+|---|---|
+| 1–3 | "Are you coming to the party?" "I have an exam at eight." Does it mean yes or no? |
+| 4–6 | Also: which of two remarks is sarcastic |
+| 7–9 | Also: whether a sentence is ironic |
+| 10+ | All three mixed, with less time to read each rung |
+
+#### Social Sense
+
+Everyday situations from Social IQa, each with a question and three
+answers.
+
+| Rung | Questions |
+|---|---|
+| 1–3 | How someone feels afterwards, and what they are like |
+| 4–6 | Also: what they need to do first, and will want to do next |
+| 7–9 | Also: why they did it, how others feel, what happens to them |
+| 10–12 | Every kind of question, with less time |
+| 13+ | Two questions about the same situation, both to be right |
+
+### Rationality
+
+Thinking twice. Both tasks make their questions here, so there is
+never a shortage and none has been seen before.
+
+#### Bad Argument
+
+Does the conclusion follow from what is given? The arguments take a few
+forms, valid or not: *if p then q; p; so q* and *if p then q; not q;
+so not p* (valid); *if p then q; q; so p* (affirming the consequent)
+and *if p then q; not p; so not q* (denying the antecedent); *all M are
+P; all S are M; so all S are P* and *no M are P; all S are M; so no S
+are P* (valid); *all S are P; all M are P; so all S are M* (an
+undistributed middle) and *all S are M; so all M are S* (an "all"
+turned round). The tests check every argument made against every way
+its sets or facts could be.
+
+| Rung | Arguments |
+|---|---|
+| 1 | Made-up words ("If the stone is gimble, it is mimsy"): a valid step, or one that changes the subject |
+| 2–3 | Made-up words, every form, so only the form can tell |
+| 4–6 | Real things, and the trap: half the valid arguments are about the world as it is not ("if the kettle is switched on, the water freezes") and half the invalid ones about the world as it is, so judging by whether it all sounds true gets half right, as guessing does |
+| 7–9 | Also BIG-bench's short arguments |
+| 10–12 | Say what is wrong: it follows, affirming the consequent, denying the antecedent, an undistributed middle, or an "all" turned round |
+| 13–15 | Chains of three premises, whole or with a link turned round, and BIG-bench's syllogisms with negations |
+| 16+ | All of it, naming the flaw again, with less time |
+
+#### Second Thoughts
+
+Questions whose first answer is wrong; that answer is always among the
+choices.
+
+| Rung | Questions |
+|---|---|
+| 1–3 | The race (overtake the runner in third: you are third), the pond (lily pads double daily and cover it in 48 days: half on day 47), the coin (heads six times: tails is no likelier), and a test told in counts of people (of those who test positive, how many are ill?) |
+| 4–6 | Also: the bakers (5 bake 5 cakes in 5 minutes: 100 bake 100 in 5), the price (a bat and ball cost 1.10, the bat 1.00 more: the ball is 0.05), and the description (more likely a bank teller, or a bank teller and an activist? asked the other way round as often) |
+| 7–9 | Also: the hospitals (the small one sees more days with over 60% boys), and the test in percentages, where the lure is the test's accuracy |
+| 10–12 | All of them, with less time |
+| 13+ | Also: the chance of illness after two positive tests |
 
 ### Window size, full screen, and the two coordinate spaces
 

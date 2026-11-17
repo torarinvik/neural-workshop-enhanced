@@ -32,6 +32,8 @@ CATEGORIES: Sequence[Tuple[str, str]] = (
     ('decisions', _('Decision making')),
     ('computer', _('Computer use')),
     ('emotion', _('Emotion')),
+    ('social', _('Social')),
+    ('rationality', _('Rationality')),
 )
 
 #: Category id → list of (task id, label).
@@ -87,6 +89,10 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('semaphore', _('Semaphore')),
         ('shadow_puppets', _('Shadow Puppets')),
         ('night_watch', _('Night Watch')),
+        ('kerbside', _('Kerbside')),
+        ('steadicam', _('Steadicam')),
+        ('free_kick', _('Free Kick')),
+        ('glove', _('Glove')),
     ],
     'perception': [
         ('count', _('Count')),
@@ -105,6 +111,10 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('tuner', _('Tuner')),
         ('shadow_play', _('Shadow Play')),
         ('captcha', _('Captcha')),
+        ('by_ear', _('By Ear')),
+        ('piano_tuner', _('Piano Tuner')),
+        ('cricket_hunt', _('Cricket Hunt')),
+        ('claw_machine', _('Claw Machine')),
     ],
     'reasoning': [
         ('graph_mapping', _('Graph Mapping')),
@@ -133,6 +143,8 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('proofreader', _('The Proofreader')),
         ('full_stop', _('Full Stop')),
         ('missing_word', _('The Missing Word')),
+        ('figures_of_speech', _('Figures of Speech')),
+        ('heavier', _('Heavier')),
     ],
     'planning': [
         ('tower_of_hanoi', _('Tower of Hanoi')),
@@ -150,6 +162,9 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('kitchen', _('Kitchen')),
         ('crane', _('Crane')),
         ('ferry', _('Ferry')),
+        ('docking', _('Docking')),
+        ('rover', _('Rover')),
+        ('unicycle', _('Unicycle')),
     ],
     # Not attention, and the difference is the point. Everything under
     # attention is about finding or following the right thing; this is
@@ -194,6 +209,19 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('how_strongly', _('How Strongly')),
         ('reading_people', _('Reading People')),
         ('why_they_feel', _('Why They Feel')),
+        ('tone_of_voice', _('Tone of Voice')),
+    ],
+    # Reading people past their words: what a reply implies, what a
+    # situation leads to.
+    'social': [
+        ('between_the_lines', _('Between the Lines')),
+        ('social_sense', _('Social Sense')),
+    ],
+    # Thinking twice: arguments that do not follow, and questions whose
+    # first answer is wrong.
+    'rationality': [
+        ('bad_argument', _('Bad Argument')),
+        ('second_thoughts', _('Second Thoughts')),
     ],
 }
 
@@ -948,6 +976,78 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'why_they_feel':
         from .whytheyfeel import WhyTheyFeel
         WhyTheyFeel()
+        return
+    if task_id == 'between_the_lines':
+        from .betweenlines import BetweenTheLines
+        BetweenTheLines()
+        return
+    if task_id == 'social_sense':
+        from .socialsense import SocialSense
+        SocialSense()
+        return
+    if task_id == 'figures_of_speech':
+        from .figures import FiguresOfSpeech
+        FiguresOfSpeech()
+        return
+    if task_id == 'bad_argument':
+        from .badargument import BadArgument
+        BadArgument()
+        return
+    if task_id == 'second_thoughts':
+        from .secondthoughts import SecondThoughts
+        SecondThoughts()
+        return
+    if task_id == 'tone_of_voice':
+        from .toneofvoice import ToneOfVoice
+        ToneOfVoice()
+        return
+    if task_id == 'by_ear':
+        from .byear import ByEar
+        ByEar()
+        return
+    if task_id == 'piano_tuner':
+        from .pianotuner import PianoTuner
+        PianoTuner()
+        return
+    if task_id == 'kerbside':
+        from .kerbside import Kerbside
+        Kerbside()
+        return
+    if task_id == 'cricket_hunt':
+        from .crickethunt import CricketHunt
+        CricketHunt()
+        return
+    if task_id == 'steadicam':
+        from .steadicam import Steadicam
+        Steadicam()
+        return
+    if task_id == 'claw_machine':
+        from .clawmachine import ClawMachine
+        ClawMachine()
+        return
+    if task_id == 'docking':
+        from .docking import Docking
+        Docking()
+        return
+    if task_id == 'rover':
+        from .rover import Rover
+        Rover()
+        return
+    if task_id == 'heavier':
+        from .heavier import Heavier
+        Heavier()
+        return
+    if task_id == 'free_kick':
+        from .freekick import FreeKick
+        FreeKick()
+        return
+    if task_id == 'unicycle':
+        from .unicycle import Unicycle
+        Unicycle()
+        return
+    if task_id == 'glove':
+        from .glove import Glove
+        Glove()
         return
     if task_id == 'gamble':
         from .gamble import Gamble

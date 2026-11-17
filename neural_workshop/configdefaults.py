@@ -751,6 +751,122 @@ GAMBLE_RUNG = 1
 GAMBLE_TRIALS = 5
 GAMBLE_ADAPTIVE = True
 
+# Glove: catch pitches while the camera cuts between angles. A new
+# angle each pitch from rung 2, cuts in flight from 4, curveballs from
+# 7, and cuts ever more often from 13.
+GLOVE_RUNG = 1
+GLOVE_TRIALS = 5
+GLOVE_ADAPTIVE = True
+
+# Unicycle: ride a springy rider on one wheel over the hills. Hills from
+# rung 2, bumps from 4, steps from 7, ledges from 10, and less time to
+# spare every rung from 13.
+UNI_RUNG = 1
+UNI_TRIALS = 5
+UNI_ADAPTIVE = True
+
+# Free Kick: set direction, height, curl and power and kick into the
+# lit ring. A wall and keeper from rung 4, wind from 7, an angled kick
+# from 10, a ring that shrinks from 13.
+KICK_RUNG = 1
+KICK_TRIALS = 5
+KICK_ADAPTIVE = True
+
+# Heavier: push crates that look alike to tell which is heaviest.
+# Floors of their own from rung 4, slipperiest-floor questions from 7,
+# sizes that mislead from 10, masses ever closer from 13.
+HEAVY_RUNG = 1
+HEAVY_TRIALS = 5
+HEAVY_ADAPTIVE = True
+
+# Rover: drive to the flags with every signal late. A second of delay
+# and rocks from rung 4, slopes from 7, a wandering delay from 10, and
+# a longer delay every rung from 13.
+ROVER_RUNG = 1
+ROVER_TRIALS = 5
+ROVER_ADAPTIVE = True
+
+# Docking: dock a ship with a turning station by hand. Off the line at
+# rung 1, drift and spin later, readouts gone from 7, a rolling station
+# and tighter limits on fuel from 13.
+BERTH_RUNG = 1
+BERTH_TRIALS = 5
+BERTH_ADAPTIVE = True
+
+# Claw Machine: judge depth from the front to drop on the gold prize. A
+# side view at rung 1, a shadow to 3, a swinging claw from 7, a low
+# camera from 10, a moving floor from 13.
+CLAW_RUNG = 1
+CLAW_TRIALS = 5
+CLAW_ADAPTIVE = True
+
+# Steadicam: keep a moving subject framed. A size rule from rung 4, a
+# heavy head from 7, lead room from 10, cues to switch subject from 13.
+STEADY_RUNG = 1
+STEADY_TRIALS = 5
+STEADY_ADAPTIVE = True
+
+# Cricket Hunt: find crickets in a dark room by their chirping. More
+# crickets and a bigger room by rung, a hum from 7, hopping from 10.
+CRICKET_RUNG = 1
+CRICKET_TRIALS = 5
+CRICKET_ADAPTIVE = True
+
+# Kerbside: cross a street you can only hear. More lanes and faster
+# cars by rung, quiet electric cars and muffling vans later, wind on top.
+KERB_RUNG = 1
+KERB_TRIALS = 5
+KERB_ADAPTIVE = True
+
+# Piano Tuner: tune a string by ear to its reference. Intervals from
+# rung 4, stiff strings from 7, the allowance narrows from 13.
+TUNE_RUNG = 1
+TUNE_TRIALS = 5
+TUNE_ADAPTIVE = True
+
+# By Ear: hear a short melody, then play it back on the keyboard. Wider
+# steps from rung 4, a shift to a lit key from 10, notes in pairs from 13.
+EAR_RUNG = 1
+EAR_TRIALS = 5
+EAR_ADAPTIVE = True
+
+# Tone of Voice: CREMA-D. Two emotions to choose from at rung 1, three at 2,
+# four at 4, all six at 7; a hiss from 10, clipped voices from 13.
+VOICE_RUNG = 1
+VOICE_TRIALS = 5
+VOICE_ADAPTIVE = True
+
+# Second Thoughts: questions whose first answer is wrong. The race, the pond, the
+# coin and a test in counts from rung 1; more kinds at 4, 7 and 13.
+SECOND_RUNG = 1
+SECOND_TRIALS = 5
+SECOND_ADAPTIVE = True
+
+# Bad Argument: made-up words from rung 1, real things with the belief trap from 4,
+# BIG-bench fallacies from 7, naming the flaw at 10-12 and from 16, chains from 13.
+ARGUE_RUNG = 1
+ARGUE_TRIALS = 5
+ARGUE_ADAPTIVE = True
+
+# Figures of Speech: BIG-bench. Metaphors in plain words from rung 1, naming the
+# figure from 4, the moral of a fable from 7, the odd metaphor out from 10.
+FIGURE_RUNG = 1
+FIGURE_TRIALS = 5
+FIGURE_ADAPTIVE = True
+
+# Social Sense: Social IQa. How people feel and what they are like from rung 1,
+# what they need and want from 4, why and what follows from 7; two questions
+# a situation from 13.
+SENSE_RUNG = 1
+SENSE_TRIALS = 5
+SENSE_ADAPTIVE = True
+
+# Between the Lines: BIG-bench. What an indirect reply means from rung 1,
+# which remark is sarcastic from 4, irony from 7; less time to read above 10.
+LINES_RUNG = 1
+LINES_TRIALS = 5
+LINES_ADAPTIVE = True
+
 # Why They Feel: made-up stories built by appraisal theory. Happy or
 # sad at rung 1; hopes, reliefs, pride, gratitude, envy up the ladder;
 # what one person thinks another feels from 15.

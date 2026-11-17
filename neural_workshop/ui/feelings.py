@@ -68,10 +68,12 @@ class FeelingTask(HandTask):
         self._show(run, it)
         g = self.g()
         st = run.step_now()
+        wide = any(x.wide for x in it.steps)
+        ask_y = F.WIDE_ASK_Y if wide else 150
         if run.showing:
             right, _picks = run.last
             self.words((_('Right: ') if right else _('No: ')) + it.truth,
-                       500, 150, 13, bold=True,
+                       500, ask_y, 13, bold=True, width=900,
                        colour=(140, 230, 160, 255) if right
                        else (255, 150, 130, 255))
             shown = it.steps[-1] if it.tolerance < 0 else None
@@ -83,7 +85,7 @@ class FeelingTask(HandTask):
         n = len(it.steps)
         ask = st.ask if n == 1 else '%s  (%d of %d)' % (
             st.ask, len(run.picks) + 1, n)
-        self.words(ask, 500, 150, 13, bold=True, colour=PALE)
+        self.words(ask, 500, ask_y, 13, bold=True, colour=PALE, width=900)
         self._buttons(run, st, g)
         left = max(0.0, it.seconds - (run.t - run.since))
         share = left / it.seconds
@@ -105,9 +107,9 @@ class FeelingTask(HandTask):
 
     def _buttons(self, run, st, g, picked: Optional[int] = None) -> None:
         n = len(st.options)
-        size = self._fit_buttons(st.options, n)
+        size = self._fit_buttons(st.options, n, st.wide)
         for k, label in enumerate(st.options):
-            x, y, w, h = F.option_rect(k, n)
+            x, y, w, h = F.option_rect(k, n, st.wide)
             c = BUTTON
             if picked is not None:
                 if k == st.answer:
@@ -116,14 +118,19 @@ class FeelingTask(HandTask):
                     c = BAD
             self.rect(x, y, w, h, c, g)
             self.words('%d' % (k + 1), x + 12, y + h / 2, 9, colour=DIM)
-            self.words(label, x + w / 2 + 6, y + h / 2, size, colour=PALE,
-                       width=w - 30)
+            if st.wide:
+                self.words(label, x + 34, y + h / 2, size, colour=PALE,
+                           anchor='left', width=w - 44)
+            else:
+                self.words(label, x + w / 2 + 6, y + h / 2, size,
+                           colour=PALE, width=w - 30)
 
-    def _fit_buttons(self, options, n) -> float:
+    def _fit_buttons(self, options, n, wide=False) -> float:
         memo: Dict = self.__dict__.setdefault('_bsize', {})
-        k = (tuple(options), self.fit[2])
+        k = (tuple(options), self.fit[2], wide)
         if k not in memo:
-            w = F.option_rect(0, n)[2] - 30
+            w = F.option_rect(0, n, wide)[2] - (44 if wide else 30)
+            lines = 1 if wide else 2         # lines of text a button holds
             size = 12.0
             while size > 7.0:
                 ok = True
@@ -132,7 +139,9 @@ class FeelingTask(HandTask):
                                             font_name=FONTLIST, width=int(
                                                 w * self.fit[2]),
                                             multiline=True)
-                    if lab.content_height > 2.2 * size * 1.4 * self.fit[2]:
+                    # a line is about 1.7 times the point size, in pixels
+                    if lab.content_height > lines * size * 1.75 * \
+                            self.fit[2]:
                         ok = False
                         break
                 if ok:
@@ -143,7 +152,8 @@ class FeelingTask(HandTask):
 
     def _show(self, run, it) -> None:
         """Draw the item itself; the text box unless a task draws more."""
-        self.text_box(it.prompt)
+        wide = any(x.wide for x in it.steps)
+        self.text_box(it.prompt, F.WIDE_BOX if wide else None)
 
     def text_box(self, text: str, box=None) -> None:
         x, y, w, h = box or self.TEXT_BOX

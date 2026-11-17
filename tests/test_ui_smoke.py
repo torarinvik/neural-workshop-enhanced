@@ -31,6 +31,24 @@ if __name__ == '__main__':
     from test_sonar import *           # noqa: F401,F403,E402
     from test_hiddenrule import *      # noqa: F401,F403,E402
     from test_gamble import *  # noqa: F401,F403,E402
+    from test_glove import *  # noqa: F401,F403,E402
+    from test_unicycle import *  # noqa: F401,F403,E402
+    from test_freekick import *  # noqa: F401,F403,E402
+    from test_heavier import *  # noqa: F401,F403,E402
+    from test_rover import *  # noqa: F401,F403,E402
+    from test_docking import *  # noqa: F401,F403,E402
+    from test_clawmachine import *  # noqa: F401,F403,E402
+    from test_steadicam import *  # noqa: F401,F403,E402
+    from test_crickethunt import *  # noqa: F401,F403,E402
+    from test_kerbside import *  # noqa: F401,F403,E402
+    from test_pianotuner import *  # noqa: F401,F403,E402
+    from test_byear import *  # noqa: F401,F403,E402
+    from test_toneofvoice import *  # noqa: F401,F403,E402
+    from test_secondthoughts import *  # noqa: F401,F403,E402
+    from test_badargument import *  # noqa: F401,F403,E402
+    from test_figures import *  # noqa: F401,F403,E402
+    from test_socialsense import *  # noqa: F401,F403,E402
+    from test_betweenlines import *  # noqa: F401,F403,E402
     from test_whytheyfeel import *  # noqa: F401,F403,E402
     from test_readingpeople import *  # noqa: F401,F403,E402
     from test_howstrongly import *  # noqa: F401,F403,E402

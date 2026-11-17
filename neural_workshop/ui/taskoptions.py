@@ -2733,6 +2733,441 @@ WHY = TaskSpec(
     note=whytheyfeel_note)
 
 
+def betweenlines_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import betweenlines
+    level = betweenlines.grade(int(chosen['LINES_RUNG']))
+    said = [_('Rung %d: %s; %d items.') % (level.rung, ', '.join(level.kinds), level.items)]
+    return '  '.join(said)
+
+
+LINES = TaskSpec(
+    title=_('Between the Lines options'),
+    options=(
+        Option('LINES_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('LINES_TRIALS', _('Rounds per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('LINES_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=betweenlines_note)
+
+
+def socialsense_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import socialsense
+    level = socialsense.grade(int(chosen['SENSE_RUNG']))
+    said = [_('Rung %d: %s.') % (level.rung, ', '.join(level.kinds))]
+    if level.pairs:
+        said.append(_('Two questions a situation.'))
+    return '  '.join(said)
+
+
+SENSE = TaskSpec(
+    title=_('Social Sense options'),
+    options=(
+        Option('SENSE_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('SENSE_TRIALS', _('Rounds per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('SENSE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=socialsense_note)
+
+
+def figures_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import figures
+    level = figures.grade(int(chosen['FIGURE_RUNG']))
+    said = [_('Rung %d: %s.') % (level.rung, ', '.join(level.kinds))]
+    return '  '.join(said)
+
+
+FIGURE = TaskSpec(
+    title=_('Figures of Speech options'),
+    options=(
+        Option('FIGURE_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('FIGURE_TRIALS', _('Rounds per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('FIGURE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=figures_note)
+
+
+def badargument_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import badargument
+    level = badargument.grade(int(chosen['ARGUE_RUNG']))
+    said = [_('Rung %d: %s.') % (level.rung, ', '.join(level.kinds))]
+    if level.name:
+        said.append(_('Name what is wrong.'))
+    return '  '.join(said)
+
+
+ARGUE = TaskSpec(
+    title=_('Bad Argument options'),
+    options=(
+        Option('ARGUE_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('ARGUE_TRIALS', _('Rounds per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('ARGUE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=badargument_note)
+
+
+def secondthoughts_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import secondthoughts
+    level = secondthoughts.grade(int(chosen['SECOND_RUNG']))
+    said = [_('Rung %d: %s.') % (level.rung, ', '.join(level.kinds))]
+    return '  '.join(said)
+
+
+SECOND = TaskSpec(
+    title=_('Second Thoughts options'),
+    options=(
+        Option('SECOND_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('SECOND_TRIALS', _('Rounds per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('SECOND_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=secondthoughts_note)
+
+
+def toneofvoice_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import toneofvoice
+    level = toneofvoice.grade(int(chosen['VOICE_RUNG']))
+    said = [_('Rung %d: %d emotions to choose from.') % (level.rung, level.choices)]
+    if level.hiss:
+        said.append(_('A hiss behind the voice.'))
+    if level.cut:
+        said.append(_('Only %.1f s of each voice.') % level.cut)
+    return '  '.join(said)
+
+
+VOICE = TaskSpec(
+    title=_('Tone of Voice options'),
+    options=(
+        Option('VOICE_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('VOICE_TRIALS', _('Rounds per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('VOICE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=toneofvoice_note)
+
+
+def byear_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import byear
+    level = byear.grade(int(chosen['EAR_RUNG']))
+    said = [_('Rung %d: %d notes.') % (level.rung, level.length)]
+    if level.shift:
+        said.append(_('Play it from the lit key.'))
+    if level.pairs:
+        said.append(_('Some notes come in pairs.'))
+    return '  '.join(said)
+
+
+EAR = TaskSpec(
+    title=_('By Ear options'),
+    options=(
+        Option('EAR_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('EAR_TRIALS', _('Melodies per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('EAR_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=byear_note)
+
+
+def pianotuner_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import pianotuner
+    level = pianotuner.grade(int(chosen['TUNE_RUNG']))
+    return _('Rung %d: %s, within %.1f cents.') % (
+        level.rung, ', '.join(level.intervals), level.tol)
+
+
+TUNE = TaskSpec(
+    title=_('Piano Tuner options'),
+    options=(
+        Option('TUNE_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('TUNE_TRIALS', _('Strings per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('TUNE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=pianotuner_note)
+
+
+def kerbside_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import kerbside
+    level = kerbside.grade(int(chosen['KERB_RUNG']))
+    said = [_('Rung %d: %d lane(s).') % (level.rung, level.lanes)]
+    if level.electric:
+        said.append(_('Quiet electric cars.'))
+    if level.wind:
+        said.append(_('Wind.'))
+    return '  '.join(said)
+
+
+KERB = TaskSpec(
+    title=_('Kerbside options'),
+    options=(
+        Option('KERB_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('KERB_TRIALS', _('Crossings per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('KERB_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=kerbside_note)
+
+
+def crickethunt_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import crickethunt
+    level = crickethunt.grade(int(chosen['CRICKET_RUNG']))
+    said = [_('Rung %d: %d cricket(s).') % (level.rung, level.crickets)]
+    if level.hop:
+        said.append(_('They hop.'))
+    return '  '.join(said)
+
+
+CRICKET = TaskSpec(
+    title=_('Cricket Hunt options'),
+    options=(
+        Option('CRICKET_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('CRICKET_TRIALS', _('Hunts per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('CRICKET_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=crickethunt_note)
+
+
+def steadicam_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import steadicam
+    level = steadicam.grade(int(chosen['STEADY_RUNG']))
+    said = [_('Rung %d: %.0f s, %d%% framed.') % (
+        level.rung, level.seconds, round(level.need * 100))]
+    if level.heavy:
+        said.append(_('A heavy head.'))
+    if level.lead:
+        said.append(_('Leave lead room.'))
+    return '  '.join(said)
+
+
+STEADY = TaskSpec(
+    title=_('Steadicam options'),
+    options=(
+        Option('STEADY_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('STEADY_TRIALS', _('Takes per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('STEADY_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=steadicam_note)
+
+
+def clawmachine_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import clawmachine
+    level = clawmachine.grade(int(chosen['CLAW_RUNG']))
+    said = [_('Rung %d: %d prizes.') % (level.rung, level.prizes)]
+    if level.side:
+        said.append(_('A side view.'))
+    elif level.shadow:
+        said.append(_('The claw casts a shadow.'))
+    if level.swing:
+        said.append(_('The claw swings.'))
+    return '  '.join(said)
+
+
+CLAW = TaskSpec(
+    title=_('Claw Machine options'),
+    options=(
+        Option('CLAW_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('CLAW_TRIALS', _('Drops per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('CLAW_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=clawmachine_note)
+
+
+def docking_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import docking
+    level = docking.grade(int(chosen['BERTH_RUNG']))
+    said = [_('Rung %d: within %.2f m, under %.2f m/s.') % (
+        level.rung, level.tol, level.vmax)]
+    if not level.readouts:
+        said.append(_('No readouts.'))
+    return '  '.join(said)
+
+
+BERTH = TaskSpec(
+    title=_('Docking options'),
+    options=(
+        Option('BERTH_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('BERTH_TRIALS', _('Dockings per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('BERTH_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=docking_note)
+
+
+def rover_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import rover
+    level = rover.grade(int(chosen['ROVER_RUNG']))
+    said = [_('Rung %d: %.1f s delay, %d flag(s).') % (
+        level.rung, level.delay, level.flags)]
+    if level.rocks:
+        said.append(_('%d rocks.') % level.rocks)
+    if level.tip:
+        said.append(_('Slopes that tip.'))
+    return '  '.join(said)
+
+
+ROVER = TaskSpec(
+    title=_('Rover options'),
+    options=(
+        Option('ROVER_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('ROVER_TRIALS', _('Drives per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('ROVER_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=rover_note)
+
+
+def heavier_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import heavier
+    level = heavier.grade(int(chosen['HEAVY_RUNG']))
+    said = [_('Rung %d: %d crates, %d boards.') % (
+        level.rung, level.crates, level.boards)]
+    if level.floors:
+        said.append(_('Each floor grips differently.'))
+    return '  '.join(said)
+
+
+HEAVY = TaskSpec(
+    title=_('Heavier options'),
+    options=(
+        Option('HEAVY_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('HEAVY_TRIALS', _('Rounds per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('HEAVY_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=heavier_note)
+
+
+def freekick_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import freekick
+    level = freekick.grade(int(chosen['KICK_RUNG']))
+    said = [_('Rung %d: a ring of %.2f m.') % (level.rung, level.ring)]
+    if level.guide:
+        said.append(_('The flight is drawn.'))
+    if level.wall:
+        said.append(_('A wall and a keeper.'))
+    if level.wind:
+        said.append(_('Wind.'))
+    return '  '.join(said)
+
+
+KICK = TaskSpec(
+    title=_('Free Kick options'),
+    options=(
+        Option('KICK_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('KICK_TRIALS', _('Kicks per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('KICK_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=freekick_note)
+
+
+def unicycle_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import unicycle
+    level = unicycle.grade(int(chosen['UNI_RUNG']))
+    said = [_('Rung %d: %.0f m.') % (level.rung, level.length)]
+    if level.hills:
+        said.append(_('Hills.'))
+    if level.steps:
+        said.append(_('Steps.'))
+    if level.pits:
+        said.append(_('Ledges.'))
+    return '  '.join(said)
+
+
+UNI = TaskSpec(
+    title=_('Unicycle options'),
+    options=(
+        Option('UNI_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('UNI_TRIALS', _('Rides per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('UNI_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=unicycle_note)
+
+
+def glove_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import glove
+    level = glove.grade(int(chosen['GLOVE_RUNG']))
+    said = [_('Rung %d: %d pitches at %.0f m/s.') % (
+        level.rung, level.pitches, level.speed)]
+    if level.cut:
+        said.append(_('A cut about every %.1f s.') % level.cut)
+    elif level.per_pitch:
+        said.append(_('A new angle each pitch.'))
+    return '  '.join(said)
+
+
+GLOVE = TaskSpec(
+    title=_('Glove options'),
+    options=(
+        Option('GLOVE_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('GLOVE_TRIALS', _('Innings per run'), 5,
+               values=(1, 3, 5, 10, 20)),
+        Option('GLOVE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=glove_note)
+
+
 def wiring_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung wires up."""
     from .. import wiring
@@ -4532,6 +4967,24 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'forms': FORMS,
     'wiring': WIRING,
     'gamble': GAMBLE,
+    'glove': GLOVE,
+    'unicycle': UNI,
+    'free_kick': KICK,
+    'heavier': HEAVY,
+    'rover': ROVER,
+    'docking': BERTH,
+    'claw_machine': CLAW,
+    'steadicam': STEADY,
+    'cricket_hunt': CRICKET,
+    'kerbside': KERB,
+    'piano_tuner': TUNE,
+    'by_ear': EAR,
+    'tone_of_voice': VOICE,
+    'second_thoughts': SECOND,
+    'bad_argument': ARGUE,
+    'figures_of_speech': FIGURE,
+    'social_sense': SENSE,
+    'between_the_lines': LINES,
     'why_they_feel': WHY,
     'reading_people': READ,
     'how_strongly': STRONG,
