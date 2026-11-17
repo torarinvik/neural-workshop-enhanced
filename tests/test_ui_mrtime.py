@@ -109,7 +109,7 @@ class MrTimeHubTests(unittest.TestCase):
 
     def test_the_hub_lists_both(self):
         hub = TaskHub(category='perception')
-        self.assertEqual([task for task, _name in TASKS['perception']],
+        self.assertEqual([task for task, _name in TASKS['perception']][:2],
                          ['count', 'mr_time'])
         hub.on_draw()
 

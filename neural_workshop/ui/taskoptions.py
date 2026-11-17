@@ -4346,6 +4346,26 @@ LINGUIST = TaskSpec(
     note=linguist_note)
 
 
+def deskjockey_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    from .. import deskjockey
+    level = deskjockey.grade(int(chosen['DESKJOCKEY_RUNG']))
+    return _('Rung %d.  %d rules, %d forms, %d memo(s); %d slip(s) allowed.') % (level.rung, level.rules, level.forms, level.memos, level.slips)
+
+
+DESKJOCKEY = TaskSpec(
+    title=_('Desk Jockey options'),
+    options=(
+        Option('DESKJOCKEY_RUNG', _('Starting rung'), 1,
+               values=(1, 4, 7, 10, 13, 16, 20, 25, 30)),
+        Option('DESKJOCKEY_TRIALS', _('Shifts per run'), 6,
+               values=(3, 6, 10, 15, 25)),
+        Option('DESKJOCKEY_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=deskjockey_note)
+
+
 def wiring_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung wires up."""
     from .. import wiring
@@ -6145,6 +6165,7 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'forms': FORMS,
     'wiring': WIRING,
     'gamble': GAMBLE,
+    'desk_jockey': DESKJOCKEY,
     'the_linguist': LINGUIST,
     'brick_breaker_3d': BRICKS3D,
     'matrix_3d': MATRIX3D,

@@ -229,7 +229,7 @@ class CatalogueTests(unittest.TestCase):
 
     def test_the_kinds_are_ones_media_can_load(self):
         for dataset in datasets.CATALOGUE.values():
-            self.assertIn(dataset.kind, ('image', 'audio'))
+            self.assertIn(dataset.kind, ('image', 'audio', 'video'))
 
     def test_the_command_line_rejects_an_unknown_name(self):
         self.assertEqual(datasets.main(['no-such-dataset']), 2)

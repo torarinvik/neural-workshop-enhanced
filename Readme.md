@@ -1871,6 +1871,46 @@ A lamp flashes and a beep sounds: which came first? Higher up the lamp flashes a
 | 10–12 | 0.04 s; up to three |
 | 13+ | Up to four, quicker; toward 0.01 s |
 
+### Accuracy and order
+
+Getting it exactly right: rules applied to the letter, and things kept
+in their places.
+
+#### Desk Jockey
+
+A rulebook on the left, a tray of forms on the right, and the form on
+top of the tray in the middle with whatever is attached to it -- an
+ID card, receipts. Do the one right thing with each form: **approve**
+it, **send it back** for something missing, **forward** it to another
+office, **reject** it under the rule that says so, or **hold** it
+until another form has been dealt with. Click the action or press its
+key. Everything needed is on the desk; every shift has a new book.
+
+The rules are tried in their order of precedence and the first that
+applies decides; if none does, the form is approved. So a form that
+breaks two rules is rejected under the one that comes first, and
+rejecting it under the other is wrong.
+
+| Rung | The book | The tray |
+|---|---|---|
+| 1–3 | One rule: an unsigned form is sent back | 3 forms |
+| 4–6 | Three rules; rejecting under the right one | 4 |
+| 7–9 | Four rules; ID cards and receipts to check against the form -- the name, the day it runs out, whether the receipts add up | 5 |
+| 10–12 | Five rules; exceptions ("unless it is countersigned"); forwarding | 5 |
+| 13–15 | The order of precedence is no longer the order the rules are written in | 6, one slip allowed |
+| 16–18 | Six rules; a memo arrives that changes a rule for forms from a day on | 6 |
+| 19–21 | Seven rules; a travel claim waits for the same person's leave request, which may be further down the tray | 7 |
+| 22+ | Eight or nine rules, two memos, exceptions to exceptions | 8, rising to 12 |
+
+A shift is dealt only if it shows what its rung is about: at least one
+form is approved; where there are exceptions, a form the exception
+saves; where the precedence is shuffled, a form that the written order
+would decide the other way; where there is a memo, a form it changes;
+where forms wait, one that has to be held. Following the book clears
+every tray. Approving everything, or sending everything back, never
+does; pressing actions at random clears about one three-form tray in
+eight at rung 1 and next to none above.
+
 ### Reasoning
 
 The *Reasoning* category holds 39 tasks.

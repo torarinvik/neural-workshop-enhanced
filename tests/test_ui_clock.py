@@ -49,7 +49,8 @@ NOT_TASKS = frozenset({
     '__init__.py', 'cursor.py', 'effects.py', 'field.py', 'gameselect.py',
     'glyphs.py', 'graph.py', 'hud.py', 'menu.py', 'message.py', 'readouts.py',
     'polish.py', 'clocked.py', 'render3d.py', 'scene3d.py', 'screens.py',
-    'spacepaint.py',
+    'spacepaint.py', 'glyphpaint.py', 'polypaint.py', 'lens.py',
+    'pointer.py', 'tones.py',
     'taskhub.py',
     'taskoptions.py',
     'textinput.py', 'trialui.py', 'verdict.py',
@@ -123,15 +124,17 @@ class NoTaskReadsTheWallClock(unittest.TestCase):
         while grown:
             grown = False
             for text in sources.values():
-                for child, base in re.findall(r'^class (\w+)\((\w+)\)',
-                                              text, re.MULTILINE):
-                    if base in installers and child not in installers:
+                for child, bases in re.findall(r'^class (\w+)\(([^)]*)\)',
+                                               text, re.MULTILINE):
+                    if (set(re.findall(r'\w+', bases)) & installers
+                            and child not in installers):
                         installers.add(child)
                         grown = True
         missing = []
         for name in task_files():
             text = sources[name]
-            bases = re.findall(r'^class \w+\((\w+)\)', text, re.MULTILINE)
+            bases = re.findall(r'\w+', ' '.join(re.findall(
+                r'^class \w+\(([^)]*)\)', text, re.MULTILINE)))
             if INSTALLING not in text and not set(bases) & installers:
                 missing.append(name)
         self.assertEqual(missing, [], 'these have no swappable clock: %s'

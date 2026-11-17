@@ -34,6 +34,7 @@ CATEGORIES: Sequence[Tuple[str, str]] = (
     ('emotion', _('Emotion')),
     ('social', _('Social')),
     ('rationality', _('Rationality')),
+    ('order', _('Accuracy and order')),
 )
 
 #: Category id → list of (task id, label).
@@ -279,6 +280,11 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
     'rationality': [
         ('bad_argument', _('Bad Argument')),
         ('second_thoughts', _('Second Thoughts')),
+    ],
+    # Getting it exactly right: rules applied to the letter, things
+    # kept in their places.
+    'order': [
+        ('desk_jockey', _('Desk Jockey')),
     ],
 }
 
@@ -1333,6 +1339,10 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'the_linguist':
         from .linguist import Linguist
         Linguist()
+        return
+    if task_id == 'desk_jockey':
+        from .deskjockey import DeskJockey
+        DeskJockey()
         return
     if task_id == 'gamble':
         from .gamble import Gamble

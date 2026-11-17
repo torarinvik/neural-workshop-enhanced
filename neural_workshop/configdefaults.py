@@ -751,6 +751,16 @@ GAMBLE_RUNG = 1
 GAMBLE_TRIALS = 5
 GAMBLE_ADAPTIVE = True
 
+# Desk Jockey: a rulebook and a tray of forms. One rule and three
+# forms from rung 1; three rules and rejecting under the right one from
+# 4; ID cards and receipts to check from 7; exceptions and forwarding
+# from 10; an order of precedence from 13; a memo that changes a rule
+# from 16; forms that wait on other forms from 19; more of all of it,
+# and exceptions to exceptions, from 22.
+DESKJOCKEY_RUNG = 1
+DESKJOCKEY_TRIALS = 6
+DESKJOCKEY_ADAPTIVE = True
+
 # The Linguist: a new language every trial, worked out from a few
 # pictured sentences. Matching written words from rung 1; words and
 # describing words from 4; word order from 7; more-than-one and big,

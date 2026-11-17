@@ -57,7 +57,8 @@ class AttentionCategoryTests(unittest.TestCase):
                           'tightrope', 'sign_painter',
                           'bartender', 'lock_pick', 'air_hockey', 'semaphore',
                           'shadow_puppets', 'night_watch', 'kerbside',
-                          'steadicam', 'free_kick', 'glove'])
+                          'steadicam', 'free_kick', 'glove',
+                          'brick_breaker_3d'])
 
     def test_it_has_an_options_screen(self):
         from neural_workshop.ui import taskoptions
