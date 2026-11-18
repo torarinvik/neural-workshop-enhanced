@@ -216,6 +216,24 @@ class GymConfigTests(unittest.TestCase):
             env.close()
 
 
+    def test_image_modes_survive_the_layout_before_the_first_frame(self):
+        # The widgets are rebuilt when the window is first laid out,
+        # and the session's image set has to still be there after.
+        for game_mode in (21, 24, 25):
+            env = DiagnosticEnv(seed=5, game_mode=game_mode, num_trials=6,
+                                n_back=1)
+            try:
+                env.reset(5)
+                for _ in range(6):
+                    env.advance()
+                self.assertGreaterEqual(env.n_actions, 2)
+            finally:
+                env.close()
+                bw.cfg.GAME_MODE = 2
+                bw.mode.mode = 2
+                bw.mode.back = 2
+
+
 class CurriculumTests(unittest.TestCase):
     def test_grid_coverage_full_and_subset(self):
         for n in (2, 3, 4, 5, 8, 16, 32):

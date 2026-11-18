@@ -233,6 +233,20 @@ class Visual:
         self.image_indices = list(indices)
         self.images = [self.image_set[i] for i in indices]
 
+    def keep_sets_of(self, earlier: 'Visual') -> None:
+        """Take over the image set, images and letters *earlier* held.
+
+        The widgets are built anew when the window is laid out again,
+        and a session's stimulus sets must outlive that.
+        """
+        if earlier.image_set_index is not None:
+            self.load_set(earlier.image_set_index)
+            self.image_indices = list(earlier.image_indices)
+            self.images = [self.image_set[earlier.image_set.index(sprite)]
+                           for sprite in earlier.images]
+        self.letters = list(earlier.letters)
+        self.letters2 = list(earlier.letters2)
+
     # --- drawing ---------------------------------------------------------
 
     def _modalities(self) -> Sequence[str]:

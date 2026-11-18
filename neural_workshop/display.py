@@ -119,8 +119,13 @@ def _rebuild_everything() -> None:
     from .session import respawn_visuals, update_all_labels
     from .ui import cursor
 
+    earlier = list(getattr(state, 'visuals', None) or ())
     state.batch = pyglet.graphics.Batch()
     bootstrap._build_widgets()
+    # The new stimulus widgets start with no image set or letters; the
+    # session under way chose its own, and still shows them.
+    for visual, old in zip(state.visuals, earlier):
+        visual.keep_sets_of(old)
     update_all_labels()
     bootstrap._load_title_artwork()
     state.circles.update()
