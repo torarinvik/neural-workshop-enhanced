@@ -35,6 +35,7 @@ CATEGORIES: Sequence[Tuple[str, str]] = (
     ('social', _('Social')),
     ('rationality', _('Rationality')),
     ('order', _('Accuracy and order')),
+    ('first_steps', _('First steps')),
 )
 
 #: Category id → list of (task id, label).
@@ -285,6 +286,28 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
     # kept in their places.
     'order': [
         ('desk_jockey', _('Desk Jockey')),
+    ],
+    'first_steps': [
+        ('short_maze', _('Short Maze')),
+        ('short_tower', _('Short Tower')),
+        ('turned_tiles', _('Turned Tiles')),
+        ('short_push', _('Short Push')),
+        ('short_maze_steps', _('Short Maze, Step by Step')),
+        ('marker_walk', _('Marker Walk')),
+        ('marker_walk_shuffled', _('Marker Walk, Shuffled')),
+        ('match_shapes', _('Match Shapes')),
+        ('match_tiles', _('Match Tiles')),
+        ('odd_shape', _('Odd Shape')),
+        ('odd_stripe', _('Odd Stripe')),
+        ('next_shape', _('Next Shape')),
+        ('next_tile', _('Next Tile')),
+        ('in_the_loop', _('In the Loop')),
+        ('in_the_pen', _('In the Pen')),
+        ('shape_back', _('Shape Back')),
+        ('hidden_cue', _('Hidden Cue')),
+        ('sound_back', _('Sound Back')),
+        ('in_the_window', _('In the Window')),
+        ('which_rule', _('Which Rule?')),
     ],
 }
 
@@ -1343,6 +1366,86 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'desk_jockey':
         from .deskjockey import DeskJockey
         DeskJockey()
+        return
+    if task_id == 'short_maze':
+        from .ministeps import ShortMaze
+        ShortMaze()
+        return
+    if task_id == 'short_tower':
+        from .ministeps import ShortTower
+        ShortTower()
+        return
+    if task_id == 'turned_tiles':
+        from .ministeps import TurnedTiles
+        TurnedTiles()
+        return
+    if task_id == 'short_push':
+        from .ministeps import ShortPush
+        ShortPush()
+        return
+    if task_id == 'short_maze_steps':
+        from .ministeps import ShortMazeSteps
+        ShortMazeSteps()
+        return
+    if task_id == 'marker_walk':
+        from .ministeps import MarkerWalk
+        MarkerWalk()
+        return
+    if task_id == 'marker_walk_shuffled':
+        from .ministeps import MarkerWalkShuffled
+        MarkerWalkShuffled()
+        return
+    if task_id == 'match_shapes':
+        from .twins import MatchShapes
+        MatchShapes()
+        return
+    if task_id == 'match_tiles':
+        from .twins import MatchTiles
+        MatchTiles()
+        return
+    if task_id == 'odd_shape':
+        from .twins import OddShape
+        OddShape()
+        return
+    if task_id == 'odd_stripe':
+        from .twins import OddStripe
+        OddStripe()
+        return
+    if task_id == 'next_shape':
+        from .twins import NextShape
+        NextShape()
+        return
+    if task_id == 'next_tile':
+        from .twins import NextTile
+        NextTile()
+        return
+    if task_id == 'in_the_loop':
+        from .twins import InTheLoop
+        InTheLoop()
+        return
+    if task_id == 'in_the_pen':
+        from .twins import InThePen
+        InThePen()
+        return
+    if task_id == 'shape_back':
+        from .lookback import ShapeBack
+        ShapeBack()
+        return
+    if task_id == 'hidden_cue':
+        from .lookback import HiddenCue
+        HiddenCue()
+        return
+    if task_id == 'sound_back':
+        from .lookback import SoundBack
+        SoundBack()
+        return
+    if task_id == 'in_the_window':
+        from .inwindow import InTheWindow
+        InTheWindow()
+        return
+    if task_id == 'which_rule':
+        from .ruleguess import WhichRule
+        WhichRule()
         return
     if task_id == 'gamble':
         from .gamble import Gamble

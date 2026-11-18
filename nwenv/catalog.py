@@ -652,9 +652,120 @@ CATALOG: Tuple[Wrapped, ...] = (
     Wrapped('desk_jockey', 'Desk Jockey',
             'nwenv.deskjockey', 'DeskJockeyEnv',
             'neural_workshop.ui.deskjockey', 'DeskJockey'),
+    Wrapped('short_maze', 'Short Maze',
+            'nwenv.ministeps', 'ShortMazeEnv',
+            'neural_workshop.ui.ministeps', 'ShortMaze'),
+    Wrapped('short_tower', 'Short Tower',
+            'nwenv.ministeps', 'ShortTowerEnv',
+            'neural_workshop.ui.ministeps', 'ShortTower'),
+    Wrapped('turned_tiles', 'Turned Tiles',
+            'nwenv.ministeps', 'TurnedTilesEnv',
+            'neural_workshop.ui.ministeps', 'TurnedTiles'),
+    Wrapped('short_push', 'Short Push',
+            'nwenv.ministeps', 'ShortPushEnv',
+            'neural_workshop.ui.ministeps', 'ShortPush'),
+    Wrapped('short_maze_steps', 'Short Maze, Step by Step',
+            'nwenv.ministeps', 'ShortMazeStepsEnv',
+            'neural_workshop.ui.ministeps', 'ShortMazeSteps'),
+    Wrapped('marker_walk', 'Marker Walk',
+            'nwenv.ministeps', 'MarkerWalkEnv',
+            'neural_workshop.ui.ministeps', 'MarkerWalk'),
+    Wrapped('marker_walk_shuffled', 'Marker Walk, Shuffled',
+            'nwenv.ministeps', 'MarkerWalkShuffledEnv',
+            'neural_workshop.ui.ministeps', 'MarkerWalkShuffled'),
+    Wrapped('match_shapes', 'Match Shapes',
+            'nwenv.twins', 'MatchShapesEnv',
+            'neural_workshop.ui.twins', 'MatchShapes'),
+    Wrapped('match_tiles', 'Match Tiles',
+            'nwenv.twins', 'MatchTilesEnv',
+            'neural_workshop.ui.twins', 'MatchTiles'),
+    Wrapped('odd_shape', 'Odd Shape',
+            'nwenv.twins', 'OddShapeEnv',
+            'neural_workshop.ui.twins', 'OddShape'),
+    Wrapped('odd_stripe', 'Odd Stripe',
+            'nwenv.twins', 'OddStripeEnv',
+            'neural_workshop.ui.twins', 'OddStripe'),
+    Wrapped('next_shape', 'Next Shape',
+            'nwenv.twins', 'NextShapeEnv',
+            'neural_workshop.ui.twins', 'NextShape'),
+    Wrapped('next_tile', 'Next Tile',
+            'nwenv.twins', 'NextTileEnv',
+            'neural_workshop.ui.twins', 'NextTile'),
+    Wrapped('in_the_loop', 'In the Loop',
+            'nwenv.twins', 'InTheLoopEnv',
+            'neural_workshop.ui.twins', 'InTheLoop'),
+    Wrapped('in_the_pen', 'In the Pen',
+            'nwenv.twins', 'InThePenEnv',
+            'neural_workshop.ui.twins', 'InThePen'),
+    Wrapped('shape_back', 'Shape Back',
+            'nwenv.lookback', 'ShapeBackEnv',
+            'neural_workshop.ui.lookback', 'ShapeBack'),
+    Wrapped('hidden_cue', 'Hidden Cue',
+            'nwenv.lookback', 'HiddenCueEnv',
+            'neural_workshop.ui.lookback', 'HiddenCue'),
+    Wrapped('sound_back', 'Sound Back',
+            'nwenv.lookback', 'SoundBackEnv',
+            'neural_workshop.ui.lookback', 'SoundBack'),
+    Wrapped('in_the_window', 'In the Window',
+            'nwenv.inwindow', 'InTheWindowEnv',
+            'neural_workshop.ui.inwindow', 'InTheWindow'),
+    Wrapped('which_rule', 'Which Rule?',
+            'nwenv.ruleguess', 'WhichRuleEnv',
+            'neural_workshop.ui.ruleguess', 'WhichRule'),
 )
 
 BY_ID: Dict[str, Wrapped] = {row.task_id: row for row in CATALOG}
+
+
+#: The families added to give a beginner a first payment within reach:
+#: rung 1 of each is paid by presses at random inside twenty trials,
+#: and each rung above asks for one thing more.
+FAMILIES: Dict[str, Tuple[str, ...]] = {
+    'short walks': ('short_maze', 'short_tower', 'turned_tiles',
+                    'short_push'),
+    'twins': ('match_shapes', 'match_tiles', 'odd_shape', 'odd_stripe',
+              'next_shape', 'next_tile', 'in_the_loop', 'in_the_pen'),
+    'looking back': ('shape_back', 'hidden_cue', 'sound_back'),
+    'what the ports do': ('marker_walk', 'marker_walk_shuffled'),
+    'timing': ('in_the_window',),
+    'rule discovery': ('which_rule',),
+    'payment for progress': ('short_maze_steps',),
+}
+
+#: Twin tasks: the same rule under a different look -- other colours,
+#: shapes, layout and port order. What is learnt on one should carry to
+#: the other, which is what a pair is there to measure.
+TWINS: Tuple[Tuple[str, str], ...] = (
+    ('match_shapes', 'match_tiles'),         # same or different
+    ('odd_shape', 'odd_stripe'),             # the odd one out
+    ('next_shape', 'next_tile'),             # what comes next
+    ('in_the_loop', 'in_the_pen'),           # inside or outside
+)
+
+#: Tasks kept back from development: not to be trained on, tuned
+#: against or looked at until a learner is ready to be tested on
+#: something it has never met. Drawn at random when the families were
+#: added, one each from three different families.
+HELD_OUT: frozenset = frozenset((
+    'in_the_window',
+    'marker_walk',
+    'odd_stripe',
+))
+
+
+def twin_of(task_id: str) -> Any:
+    """The other task of *task_id*'s pair, or None when it has none."""
+    for one, two in TWINS:
+        if task_id == one:
+            return two
+        if task_id == two:
+            return one
+    return None
+
+
+def held_out(task_id: str) -> bool:
+    """Whether *task_id* is kept back from development."""
+    return task_id in HELD_OUT
 
 
 def task_ids() -> List[str]:

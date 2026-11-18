@@ -1911,6 +1911,87 @@ every tray. Approving everything, or sending everything back, never
 does; pressing actions at random clears about one three-form tray in
 eight at rung 1 and next to none above.
 
+### First steps
+
+Tasks for a learner starting from nothing. A beginner pressing at random is paid on almost none of the multi-press tasks, so it has nothing to learn from. Each of these gives a first payment that is within reach and then asks for one small step more:
+
+* rung 1 is paid by presses at random well inside twenty trials;
+* each rung adds exactly one thing: one more press, one more frame of looking back, one more candidate;
+* every trial is judged quickly: a wrong press ends it with a red verdict;
+* layout, colours and positions change from trial to trial.
+
+In what follows *n* is the rung. In the short walks a press that does not bring the goal nearer ends the trial.
+
+Four pairs are **twins**: the same rule in another look, with other colours, shapes, layout and port order. `nwenv.catalog.TWINS` records the pairs and `twin_of()` looks one up. The catalogue also marks a few tasks as held out (`nwenv.catalog.HELD_OUT`); they are not described here.
+
+#### Short Maze
+
+A small maze with the way out *n* steps from the walker. Four ports steer.
+
+#### Short Tower
+
+A tower of discs *n* moves from stacked on the marked peg. Six ports, one a peg-to-peg move.
+
+#### Turned Tiles
+
+A board on which *n* tiles are turned out of place, never more than half of them; a pattern tile shows how they should sit. One port a tile.
+
+#### Short Push
+
+A box-pushing room *n* presses from solved. Four ports steer.
+
+#### Short Maze, Step by Step
+
+A small maze with the way out *n* steps from the walker, for a learner paid by the press: built by a runtime, each right step is marked green as it is taken, as well as the finish. Built the plain way only the finish is paid.
+
+#### Marker Walk, Shuffled
+
+A marker on an open grid and a marked square *n* moves away. Each port moves the marker one way, and which way is dealt afresh for each run, so what a port does has to be found by pressing it.
+
+#### Match Shapes
+
+Two sets of *n* shapes side by side: the same, or different in one place?
+
+#### Match Tiles
+
+Two strips of *n* coloured tiles, one above the other: the same, or different in one place? The twin of the same-or-different rule in another look, with the two ports the other way round.
+
+#### Odd Shape
+
+A row of *n* + 2 shapes, one of them another shape: which?
+
+#### Next Shape
+
+A run of shapes repeating every *n* + 1: which of three cards comes next?
+
+#### Next Tile
+
+A column of pip tiles repeating every *n* + 1: which of three cards comes next?
+
+#### In the Loop
+
+An outline with *n* + 3 corners and a dot: inside or outside?
+
+#### In the Pen
+
+A fence round *n* + 3 squares of squared paper and a mark: outside or inside?
+
+#### Shape Back
+
+A shape a frame; then press the card for the shape that was showing *n* frames ago.
+
+#### Hidden Cue
+
+One of four squares lights, then nothing shows for *n* frames: which was it?
+
+#### Sound Back
+
+A tone a frame, low, middle or high, reaching the agent only as sound; then press for the tone *n* frames ago.
+
+#### Which Rule?
+
+Three cards, and one hidden rule for the whole run saying which to press ("the largest", "the red one"). The rule is one of two candidates at rung 1 and one more each rung; every press is judged at once, so wrong presses rule candidates out.
+
 ### Reasoning
 
 The *Reasoning* category holds 39 tasks.

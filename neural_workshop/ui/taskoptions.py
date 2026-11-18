@@ -4366,6 +4366,366 @@ DESKJOCKEY = TaskSpec(
     note=deskjockey_note)
 
 
+def shortmaze_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('The way out is %d steps away; a wrong step ends the trial.') % int(chosen['SHORTMAZE_RUNG'])
+
+
+SHORTMAZE = TaskSpec(
+    title=_('Short Maze options'),
+    options=(
+        Option('SHORTMAZE_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('SHORTMAZE_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('SHORTMAZE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=shortmaze_note)
+
+
+def shorttower_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('The tower is %d moves from stacked on the marked peg; a wrong move ends the trial.') % int(chosen['SHORTTOWER_RUNG'])
+
+
+SHORTTOWER = TaskSpec(
+    title=_('Short Tower options'),
+    options=(
+        Option('SHORTTOWER_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('SHORTTOWER_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('SHORTTOWER_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=shorttower_note)
+
+
+def turnedtiles_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('%d tiles are turned out of place, never more than half the board; pressing one that is not ends the trial.') % int(chosen['TURNEDTILES_RUNG'])
+
+
+TURNEDTILES = TaskSpec(
+    title=_('Turned Tiles options'),
+    options=(
+        Option('TURNEDTILES_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('TURNEDTILES_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('TURNEDTILES_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=turnedtiles_note)
+
+
+def shortpush_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('The box is %d presses from its mark; a wrong press ends the trial.') % int(chosen['SHORTPUSH_RUNG'])
+
+
+SHORTPUSH = TaskSpec(
+    title=_('Short Push options'),
+    options=(
+        Option('SHORTPUSH_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('SHORTPUSH_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('SHORTPUSH_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=shortpush_note)
+
+
+def shortmazesteps_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('The way out is %d steps away; a wrong step ends the trial.') % int(chosen['SHORTMAZESTEPS_RUNG'])
+
+
+SHORTMAZESTEPS = TaskSpec(
+    title=_('Short Maze, Step by Step options'),
+    options=(
+        Option('SHORTMAZESTEPS_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('SHORTMAZESTEPS_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('SHORTMAZESTEPS_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=shortmazesteps_note)
+
+
+def markerwalk_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('The marked square is %d moves away; a move that does not get nearer ends the trial.') % int(chosen['MARKERWALK_RUNG'])
+
+
+MARKERWALK = TaskSpec(
+    title=_('Marker Walk options'),
+    options=(
+        Option('MARKERWALK_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('MARKERWALK_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('MARKERWALK_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=markerwalk_note)
+
+
+def markerwalkshuffled_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('The marked square is %d moves away, and which port moves which way is dealt afresh each run.') % int(chosen['MARKERWALKSHUFFLED_RUNG'])
+
+
+MARKERWALKSHUFFLED = TaskSpec(
+    title=_('Marker Walk, Shuffled options'),
+    options=(
+        Option('MARKERWALKSHUFFLED_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('MARKERWALKSHUFFLED_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('MARKERWALKSHUFFLED_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=markerwalkshuffled_note)
+
+
+def matchshapes_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Two sets of %d shapes: the same, or different?') % int(chosen['MATCHSHAPES_RUNG'])
+
+
+MATCHSHAPES = TaskSpec(
+    title=_('Match Shapes options'),
+    options=(
+        Option('MATCHSHAPES_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('MATCHSHAPES_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('MATCHSHAPES_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=matchshapes_note)
+
+
+def matchtiles_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Two strips of %d tiles: the same, or different?') % int(chosen['MATCHTILES_RUNG'])
+
+
+MATCHTILES = TaskSpec(
+    title=_('Match Tiles options'),
+    options=(
+        Option('MATCHTILES_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('MATCHTILES_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('MATCHTILES_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=matchtiles_note)
+
+
+def oddshape_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('A row of %d shapes more than two, one of them another shape.') % int(chosen['ODDSHAPE_RUNG'])
+
+
+ODDSHAPE = TaskSpec(
+    title=_('Odd Shape options'),
+    options=(
+        Option('ODDSHAPE_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('ODDSHAPE_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('ODDSHAPE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=oddshape_note)
+
+
+def oddstripe_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('A ring of %d discs more than two, one striped another way.') % int(chosen['ODDSTRIPE_RUNG'])
+
+
+ODDSTRIPE = TaskSpec(
+    title=_('Odd Stripe options'),
+    options=(
+        Option('ODDSTRIPE_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('ODDSTRIPE_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('ODDSTRIPE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=oddstripe_note)
+
+
+def nextshape_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('A run of shapes repeating every %d plus one: which comes next?') % int(chosen['NEXTSHAPE_RUNG'])
+
+
+NEXTSHAPE = TaskSpec(
+    title=_('Next Shape options'),
+    options=(
+        Option('NEXTSHAPE_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('NEXTSHAPE_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('NEXTSHAPE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=nextshape_note)
+
+
+def nexttile_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('A run of pip tiles repeating every %d plus one: which comes next?') % int(chosen['NEXTTILE_RUNG'])
+
+
+NEXTTILE = TaskSpec(
+    title=_('Next Tile options'),
+    options=(
+        Option('NEXTTILE_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('NEXTTILE_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('NEXTTILE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=nexttile_note)
+
+
+def intheloop_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('An outline with %d corners more than three, and a dot: inside or outside?') % int(chosen['INTHELOOP_RUNG'])
+
+
+INTHELOOP = TaskSpec(
+    title=_('In the Loop options'),
+    options=(
+        Option('INTHELOOP_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('INTHELOOP_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('INTHELOOP_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=intheloop_note)
+
+
+def inthepen_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('A fence round %d squares more than three, and a mark: outside or inside?') % int(chosen['INTHEPEN_RUNG'])
+
+
+INTHEPEN = TaskSpec(
+    title=_('In the Pen options'),
+    options=(
+        Option('INTHEPEN_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('INTHEPEN_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('INTHEPEN_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=inthepen_note)
+
+
+def shapeback_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Press the card for the shape that was showing %d frames ago.') % int(chosen['SHAPEBACK_RUNG'])
+
+
+SHAPEBACK = TaskSpec(
+    title=_('Shape Back options'),
+    options=(
+        Option('SHAPEBACK_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('SHAPEBACK_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('SHAPEBACK_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=shapeback_note)
+
+
+def hiddencue_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('A square lights, then nothing shows for %d frames: which was it?') % int(chosen['HIDDENCUE_RUNG'])
+
+
+HIDDENCUE = TaskSpec(
+    title=_('Hidden Cue options'),
+    options=(
+        Option('HIDDENCUE_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('HIDDENCUE_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('HIDDENCUE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=hiddencue_note)
+
+
+def soundback_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Press for the tone that sounded %d frames ago: low, middle or high.') % int(chosen['SOUNDBACK_RUNG'])
+
+
+SOUNDBACK = TaskSpec(
+    title=_('Sound Back options'),
+    options=(
+        Option('SOUNDBACK_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('SOUNDBACK_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('SOUNDBACK_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=soundback_note)
+
+
+def inthewindow_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Rung %d: press while the marker is inside the window, which starts at half the way round and narrows by a sixth a rung.') % int(chosen['INTHEWINDOW_RUNG'])
+
+
+INTHEWINDOW = TaskSpec(
+    title=_('In the Window options'),
+    options=(
+        Option('INTHEWINDOW_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('INTHEWINDOW_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('INTHEWINDOW_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=inthewindow_note)
+
+
+def whichrule_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('One hidden rule holds for the run, out of %d candidates plus one.') % int(chosen['WHICHRULE_RUNG'])
+
+
+WHICHRULE = TaskSpec(
+    title=_('Which Rule? options'),
+    options=(
+        Option('WHICHRULE_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('WHICHRULE_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('WHICHRULE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=whichrule_note)
+
+
 def wiring_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung wires up."""
     from .. import wiring
@@ -6165,6 +6525,26 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'forms': FORMS,
     'wiring': WIRING,
     'gamble': GAMBLE,
+    'which_rule': WHICHRULE,
+    'in_the_window': INTHEWINDOW,
+    'sound_back': SOUNDBACK,
+    'hidden_cue': HIDDENCUE,
+    'shape_back': SHAPEBACK,
+    'in_the_pen': INTHEPEN,
+    'in_the_loop': INTHELOOP,
+    'next_tile': NEXTTILE,
+    'next_shape': NEXTSHAPE,
+    'odd_stripe': ODDSTRIPE,
+    'odd_shape': ODDSHAPE,
+    'match_tiles': MATCHTILES,
+    'match_shapes': MATCHSHAPES,
+    'marker_walk_shuffled': MARKERWALKSHUFFLED,
+    'marker_walk': MARKERWALK,
+    'short_maze_steps': SHORTMAZESTEPS,
+    'short_push': SHORTPUSH,
+    'turned_tiles': TURNEDTILES,
+    'short_tower': SHORTTOWER,
+    'short_maze': SHORTMAZE,
     'desk_jockey': DESKJOCKEY,
     'the_linguist': LINGUIST,
     'brick_breaker_3d': BRICKS3D,
