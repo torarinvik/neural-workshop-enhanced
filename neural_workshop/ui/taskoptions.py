@@ -3119,7 +3119,8 @@ def unicycle_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung is like."""
     from .. import unicycle
     level = unicycle.grade(int(chosen['UNI_RUNG']))
-    said = [_('Rung %d: %.0f m.') % (level.rung, level.length)]
+    said = [_('Rung %d: %.0f m, %d flag(s).') % (level.rung, level.length,
+                                                 level.flags)]
     if level.hills:
         said.append(_('Hills.'))
     if level.steps:

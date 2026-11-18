@@ -24,7 +24,9 @@ class TheLadder(unittest.TestCase):
         ref, idle, rand = wins(M, RUNGS)
         self.assertEqual(len(ref), 2 * len(RUNGS))
         self.assertEqual(idle, [])
-        self.assertLessEqual(len(rand), 1)
+        # the bottom rungs have training wheels, and wild stepping and
+        # waving can get across them; above them it must not
+        self.assertLessEqual(len([w for w in rand if w[0] >= 7]), 1)
 
     def test_the_ladder_adds_what_it_says(self):
         g = {r: M.grade(r) for r in (1, 4, 7, 10, 13, 16, 22, 40)}
@@ -133,6 +135,30 @@ class TheBoundary(unittest.TestCase):
 
     def test_the_agent_hears_it(self):
         self.assertGreater(heard('tightrope', M), 0)
+
+
+
+class TheGentleStart(unittest.TestCase):
+
+    def test_the_bottom_rungs_tip_slowly_and_pull_gently(self):
+        one, nine = M.grade(1), M.grade(9)
+        self.assertEqual(nine.pull, 1.0)
+        self.assertLess(one.pull, 0.5)
+        self.assertLess(one.tip, 0.2 * nine.tip)
+        for r in range(1, 9):
+            self.assertLessEqual(M.grade(r).pull, M.grade(r + 1).pull)
+            self.assertGreaterEqual(M.grade(r).steady,
+                                    M.grade(r + 1).steady)
+        self.assertGreater(M.grade(1).steady, 1.0)     # rights you
+        self.assertEqual(M.grade(8).steady, 0.0)
+
+    def test_a_beginner_just_stepping_crosses_the_bottom_rungs(self):
+        def stepper(run):
+            run.hand.x, run.hand.y = H.W / 2, M.LEVEL
+            return [M.STEP]
+        for rung, passes in ((1, True), (2, True), (9, False)):
+            self.assertEqual(M.play(M.deal(rung, seed=1), stepper)[0],
+                             passes, rung)
 
 
 if __name__ == '__main__':

@@ -18,6 +18,12 @@ down until you click them off, which means reaching out to them.
 The ladder climbs a little every rung, and each new trouble comes in
 gently and grows from there:
 
+* rungs 1-8: a much slower lean, a pole that answers the hand more
+  gently, and training wheels: a pull back upright and a damper on your
+  sway. On rungs 1 and 2 you right yourself if you hold the pole still;
+  from rung 3 the pull is well under the tipping, and from rung 8 it is
+  gone. Everything firms up a little each rung (full strength from
+  rung 9);
 * rung 1: five steps, soft jolts, a slow lean and plenty of time; every
   rung after adds steps, sharper jolts, quicker tipping and less time;
 * from rung 4: the wire sways under you;
@@ -77,6 +83,23 @@ class Grade(NamedTuple):
     tip_p: float               # how fast a pitch forward or back grows
     jolt_p: float              # how hard a step lurches you forward
     seconds: float
+    pull: float = 1.0          # how hard the pole rights you, as a share
+    steady: float = 0.0        # training wheels: a pull back upright,
+                               # as a share of how fast you tip
+    damp: float = 0.0          # and a damper on your sway
+
+
+def assist(rung: int) -> float:
+    """The training wheels: more than the tipping on rungs 1 and 2 (you
+    right yourself), then well under it, and gone from rung 8."""
+    return {1: 1.3, 2: 1.1, 3: 0.6, 4: 0.45, 5: 0.3, 6: 0.18,
+            7: 0.08}.get(int(rung), 0.0)
+
+
+def gentle(rung: int) -> float:
+    """How much the ladder's bottom is softened: 1 at rung 1, falling
+    by an eighth a rung, nothing from rung 9."""
+    return max(0.0, min(1.0, (9 - int(rung)) / 8.0))
 
 
 def grade(rung: int) -> Grade:
@@ -88,7 +111,8 @@ def grade(rung: int) -> Grade:
     def grow(start: int, first: float, per: float, cap: float) -> float:
         return 0.0 if r < start else min(cap, first + per * (r - start))
     steps = min(40, 5 + (2 * k) // 3)
-    return Grade(
+    ease = gentle(r)
+    return _soften(Grade(
         rung=r, steps=steps,
         jolt=min(0.7, 0.12 + 0.025 * k),
         tip=min(4.6, 1.5 + 0.11 * k),
@@ -101,7 +125,19 @@ def grade(rung: int) -> Grade:
         bounce=grow(20, 0.5, 0.03, 1.1),
         tip_p=min(3.2, 0.8 + 0.09 * k),
         jolt_p=min(0.45, 0.06 + 0.018 * k),
-        seconds=steps * max(1.2, 3.6 - 0.08 * k) + 8.0)
+        seconds=steps * max(1.2, 3.6 - 0.08 * k) + 8.0), ease)
+
+
+def _soften(level: Grade, ease: float) -> Grade:
+    """The bottom rungs: you tip over more slowly, and the pole answers
+    the hand more gently."""
+    slow = 0.12 ** ease               # a tenth or so at rung 1
+    return level._replace(tip=level.tip * slow,
+                          tip_p=level.tip_p * slow,
+                          jolt=level.jolt * 0.35 ** ease,
+                          pull=0.3 ** ease,
+                          seconds=level.seconds * (1.0 + ease),
+                          steady=assist(level.rung), damp=2.0 * ease)
 
 
 class Gust(NamedTuple):
@@ -254,18 +290,20 @@ class Run(H.HandRun):
                 self.note(0.25, 1800.0, BIRD, 0.4, pan=end * 0.7)
         self.held += (self.aim() - self.held) * min(1.0, dt / LAG)
         acc = self.swing_push()
-        push = self.tip() * math.sin(self.lean) - PULL * self.held \
+        push = self.tip() * math.sin(self.lean) - PULL * self.level.pull * self.held \
             + self.outside()
         self.swing_v += acc * dt
         self.swing += self.swing_v * dt
         self.boing_v += (-BOING * self.boing - 1.2 * self.boing_v) * dt
         self.boing += self.boing_v * dt
-        self.rate += (push - 0.6 * self.rate) * dt
+        push -= level.steady * self.tip() * math.sin(self.lean)
+        self.rate += (push - (0.6 + level.damp) * self.rate) * dt
         self.lean += self.rate * dt
         self.held_f += (self.aim_f() - self.held_f) * min(1.0, dt / LAG)
         push_f = self.level.tip_p * math.sin(self.pitch) \
-            - PULL_F * self.held_f + self.outside_f()
-        self.prate += (push_f - 0.6 * self.prate) * dt
+            - PULL_F * self.level.pull * self.held_f + self.outside_f()
+        push_f -= level.steady * level.tip_p * math.sin(self.pitch)
+        self.prate += (push_f - (0.6 + level.damp) * self.prate) * dt
         self.pitch += self.prate * dt
         if abs(self.pitch) > 0.3 and self.t >= self.creak_at:
             self.creak_at = self.t + 0.4
@@ -299,13 +337,16 @@ def autopilot(run: Run) -> List[int]:
         return [H.RELEASE]
     steady = abs(run.lean) < 0.08 and abs(run.rate) < 0.25 and \
         abs(run.pitch) < 0.08 and abs(run.prate) < 0.25
-    want = (run.tip() * math.sin(run.lean) + run.outside() + 9.0 * run.lean
-            + 5.0 * run.rate) / PULL
+    want = (run.tip() * (1 - run.level.steady) * math.sin(run.lean)
+            + run.outside() + 9.0 * run.lean
+            + 5.0 * run.rate) / (PULL * run.level.pull)
     want = max(-1.0, min(1.0, want))
     lead = run.held + 2.5 * (want - run.held)     # the pole is slow: hurry it
     x = H.W / 2 + REACH * max(-1.0, min(1.0, lead))
-    want_f = (run.level.tip_p * math.sin(run.pitch) + run.outside_f()
-              + 7.0 * run.pitch + 4.0 * run.prate) / PULL_F
+    want_f = (run.level.tip_p * (1 - run.level.steady)
+              * math.sin(run.pitch) + run.outside_f()
+              + 7.0 * run.pitch + 4.0 * run.prate) / (PULL_F *
+                                                         run.level.pull)
     want_f = max(-1.0, min(1.0, want_f))
     lead_f = run.held_f + 2.5 * (want_f - run.held_f)
     y = LEVEL + REACH_F * max(-1.0, min(1.0, lead_f))

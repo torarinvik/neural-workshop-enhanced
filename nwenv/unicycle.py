@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """The stepped agent boundary for Unicycle.
 
-Eight ports: 0 and 1 pedal and back-pedal; 2 and 3 lean back and
-forward; 4-7 pedal or back-pedal while leaning back or forward; each
-for the step it is sent in. Green means the flag was reached in time
+Ten ports: 0 and 1 pedal and back-pedal; 2 and 3 lean back and
+forward; 4-7 pedal or back-pedal while leaning back or forward; 8 and 9
+lean left and right; each for the step it is sent in. Green means the flag was reached in time
 with the rider's head off the ground.
 
 Clocked: the rider falls whether or not the agent acts.
@@ -21,7 +21,7 @@ class UnicycleEnv(TaskEnv):
     """Deterministic, stepped view of one Unicycle run."""
 
     task_class = ('neural_workshop.ui.unicycle', 'Unicycle')
-    ports = 8
+    ports = 10
     clocked = True
     action = 'steer'
     open_phase = ('playing',)

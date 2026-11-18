@@ -4714,13 +4714,18 @@ them up through rung 10 nearly every time.
 
 #### Balance
 
-A handcar on desert rails at dusk with a lantern on a pole standing on
-it. **Left** and **Right** push the cart; the pole leans the other way.
-Flags stand along the track; stop under the lit one and hold still a
-second with the pole up, then the next lights.
+A handcar in a fenced desert yard at dusk, seen from behind and above,
+with a lantern on a pole standing on it. The **arrow keys** (or **W A S
+D**) push the cart left, right, away and near; the pole can lean any way
+and leans against the push. Its shadow, and a gauge seen from above,
+show which way. Flags stand in the yard (a map in the corner shows
+them); stop under the lit one and hold still a second with the pole up,
+then the next lights. Only the lantern touching the ground is a fall;
+the fence just stops the cart.
 
 | Rung | What it adds |
 |---|---|
+| 1–8 | Soft gravity, gentle pushes and training wheels (a pull back to upright, a damper on the swing): on rungs 1–2 the pole stands itself up, so just driving to the flags passes; from rung 3 the pull is well under gravity and you must balance; it is gone from rung 8, full strength from 9 |
 | 1–3 | A long, slow pole; two flags close together |
 | 4–6 | A shorter pole, three flags |
 | 7–9 | Flags far apart |
@@ -4729,8 +4734,8 @@ second with the pole up, then the next lights.
 | 16–19 | The pole's length changes partway through, unannounced |
 | 20+ | Shorter still, stronger gusts, more flags |
 
-The model's controller balances with gains computed offline for each
-pole length and passes every rung tried.
+The model's controller balances both ways at once, with gains worked
+out for each pole length and gravity, and passes every rung tried.
 
 #### Crossings
 
@@ -5061,7 +5066,7 @@ gently and grows:
 
 | From rung | What comes in |
 |---|---|
-| 1 | Five steps, soft jolts, a slow lean, plenty of time |
+| 1 | Five steps, soft jolts, a slow lean, plenty of time; on rungs 1–8 you tip far more slowly, the pole answers the hand more gently, and training wheels pull you upright -- on rungs 1–2 (and nearly to 4) just stepping gets you across -- firming up to full strength at 9 |
 | 4 | The wire sways under you |
 | 7 | Gusts of wind |
 | 10 | Birds on the pole |
@@ -5486,18 +5491,25 @@ be when its command lands.
 
 #### Unicycle
 
-Side on, a rider on one wheel, joined to it by a springy body, so every
-bump shakes them and every pedal stroke rocks them back. **Up / Down**
-pedal and back-pedal, **Left / Right** lean; hold both to do both. If
-the head touches the ground the ride is over. Reach the flag in time.
+A rider on one wheel in open country, drawn in lit 3D with shadows,
+the camera riding behind them. The rider is joined to the wheel by a
+springy body, so every bump shakes them and every pedal stroke rocks
+them back -- and they can topple sideways too, so the balance is kept
+in all four directions. **Up / Down** pedal and back-pedal, **W / S**
+lean forward and back, **Left / Right** (or **A / D**) lean left and
+right -- and, as on a real unicycle, a sideways lean also turns the
+wheel that way, which is how you steer. Hold a pedal and a lean key to
+do both. Ride to each flag in turn (a map in the corner shows them).
+Only the head touching the ground ends the ride.
 
 | Rung | What it adds |
 |---|---|
-| 1 | Flat ground, plenty of time |
-| 2–3 | Gentle hills |
-| 4–6 | Steeper hills, small bumps |
+| 1–8 | Soft gravity, gentle pedalling and leaning, and training wheels: on rungs 1–2 the rider rights themselves, so just pedalling and steering at the flag passes; from rung 3 you must balance; the help is gone from rung 8, full strength from 9 |
+| 1 | Flat ground, one flag straight ahead, plenty of time |
+| 2–3 | Gentle hills, the flag off to one side |
+| 4–6 | Steeper hills, small bumps, two flags |
 | 7–9 | Steps up and down |
-| 10–12 | Ledges to ride off |
+| 10–12 | Ledges to ride off, three flags, sharper turns |
 | 13+ | Longer, rougher rides; the time allowed closes in on the reference's |
 
 Pass: the flag, in time, head up. The time allowed is the reference

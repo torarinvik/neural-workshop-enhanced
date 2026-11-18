@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 """The stepped agent boundary for Balance.
 
-Two ports: 0 and 1 push the cart left and right for one step. Green
-means every flag was collected in turn -- the cart held still under it
-with the pole up -- before the time ran out, the pole never down.
+Four ports: 0-3 push the cart left, right, away and near for one step.
+Green means every flag was collected in turn -- the cart held still
+under it with the pole up -- before the time ran out, the lantern on
+the pole's top never touching the ground.
 
 Clocked: the pole falls whether or not the agent acts.
 
@@ -20,7 +21,7 @@ class BalanceEnv(TaskEnv):
     """Deterministic, stepped view of one Balance run."""
 
     task_class = ('neural_workshop.ui.balance', 'Balance')
-    ports = 2
+    ports = 4
     clocked = True
     action = 'steer'
     open_phase = ('playing',)

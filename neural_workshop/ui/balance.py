@@ -1,39 +1,39 @@
 # -*- coding: utf-8 -*-
-"""Balance on screen: a handcar at dusk with a lantern pole on top.
+"""Balance on screen: a handcar in a fenced yard at dusk, a lantern pole
+on top, seen from behind and above.
 
-Hold Left and Right to push the cart; the pole carries a lantern and
-leans the other way. A gauge on the cart reads the lean against the
-falling point. Flags stand along the track; the one to stop under is
-lit, and a ring fills while the cart holds still there. Dust and
-rolling tumbleweed show the gusts.
+Hold the arrow keys (or W A S D) to push the cart left, right, away and
+near; the pole carries a lantern and leans the other way. Its shadow on
+the ground shows which way it leans. A gauge in the corner reads the
+lean from above: the dot is the lantern, and the ring's edge is the
+ground. Flags stand in the yard; the one to stop under is lit, a ring
+fills while the cart holds still there, and a map in the other corner
+shows where they all are. Dust streaks show the gusts.
 
-For the agent boundary: ports 0 and 1 push the cart left and right for
-one step.
+For the agent boundary: ports 0-3 push the cart left, right, away and
+near for one step.
 
 SPDX-License-Identifier: GPL-2.0-or-later
 """
 from __future__ import annotations
 
 import math
-import random
-from typing import Optional, Tuple
+from typing import Optional
 
-import pyglet
 from pyglet.window import key
 
 from .. import balance as model
 from ..i18n import _
 from . import polish
-from .clocked import ClockedTask
+from .livetask import LiveTask
 
 FLAGS = ((236, 72, 80), (60, 150, 236), (250, 196, 50), (90, 200, 120),
          (180, 100, 230), (240, 130, 60))
-WORLD_H = 12.0
-GROUND = 2.0
+DECK = 0.9                     # the cart's deck, where the pole is hinged
 
 
-class Balance(ClockedTask):
-    """Every flag in turn, the pole never down."""
+class Balance(LiveTask):
+    """Every flag in turn, the lantern never on the ground."""
 
     instance: Optional['Balance'] = None
 
@@ -43,205 +43,173 @@ class Balance(ClockedTask):
     CATEGORY = 'attention'
     FEEDBACK = 2.5
     MODEL = model
-    FOOTNOTE = _('Left / Right: push the cart   stop under the lit flag   '
-                 'Esc: menu')
+    BACK = (236, 150, 110)
+    FOOTNOTE = _('Arrows or W A S D: push the cart   stop under the lit '
+                 'flag   Esc: menu')
 
     def _deal(self) -> bool:
         ok = super()._deal()
-        self.message = _('Keep the pole up; stop under each lit flag')
+        self.message = _('Keep the lantern off the ground; stop under each '
+                         'lit flag')
+        self.flip = 0
         return ok
 
     def _held(self) -> Optional[int]:
         k = self.keys
-        if k[key.LEFT] or k[key.A]:
-            return model.LEFT
-        if k[key.RIGHT] or k[key.D]:
-            return model.RIGHT
-        return None
-
-    def _frame(self) -> Tuple[float, float, float]:
-        left, bottom, width, height = self._area()
-        s = min(width / model.TRACK, height / (WORLD_H + 1.4))
-        x0 = left + (width - model.TRACK * s) / 2
-        return x0, bottom, s
-
-    def _at(self, x: float, y: float) -> Tuple[float, float]:
-        x0, y0, s = self._frame()
-        return x0 + x * s, y0 + y * s
-
-    def _build_scenery(self) -> None:
-        x0, y0, s = self._frame()
-        out, batch = self.scenery, self.batch
-        pal = polish.palette(self.dark)
-        W, H = model.TRACK * s, WORLD_H * s
-        polish.card(out, batch, x0 - 6, y0 - 6, W + 12, H + 12, (60, 40, 70),
-                    radius=14, shade=pal.shadow, group=polish.STAGE)
-        g0 = pyglet.graphics.Group(order=-14)
-        g1 = pyglet.graphics.Group(order=-13)
-        polish.gradient(out, batch, x0, y0, W, H, (250, 160, 90),
-                        (70, 50, 120), bands=24, group=g0)
-        sun = self._at(model.TRACK * 0.7, 4.2)
-        polish.glow(out, batch, sun[0], sun[1], 4.0 * s, (255, 200, 120),
-                    strength=110, group=g0)
-        out.append(pyglet.shapes.Circle(sun[0], sun[1], 1.4 * s,
-                                        color=(255, 214, 140), batch=batch,
-                                        group=g0))
-        draw = random.Random(len(self.run.course.flags) * 7 +
-                             self.run.course.gust_seed % 97)
-        # Mesas on the horizon.
-        x = 0.0
-        while x < model.TRACK:
-            w = min(draw.uniform(2.5, 6.0), model.TRACK - x)
-            h = draw.uniform(1.0, 3.2)
-            px, py = self._at(x, GROUND)
-            out.append(pyglet.shapes.Polygon(
-                (px, py), (px + w * 0.15 * s, py + h * s),
-                (px + w * 0.85 * s, py + h * s), (px + w * s, py),
-                color=(120, 70, 90), batch=batch, group=g0))
-            x += w + draw.uniform(0.5, 3.0)
-        gx, gy = self._at(0, 0)
-        polish.gradient(out, batch, gx, gy, W, GROUND * s, (150, 96, 60),
-                        (196, 132, 80), bands=6, group=g1)
-        # Rails and sleepers.
-        ry = y0 + (GROUND - 0.35) * s
-        for k in range(int(model.TRACK * 1.5)):
-            sx = x0 + k * s / 1.5
-            out.append(pyglet.shapes.Rectangle(sx, ry - 0.2 * s, 0.3 * s,
-                                               0.35 * s, color=(90, 60, 40),
-                                               batch=batch, group=g1))
-        out.append(pyglet.shapes.Rectangle(x0, ry, W, 0.12 * s,
-                                           color=(200, 200, 210), batch=batch,
-                                           group=g1))
-        for bx in (0.3, model.TRACK - 0.3):
-            px, py = self._at(bx, GROUND - 0.4)
-            out.append(pyglet.shapes.Rectangle(px - 0.3 * s, py, 0.6 * s,
-                                               0.9 * s, color=(200, 60, 50),
-                                               batch=batch, group=g1))
+        across = (1 if k[key.RIGHT] or k[key.D] else 0) - \
+            (1 if k[key.LEFT] or k[key.A] else 0)
+        along = (1 if k[key.UP] or k[key.W] else 0) - \
+            (1 if k[key.DOWN] or k[key.S] else 0)
+        wants = []
+        if across:
+            wants.append(model.RIGHT if across > 0 else model.LEFT)
+        if along:
+            wants.append(model.AWAY if along > 0 else model.NEAR)
+        if not wants:
+            return None
+        # both held: one each step, turn about
+        self.flip = getattr(self, 'flip', 0) + 1
+        return wants[self.flip % len(wants)]
 
     def _draw(self, left, bottom, width, height) -> None:
         run = self.run
-        course = run.course
-        self._scenery_fresh(self._frame())
-        x0, y0, s = self._frame()
-        d, batch = self.drawn, self.batch
-        card, body, text, top = (self.card_group, self.body_group,
-                                 self.text_group, self.top_group)
+        if run is None:
+            return
+        self.frame(left, bottom, width, height)
+        T = model.TRACK
         t = run.t
-        # Flags.
-        for k, fx in enumerate(course.flags):
-            px, py = self._at(fx, GROUND)
-            hue = FLAGS[k % len(FLAGS)]
-            done = k < run.flag
-            now = k == run.flag
-            d.append(pyglet.shapes.Line(px, py, px, py + 3.6 * s, thickness=2,
-                                        color=(230, 220, 210), batch=batch,
-                                        group=body))
-            wave = math.sin(t * 4 + k) * 0.15 * s
-            d.append(pyglet.shapes.Triangle(
-                px, py + 3.6 * s, px, py + 2.8 * s,
-                px + 1.1 * s, py + 3.2 * s + wave,
-                color=(90, 210, 120) if done else hue, batch=batch,
-                group=text))
-            if now:
-                polish.glow(d, batch, px, py + 3.2 * s, 1.8 * s, hue,
-                            strength=110, group=card)
-                d.append(pyglet.shapes.Box(px - 0.8 * s, py - 0.2 * s,
-                                           1.6 * s, 0.3 * s, thickness=2,
-                                           color=hue, batch=batch,
-                                           group=text))
-                if run.still > 0:
-                    d.append(pyglet.shapes.Arc(
-                        px, py + 3.2 * s, 0.9 * s, thickness=3,
-                        angle=360 * run.still / model.HOLD, start_angle=90,
-                        color=(120, 240, 150), batch=batch, group=top))
-            self._text(str(k + 1), px - 0.4 * s, py + 3.6 * s,
-                       max(8.0, 0.5 * s), bold=True,
-                       colour=(255, 255, 255, 230))
-        # Gusts: dust streaks and a tumbleweed.
-        gust = run.gust()
+        # a camera behind and above the cart
+        eye = (run.x, 8.0, run.z - 12.0)
+        lens = self.camera(eye, (0.0, -0.42, 1.0), left, bottom, width,
+                           height, fov=62.0, x_right=True)
+        # the ground beyond the fence, the yard, its grid and fence
+        g = self.layer()
+        far = 80.0
+        self.face(lens, [(-far, 0, -far), (T + far, 0, -far),
+                         (T + far, 0, T + far), (-far, 0, T + far)],
+                  (150, 96, 70), g)
+        self.face(lens, [(0, 0, 0), (T, 0, 0), (T, 0, T), (0, 0, T)],
+                  (206, 160, 104), g)
+        for k in range(0, int(T) + 1, 3):
+            self.seg(lens, (k, 0, 0), (k, 0, T), 1, (180, 134, 88), g)
+            self.seg(lens, (0, 0, k), (T, 0, k), 1, (180, 134, 88), g)
+        for (a, b) in (((0, 0), (T, 0)), ((T, 0), (T, T)), ((T, T), (0, T)),
+                       ((0, T), (0, 0))):
+            self.seg(lens, (a[0], 0.6, a[1]), (b[0], 0.6, b[1]), 3,
+                     (110, 70, 50), g)
+        # the hold ring under the lit flag
+        g = self.layer()
+        if run.flag < len(run.course.flags):
+            fx, fz = run.course.flags[run.flag]
+            ring = [(fx + 0.8 * math.cos(a * math.pi / 12), 0.01,
+                     fz + 0.8 * math.sin(a * math.pi / 12))
+                    for a in range(24)]
+            self.face(lens, ring, (250, 236, 170), g)
+            share = min(1.0, run.still / model.HOLD)
+            if share > 0:
+                pie = [(fx, 0.02, fz)] + [
+                    (fx + 0.8 * math.cos(a), 0.02, fz + 0.8 * math.sin(a))
+                    for a in [2 * math.pi * share * i / 16
+                              for i in range(17)]]
+                self.face(lens, pie, (90, 200, 110), g)
+        # gusts: dust streaks blowing the way the wind pushes
+        gx, gz = run.gust()
         if run.level.gusts:
-            for k in range(10):
-                gx = (k * 3.3 + t * gust * 6.0) % model.TRACK
-                gy = GROUND + 0.5 + (k * 1.7) % 7.0
-                px, py = self._at(gx, gy)
-                d.append(pyglet.shapes.Line(
-                    px, py, px - math.copysign(1.2, gust) * s * min(
-                        1.0, abs(gust)), py, thickness=1,
-                    color=(255, 230, 200, 120), batch=batch, group=card))
-            wx = (t * gust * 2.5 + 7.0) % model.TRACK
-            px, py = self._at(wx, GROUND + 0.4)
-            d.append(pyglet.shapes.Arc(px, py, 0.4 * s, thickness=2,
-                                       color=(150, 110, 60), batch=batch,
-                                       group=text))
-        # The cart.
-        cx, cy = self._at(run.x, GROUND)
-        d.append(pyglet.shapes.RoundedRectangle(
-            cx - 1.1 * s, cy, 2.2 * s, 0.8 * s, radius=0.15 * s,
-            color=(196, 64, 54), batch=batch, group=body))
-        d.append(pyglet.shapes.Rectangle(cx - 1.1 * s, cy + 0.6 * s, 2.2 * s,
-                                         0.12 * s, color=(250, 206, 80),
-                                         batch=batch, group=text))
-        spin = -run.x / 0.3
-        for side in (-0.65, 0.65):
-            wx, wy = cx + side * s, cy
-            d.append(pyglet.shapes.Circle(wx, wy, 0.32 * s,
-                                          color=(40, 40, 50), batch=batch,
-                                          group=text))
-            d.append(pyglet.shapes.Line(
-                wx, wy, wx + math.cos(spin) * 0.28 * s,
-                wy + math.sin(spin) * 0.28 * s, thickness=2,
-                color=(220, 220, 230), batch=batch, group=top))
-        if run.pushing:
-            for k in range(3):
-                px = cx - run.pushing * (1.3 + 0.3 * k) * s
-                d.append(pyglet.shapes.Circle(
-                    px, cy + 0.1 * s, (0.15 + 0.06 * k) * s,
-                    color=(230, 200, 160, 160 - 40 * k), batch=batch,
-                    group=text))
-        # The pole and its lantern.
-        l = run.length()
-        hx, hy = cx, cy + 0.8 * s
-        tx = hx + math.sin(run.theta) * l * 1.7 * s
-        ty = hy + math.cos(run.theta) * l * 1.7 * s
-        danger = abs(run.theta) / model.FALLEN
-        d.append(pyglet.shapes.Line(hx, hy, tx, ty,
-                                    thickness=max(3.0, 0.16 * s),
-                                    color=polish.mix((240, 230, 210),
-                                                     (255, 80, 60),
-                                                     min(1.0, danger)),
-                                    batch=batch, group=text))
-        for k in range(1, 4):
-            f = k / 4
-            d.append(pyglet.shapes.Circle(hx + (tx - hx) * f,
-                                          hy + (ty - hy) * f, 0.1 * s,
-                                          color=(200, 60, 50), batch=batch,
-                                          group=top))
-        polish.glow(d, batch, tx, ty, 1.6 * s, (255, 210, 120),
-                    strength=120, group=card)
-        d.append(pyglet.shapes.Circle(tx, ty, 0.32 * s, color=(255, 226, 150),
-                                      batch=batch, group=top))
-        # The lean gauge on the cart.
-        gx, gy = cx, cy + 0.4 * s
-        d.append(pyglet.shapes.Sector(gx, gy, 0.55 * s, angle=70,
-                                      start_angle=55, color=(40, 30, 40),
-                                      batch=batch, group=text))
-        a = math.radians(90) - run.theta * (35 / 35)
-        d.append(pyglet.shapes.Line(
-            gx, gy, gx + math.cos(a) * 0.5 * s, gy + math.sin(a) * 0.5 * s,
-            thickness=2, color=polish.mix((120, 240, 150), (255, 70, 60),
-                                          min(1.0, danger * 1.3)),
-            batch=batch, group=top))
-        # The clock along the top.
-        top_y = y0 + (WORLD_H + 0.3) * s
+            for k in range(14):
+                u = (k * 2.3 + t * 3.0) % 12.0 - 6.0
+                px = run.x + ((k * 3.7) % 16.0 - 8.0) + gx * u
+                pz = run.z + ((k * 5.3) % 14.0 - 2.0) + gz * u
+                self.seg(lens, (px, 0.5 + k % 3, pz),
+                         (px - gx * 1.5, 0.5 + k % 3, pz - gz * 1.5), 1,
+                         (255, 230, 200), g)
+        # flags and the cart, far ones first
+        tip = run.tip()
+        hinge = (run.x, DECK, run.z)
+        top = (hinge[0] + tip[0], hinge[1] + tip[1], hinge[2] + tip[2])
+        things = []
+        for k, (fx, fz) in enumerate(run.course.flags):
+            things.append((fz, 'flag', k))
+        things.append((run.z, 'cart', 0))
+        for _depth, what, k in sorted(things, key=lambda th: -th[0]):
+            g = self.layer()
+            if what == 'flag':
+                fx, fz = run.course.flags[k]
+                lit = k == run.flag
+                done = k < run.flag
+                col = (150, 140, 130) if done else FLAGS[k % len(FLAGS)]
+                if not lit and not done:
+                    col = polish.mix(col, (120, 100, 110), 0.45)
+                self.seg(lens, (fx, 0, fz), (fx, 3.2, fz), 2,
+                         (240, 240, 240), g)
+                self.face(lens, [(fx, 3.2, fz), (fx + 1.1, 2.85, fz),
+                                 (fx, 2.5, fz)], col, g)
+                continue
+            # the pole's shadow, then the cart and the pole
+            self.seg(lens, (run.x, 0.02, run.z),
+                     (run.x + tip[0], 0.02, run.z + tip[2]), 4,
+                     (120, 80, 60), g)
+            self.box(lens, run.x - 0.9, 0.25, run.z - 0.6, run.x + 0.9,
+                     DECK, run.z + 0.6, (196, 64, 54), g)
+            for sx in (-0.6, 0.6):
+                for sz in (-0.62, 0.62):
+                    self.ball(lens, (run.x + sx, 0.25, run.z + sz), 0.25,
+                              (50, 50, 60), g)
+            danger = min(1.0, run.lean() / (math.pi / 2))
+            self.seg(lens, hinge, top, 5,
+                     polish.mix((240, 230, 210), (255, 80, 60), danger), g)
+            self.ball(lens, top, 0.32, (255, 226, 150), g, shade=0.1)
+            px, pz = run.pushing
+            if px or pz:
+                for j in range(3):
+                    self.ball(lens, (run.x - px * (1.2 + 0.3 * j), 0.06,
+                                     run.z - pz * (0.9 + 0.3 * j)),
+                              0.05 + 0.02 * j, (176, 136, 96), g)
+        self._gauge(run, left, bottom, width, height)
+        self._map(run, left, bottom, width, height)
+        # the clock along the top
+        g = self.layer()
         share = max(0.0, 1.0 - t / run.level.seconds)
-        W = model.TRACK * s
-        polish.rounded(d, batch, x0, top_y, W, 0.6 * s, (200, 190, 210),
-                       radius=0.3 * s, group=card)
-        if share > 0.02:
-            polish.rounded(d, batch, x0, top_y, W * share, 0.6 * s,
-                           polish.mix((236, 80, 64), (60, 190, 120),
-                                      min(1.0, share * 1.6)),
-                           radius=0.3 * s, group=body)
+        bar_w = width - 40
+        self.rect(left + 20, bottom + height - 22, bar_w, 8, (90, 70, 100),
+                  g)
+        if share > 0.01:
+            self.rect(left + 20, bottom + height - 22, bar_w * share, 8,
+                      polish.mix((236, 80, 64), (60, 190, 120),
+                                 min(1.0, share * 1.6)), g)
+
+    def _gauge(self, run, left, bottom, width, height) -> None:
+        """The lean seen from above: the dot is where the lantern is over
+        the ground, the rim is where it would touch it."""
+        g = self.layer()
+        r = max(30.0, min(width, height) * 0.09)
+        cx, cy = left + width - r - 18, bottom + height - r - 40
+        self.disc((cx, cy), r + 3, (60, 40, 50), g)
+        self.disc((cx, cy), r, (40, 32, 44), g)
+        self.disc((cx, cy), r * math.sin(math.radians(12)) + 2,
+                  (60, 110, 70), g)
+        tip, l = run.tip(), run.length()
+        dx, dz = tip[0] / l, tip[2] / l
+        danger = min(1.0, run.lean() / (math.pi / 2))
+        g = self.layer()
+        self.line((cx, cy), (cx + dx * r, cy + dz * r), 2, (200, 190, 180),
+                  g)
+        self.disc((cx + dx * r, cy + dz * r), max(4.0, r * 0.13),
+                  polish.mix((120, 240, 150), (255, 70, 60), danger), g)
+
+    def _map(self, run, left, bottom, width, height) -> None:
+        """The yard from above: the flags, the cart."""
+        g = self.layer()
+        side = max(60.0, min(width, height) * 0.18)
+        x0, y0 = left + 18, bottom + height - side - 40
+        s = side / model.TRACK
+        self.rect(x0 - 3, y0 - 3, side + 6, side + 6, (110, 70, 50), g)
+        self.rect(x0, y0, side, side, (206, 160, 104), g)
+        g = self.layer()
+        for k, (fx, fz) in enumerate(run.course.flags):
+            col = (150, 140, 130) if k < run.flag else FLAGS[k % len(FLAGS)]
+            self.disc((x0 + fx * s, y0 + fz * s),
+                      5 if k == run.flag else 3, col, g)
+        self.disc((x0 + run.x * s, y0 + run.z * s), 4, (196, 40, 40), g)
 
     def _facts(self) -> str:
         if self.run is None:
