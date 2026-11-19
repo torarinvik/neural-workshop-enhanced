@@ -318,6 +318,10 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('gone_bead', _('Gone Bead')),
         ('traded_places', _('Traded Places')),
         ('traded_beads', _('Traded Beads')),
+        ('running_count', _('Running Count')),
+        ('bead_pile', _('Bead Pile')),
+        ('arrow_walk', _('Arrow Walk')),
+        ('chevron_walk', _('Chevron Walk')),
     ],
 }
 
@@ -1496,6 +1500,22 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'traded_beads':
         from .nowthen import TradedBeads
         TradedBeads()
+        return
+    if task_id == 'running_count':
+        from .carried import RunningCount
+        RunningCount()
+        return
+    if task_id == 'bead_pile':
+        from .carried import BeadPile
+        BeadPile()
+        return
+    if task_id == 'arrow_walk':
+        from .carried import ArrowWalk
+        ArrowWalk()
+        return
+    if task_id == 'chevron_walk':
+        from .carried import ChevronWalk
+        ChevronWalk()
         return
     if task_id == 'gamble':
         from .gamble import Gamble

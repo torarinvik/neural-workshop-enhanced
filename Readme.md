@@ -2013,6 +2013,15 @@ Things show twice, *n* frames apart, and the answer is what is different the sec
 
 From the second showing alone every answer is as likely as another. Keeping where one thing was earns one half on Which Moved? and three in five on Traded Places; keeping one old thing earns a third on Which Is New? and seven in sixteen on Which Is Gone?.
 
+#### Carried through
+
+A state shows once, then *n* events change it, a frame each; the question is put on the last event.
+
+* **Running Count** and **Bead Pile**: a number (or a pile of beads), then steps of one or two up or down: press the card with the total. The four cards are four numbers in a row, with the total at a place drawn at random among them.
+* **Chevron Walk**: a star on one of four squares, two by two, then chevrons, straight or slanting, each moving it a square, wrapping round the edges: press its square now.
+
+The last event and the cards say nothing of the answer. Keeping the start and dropping the events earns one half at rung 1 on the count, about a third by rung 3, and a third on the walk at rungs 1 and 2.
+
 ### Reasoning
 
 The *Reasoning* category holds 39 tasks.

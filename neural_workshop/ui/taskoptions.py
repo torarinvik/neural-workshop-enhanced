@@ -4853,6 +4853,78 @@ TRADEDBEADS = TaskSpec(
     note=tradedbeads_note)
 
 
+def runningcount_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('A number shows, then %d steps of one up or one down, a frame each: press the card with the total.') % int(chosen['RUNNINGCOUNT_RUNG'])
+
+
+RUNNINGCOUNT = TaskSpec(
+    title=_('Running Count options'),
+    options=(
+        Option('RUNNINGCOUNT_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('RUNNINGCOUNT_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('RUNNINGCOUNT_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=runningcount_note)
+
+
+def beadpile_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('A pile of beads shows, then %d beads put in or taken out, a frame each: press the card with the pile now.') % int(chosen['BEADPILE_RUNG'])
+
+
+BEADPILE = TaskSpec(
+    title=_('Bead Pile options'),
+    options=(
+        Option('BEADPILE_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('BEADPILE_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('BEADPILE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=beadpile_note)
+
+
+def arrowwalk_note(chosen: Dict[str, Any]) -> str:
+    """The title only: this task is kept back."""
+    return _('Arrow Walk')
+
+
+ARROWWALK = TaskSpec(
+    title=_('Arrow Walk options'),
+    options=(
+        Option('ARROWWALK_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('ARROWWALK_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('ARROWWALK_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=arrowwalk_note)
+
+
+def chevronwalk_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('A star shows on one of four squares, then %d chevrons move it, a frame each, wrapping round the edges: press its square now.') % int(chosen['CHEVRONWALK_RUNG'])
+
+
+CHEVRONWALK = TaskSpec(
+    title=_('Chevron Walk options'),
+    options=(
+        Option('CHEVRONWALK_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('CHEVRONWALK_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('CHEVRONWALK_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=chevronwalk_note)
+
+
 def soundback_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung is like."""
     return _('Press for the tone that sounded %d frames ago: low, middle or high.') % int(chosen['SOUNDBACK_RUNG'])
@@ -6718,6 +6790,10 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'gone_bead': GONEBEAD,
     'traded_places': TRADEDPLACES,
     'traded_beads': TRADEDBEADS,
+    'running_count': RUNNINGCOUNT,
+    'bead_pile': BEADPILE,
+    'arrow_walk': ARROWWALK,
+    'chevron_walk': CHEVRONWALK,
     'sound_back': SOUNDBACK,
     'hidden_cue': HIDDENCUE,
     'shape_back': SHAPEBACK,

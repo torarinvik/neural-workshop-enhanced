@@ -742,6 +742,18 @@ CATALOG: Tuple[Wrapped, ...] = (
     Wrapped('traded_beads', 'Traded Beads',
             'nwenv.nowthen', 'TradedBeadsEnv',
             'neural_workshop.ui.nowthen', 'TradedBeads'),
+    Wrapped('running_count', 'Running Count',
+            'nwenv.carried', 'RunningCountEnv',
+            'neural_workshop.ui.carried', 'RunningCount'),
+    Wrapped('bead_pile', 'Bead Pile',
+            'nwenv.carried', 'BeadPileEnv',
+            'neural_workshop.ui.carried', 'BeadPile'),
+    Wrapped('arrow_walk', 'Arrow Walk',
+            'nwenv.carried', 'ArrowWalkEnv',
+            'neural_workshop.ui.carried', 'ArrowWalk'),
+    Wrapped('chevron_walk', 'Chevron Walk',
+            'nwenv.carried', 'ChevronWalkEnv',
+            'neural_workshop.ui.carried', 'ChevronWalk'),
 )
 
 BY_ID: Dict[str, Wrapped] = {row.task_id: row for row in CATALOG}
@@ -757,6 +769,7 @@ FAMILIES: Dict[str, Tuple[str, ...]] = {
               'next_shape', 'next_tile', 'in_the_loop', 'in_the_pen'),
     'looking back': ('shape_back', 'hidden_cue', 'sound_back'),
     'held in mind': ('changed_tile', 'swapped_boxes'),
+    'carried through': ('running_count', 'bead_pile', 'arrow_walk', 'chevron_walk'),
     'now and earlier': ('which_moved', 'moved_bead', 'which_is_new', 'new_bead', 'which_is_gone', 'gone_bead', 'traded_places', 'traded_beads'),
     'what the ports do': ('marker_walk', 'marker_walk_shuffled'),
     'timing': ('in_the_window',),
@@ -772,6 +785,8 @@ TWINS: Tuple[Tuple[str, str], ...] = (
     ('odd_shape', 'odd_stripe'),             # the odd one out
     ('next_shape', 'next_tile'),             # what comes next
     ('in_the_loop', 'in_the_pen'),           # inside or outside
+    ('running_count', 'bead_pile'),
+    ('arrow_walk', 'chevron_walk'),
     ('which_moved', 'moved_bead'),
     ('which_is_new', 'new_bead'),
     ('which_is_gone', 'gone_bead'),
@@ -786,6 +801,9 @@ HELD_OUT: frozenset = frozenset((
     'in_the_window',
     'marker_walk',
     'odd_stripe',
+    # Drawn the same way when the memory families and the forgiving
+    # walks were added, one each from three of those families.
+    'arrow_walk',
 ))
 
 
