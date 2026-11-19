@@ -1041,10 +1041,13 @@ def card(task_id: str) -> Dict[str, Any]:
     and, for the tasks whose floors have been counted (the first-steps
     families), ``frame_only`` (the chance level for a player that sees
     only the frame showing), ``frame_only_rung``, ``partial`` (the cheap
-    partial strategies and what each earns) and ``rungs`` (for rungs 1
-    to 5, how many shown frames back the answer lies and how many
-    presses the shortest way needs). :mod:`nwenv.cards` says what each
-    field means.
+    partial strategies and what each earns), ``early_presses`` (what a
+    press before the question does) and ``rungs`` (for rungs 1 to 5, how
+    many shown frames back the answer lies, how many presses the
+    shortest way needs, what presses at random and the best player
+    without memory earn, and at ten steps a second how many steps before
+    the question the frame the answer needs last shows).
+    :mod:`nwenv.cards` says what each field means.
     """
     if task_id not in BY_ID:
         raise KeyError(task_id)

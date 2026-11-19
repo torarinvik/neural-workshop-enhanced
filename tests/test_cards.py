@@ -16,7 +16,7 @@ import random
 import unittest
 from collections import Counter
 
-from memorysupport import best_from_view, rate
+from memorysupport import best_from_view, drive, rate
 
 from neural_workshop import (carried, farcue, framed, handsoff, heardback,
                              inmind, keptrule, newestfirst, severalcues,
@@ -488,6 +488,187 @@ def partial(task_id, strategy, rung):
     raise KeyError((task_id, strategy))
 
 
+# --- by rung: presses at random, and the best without memory -------------
+
+#: Tasks whose answer needs no memory: the board, or the frame, shows it.
+SEEN = ('short walks', 'payment for progress', 'forgiving walks',
+        'two-stage walks')
+TWIN_IDS = tuple(TWIN_DEALS)
+
+
+def _walk_random(make, rung, n=2000, seed=1):
+    rng, won = random.Random(seed), 0
+    for _d in range(n):
+        walk = make(rung, rng)
+        while walk.result is None:
+            walk.press(rng.randrange(walk.puzzle.ports))
+        won += walk.result[0]
+    return won / n
+
+
+def _walk_maker(task_id):
+    """A fresh walk of *task_id* at a rung, or None for other tasks."""
+    family = catalog.family_of(task_id)
+    if family in ('short walks', 'payment for progress'):
+        kind = {'short_maze': 'maze', 'short_tower': 'tower',
+                'turned_tiles': 'tiles', 'short_push': 'push',
+                'short_maze_steps': 'maze'}[task_id]
+        return lambda r, g: ministeps.Walk(ministeps.deal(kind, r, g))
+    if task_id == 'long_way_round':
+        return lambda r, g: longwalk.Walk(longwalk.deal('walk', r, g))
+    if task_id in ('push_and_pull', 'one_way_doors', 'ice_floor'):
+        kind = {'push_and_pull': 'pushpull', 'one_way_doors': 'oneway',
+                'ice_floor': 'ice'}[task_id]
+        return lambda r, g: morewalks.Walk(morewalks.deal(kind, r, g))
+    if task_id in WALK_DEALS:
+        return WALK_DEALS[task_id]
+    return None
+
+
+#: Walks added since: task id -> a fresh walk at (rung, rng).
+WALK_DEALS = {
+    'fetch_and_carry': lambda r, g: twostage.Walk(
+        twostage.deal('fetch', r, g)),
+    'plate_and_gate': lambda r, g: twostage.Walk(
+        twostage.deal('plate', r, g)),
+}
+
+
+def _shuffled_walk(rung, rng):
+    order = [0, 1, 2, 3]
+    rng.shuffle(order)
+    return ministeps.Walk(ministeps.deal('walk', rung, rng,
+                                         order=tuple(order)))
+
+
+def _as_pointed_walk(rung, n=3000, seed=8):
+    """Marker Walk, Shuffled, pressed as if the ports went the way they
+    point."""
+    rng, won = random.Random(seed), 0
+    for _d in range(n):
+        walk = _shuffled_walk(rung, rng)
+        while walk.result is None:
+            (x, y), goal = walk.state, walk.puzzle.data['goal']
+            ways = [p for p, (dx, dy) in enumerate(ministeps.STEPS)
+                    if abs(x + dx - goal[0]) + abs(y + dy - goal[1])
+                    < abs(x - goal[0]) + abs(y - goal[1])]
+            walk.press(ways[0])
+        won += walk.result[0]
+    return won / n
+
+
+def _choices(p):
+    return len(p.choices)
+
+
+def _ownpress_levels(kind, look, rung, n=4000):
+    """Random presses, and the best player reading the screen alone."""
+    rng, ledger, right = random.Random(3), ownpress.Ledger(), 0
+    puzzles = []
+    for _t in range(n):
+        p = ownpress.deal(kind, rung, rng, look=look, ledger=ledger)
+        press = rng.randrange(4)
+        ledger.record(press)
+        right += press == p.answer
+        puzzles.append(p)
+    it = iter(puzzles)
+    screen = best_from_view(lambda _rng: next(it),
+                            lambda p: (p.data['layout'], p.data['hue']),
+                            n=n)
+    return right / n, max(right / n, screen)
+
+
+def _rule_levels(rung, n=4000):
+    rng, guess, by_one = random.Random(6), 0, 0
+    among = ruleguess.candidates(rung)
+    best = 0.0
+    for _d in range(n):
+        p = ruleguess.deal(ruleguess.draw_rule(rung, rng), rung, rng)
+        guess += rng.randrange(_choices(p)) == p.answer
+        votes = Counter(ruleguess.pick(r, p.things) for r in among)
+        best += max(votes.values()) / len(among)
+    return guess / n, best / n
+
+
+def random_level(task_id, rung):
+    """What a press at random earns, each time a press is called for:
+    at each job and at the question; on a walk, at every press."""
+    if task_id == 'marker_walk_shuffled':
+        return _walk_random(_shuffled_walk, rung)
+    make = _walk_maker(task_id)
+    if make is not None:
+        return _walk_random(make, rung)
+    if task_id in ('gone_from_view', 'in_that_order'):
+        kind = 'one' if task_id == 'gone_from_view' else 'two'
+        return _memwalk_play(kind, rung, _random_press)
+    if task_id in ('next_in_turn', 'stay_or_shift', 'moving_prize'):
+        kind = 'cycle' if task_id == 'next_in_turn' else 'stay'
+        return _ownpress_levels(kind, int(task_id == 'moving_prize'),
+                                rung)[0]
+    if task_id == 'which_rule':
+        return _rule_levels(rung)[0]
+    if task_id in TWIN_IDS:
+        rule, look = TWIN_DEALS[task_id]
+        return rate(lambda g: twins.deal(rule, look, rung, g),
+                    lambda p, g: g.randrange(_choices(p)), 3000)
+    if task_id in RUN_DEALS:
+        run = RUN_DEALS[task_id](rung, 4000)
+        rng = random.Random(4)
+        return sum(rng.randrange(_choices(p)) == p.answer
+                   for p in run) / len(run)
+    deal = DEALS[task_id]
+
+    def player(p, g):
+        for _job in p.data.get('jobs', ()) if isinstance(p.data, dict) \
+                else ():
+            if g.randrange(4) != (_job[1] if p.data['look'] == 0
+                                  else 3 - _job[1]):
+                return -1
+        return g.randrange(_choices(p))
+    return rate(lambda g: deal(rung, g), player, 4000)
+
+
+#: Tasks dealt as a run whose trials depend on each other: task id ->
+#: (rung, n) -> the run's puzzles.
+RUN_DEALS = {'same_or_opposite': _rule_run}
+
+
+def no_memory_level(task_id, rung):
+    """The best a player that keeps nothing from earlier frames earns:
+    for a question, the best player reading the frame it is put on; for
+    a walk from memory, the best of the players counted."""
+    family = catalog.family_of(task_id)
+    if family in SEEN or task_id in TWIN_IDS:
+        return 1.0
+    if task_id == 'marker_walk_shuffled':
+        return max(_walk_random(_shuffled_walk, rung),
+                   _as_pointed_walk(rung))
+    if task_id in ('gone_from_view', 'in_that_order'):
+        kind = 'one' if task_id == 'gone_from_view' else 'two'
+        players = [_random_press, _to_middle] + [
+            (lambda r, g, w=w: w) for w in range(4)]
+        return max(_memwalk_play(kind, rung, chooser) for chooser in players)
+    if task_id in ('next_in_turn', 'stay_or_shift', 'moving_prize'):
+        kind = 'cycle' if task_id == 'next_in_turn' else 'stay'
+        return _ownpress_levels(kind, int(task_id == 'moving_prize'),
+                                rung)[1]
+    if task_id == 'which_rule':
+        return _rule_levels(rung)[1]
+    if task_id in RUN_DEALS:
+        run = RUN_DEALS[task_id](rung, 6000)
+        it = iter(run)
+        return best_from_view(lambda _g: next(it), RUN_VIEWS[task_id],
+                              n=len(run))
+    deal = DEALS[task_id]
+    return best_from_view(lambda g: deal(rung, g), view_for(task_id),
+                          n=4000)
+
+
+#: What the frame the question is put on shows, for RUN_DEALS tasks.
+RUN_VIEWS = {'same_or_opposite': lambda p: (p.data['cues'][0][1],
+                                           p.data['layout'])}
+
+
 # --- frames back ---------------------------------------------------------
 
 def frames_back(task_id, rung, seed=None):
@@ -632,6 +813,115 @@ class TheFloorsAreCounted(unittest.TestCase):
                 else:
                     self.assertEqual(said, PRESSES.get(
                         task_id, lambda r: 1)(rung), task_id)
+
+
+
+class ByRung(unittest.TestCase):
+    """The fields every measured card gives for rungs 1 to 5."""
+
+    def test_random_and_no_memory_are_counted(self):
+        for task_id in catalog.task_ids():
+            card = catalog.card(task_id)
+            if not card.get('measured'):
+                continue
+            for rung in RUNGS:
+                row = card['rungs'][rung]
+                self.assertAlmostEqual(row['random'],
+                                       random_level(task_id, rung),
+                                       delta=DELTA, msg=(task_id, rung))
+                self.assertAlmostEqual(row['no_memory'],
+                                       no_memory_level(task_id, rung),
+                                       delta=DELTA, msg=(task_id, rung))
+                self.assertGreaterEqual(row['no_memory'] + DELTA,
+                                        row['random'], (task_id, rung))
+
+    def test_steps_at_ten_a_second(self):
+        for task_id in catalog.task_ids():
+            card = catalog.card(task_id)
+            if not card.get('measured'):
+                continue
+            for rung in (1, 2):
+                row = card['rungs'][rung]
+                said = row['steps_at_10hz']
+                if row['frames_back'] in (None, 0):
+                    self.assertIsNone(said, task_id)
+                    continue
+                if 'frames_back_least' in row:
+                    seen = {steps_driven(task_id, rung, seed)
+                            for seed in range(1, 9)}
+                    self.assertLessEqual(max(seen), said, task_id)
+                    self.assertGreaterEqual(min(seen),
+                                            row['steps_at_10hz_least'])
+                    continue
+                self.assertEqual(said, steps_driven(task_id, rung),
+                                 (task_id, rung))
+
+    def test_early_presses(self):
+        for task_id in catalog.task_ids():
+            card = catalog.card(task_id)
+            if not card.get('measured'):
+                continue
+            what = card['early_presses']
+            if what not in (cards.IGNORED, cards.ENDS, cards.JOBS):
+                continue
+            # A press of each port before the question; then the answer.
+            for early in range(card['ports']):
+                got = drive(task_id, lambda t: t.puzzle.answer, 2,
+                            early=early, frame_hz=10.0, steps=3000)
+                self.assertEqual(got, [1.0] if what == cards.IGNORED
+                                 else [-1.0], (task_id, early))
+
+
+def _needed_showing(task, back):
+    """Whether the earliest frame the answer needs shows now."""
+    p, run = task.puzzle, task.run
+    if hasattr(run, 'showing') and callable(run.showing):
+        return run.showing() is not None
+    if isinstance(p.data, dict) and 'cues' in p.data:
+        want = p.data['cues'][0][0]
+    else:
+        want = round(p.open_at / framed.FRAME) - back
+    clock = framed.frame_at if isinstance(run, framed.Run) \
+        else lookback.frame_at
+    f, showing = clock(p, run.t)
+    return f == want and showing
+
+
+def steps_driven(task_id, rung, seed=1):
+    """Driven at ten steps a second: steps from the last on which the
+    frame the card counts back to shows, to the one the question is put
+    on."""
+    from uisupport import close_overlays, reset_window
+    back = catalog.card(task_id)['rungs'][rung]['frames_back']
+    env = catalog.env_class(task_id)(seed=seed, rung=rung, trials=1,
+                                     adaptive=False, frame_hz=10.0)
+    last = None
+    try:
+        for i in range(4000):
+            task = env.task
+            port = None
+            if task.phase == 'playing' and task.run is not None:
+                if task.run.open:
+                    return i - last
+                if _needed_showing(task, back):
+                    last = i
+                if hasattr(task.run, 'job'):
+                    port = _job(task)
+            env.step(port)
+    finally:
+        env.close()
+        close_overlays()
+        reset_window()
+    return None
+
+
+def _job(task):
+    run = task.run
+    j = run.job()
+    if j is None or j in run.done:
+        return None
+    place = task.puzzle.data['jobs'][j][1]
+    return place if task.puzzle.data['look'] == 0 else 3 - place
 
 
 if __name__ == '__main__':
