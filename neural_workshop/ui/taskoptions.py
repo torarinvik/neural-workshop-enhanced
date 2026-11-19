@@ -4925,6 +4925,78 @@ CHEVRONWALK = TaskSpec(
     note=chevronwalk_note)
 
 
+def nextinturn_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Rung %d: press the panel after the one you pressed that many trials ago, going round 1, 2, 3, 4.') % int(chosen['NEXTINTURN_RUNG'])
+
+
+NEXTINTURN = TaskSpec(
+    title=_('Next in Turn options'),
+    options=(
+        Option('NEXTINTURN_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('NEXTINTURN_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('NEXTINTURN_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=nextinturn_note)
+
+
+def roundagain_note(chosen: Dict[str, Any]) -> str:
+    """The title only: this task is kept back."""
+    return _('Round Again')
+
+
+ROUNDAGAIN = TaskSpec(
+    title=_('Round Again options'),
+    options=(
+        Option('ROUNDAGAIN_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('ROUNDAGAIN_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('ROUNDAGAIN_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=roundagain_note)
+
+
+def stayorshift_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Rung %d: the right panel is the one that was right that many trials ago, until it moves without notice.') % int(chosen['STAYORSHIFT_RUNG'])
+
+
+STAYORSHIFT = TaskSpec(
+    title=_('Stay or Shift options'),
+    options=(
+        Option('STAYORSHIFT_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('STAYORSHIFT_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('STAYORSHIFT_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=stayorshift_note)
+
+
+def movingprize_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Rung %d: the prize is where it was that many trials ago, until it moves without notice.') % int(chosen['MOVINGPRIZE_RUNG'])
+
+
+MOVINGPRIZE = TaskSpec(
+    title=_('Moving Prize options'),
+    options=(
+        Option('MOVINGPRIZE_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('MOVINGPRIZE_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('MOVINGPRIZE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=movingprize_note)
+
+
 def soundback_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung is like."""
     return _('Press for the tone that sounded %d frames ago: low, middle or high.') % int(chosen['SOUNDBACK_RUNG'])
@@ -6794,6 +6866,10 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'bead_pile': BEADPILE,
     'arrow_walk': ARROWWALK,
     'chevron_walk': CHEVRONWALK,
+    'next_in_turn': NEXTINTURN,
+    'round_again': ROUNDAGAIN,
+    'stay_or_shift': STAYORSHIFT,
+    'moving_prize': MOVINGPRIZE,
     'sound_back': SOUNDBACK,
     'hidden_cue': HIDDENCUE,
     'shape_back': SHAPEBACK,

@@ -2022,6 +2022,15 @@ A state shows once, then *n* events change it, a frame each; the question is put
 
 The last event and the cards say nothing of the answer. Keeping the start and dropping the events earns one half at rung 1 on the count, about a third by rung 3, and a third on the walk at rungs 1 and 2.
 
+#### Own presses
+
+Four plain panels, the same for every answer; the right one depends on what was pressed, and paid, on earlier trials, and nothing on screen says what that was: no panel is marked after a press, and the verdict says only *Right* or *Wrong*.
+
+* **Next in Turn**: the ports go round 1, 2, 3, 4; at rung *n* the right one is the one after the port pressed *n* trials ago.
+* **Stay or Shift** and **Moving Prize**: a hidden port is right for three to six turns and then moves without notice; at rung *n*, *n* hidden ports take turns, so stay after a payment *n* trials back and shift after a loss.
+
+Without memory of its own presses a player is right one time in four. Pressing round the cycle without looking back is right at rungs 1, 5, 9 and never at the others; win-stay, lose-shift *n* trials back earns about half on Stay or Shift.
+
 ### Reasoning
 
 The *Reasoning* category holds 39 tasks.

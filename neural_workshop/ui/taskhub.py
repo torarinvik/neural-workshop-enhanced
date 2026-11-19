@@ -322,6 +322,10 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('bead_pile', _('Bead Pile')),
         ('arrow_walk', _('Arrow Walk')),
         ('chevron_walk', _('Chevron Walk')),
+        ('next_in_turn', _('Next in Turn')),
+        ('round_again', _('Round Again')),
+        ('stay_or_shift', _('Stay or Shift')),
+        ('moving_prize', _('Moving Prize')),
     ],
 }
 
@@ -1516,6 +1520,22 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'chevron_walk':
         from .carried import ChevronWalk
         ChevronWalk()
+        return
+    if task_id == 'next_in_turn':
+        from .ownpress import NextInTurn
+        NextInTurn()
+        return
+    if task_id == 'round_again':
+        from .ownpress import RoundAgain
+        RoundAgain()
+        return
+    if task_id == 'stay_or_shift':
+        from .ownpress import StayOrShift
+        StayOrShift()
+        return
+    if task_id == 'moving_prize':
+        from .ownpress import MovingPrize
+        MovingPrize()
         return
     if task_id == 'gamble':
         from .gamble import Gamble
