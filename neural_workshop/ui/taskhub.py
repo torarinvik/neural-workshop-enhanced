@@ -328,6 +328,10 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('moving_prize', _('Moving Prize')),
         ('the_marked_one', _('The Marked One')),
         ('flagged_bead', _('Flagged Bead')),
+        ('changed_note', _('Changed Note')),
+        ('changed_chime', _('Changed Chime')),
+        ('marked_tone', _('Marked Tone')),
+        ('other_voice', _('Other Voice')),
     ],
 }
 
@@ -1546,6 +1550,22 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'flagged_bead':
         from .farcue import FlaggedBead
         FlaggedBead()
+        return
+    if task_id == 'changed_note':
+        from .heardback import ChangedNote
+        ChangedNote()
+        return
+    if task_id == 'changed_chime':
+        from .heardback import ChangedChime
+        ChangedChime()
+        return
+    if task_id == 'marked_tone':
+        from .heardback import MarkedTone
+        MarkedTone()
+        return
+    if task_id == 'other_voice':
+        from .heardback import OtherVoice
+        OtherVoice()
         return
     if task_id == 'gamble':
         from .gamble import Gamble

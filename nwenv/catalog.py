@@ -772,6 +772,18 @@ CATALOG: Tuple[Wrapped, ...] = (
     Wrapped('flagged_bead', 'Flagged Bead',
             'nwenv.farcue', 'FlaggedBeadEnv',
             'neural_workshop.ui.farcue', 'FlaggedBead'),
+    Wrapped('changed_note', 'Changed Note',
+            'nwenv.heardback', 'ChangedNoteEnv',
+            'neural_workshop.ui.heardback', 'ChangedNote'),
+    Wrapped('changed_chime', 'Changed Chime',
+            'nwenv.heardback', 'ChangedChimeEnv',
+            'neural_workshop.ui.heardback', 'ChangedChime'),
+    Wrapped('marked_tone', 'Marked Tone',
+            'nwenv.heardback', 'MarkedToneEnv',
+            'neural_workshop.ui.heardback', 'MarkedTone'),
+    Wrapped('other_voice', 'Other Voice',
+            'nwenv.heardback', 'OtherVoiceEnv',
+            'neural_workshop.ui.heardback', 'OtherVoice'),
 )
 
 BY_ID: Dict[str, Wrapped] = {row.task_id: row for row in CATALOG}
@@ -787,6 +799,7 @@ FAMILIES: Dict[str, Tuple[str, ...]] = {
               'next_shape', 'next_tile', 'in_the_loop', 'in_the_pen'),
     'looking back': ('shape_back', 'hidden_cue', 'sound_back'),
     'held in mind': ('changed_tile', 'swapped_boxes'),
+    'heard back': ('changed_note', 'changed_chime', 'marked_tone', 'other_voice'),
     'far cue': ('the_marked_one', 'flagged_bead'),
     'own presses': ('next_in_turn', 'round_again', 'stay_or_shift', 'moving_prize'),
     'carried through': ('running_count', 'bead_pile', 'arrow_walk', 'chevron_walk'),
@@ -805,6 +818,8 @@ TWINS: Tuple[Tuple[str, str], ...] = (
     ('odd_shape', 'odd_stripe'),             # the odd one out
     ('next_shape', 'next_tile'),             # what comes next
     ('in_the_loop', 'in_the_pen'),           # inside or outside
+    ('changed_note', 'changed_chime'),
+    ('marked_tone', 'other_voice'),
     ('the_marked_one', 'flagged_bead'),
     ('next_in_turn', 'round_again'),
     ('stay_or_shift', 'moving_prize'),

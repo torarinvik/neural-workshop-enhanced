@@ -5033,6 +5033,78 @@ FLAGGEDBEAD = TaskSpec(
     note=flaggedbead_note)
 
 
+def changednote_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Four tones play twice, %d frames apart, one of them at another pitch the second time: press its place, first to fourth.') % int(chosen['CHANGEDNOTE_RUNG'])
+
+
+CHANGEDNOTE = TaskSpec(
+    title=_('Changed Note options'),
+    options=(
+        Option('CHANGEDNOTE_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('CHANGEDNOTE_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('CHANGEDNOTE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=changednote_note)
+
+
+def changedchime_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Four chimes play twice, %d frames apart, one of them at another pitch the second time: press its place, fourth to first.') % int(chosen['CHANGEDCHIME_RUNG'])
+
+
+CHANGEDCHIME = TaskSpec(
+    title=_('Changed Chime options'),
+    options=(
+        Option('CHANGEDCHIME_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('CHANGEDCHIME_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('CHANGEDCHIME_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=changedchime_note)
+
+
+def markedtone_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Rung %d: a tone in its own voice, then 2, 4, 8, 16 or 32 look-alike tones: press its pitch, lowest to highest.') % int(chosen['MARKEDTONE_RUNG'])
+
+
+MARKEDTONE = TaskSpec(
+    title=_('Marked Tone options'),
+    options=(
+        Option('MARKEDTONE_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5)),
+        Option('MARKEDTONE_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('MARKEDTONE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=markedtone_note)
+
+
+def othervoice_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Rung %d: a tone in another voice, then 2, 4, 8, 16 or 32 look-alike tones: press its pitch, highest to lowest.') % int(chosen['OTHERVOICE_RUNG'])
+
+
+OTHERVOICE = TaskSpec(
+    title=_('Other Voice options'),
+    options=(
+        Option('OTHERVOICE_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5)),
+        Option('OTHERVOICE_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('OTHERVOICE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=othervoice_note)
+
+
 def soundback_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung is like."""
     return _('Press for the tone that sounded %d frames ago: low, middle or high.') % int(chosen['SOUNDBACK_RUNG'])
@@ -6908,6 +6980,10 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'moving_prize': MOVINGPRIZE,
     'the_marked_one': THEMARKEDONE,
     'flagged_bead': FLAGGEDBEAD,
+    'changed_note': CHANGEDNOTE,
+    'changed_chime': CHANGEDCHIME,
+    'marked_tone': MARKEDTONE,
+    'other_voice': OTHERVOICE,
     'sound_back': SOUNDBACK,
     'hidden_cue': HIDDENCUE,
     'shape_back': SHAPEBACK,

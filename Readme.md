@@ -2039,6 +2039,15 @@ For a learner whose memory is too short to keep every frame. Four things show, o
 
 The question frame is at one in four, and so are keeping the first frame without the mark, keeping where the mark was without what, and keeping only the last frames.
 
+#### Heard back
+
+The same questions in sound, reaching the agent only as sound: the screen shows when a tone plays, never which. Four pitches, drawn evenly, moving together by up to a semitone from trial to trial.
+
+* **Changed Note** and **Changed Chime**: four tones, *n* frames apart from the same four again with one at another pitch: press its place, first to fourth (fourth to first in the twin).
+* **Marked Tone** and **Other Voice**: one tone in a voice of its own, then 2 to 32 look-alike tones in the ordinary voice: press its pitch, lowest to highest (highest to lowest in the twin).
+
+The tone heard when the question is put says nothing of the answer; keeping only the last of the first four tones earns one half on Changed Note.
+
 ### Reasoning
 
 The *Reasoning* category holds 39 tasks.
