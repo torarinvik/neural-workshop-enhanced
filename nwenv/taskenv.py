@@ -530,6 +530,7 @@ class TaskEnv:
                  autostart: bool = True,
                  think_seconds: float = 0.0,
                  refill_seconds: Optional[float] = None,
+                 frame_scale: float = 1.0,
                  **dials: Any) -> None:
         # A window on every tick and a verdict for every action, the ones
         # outside a trial worth nothing. A runtime acting on a fixed clock
@@ -543,6 +544,19 @@ class TaskEnv:
         if self._runtime_ports and self._runtime_ports < int(self.ports):
             raise ValueError('a runtime needs at least the task\'s own ports')
         self._visible = bool(visible)
+        # How big a frame is captured, as a share of each side of the
+        # window. Below one the frame is still drawn at full size and
+        # read back smaller, one pixel of each block, so nothing drawn
+        # changes, the verdict reader sees the labels' own colours, and
+        # every digest, outcome and export is of the small frame. One
+        # over a whole number (a half, a third, a quarter ...), so that
+        # each pixel kept is the same one on any machine, read on the GPU
+        # or off a full readback alike.
+        self._scale = float(frame_scale)
+        whole = round(1.0 / self._scale) if self._scale > 0 else 0
+        if not (0.0 < self._scale <= 1.0 and whole >= 1
+                and abs(whole * self._scale - 1.0) < 1e-9):
+            raise ValueError('frame_scale must be 1, 1/2, 1/3, 1/4, ...')
         self._hz = float(frame_hz)
         if self.clocked and self._hz < self.slowest_frame_hz:
             raise ValueError('frame_hz must be at least %g'
@@ -919,7 +933,7 @@ class TaskEnv:
         window.dispatch_events()
         self.task.on_draw()
         self._draw_think_clock(window)
-        width, height, rgba = capture_rgba(window)
+        width, height, rgba = capture_rgba(window, self._scale)
         window.flip()
 
         self._seq += 1

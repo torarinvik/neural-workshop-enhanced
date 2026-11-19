@@ -9,11 +9,13 @@ SPDX-License-Identifier: GPL-2.0-or-later
 """
 from __future__ import annotations
 
+from .framed import SlowFrames
 from .taskenv import TaskEnv
 
 
-class _Rung(TaskEnv):
-    """What every wrapper here shares."""
+class _Rung(SlowFrames, TaskEnv):
+    """What every wrapper here shares. May be driven a shown frame a
+    step, as an opt-in (see :class:`nwenv.framed.SlowFrames`)."""
 
     clocked = True
     action = 'steer'

@@ -4,9 +4,10 @@
 
 The memory families declare that they may be driven at two steps a
 second, one step a shown frame. This checks that at that rate every
-frame of a trial is seen once, that a trial is judged as it is at ten
-steps a second, and that the tasks that have not declared it still
-refuse the slow rate.
+frame of a trial is seen once and that a trial is judged as it is at
+ten steps a second. The older frame tasks may opt in to the same rate,
+and are checked the same way; at their usual rates they keep their
+own tick.
 
 SPDX-License-Identifier: GPL-2.0-or-later
 """
@@ -29,6 +30,18 @@ STEPPED = [task for task in catalog.task_ids()
 #: from memory test their own rate.
 IDS = [task for task in STEPPED
        if issubclass(catalog.ui_class(task), FrameTask)]
+#: The frame tasks written before the rate was declared, which may opt
+#: in to it.
+OLDER = ('shape_back', 'hidden_cue', 'sound_back', 'changed_tile',
+         'swapped_boxes')
+POLICIES = {
+    'right': (lambda t: t.puzzle.answer, None),
+    'wrong': (lambda t: (t.puzzle.answer + 1) % len(t.puzzle.choices),
+              None),
+    'early': (lambda t: t.puzzle.answer, 0),
+    'none': (lambda t: None, None),
+    'first': (lambda t: 1, None),
+}
 
 
 class TheRate(unittest.TestCase):
@@ -41,12 +54,32 @@ class TheRate(unittest.TestCase):
                                              frame_hz=FRAME_HZ)
             env.close()
 
-    def test_older_tasks_still_refuse_it(self):
-        for task_id in ('hidden_cue', 'sound_back', 'changed_tile',
-                        'swapped_boxes', 'shape_back'):
-            with self.assertRaises(ValueError):
-                catalog.env_class(task_id)(seed=1, rung=1, trials=1,
-                                           adaptive=False, frame_hz=2.0)
+    def test_older_tasks_take_a_frame_a_step_and_no_other_slow_rate(self):
+        for task_id in OLDER:
+            env = catalog.env_class(task_id)(seed=1, rung=1, trials=1,
+                                             adaptive=False, frame_hz=2.0)
+            self.assertEqual(env.task.LONGEST_TICK, 0.5)
+            env.close()
+            env = catalog.env_class(task_id)(seed=1, rung=1, trials=1,
+                                             adaptive=False, frame_hz=10.0)
+            self.assertEqual(env.task.LONGEST_TICK, 0.1)
+            self.assertEqual(env.task.SUBSTEP, ClockedTask.SUBSTEP)
+            env.close()
+            for hz in (1.0, 5.0):
+                with self.assertRaises(ValueError):
+                    catalog.env_class(task_id)(seed=1, rung=1, trials=1,
+                                               adaptive=False, frame_hz=hz)
+
+    def test_older_tasks_are_judged_the_same_a_frame_a_step(self):
+        for task_id in OLDER:
+            for rung in (1, 3):
+                for name, (pick, early) in POLICIES.items():
+                    slow = drive(task_id, pick, rung, early=early, seed=3,
+                                 frame_hz=FRAME_HZ, steps=400)
+                    fast = drive(task_id, pick, rung, early=early, seed=3,
+                                 frame_hz=10.0, steps=2000)
+                    self.assertEqual(slow, fast, (task_id, rung, name))
+                    self.assertEqual(len(slow), 1, (task_id, rung, name))
 
     def test_older_tasks_keep_their_longest_tick(self):
         from neural_workshop.ui.inmind import ChangedTile
@@ -81,17 +114,9 @@ class TheRate(unittest.TestCase):
                 self.assertGreaterEqual(len(seen), 2, task_id)
 
     def test_a_trial_is_judged_the_same_at_both_rates(self):
-        policies = {
-            'right': (lambda t: t.puzzle.answer, None),
-            'wrong': (lambda t: (t.puzzle.answer + 1)
-                      % len(t.puzzle.choices), None),
-            'early': (lambda t: t.puzzle.answer, 0),
-            'none': (lambda t: None, None),
-            'first': (lambda t: 1, None),
-        }
         for task_id in IDS:
             for rung in (1, 2):
-                for name, (pick, early) in policies.items():
+                for name, (pick, early) in POLICIES.items():
                     slow = drive(task_id, pick, rung, early=early, seed=3,
                                  frame_hz=FRAME_HZ, steps=400)
                     fast = drive(task_id, pick, rung, early=early, seed=3,
