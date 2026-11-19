@@ -18,19 +18,24 @@ from memorysupport import drive
 
 from neural_workshop import framed
 from neural_workshop.ui.clocked import ClockedTask
+from neural_workshop.ui.framed import FrameTask
 from nwenv import catalog
 from nwenv.framed import FRAME_HZ, FrameRung
 
 #: Every task that declares it may be stepped a frame at a time.
-IDS = [task for task in catalog.task_ids()
-       if issubclass(catalog.env_class(task), FrameRung)]
+STEPPED = [task for task in catalog.task_ids()
+           if issubclass(catalog.env_class(task), FrameRung)]
+#: Those of them that put one question and take one answer; the walks
+#: from memory test their own rate.
+IDS = [task for task in STEPPED
+       if issubclass(catalog.ui_class(task), FrameTask)]
 
 
 class TheRate(unittest.TestCase):
 
     def test_the_frame_families_take_one_step_a_frame(self):
         self.assertEqual(FRAME_HZ, 2.0)
-        for task_id in IDS:
+        for task_id in STEPPED:
             env = catalog.env_class(task_id)(seed=1, rung=1, trials=1,
                                              adaptive=False,
                                              frame_hz=FRAME_HZ)

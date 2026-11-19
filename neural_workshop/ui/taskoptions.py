@@ -5195,6 +5195,42 @@ ICEFLOOR = TaskSpec(
     note=icefloor_note)
 
 
+def gonefromview_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Rung %d: the goal shows for two frames, that many steps away, then hides; walk to where it was. A wrong step costs a step.') % int(chosen['GONEFROMVIEW_RUNG'])
+
+
+GONEFROMVIEW = TaskSpec(
+    title=_('Gone From View options'),
+    options=(
+        Option('GONEFROMVIEW_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 8, 10, 12)),
+        Option('GONEFROMVIEW_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('GONEFROMVIEW_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=gonefromview_note)
+
+
+def inthatorder_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Rung %d: two places show in turn and hide; visit them in that order, one press more than the rung in all. A wrong step costs a step.') % int(chosen['INTHATORDER_RUNG'])
+
+
+INTHATORDER = TaskSpec(
+    title=_('In That Order options'),
+    options=(
+        Option('INTHATORDER_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 8, 10)),
+        Option('INTHATORDER_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('INTHATORDER_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=inthatorder_note)
+
+
 def soundback_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung is like."""
     return _('Press for the tone that sounded %d frames ago: low, middle or high.') % int(chosen['SOUNDBACK_RUNG'])
@@ -7079,6 +7115,8 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'push_and_pull': PUSHANDPULL,
     'one_way_doors': ONEWAYDOORS,
     'ice_floor': ICEFLOOR,
+    'gone_from_view': GONEFROMVIEW,
+    'in_that_order': INTHATORDER,
     'sound_back': SOUNDBACK,
     'hidden_cue': HIDDENCUE,
     'shape_back': SHAPEBACK,

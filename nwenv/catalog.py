@@ -799,6 +799,12 @@ CATALOG: Tuple[Wrapped, ...] = (
     Wrapped('ice_floor', 'Ice Floor',
             'nwenv.morewalks', 'IceFloorEnv',
             'neural_workshop.ui.morewalks', 'IceFloor'),
+    Wrapped('gone_from_view', 'Gone From View',
+            'nwenv.memwalk', 'GoneFromViewEnv',
+            'neural_workshop.ui.memwalk', 'GoneFromView'),
+    Wrapped('in_that_order', 'In That Order',
+            'nwenv.memwalk', 'InThatOrderEnv',
+            'neural_workshop.ui.memwalk', 'InThatOrder'),
 )
 
 BY_ID: Dict[str, Wrapped] = {row.task_id: row for row in CATALOG}
@@ -814,6 +820,7 @@ FAMILIES: Dict[str, Tuple[str, ...]] = {
               'next_shape', 'next_tile', 'in_the_loop', 'in_the_pen'),
     'looking back': ('shape_back', 'hidden_cue', 'sound_back'),
     'held in mind': ('changed_tile', 'swapped_boxes'),
+    'walks from memory': ('gone_from_view', 'in_that_order'),
     'forgiving walks': ('long_way_round', 'key_and_door', 'push_and_pull',
                         'one_way_doors', 'ice_floor'),
     'heard back': ('changed_note', 'changed_chime', 'marked_tone', 'other_voice'),

@@ -2060,6 +2060,15 @@ In the short walks a wrong press ends the trial. Here it does not: a press into 
 
 No board is dealt where a press could lead somewhere the goal cannot be reached from. Pressing at random reaches the goal at rung 1 about 45 times in a hundred on Long Way Round, and at rungs 1, 3 and 5 about 37, 4 and 1 in a hundred on Push and Pull, 44, 6 and 1 on One-Way Doors, and 44, 8 and 1 on Ice Floor.
 
+#### Walks from memory
+
+Holding something in mind and acting on it over several presses. An open seven by seven board; where to go shows for two frames and is hidden, and the walk goes under the forgiving rules (a wrong press costs a step; the steps allowed are par plus half of par, at least par plus two). Presses while the goal shows are ignored, nothing on screen changes when a place is reached, and the screen shows no rung and no count of steps, so it holds nothing a player could use in place of memory.
+
+* **Gone From View**: one goal, *n* presses away; walk to where it was.
+* **In That Order**: two places show in turn; visit them in that order. Two places need two presses at least, so rung *n* is *n* + 1 presses.
+
+Where the goal lies, among the squares at the rung's distance, is drawn evenly. A player who sees only the current frame is at about the level of random presses: at rungs 1, 3 and 5, random presses earn 36, 7 and 2 in a hundred on Gone From View and 13, 2 and 1 on In That Order; the best fixed direction earns 26, 9 and 4, and heading for the middle 31, 15 and 6.
+
 ### Reasoning
 
 The *Reasoning* category holds 39 tasks.

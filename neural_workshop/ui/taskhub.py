@@ -337,6 +337,8 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('push_and_pull', _('Push and Pull')),
         ('one_way_doors', _('One-Way Doors')),
         ('ice_floor', _('Ice Floor')),
+        ('gone_from_view', _('Gone From View')),
+        ('in_that_order', _('In That Order')),
     ],
 }
 
@@ -1591,6 +1593,14 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'ice_floor':
         from .morewalks import IceFloor
         IceFloor()
+        return
+    if task_id == 'gone_from_view':
+        from .memwalk import GoneFromView
+        GoneFromView()
+        return
+    if task_id == 'in_that_order':
+        from .memwalk import InThatOrder
+        InThatOrder()
         return
     if task_id == 'gamble':
         from .gamble import Gamble
