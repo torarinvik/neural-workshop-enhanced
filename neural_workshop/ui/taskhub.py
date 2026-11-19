@@ -346,6 +346,9 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('wait_and_see', _('Wait and See')),
         ('which_was_where', _('Which Was Where?')),
         ('roll_call', _('Roll Call')),
+        ('newest_counts', _('The Newest Counts')),
+        ('first_counts', _('The First Counts')),
+        ('first_come', _('First Come')),
     ],
 }
 
@@ -1636,6 +1639,18 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'roll_call':
         from .rollcall import RollCall
         RollCall()
+        return
+    if task_id == 'newest_counts':
+        from .newestfirst import TheNewestCounts
+        TheNewestCounts()
+        return
+    if task_id == 'first_counts':
+        from .newestfirst import TheFirstCounts
+        TheFirstCounts()
+        return
+    if task_id == 'first_come':
+        from .firstcome import FirstCome
+        FirstCome()
         return
     if task_id == 'gamble':
         from .gamble import Gamble

@@ -5357,6 +5357,60 @@ ROLLCALL = TaskSpec(
     note=rollcall_note)
 
 
+def newestcounts_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Rung %d: a square lights, and up to that many more after it; press the one that lit last.') % int(chosen['NEWESTCOUNTS_RUNG'])
+
+
+NEWESTCOUNTS = TaskSpec(
+    title=_('The Newest Counts options'),
+    options=(
+        Option('NEWESTCOUNTS_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20)),
+        Option('NEWESTCOUNTS_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('NEWESTCOUNTS_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=newestcounts_note)
+
+
+def firstcounts_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Rung %d: a square lights, and up to that many more after it as decoys; press the one that lit first.') % int(chosen['FIRSTCOUNTS_RUNG'])
+
+
+FIRSTCOUNTS = TaskSpec(
+    title=_('The First Counts options'),
+    options=(
+        Option('FIRSTCOUNTS_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20)),
+        Option('FIRSTCOUNTS_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('FIRSTCOUNTS_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=firstcounts_note)
+
+
+def firstcome_note(chosen: Dict[str, Any]) -> str:
+    """The title only: this task is kept back."""
+    return _('First Come')
+
+
+FIRSTCOME = TaskSpec(
+    title=_('First Come options'),
+    options=(
+        Option('FIRSTCOME_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20)),
+        Option('FIRSTCOME_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('FIRSTCOME_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=firstcome_note)
+
+
 def soundback_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung is like."""
     return _('Press for the tone that sounded %d frames ago: low, middle or high.') % int(chosen['SOUNDBACK_RUNG'])
@@ -7250,6 +7304,9 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'wait_and_see': WAITANDSEE,
     'which_was_where': WHICHWASWHERE,
     'roll_call': ROLLCALL,
+    'newest_counts': NEWESTCOUNTS,
+    'first_counts': FIRSTCOUNTS,
+    'first_come': FIRSTCOME,
     'sound_back': SOUNDBACK,
     'hidden_cue': HIDDENCUE,
     'shape_back': SHAPEBACK,

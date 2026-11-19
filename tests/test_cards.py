@@ -19,7 +19,8 @@ from collections import Counter
 from memorysupport import best_from_view, rate
 
 from neural_workshop import (carried, farcue, framed, handsoff, heardback,
-                             inmind, severalcues, unevenwait,
+                             inmind, newestfirst, severalcues,
+                             unevenwait,
                              longwalk, lookback, memwalk, ministeps,
                              morewalks, nowthen, ownpress, ruleguess, twins)
 from nwenv import cards, catalog
@@ -61,6 +62,8 @@ DEALS['hands_off'] = _framed(handsoff, 'still', 0)
 DEALS['busy_wait'] = _framed(handsoff, 'busy', 0)
 DEALS['uneven_wait'] = _framed(unevenwait, 'uneven', 0)
 DEALS['which_was_where'] = _framed(severalcues, 'several', 0)
+DEALS['newest_counts'] = _framed(newestfirst, 'newest', 0)
+DEALS['first_counts'] = _framed(newestfirst, 'first', 0)
 DEALS['shape_back'] = lambda rung, rng: lookback.deal('shape', rung, rng)
 DEALS['hidden_cue'] = lambda rung, rng: lookback.deal('cue', rung, rng)
 DEALS['sound_back'] = lambda rung, rng: lookback.deal('sound', rung, rng)
@@ -115,7 +118,8 @@ def view_for(task_id):
             'heard back': VIEWS['heardback'],
             'hands off': VIEWS['keptcue'],
             'uneven wait': VIEWS['keptcue'],
-            'several kept': VIEWS['keptcue']}[family]
+            'several kept': VIEWS['keptcue'],
+            'newest and first': VIEWS['keptcue']}[family]
 
 
 # --- frame-only floors ---------------------------------------------------
@@ -454,6 +458,13 @@ def partial(task_id, strategy, rung):
             place = p.data['cues'][-1][1]
             return place if p.data['look'] == 0 else 3 - place
         return rate(lambda rng: severalcues.deal('several', rung, rng), last)
+    if task_id in ('newest_counts', 'first_counts'):
+        kind = 'newest' if task_id == 'newest_counts' else 'first'
+
+        def other(p, rng):
+            place = p.data['cues'][0 if kind == 'newest' else -1][1]
+            return place if p.data['look'] == 0 else 3 - place
+        return rate(lambda rng: newestfirst.deal(kind, rung, rng), other)
     raise KeyError((task_id, strategy))
 
 

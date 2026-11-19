@@ -16,9 +16,10 @@ from collections import deque
 from cuesupport import job_now
 from memorysupport import drive as frame_drive
 
-from neural_workshop import (busybeads, rollcall, waitandsee, carried, framed, inwindow, keydoor,
-                             ministeps, oddstripe, ownpress, roundagain,
-                             twins)
+from neural_workshop import (busybeads, carried, firstcome, framed,
+                             inwindow, keydoor, ministeps, oddstripe,
+                             ownpress, rollcall, roundagain, twins,
+                             waitandsee)
 from nwenv import catalog
 
 try:
@@ -338,6 +339,26 @@ class RollCall(unittest.TestCase):
             self.assertEqual(cue_drive('roll_call', lambda t: t.puzzle.answer,
                                        2, frame_hz=hz), [1.0])
             self.assertEqual(cue_drive('roll_call', lambda t: t.puzzle.answer,
+                                       2, wait=lambda t: 0, frame_hz=hz),
+                             [-1.0])
+
+
+
+class FirstCome(unittest.TestCase):
+
+    def test_deals(self):
+        for rung in range(1, 6):
+            for seed in range(20):
+                p = firstcome.deal(rung, random.Random(seed))
+                self.assertEqual(p.data['look'], 1)
+                self.assertEqual(p.answer, 3 - p.data['cues'][0][1])
+
+    def test_boundary(self):
+        from cuesupport import drive as cue_drive
+        for hz in (2.0, 10.0):
+            self.assertEqual(cue_drive('first_come', lambda t: t.puzzle.answer,
+                                       2, frame_hz=hz), [1.0])
+            self.assertEqual(cue_drive('first_come', lambda t: t.puzzle.answer,
                                        2, wait=lambda t: 0, frame_hz=hz),
                              [-1.0])
 

@@ -826,6 +826,15 @@ CATALOG: Tuple[Wrapped, ...] = (
     Wrapped('roll_call', 'Roll Call',
             'nwenv.rollcall', 'RollCallEnv',
             'neural_workshop.ui.rollcall', 'RollCall'),
+    Wrapped('newest_counts', 'The Newest Counts',
+            'nwenv.newestfirst', 'TheNewestCountsEnv',
+            'neural_workshop.ui.newestfirst', 'TheNewestCounts'),
+    Wrapped('first_counts', 'The First Counts',
+            'nwenv.newestfirst', 'TheFirstCountsEnv',
+            'neural_workshop.ui.newestfirst', 'TheFirstCounts'),
+    Wrapped('first_come', 'First Come',
+            'nwenv.firstcome', 'FirstComeEnv',
+            'neural_workshop.ui.firstcome', 'FirstCome'),
 )
 
 BY_ID: Dict[str, Wrapped] = {row.task_id: row for row in CATALOG}
@@ -856,6 +865,7 @@ FAMILIES: Dict[str, Tuple[str, ...]] = {
     'hands off': ('hands_off', 'busy_wait', 'busy_beads'),
     'uneven wait': ('uneven_wait', 'wait_and_see'),
     'several kept': ('which_was_where', 'roll_call'),
+    'newest and first': ('newest_counts', 'first_counts', 'first_come'),
 }
 
 #: Twin tasks: the same rule under a different look -- other colours,
@@ -880,6 +890,7 @@ TWINS: Tuple[Tuple[str, str], ...] = (
     ('busy_wait', 'busy_beads'),
     ('uneven_wait', 'wait_and_see'),
     ('which_was_where', 'roll_call'),
+    ('first_counts', 'first_come'),
 )
 
 #: Tasks kept back from development: not to be trained on, tuned
@@ -900,6 +911,7 @@ HELD_OUT: frozenset = frozenset((
     'busy_beads',
     'wait_and_see',
     'roll_call',
+    'first_come',
 ))
 
 #: Every module that holds a held-out task's model, screen or wrapper.
@@ -933,6 +945,9 @@ HELD_OUT_MODULES: Tuple[str, ...] = (
     'neural_workshop.rollcall',
     'neural_workshop.ui.rollcall',
     'nwenv.rollcall',
+    'neural_workshop.firstcome',
+    'neural_workshop.ui.firstcome',
+    'nwenv.firstcome',
 )
 #: The tests of the held-out tasks, kept apart for the same reason.
 HELD_OUT_TESTS: Tuple[str, ...] = ('tests/test_heldout.py',)

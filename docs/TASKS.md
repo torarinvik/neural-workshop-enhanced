@@ -1693,7 +1693,7 @@ Tasks for a learner starting from nothing. A beginner pressing at random is paid
 
 In what follows *n* is the rung. In the short walks a press that does not bring the goal nearer ends the trial.
 
-The frame-by-frame memory families below (now and earlier, carried through, own presses, a cue far back, heard back, hands off, uneven wait, several kept) show a frame every half second and may be stepped one step a shown frame: their environments accept `frame_hz=2`, and a trial driven that way is judged as it is at ten. The older frame tasks (looking back and held in mind) accept it too, as an opt-in: at exactly two steps a second one step carries the trial a whole frame, while at ten and above they run as they always have; other rates below ten are refused. Every other clocked task keeps its floor of ten.
+The frame-by-frame memory families below (now and earlier, carried through, own presses, a cue far back, heard back, hands off, uneven wait, several kept, the newest and the first counts) show a frame every half second and may be stepped one step a shown frame: their environments accept `frame_hz=2`, and a trial driven that way is judged as it is at ten. The older frame tasks (looking back and held in mind) accept it too, as an opt-in: at exactly two steps a second one step carries the trial a whole frame, while at ten and above they run as they always have; other rates below ten are refused. Every other clocked task keeps its floor of ten.
 
 Every task on the shared boundary also takes `frame_scale`, one over a whole number (`1/2`, `1/4`, ...): the frame is drawn at full size, as ever, and read back that much smaller on each side, one pixel of each block, sampled on the GPU. The verdict is read off the small frame, and digests, outcomes and the frame export are all of it. At a quarter a step runs about four times as fast (around 85 to 90 steps a second at full size, 310 to 430 at a quarter, on the machine this was measured on); `tests/test_frame_scale.py` checks that runs are judged the same at both sizes.
 
@@ -1864,6 +1864,15 @@ The wait is drawn apart from the cue, so the length of the trial says nothing of
 * **Which Was Where?**: *n* + 1 squares light one after another, a frame each, each in a colour of its own and no square twice (two at rung 1, up to four at rung 3; higher rungs play as rung 3). Two frames go by with nothing showing; then the question shows one of the colours beside the question mark: press the square that lit in it. Any press before the question ends the trial unpaid. Four ports, one a square, in reading order.
 
 Which cue is asked for is drawn evenly, and the colours fall on the squares at random, so the question frame is at one in four. Answering with the last cue shown earns one in as many cues as were shown: a half at rung 1, a third at rung 2, a quarter at rung 3.
+
+### The newest counts, the first counts
+
+A square lights for a frame. Then come *n* slots, every other frame; how many hold a later cue is drawn evenly from none to *n*, each at a square other than the one before it. A frame with nothing showing, and then the question. The trial is 2*n* + 3 frames long whatever came. Any press before the question ends the trial unpaid. Four ports, one a square, in reading order.
+
+* **The Newest Counts**: press the square that lit last.
+* **The First Counts**: press the square that lit first; the later ones are decoys.
+
+The question frame is at one in four. Answering by the other task's rule earns about 50, 45 and 39 in a hundred at rungs 1, 2 and 3: when no later cue comes, the first is the last.
 
 ## Reasoning
 

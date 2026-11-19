@@ -188,6 +188,19 @@ _put(('which_was_where',), 0.25,
               ('answering with the last cue shown', 1 / 4, 3)),
      rungs=_rungs(lambda k: min(k, 3) + 3, _one))
 
+# --- the newest counts, the first counts ----------------------------------
+
+_put(('newest_counts',), 0.25,
+     partial=(('pressing where the first cue was', 0.5, 1),
+              ('pressing where the first cue was', 0.45, 2),
+              ('pressing where the first cue was', 0.39, 3)),
+     rungs=_rungs(lambda k: 2 * k + 2, _one))
+_put(('first_counts',), 0.25,
+     partial=(('pressing where the last cue was', 0.5, 1),
+              ('pressing where the last cue was', 0.45, 2),
+              ('pressing where the last cue was', 0.39, 3)),
+     rungs=_rungs(lambda k: 2 * k + 2, _one))
+
 # --- the walks -----------------------------------------------------------
 
 _put(('long_way_round', 'push_and_pull', 'one_way_doors'), 1.0,
