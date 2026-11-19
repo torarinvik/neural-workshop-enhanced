@@ -351,6 +351,9 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('first_come', _('First Come')),
         ('same_or_opposite', _('Same or Opposite')),
         ('standing_order', _('Standing Order')),
+        ('fetch_and_carry', _('Fetch and Carry')),
+        ('plate_and_gate', _('Plate and Gate')),
+        ('lever_and_latch', _('Lever and Latch')),
     ],
 }
 
@@ -1661,6 +1664,18 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'standing_order':
         from .standingorder import StandingOrder
         StandingOrder()
+        return
+    if task_id == 'fetch_and_carry':
+        from .twostage import FetchAndCarry
+        FetchAndCarry()
+        return
+    if task_id == 'plate_and_gate':
+        from .twostage import PlateAndGate
+        PlateAndGate()
+        return
+    if task_id == 'lever_and_latch':
+        from .leverlatch import LeverAndLatch
+        LeverAndLatch()
         return
     if task_id == 'gamble':
         from .gamble import Gamble

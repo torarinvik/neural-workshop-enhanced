@@ -841,6 +841,15 @@ CATALOG: Tuple[Wrapped, ...] = (
     Wrapped('standing_order', 'Standing Order',
             'nwenv.standingorder', 'StandingOrderEnv',
             'neural_workshop.ui.standingorder', 'StandingOrder'),
+    Wrapped('fetch_and_carry', 'Fetch and Carry',
+            'nwenv.twostage', 'FetchAndCarryEnv',
+            'neural_workshop.ui.twostage', 'FetchAndCarry'),
+    Wrapped('plate_and_gate', 'Plate and Gate',
+            'nwenv.twostage', 'PlateAndGateEnv',
+            'neural_workshop.ui.twostage', 'PlateAndGate'),
+    Wrapped('lever_and_latch', 'Lever and Latch',
+            'nwenv.leverlatch', 'LeverAndLatchEnv',
+            'neural_workshop.ui.leverlatch', 'LeverAndLatch'),
 )
 
 BY_ID: Dict[str, Wrapped] = {row.task_id: row for row in CATALOG}
@@ -873,6 +882,7 @@ FAMILIES: Dict[str, Tuple[str, ...]] = {
     'several kept': ('which_was_where', 'roll_call'),
     'newest and first': ('newest_counts', 'first_counts', 'first_come'),
     'rule held': ('same_or_opposite', 'standing_order'),
+    'two-stage walks': ('fetch_and_carry', 'plate_and_gate', 'lever_and_latch'),
 }
 
 #: Twin tasks: the same rule under a different look -- other colours,
@@ -899,6 +909,7 @@ TWINS: Tuple[Tuple[str, str], ...] = (
     ('which_was_where', 'roll_call'),
     ('first_counts', 'first_come'),
     ('same_or_opposite', 'standing_order'),
+    ('plate_and_gate', 'lever_and_latch'),
 )
 
 #: Tasks kept back from development: not to be trained on, tuned
@@ -921,6 +932,7 @@ HELD_OUT: frozenset = frozenset((
     'roll_call',
     'first_come',
     'standing_order',
+    'lever_and_latch',
 ))
 
 #: Every module that holds a held-out task's model, screen or wrapper.
@@ -960,6 +972,9 @@ HELD_OUT_MODULES: Tuple[str, ...] = (
     'neural_workshop.standingorder',
     'neural_workshop.ui.standingorder',
     'nwenv.standingorder',
+    'neural_workshop.leverlatch',
+    'neural_workshop.ui.leverlatch',
+    'nwenv.leverlatch',
 )
 #: The tests of the held-out tasks, kept apart for the same reason.
 HELD_OUT_TESTS: Tuple[str, ...] = ('tests/test_heldout.py',)

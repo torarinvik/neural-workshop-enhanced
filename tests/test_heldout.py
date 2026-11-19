@@ -18,7 +18,7 @@ from memorysupport import drive as frame_drive
 
 from neural_workshop import (busybeads, carried, firstcome, framed,
                              inwindow, keydoor, ministeps, oddstripe,
-                             ownpress, rollcall, roundagain,
+                             leverlatch, ownpress, rollcall, roundagain,
                              standingorder, twins, waitandsee)
 from nwenv import catalog
 
@@ -389,6 +389,33 @@ class StandingOrder(unittest.TestCase):
                                        lambda t: t.puzzle.answer, 2,
                                        wait=lambda t: 0, frame_hz=hz),
                              [-1.0])
+
+
+
+class LeverAndLatch(unittest.TestCase):
+
+    def test_deals(self):
+        from neural_workshop import twostage
+        ways = {0: (-1, 0), 1: (1, 0), 2: (0, 1), 3: (0, -1)}
+        for rung in range(1, 10):
+            for seed in range(4):
+                p = leverlatch.deal(rung, random.Random(seed))
+                self.assertEqual(p.par, rung + 1)
+                self.assertEqual(twostage.far(p, p.start), rung + 1)
+        p = leverlatch.deal(3, random.Random(1))
+        for port, (dx, dy) in ways.items():
+            (x, y), _s = p.start
+            to = twostage.move(p, p.start, port)[0]
+            self.assertIn(to, ((x, y), (x + dx, y + dy)))
+
+    def test_random_presses(self):
+        rng, wins = random.Random(1), 0
+        for _d in range(2000):
+            walk = leverlatch.twostage.Walk(leverlatch.deal(1, rng))
+            while walk.result is None:
+                walk.press(rng.randrange(4))
+            wins += walk.result[0]
+        self.assertGreater(wins / 2000, 0.08)
 
 
 if __name__ == '__main__':

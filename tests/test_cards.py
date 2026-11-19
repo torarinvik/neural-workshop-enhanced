@@ -20,7 +20,7 @@ from memorysupport import best_from_view, rate
 
 from neural_workshop import (carried, farcue, framed, handsoff, heardback,
                              inmind, keptrule, newestfirst, severalcues,
-                             unevenwait,
+                             twostage, unevenwait,
                              longwalk, lookback, memwalk, ministeps,
                              morewalks, nowthen, ownpress, ruleguess, twins)
 from nwenv import cards, catalog
@@ -284,6 +284,10 @@ def frame_only(task_id):
                 'ice_floor': 'ice'}[task_id]
         return walk_floor(lambda r, g: morewalks.deal(kind, r, g),
                           lambda p: _walk_with(morewalks.Walk(p)))
+    if task_id in ('fetch_and_carry', 'plate_and_gate'):
+        kind = 'fetch' if task_id == 'fetch_and_carry' else 'plate'
+        return walk_floor(lambda r, g: twostage.deal(kind, r, g),
+                          lambda p: _walk_with(twostage.Walk(p)))
     if task_id in TWIN_DEALS:
         rule, look = TWIN_DEALS[task_id]
         return walk_floor(lambda r, g: twins.deal(rule, look, r, g),
@@ -604,6 +608,10 @@ class TheFloorsAreCounted(unittest.TestCase):
                               ('ice_floor', 'ice')):
             walks[task_id] = (lambda kind: lambda r, g:
                               morewalks.deal(kind, r, g))(kind)
+        for task_id, kind in (('fetch_and_carry', 'fetch'),
+                              ('plate_and_gate', 'plate')):
+            walks[task_id] = (lambda kind: lambda r, g:
+                              twostage.deal(kind, r, g))(kind)
         for task_id in ('gone_from_view', 'in_that_order'):
             walks[task_id] = (lambda kind: lambda r, g:
                               memwalk.deal(kind, r, g))(

@@ -5447,6 +5447,60 @@ STANDINGORDER = TaskSpec(
     note=standingorder_note)
 
 
+def fetchandcarry_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Rung %d: walk to the star, then carry it to the mark; one press more than the rung in all. A wrong step costs a step.') % int(chosen['FETCHANDCARRY_RUNG'])
+
+
+FETCHANDCARRY = TaskSpec(
+    title=_('Fetch and Carry options'),
+    options=(
+        Option('FETCHANDCARRY_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20)),
+        Option('FETCHANDCARRY_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('FETCHANDCARRY_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=fetchandcarry_note)
+
+
+def plateandgate_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Rung %d: step on the plate to open the gate, then go through it to the goal; one press more than the rung in all. A wrong step costs a step.') % int(chosen['PLATEANDGATE_RUNG'])
+
+
+PLATEANDGATE = TaskSpec(
+    title=_('Plate and Gate options'),
+    options=(
+        Option('PLATEANDGATE_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20)),
+        Option('PLATEANDGATE_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('PLATEANDGATE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=plateandgate_note)
+
+
+def leverandlatch_note(chosen: Dict[str, Any]) -> str:
+    """The title only: this task is kept back."""
+    return _('Lever and Latch')
+
+
+LEVERANDLATCH = TaskSpec(
+    title=_('Lever and Latch options'),
+    options=(
+        Option('LEVERANDLATCH_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20)),
+        Option('LEVERANDLATCH_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('LEVERANDLATCH_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=leverandlatch_note)
+
+
 def soundback_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung is like."""
     return _('Press for the tone that sounded %d frames ago: low, middle or high.') % int(chosen['SOUNDBACK_RUNG'])
@@ -7345,6 +7399,9 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'first_come': FIRSTCOME,
     'same_or_opposite': SAMEOROPPOSITE,
     'standing_order': STANDINGORDER,
+    'fetch_and_carry': FETCHANDCARRY,
+    'plate_and_gate': PLATEANDGATE,
+    'lever_and_latch': LEVERANDLATCH,
     'sound_back': SOUNDBACK,
     'hidden_cue': HIDDENCUE,
     'shape_back': SHAPEBACK,

@@ -216,6 +216,7 @@ _put(('same_or_opposite',), 0.5,
 _put(('long_way_round', 'push_and_pull', 'one_way_doors'), 1.0,
      rungs=_walk())
 _put(('ice_floor',), 1.0, rungs=_walk(_ice))
+_put(('fetch_and_carry', 'plate_and_gate'), 1.0, rungs=_walk(_plus_one))
 _put(('gone_from_view',), 0.36, rung=1,
      partial=(('heading for the middle', 0.31, 1),
               ('heading for the middle', 0.06, 5)),
