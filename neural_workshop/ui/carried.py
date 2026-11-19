@@ -3,9 +3,9 @@
 where does the state stand now?
 
 For the agent boundary: Running Count has four ports, one a card, left
-to right; its twin Bead Pile four, one a card, top to bottom. Arrow
-Walk has four, one a square, in reading order; its twin Chevron Walk
-four, one a square, from the bottom right back to the top left.
+to right; its twin Bead Pile four, one a card, top to bottom. Chevron
+Walk has four, one a square, from the bottom right back to the top
+left.
 Presses before the question is put are ignored, and the cards are
 blank until it is.
 
@@ -53,22 +53,9 @@ class CarriedTask(FrameTask):
                 group=self.text_group))
 
     def _arrow(self, direction: str, cx, cy, size, colour) -> None:
+        """A pair of chevrons."""
         dx, dy = POINTS[direction]
         thick = size * 0.12
-        if self.puzzle.data['look'] == 0:
-            tail = (cx - dx * size * 0.45, cy - dy * size * 0.45)
-            neck = (cx + dx * size * 0.1, cy + dy * size * 0.1)
-            self.drawn.append(pyglet.shapes.Line(
-                *tail, *neck, thickness=thick, color=colour,
-                batch=self.batch, group=self.text_group))
-            tip = (cx + dx * size * 0.5, cy + dy * size * 0.5)
-            px, py = -dy, dx
-            self.drawn.append(pyglet.shapes.Triangle(
-                *tip, neck[0] + px * size * 0.25, neck[1] + py * size * 0.25,
-                neck[0] - px * size * 0.25, neck[1] - py * size * 0.25,
-                color=colour, batch=self.batch, group=self.text_group))
-            return
-        # A pair of chevrons.
         px, py = -dy, dx
         for back in (0.0, 0.35):
             tip = (cx + dx * size * (0.35 - back), cy + dy * size * (0.35 - back))
@@ -150,14 +137,9 @@ class CarriedTask(FrameTask):
         side = min(height * 0.9, width * 0.42)
         cell = side / 2
         pane = side * 0.7
-        if look == 0:
-            bx, by = self._placed(left + width * 0.08, bottom, width * 0.5,
-                                  height, side, side)
-            ax = left + width * 0.78
-        else:
-            bx, by = self._placed(left + width * 0.45, bottom,
-                                  width * 0.55, height, side, side)
-            ax = left + width * 0.24
+        bx, by = self._placed(left + width * 0.45, bottom,
+                              width * 0.55, height, side, side)
+        ax = left + width * 0.24
         ay = bottom + height / 2
         order = framed.port_order(look, model.CARDS)
         for port in range(model.CARDS):
@@ -168,16 +150,10 @@ class CarriedTask(FrameTask):
             self._card(port, x + cell * 0.05, y + cell * 0.05, cell * 0.9,
                        cell * 0.9)
             if showing is not None and f == 0 and square == data['start']:
-                if look == 0:
-                    self.drawn.append(pyglet.shapes.Circle(
-                        x + cell / 2, y + cell / 2, cell * 0.25,
-                        color=self._colour(), batch=self.batch,
-                        group=self.text_group))
-                else:
-                    self.drawn.append(pyglet.shapes.Star(
-                        x + cell / 2, y + cell / 2, cell * 0.3,
-                        cell * 0.13, 6, color=self._colour(),
-                        batch=self.batch, group=self.text_group))
+                self.drawn.append(pyglet.shapes.Star(
+                    x + cell / 2, y + cell / 2, cell * 0.3,
+                    cell * 0.13, 6, color=self._colour(),
+                    batch=self.batch, group=self.text_group))
         if showing is not None and f > 0:
             self._arrow(model.ARROWS[data['arrows'][f - 1]], ax, ay, pane,
                         self._colour())
@@ -196,8 +172,6 @@ RunningCount = _task('RunningCount', 'Running Count', 'running_count',
                      'RUNNINGCOUNT', 'count', 0)
 BeadPile = _task('BeadPile', 'Bead Pile', 'bead_pile', 'BEADPILE',
                  'count', 1)
-ArrowWalk = _task('ArrowWalk', 'Arrow Walk', 'arrow_walk', 'ARROWWALK',
-                  'arrows', 0)
 ChevronWalk = _task('ChevronWalk', 'Chevron Walk', 'chevron_walk',
                     'CHEVRONWALK', 'arrows', 1)
 

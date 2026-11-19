@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-"""The stepped agent boundary for In the Window.
-
-Clocked: the frames go by, and the time to answer runs, whether or not
-the agent acts.
+"""In the Window.
 
 SPDX-License-Identifier: GPL-2.0-or-later
 """
@@ -14,7 +11,7 @@ from .taskenv import TaskEnv
 
 
 class _Rung(TaskEnv):
-    """What every wrapper here shares."""
+    """In the Window."""
 
     clocked = True
     action = 'steer'
@@ -25,8 +22,7 @@ class _Rung(TaskEnv):
 
 
 class InTheWindowEnv(_Rung):
-    """In the Window: Two ports: 0 presses, 1 waits. Green means the
-    press came with the marker inside the window."""
+    """In the Window."""
 
     task_class = ('neural_workshop.ui.inwindow', 'InTheWindow')
     ports = 2

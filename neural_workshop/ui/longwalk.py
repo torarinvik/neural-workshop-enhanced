@@ -6,8 +6,8 @@ A press into a wall or down a dead end uses a step and the trial goes
 on; it ends at the goal or when the last step is used. The board keeps
 its size on every rung and moves a little from trial to trial.
 
-For the agent boundary: Long Way Round and Key and Door have four
-ports: up, down, left, right.
+For the agent boundary: Long Way Round has four ports: up, down,
+left, right.
 
 SPDX-License-Identifier: GPL-2.0-or-later
 """
@@ -23,7 +23,6 @@ from .ministeps import StepsTask
 
 #: How much of the room the board takes, on every rung.
 SCALE = 0.84
-KEY = (200, 150, 20)
 
 
 class LongWalkTask(StepsTask):
@@ -83,28 +82,7 @@ class LongWalkTask(StepsTask):
                     self._add(pyglet.shapes.Line(
                         *ends, thickness=thick, color=wall,
                         batch=self.batch, group=self.body_group))
-        here, held = self.walk.state
-        gx, gy = data['goal']
-        if self.puzzle.kind == 'key' and not held:
-            pad = cell * 0.18
-            self._add(pyglet.shapes.Rectangle(
-                x + gx * cell + pad, y + gy * cell + pad, cell - 2 * pad,
-                cell - 2 * pad, color=goal, batch=self.batch,
-                group=self.body_group))
-        else:
-            self._goal(x, y, cell, data['goal'], goal)
-        if self.puzzle.kind == 'key' and not held:
-            kx, ky = data['key']
-            self._add(pyglet.shapes.Star(
-                x + (kx + 0.5) * cell, y + (ky + 0.5) * cell, cell * 0.3,
-                cell * 0.14, 5, color=KEY, batch=self.batch,
-                group=self.text_group))
-        self._mover(x, y, cell, here, mover)
-        if held and self.puzzle.kind == 'key':
-            self._add(pyglet.shapes.Star(
-                x + (here[0] + 0.5) * cell, y + (here[1] + 0.5) * cell,
-                cell * 0.13, cell * 0.06, 5, color=KEY, batch=self.batch,
-                group=self.top_group))
+        self._marks(x, y, cell, goal, mover)
         # The steps left, as pips under the board.
         limit = self.puzzle.limit
         gap = min(pip * 1.3, size / max(1, limit))
@@ -113,6 +91,11 @@ class LongWalkTask(StepsTask):
             used = i < self.walk.presses
             self._box(px + i * gap + gap * 0.15, bottom, gap * 0.7, pip,
                       None if used else mover, wall, thickness=1.0)
+
+    def _marks(self, x, y, cell, goal, mover) -> None:
+        """The goal and the player, over the walls."""
+        self._goal(x, y, cell, self.puzzle.data['goal'], goal)
+        self._mover(x, y, cell, self.walk.state[0], mover)
 
 
 class LongWayRound(LongWalkTask):
@@ -124,12 +107,3 @@ class LongWayRound(LongWalkTask):
     PREFIX = 'LONGWAYROUND'
     KIND = 'walk'
 
-
-class KeyAndDoor(LongWalkTask):
-    """Fetch the key, then walk to the door."""
-
-    instance: Optional['KeyAndDoor'] = None
-    TITLE = 'Key and Door'
-    TASK_ID = 'key_and_door'
-    PREFIX = 'KEYANDDOOR'
-    KIND = 'key'

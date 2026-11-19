@@ -23,14 +23,6 @@ class NextInTurnEnv(FrameRung):
     ports = 4
 
 
-class RoundAgainEnv(FrameRung):
-    """Round Again: Four ports, one a panel, the other way round from
-    reading order. Presses before the question is put are ignored."""
-
-    task_class = (UI, 'RoundAgain')
-    ports = 4
-
-
 class StayOrShiftEnv(FrameRung):
     """Stay or Shift: Four ports, one a panel, in reading order.
     Presses before the question is put are ignored."""
@@ -47,10 +39,9 @@ class MovingPrizeEnv(FrameRung):
     ports = 4
 
 
-ENVS = (NextInTurnEnv, RoundAgainEnv, StayOrShiftEnv, MovingPrizeEnv)
+ENVS = (NextInTurnEnv, StayOrShiftEnv, MovingPrizeEnv)
 
 verify_next_in_turn_outcome = NextInTurnEnv.verifier()
-verify_round_again_outcome = RoundAgainEnv.verifier()
 verify_stay_or_shift_outcome = StayOrShiftEnv.verifier()
 verify_moving_prize_outcome = MovingPrizeEnv.verifier()
 

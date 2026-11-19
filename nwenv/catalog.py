@@ -668,8 +668,8 @@ CATALOG: Tuple[Wrapped, ...] = (
             'nwenv.ministeps', 'ShortMazeStepsEnv',
             'neural_workshop.ui.ministeps', 'ShortMazeSteps'),
     Wrapped('marker_walk', 'Marker Walk',
-            'nwenv.ministeps', 'MarkerWalkEnv',
-            'neural_workshop.ui.ministeps', 'MarkerWalk'),
+            'nwenv.markerwalk', 'MarkerWalkEnv',
+            'neural_workshop.ui.markerwalk', 'MarkerWalk'),
     Wrapped('marker_walk_shuffled', 'Marker Walk, Shuffled',
             'nwenv.ministeps', 'MarkerWalkShuffledEnv',
             'neural_workshop.ui.ministeps', 'MarkerWalkShuffled'),
@@ -683,8 +683,8 @@ CATALOG: Tuple[Wrapped, ...] = (
             'nwenv.twins', 'OddShapeEnv',
             'neural_workshop.ui.twins', 'OddShape'),
     Wrapped('odd_stripe', 'Odd Stripe',
-            'nwenv.twins', 'OddStripeEnv',
-            'neural_workshop.ui.twins', 'OddStripe'),
+            'nwenv.oddstripe', 'OddStripeEnv',
+            'neural_workshop.ui.oddstripe', 'OddStripe'),
     Wrapped('next_shape', 'Next Shape',
             'nwenv.twins', 'NextShapeEnv',
             'neural_workshop.ui.twins', 'NextShape'),
@@ -749,8 +749,8 @@ CATALOG: Tuple[Wrapped, ...] = (
             'nwenv.carried', 'BeadPileEnv',
             'neural_workshop.ui.carried', 'BeadPile'),
     Wrapped('arrow_walk', 'Arrow Walk',
-            'nwenv.carried', 'ArrowWalkEnv',
-            'neural_workshop.ui.carried', 'ArrowWalk'),
+            'nwenv.arrowwalk', 'ArrowWalkEnv',
+            'neural_workshop.ui.arrowwalk', 'ArrowWalk'),
     Wrapped('chevron_walk', 'Chevron Walk',
             'nwenv.carried', 'ChevronWalkEnv',
             'neural_workshop.ui.carried', 'ChevronWalk'),
@@ -758,8 +758,8 @@ CATALOG: Tuple[Wrapped, ...] = (
             'nwenv.ownpress', 'NextInTurnEnv',
             'neural_workshop.ui.ownpress', 'NextInTurn'),
     Wrapped('round_again', 'Round Again',
-            'nwenv.ownpress', 'RoundAgainEnv',
-            'neural_workshop.ui.ownpress', 'RoundAgain'),
+            'nwenv.roundagain', 'RoundAgainEnv',
+            'neural_workshop.ui.roundagain', 'RoundAgain'),
     Wrapped('stay_or_shift', 'Stay or Shift',
             'nwenv.ownpress', 'StayOrShiftEnv',
             'neural_workshop.ui.ownpress', 'StayOrShift'),
@@ -788,8 +788,8 @@ CATALOG: Tuple[Wrapped, ...] = (
             'nwenv.longwalk', 'LongWayRoundEnv',
             'neural_workshop.ui.longwalk', 'LongWayRound'),
     Wrapped('key_and_door', 'Key and Door',
-            'nwenv.longwalk', 'KeyAndDoorEnv',
-            'neural_workshop.ui.longwalk', 'KeyAndDoor'),
+            'nwenv.keydoor', 'KeyAndDoorEnv',
+            'neural_workshop.ui.keydoor', 'KeyAndDoor'),
     Wrapped('push_and_pull', 'Push and Pull',
             'nwenv.morewalks', 'PushAndPullEnv',
             'neural_workshop.ui.morewalks', 'PushAndPull'),
@@ -870,6 +870,32 @@ HELD_OUT: frozenset = frozenset((
     'round_again',
 ))
 
+#: Every module that holds a held-out task's model, screen or wrapper.
+#: Each holds nothing else, and no other module holds any of it: the
+#: open tasks' sources can be read without reading a held-out task.
+#: Open modules a held-out one builds on (the walk board, the frame
+#: clock, a shared deal) are open tasks' code and are not listed.
+HELD_OUT_MODULES: Tuple[str, ...] = (
+    'neural_workshop.inwindow',
+    'neural_workshop.ui.inwindow',
+    'nwenv.inwindow',
+    'neural_workshop.ui.markerwalk',
+    'nwenv.markerwalk',
+    'neural_workshop.oddstripe',
+    'neural_workshop.ui.oddstripe',
+    'nwenv.oddstripe',
+    'neural_workshop.ui.arrowwalk',
+    'nwenv.arrowwalk',
+    'neural_workshop.keydoor',
+    'neural_workshop.ui.keydoor',
+    'nwenv.keydoor',
+    'neural_workshop.roundagain',
+    'neural_workshop.ui.roundagain',
+    'nwenv.roundagain',
+)
+#: The tests of the held-out tasks, kept apart for the same reason.
+HELD_OUT_TESTS: Tuple[str, ...] = ('tests/test_heldout.py',)
+
 
 def twin_of(task_id: str) -> Any:
     """The other task of *task_id*'s pair, or None when it has none."""
@@ -914,5 +940,5 @@ def overlays() -> List[Wrapped]:
     return [row for row in CATALOG if row.ui_class]
 
 
-__all__ = ['BY_ID', 'CATALOG', 'Wrapped', 'env_class', 'overlays',
-           'task_ids', 'ui_class']
+__all__ = ['BY_ID', 'CATALOG', 'HELD_OUT', 'HELD_OUT_MODULES', 'Wrapped',
+           'env_class', 'overlays', 'task_ids', 'ui_class']

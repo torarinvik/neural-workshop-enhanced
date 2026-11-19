@@ -15,11 +15,6 @@ and place on the screen, with the same four ports, up, down, left and
 right. Only the walk gets longer.
 
 ``walk``  rung k starts k presses from the goal along the shortest way.
-``key``   the goal is a door that opens only to a player holding the
-          key, which lies elsewhere in the maze: walk onto the key,
-          then to the door. Rung k is k + 1 presses on the shortest
-          way, at least one of them to the key. Until the key is held
-          the door is a wall.
 
 The steps allowed are a little above the shortest way: par plus half
 of par, and never fewer than par plus two. The verdict comes at the
@@ -28,8 +23,10 @@ press that reaches the goal, or at the press that uses the last step.
 These are walks, not looking-back questions: the board shows the way,
 and the rules about the frame the question is put on do not apply.
 Pressing at random reaches the goal at rung 1 within its three steps
-about 45 times in a hundred, and the door at rung 1 of the key walk
-within its four about 17 times in a hundred; the tests count both.
+about 45 times in a hundred; the tests count it.
+
+:class:`Walk` takes its rules -- ``move``, ``far`` and ``done`` -- from
+itself, so another walk on the same board can bring its own.
 
 SPDX-License-Identifier: GPL-2.0-or-later
 """
@@ -42,7 +39,7 @@ from typing import Dict, List, NamedTuple, Optional, Tuple
 from .i18n import _
 from .ministeps import LOOKS, STEPS, _maze_walls
 
-KINDS = ('walk', 'key')
+KINDS = ('walk',)
 SIDE = 7
 PORTS = 4
 
@@ -52,7 +49,7 @@ Cell = Tuple[int, int]
 class Puzzle(NamedTuple):
     kind: str
     ports: int
-    start: tuple                 # (square, holding the key)
+    start: tuple                 # (square, True)
     par: int                     # presses on the shortest way
     limit: int                   # presses allowed
     data: Dict
@@ -91,42 +88,37 @@ def _square(rng) -> Cell:
     return (rng.randrange(SIDE), rng.randrange(SIDE))
 
 
-def _try(kind: str, k: int, rng: random.Random) -> Optional[Puzzle]:
+def board(rng: random.Random):
+    """A fresh maze, its goal, every square's way to the goal, and
+    the look, drawn in that order."""
     doors = _maze_walls(SIDE, rng)
     goal = _square(rng)
     to_goal = _flood(doors, goal)
     look = rng.randrange(len(LOOKS))
-    if kind == 'walk':
-        starts = [c for c, d in to_goal.items() if d == k]
-        if not starts:
-            return None
-        return Puzzle(kind, PORTS, (rng.choice(starts), True), k,
-                      allowed(k), {'side': SIDE, 'doors': doors,
-                                   'goal': goal, 'to_goal': to_goal},
-                      look, _('Walk to the goal'))
-    par = k + 1
-    there = rng.randint(1, par - 1)          # key to door
-    keys = [c for c, d in to_goal.items() if d == there]
-    if not keys:
-        return None
-    key = rng.choice(keys)
-    to_key = _flood(doors, key, shut=goal)
-    starts = [c for c, d in to_key.items() if d == par - there]
+    return doors, goal, to_goal, look
+
+
+def _try(kind: str, k: int, rng: random.Random) -> Optional[Puzzle]:
+    if kind != 'walk':
+        raise ValueError(kind)
+    doors, goal, to_goal, look = board(rng)
+    starts = [c for c, d in to_goal.items() if d == k]
     if not starts:
         return None
-    return Puzzle(kind, PORTS, (rng.choice(starts), False), par,
-                  allowed(par), {'side': SIDE, 'doors': doors,
-                                 'goal': goal, 'key': key,
-                                 'to_goal': to_goal, 'to_key': to_key},
-                  look, _('Fetch the key, then walk to the door'))
+    return Puzzle(kind, PORTS, (rng.choice(starts), True), k,
+                  allowed(k), {'side': SIDE, 'doors': doors,
+                               'goal': goal, 'to_goal': to_goal},
+                  look, _('Walk to the goal'))
 
 
-def deal(kind: str, rung: int, rng: Optional[random.Random] = None
-         ) -> Puzzle:
+def deal(kind: str, rung: int, rng: Optional[random.Random] = None,
+         maker=None) -> Puzzle:
+    """A walk of *kind* at *rung*; *maker* deals one try of another
+    walk on the same board."""
     rng = rng or random.Random()
     k = max(1, int(rung))
     for _try_no in range(2000):
-        puzzle = _try(kind, k, rng)
+        puzzle = maker(k, rng) if maker else _try(kind, k, rng)
         if puzzle is not None:
             return puzzle
     raise ValueError('no %s walk of %d could be dealt' % (kind, k))
@@ -138,33 +130,26 @@ def move(puzzle: Puzzle, state: tuple, port: int) -> tuple:
     (x, y), held = state
     dx, dy = STEPS[port]
     to = (x + dx, y + dy)
-    data = puzzle.data
-    if frozenset(((x, y), to)) not in data['doors']:
+    if frozenset(((x, y), to)) not in puzzle.data['doors']:
         return state
-    if puzzle.kind == 'key':
-        if to == data['goal'] and not held:
-            return state
-        if to == data['key']:
-            held = True
     return (to, held)
 
 
 def far(puzzle: Puzzle, state: tuple) -> int:
     """Fewest presses from *state* to done."""
-    here, held = state
-    data = puzzle.data
-    if puzzle.kind == 'walk' or held:
-        return data['to_goal'][here]
-    return data['to_key'][here] + data['to_goal'][data['key']]
+    return puzzle.data['to_goal'][state[0]]
 
 
 def done(puzzle: Puzzle, state: tuple) -> bool:
-    return state[0] == puzzle.data['goal'] and (
-        puzzle.kind == 'walk' or state[1])
+    return state[0] == puzzle.data['goal']
 
 
 class Walk:
     """One trial: presses until the goal, or until the steps run out."""
+
+    move = staticmethod(move)
+    far = staticmethod(far)
+    done = staticmethod(done)
 
     def __init__(self, puzzle: Puzzle) -> None:
         self.puzzle = puzzle
@@ -176,21 +161,22 @@ class Walk:
         """Whether the press got nearer; None when it was not a press."""
         if self.result is not None or not 0 <= port < PORTS:
             return None
-        before = far(self.puzzle, self.state)
-        self.state = move(self.puzzle, self.state, port)
+        before = self.far(self.puzzle, self.state)
+        self.state = self.move(self.puzzle, self.state, port)
         self.presses += 1
-        if done(self.puzzle, self.state):
+        if self.done(self.puzzle, self.state):
             self.result = (True, _('There in %d of %d')
                            % (self.presses, self.puzzle.limit))
         elif self.presses >= self.puzzle.limit:
             self.result = (False, _('Out of steps'))
-        return far(self.puzzle, self.state) < before
+        return self.far(self.puzzle, self.state) < before
 
     def good(self) -> List[int]:
         """The ports that bring the goal a press nearer."""
-        here = far(self.puzzle, self.state)
+        here = self.far(self.puzzle, self.state)
         return [p for p in range(PORTS)
-                if far(self.puzzle, move(self.puzzle, self.state, p)) < here]
+                if self.far(self.puzzle,
+                            self.move(self.puzzle, self.state, p)) < here]
 
     def left(self) -> int:
         return self.puzzle.limit - self.presses

@@ -18,10 +18,10 @@ from memorysupport import best_from_view
 
 from neural_workshop import framed, ownpress
 
-IDS = {('cycle', 0): 'next_in_turn', ('cycle', 1): 'round_again',
+IDS = {('cycle', 0): 'next_in_turn',
        ('stay', 0): 'stay_or_shift', ('stay', 1): 'moving_prize'}
 #: The cycle kept here: the port after each port, by look.
-AFTER = {0: {0: 1, 1: 2, 2: 3, 3: 0}, 1: {0: 2, 2: 3, 3: 1, 1: 0}}
+AFTER = {0: {0: 1, 1: 2, 2: 3, 3: 0}}
 
 
 def play(kind, rung, player, trials=4000, look=0, seed=3):
@@ -61,7 +61,7 @@ def win_stay(log, rng):
 class TheDeals(unittest.TestCase):
 
     def test_the_answer_follows_the_press_k_trials_back(self):
-        for look in framed.LOOKS:
+        for look in AFTER:
             for rung in (1, 2, 3, 6):
                 log = play('cycle', rung, lambda log, rng: rng.choice(
                     (0, 1, 2, 3, None)), trials=300, look=look)

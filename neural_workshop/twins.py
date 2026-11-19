@@ -2,9 +2,10 @@
 """Twin tasks: four rules, each dealt in two looks.
 
 A learner that has found a rule in one task should find it sooner in a
-task that asks the same thing and looks nothing alike. So each of four
-rules -- same or different, the odd one out, what comes next, inside or
-outside -- is dealt twice over, as look ``a`` and look ``b``. The two
+task that asks the same thing and looks nothing alike. So the rules
+here -- same or different, what comes next, inside or outside -- are
+each dealt twice over, as look ``a`` and look ``b``, and the odd one
+out is dealt in look ``a``. The two
 differ in what is drawn, in its colours, in how it is laid out and in
 which port means what; the rule and the ladder are the same, and each
 rung adds one thing: one more item to compare, one more item to search,
@@ -77,19 +78,13 @@ def _same(look: str, n: int, rng: random.Random) -> Puzzle:
 
 
 def _odd(look: str, n: int, rng: random.Random) -> Puzzle:
+    if look != 'a':
+        raise ValueError('the odd one out is dealt here in look a only')
     odd = rng.randrange(n)
-    if look == 'a':
-        base, other = rng.sample(SHAPES, 2)
-        data = {'items': [other if k == odd else base for k in range(n)],
-                'hue': rng.randrange(4)}
-        answer = odd                          # counted from the left
-    else:
-        base = rng.randrange(4)
-        other = rng.choice([k for k in range(4) if k != base])
-        data = {'items': [other if k == odd else base for k in range(n)],
-                'hue': rng.randrange(len(HUES_B)),
-                'turn': rng.random()}
-        answer = n - 1 - odd                  # counted back round the ring
+    base, other = rng.sample(SHAPES, 2)
+    data = {'items': [other if k == odd else base for k in range(n)],
+            'hue': rng.randrange(4)}
+    answer = odd                              # counted from the left
     return Puzzle('odd', look, tuple(str(k + 1) for k in range(n)), answer,
                   data, _('Which one is the odd one out?'))
 

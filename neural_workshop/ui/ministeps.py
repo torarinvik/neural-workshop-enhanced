@@ -332,18 +332,8 @@ class ShortPush(StepsTask):
     KIND = 'push'
 
 
-class MarkerWalk(StepsTask):
-    """Each port moves the marker one way."""
-
-    instance: Optional['MarkerWalk'] = None
-    TITLE = 'Marker Walk'
-    TASK_ID = 'marker_walk'
-    PREFIX = 'MARKERWALK'
-    KIND = 'walk'
-
-
 class MarkerWalkShuffled(StepsTask):
-    """Marker Walk, with which port moves which way dealt per run."""
+    """Each port moves the marker one way, which way dealt per run."""
 
     instance: Optional['MarkerWalkShuffled'] = None
     TITLE = 'Marker Walk, Shuffled'

@@ -4458,8 +4458,8 @@ SHORTMAZESTEPS = TaskSpec(
 
 
 def markerwalk_note(chosen: Dict[str, Any]) -> str:
-    """What the starting rung is like."""
-    return _('The marked square is %d moves away; a move that does not get nearer ends the trial.') % int(chosen['MARKERWALK_RUNG'])
+    """The title only: this task is kept back."""
+    return _('Marker Walk')
 
 
 MARKERWALK = TaskSpec(
@@ -4548,8 +4548,8 @@ ODDSHAPE = TaskSpec(
 
 
 def oddstripe_note(chosen: Dict[str, Any]) -> str:
-    """What the starting rung is like."""
-    return _('A ring of %d discs more than two, one striped another way.') % int(chosen['ODDSTRIPE_RUNG'])
+    """The title only: this task is kept back."""
+    return _('Odd Stripe')
 
 
 ODDSTRIPE = TaskSpec(
@@ -5250,8 +5250,8 @@ SOUNDBACK = TaskSpec(
 
 
 def inthewindow_note(chosen: Dict[str, Any]) -> str:
-    """What the starting rung is like."""
-    return _('Rung %d: press while the marker is inside the window, which starts at half the way round and narrows by a sixth a rung.') % int(chosen['INTHEWINDOW_RUNG'])
+    """The title only: this task is kept back."""
+    return _('In the Window')
 
 
 INTHEWINDOW = TaskSpec(

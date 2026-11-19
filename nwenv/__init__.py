@@ -122,10 +122,10 @@ from .nowthen import TradedPlacesEnv  # noqa: E402
 from .nowthen import TradedBeadsEnv  # noqa: E402
 from .carried import RunningCountEnv  # noqa: E402
 from .carried import BeadPileEnv  # noqa: E402
-from .carried import ArrowWalkEnv  # noqa: E402
+from .arrowwalk import ArrowWalkEnv  # noqa: E402
 from .carried import ChevronWalkEnv  # noqa: E402
 from .ownpress import NextInTurnEnv  # noqa: E402
-from .ownpress import RoundAgainEnv  # noqa: E402
+from .roundagain import RoundAgainEnv  # noqa: E402
 from .ownpress import StayOrShiftEnv  # noqa: E402
 from .ownpress import MovingPrizeEnv  # noqa: E402
 from .farcue import TheMarkedOneEnv  # noqa: E402
@@ -135,7 +135,7 @@ from .heardback import ChangedChimeEnv  # noqa: E402
 from .heardback import MarkedToneEnv  # noqa: E402
 from .heardback import OtherVoiceEnv  # noqa: E402
 from .longwalk import LongWayRoundEnv  # noqa: E402
-from .longwalk import KeyAndDoorEnv  # noqa: E402
+from .keydoor import KeyAndDoorEnv  # noqa: E402
 from .morewalks import PushAndPullEnv  # noqa: E402
 from .morewalks import OneWayDoorsEnv  # noqa: E402
 from .morewalks import IceFloorEnv  # noqa: E402
@@ -150,12 +150,12 @@ from .twins import InThePenEnv  # noqa: E402
 from .twins import InTheLoopEnv  # noqa: E402
 from .twins import NextTileEnv  # noqa: E402
 from .twins import NextShapeEnv  # noqa: E402
-from .twins import OddStripeEnv  # noqa: E402
+from .oddstripe import OddStripeEnv  # noqa: E402
 from .twins import OddShapeEnv  # noqa: E402
 from .twins import MatchTilesEnv  # noqa: E402
 from .twins import MatchShapesEnv  # noqa: E402
 from .ministeps import MarkerWalkShuffledEnv  # noqa: E402
-from .ministeps import MarkerWalkEnv  # noqa: E402
+from .markerwalk import MarkerWalkEnv  # noqa: E402
 from .ministeps import ShortMazeStepsEnv  # noqa: E402
 from .ministeps import ShortPushEnv  # noqa: E402
 from .ministeps import TurnedTilesEnv  # noqa: E402

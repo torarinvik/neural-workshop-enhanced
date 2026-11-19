@@ -18,7 +18,9 @@ from memorysupport import best_from_view, drive, per_port, rate
 
 from neural_workshop import carried, framed
 
-IDS = ('running_count', 'bead_pile', 'arrow_walk', 'chevron_walk')
+IDS = ('running_count', 'bead_pile', 'chevron_walk')
+#: The looks the open tasks deal each kind in.
+LOOKS = {'count': (0, 1), 'arrows': (1,)}
 #: Row and column steps for each arrow, rows counted from the top.
 TURNS = {0: (-1, 0), 1: (1, 0), 2: (0, -1), 3: (0, 1),
          4: (-1, -1), 5: (-1, 1), 6: (1, -1), 7: (1, 1)}
@@ -48,7 +50,7 @@ class TheDeals(unittest.TestCase):
 
     def test_the_answer_is_what_a_counter_and_board_kept_here_say(self):
         for kind in carried.KINDS:
-            for look in framed.LOOKS:
+            for look in LOOKS[kind]:
                 for rung in (1, 2, 5, 12):
                     for seed in range(40):
                         p = carried.deal(kind, rung, random.Random(seed),
@@ -58,7 +60,8 @@ class TheDeals(unittest.TestCase):
     def test_rung_k_has_k_events_and_asks_on_the_last(self):
         for kind in carried.KINDS:
             for rung in range(1, 10):
-                p = carried.deal(kind, rung, random.Random(rung))
+                p = carried.deal(kind, rung, random.Random(rung),
+                                 look=LOOKS[kind][-1])
                 events = p.data['steps' if kind == 'count' else 'arrows']
                 self.assertEqual(len(events), rung)
                 self.assertEqual(len(p.frames), rung + 1)
@@ -78,7 +81,7 @@ class TheDeals(unittest.TestCase):
     def test_each_kind_of_move_is_drawn_as_often(self):
         rng, seen = random.Random(9), Counter()
         for _d in range(4000):
-            p = carried.deal('arrows', 1, rng)
+            p = carried.deal('arrows', 1, rng, look=1)
             dr, dc = TURNS[p.data['arrows'][0]]
             seen[bool(dr), bool(dc)] += 1
         for key in ((True, False), (False, True), (True, True)):
@@ -102,7 +105,7 @@ class TheFloors(unittest.TestCase):
                                       p.data['cards'])), 0.28)
                 per_port(self, count,
                          lambda p, port: p.data['steps'][-1], 4)
-                arrows = dealer('arrows', rung, look)
+                arrows = dealer('arrows', rung, 1)
                 self.assertLess(best_from_view(
                     arrows, lambda p: p.data['arrows'][-1]), 0.28)
                 per_port(self, arrows,
@@ -135,11 +138,11 @@ class TheFloors(unittest.TestCase):
                 return port_for(p, rng.choice(
                     [c for c in range(4) if c != p.data['start']]))
             return port_for(p, p.data['start'])
-        self.assertAlmostEqual(rate(dealer('arrows'), marker), 1 / 3,
+        self.assertAlmostEqual(rate(dealer('arrows', 1, 1), marker), 1 / 3,
                                delta=0.03)
-        self.assertAlmostEqual(rate(dealer('arrows', 2), marker), 1 / 3,
+        self.assertAlmostEqual(rate(dealer('arrows', 2, 1), marker), 1 / 3,
                                delta=0.03)
-        self.assertAlmostEqual(rate(dealer('arrows', 4), marker),
+        self.assertAlmostEqual(rate(dealer('arrows', 4, 1), marker),
                                0.25 + 0.75 / 81, delta=0.03)
 
 

@@ -72,14 +72,6 @@ class ShortMazeStepsEnv(_Rung):
     requires = {'coach': True}
 
 
-class MarkerWalkEnv(_Rung):
-    """Marker Walk: Four ports: up, down, left, right. Green means
-    the marked square was reached with no wasted move."""
-
-    task_class = ('neural_workshop.ui.ministeps', 'MarkerWalk')
-    ports = 4
-
-
 class MarkerWalkShuffledEnv(_Rung):
     """Marker Walk, Shuffled: Four ports, each moving the marker one
     way; which way is dealt when the run starts and holds for the
@@ -95,7 +87,6 @@ verify_short_tower_outcome = ShortTowerEnv.verifier()
 verify_turned_tiles_outcome = TurnedTilesEnv.verifier()
 verify_short_push_outcome = ShortPushEnv.verifier()
 verify_short_maze_steps_outcome = ShortMazeStepsEnv.verifier()
-verify_marker_walk_outcome = MarkerWalkEnv.verifier()
 verify_marker_walk_shuffled_outcome = MarkerWalkShuffledEnv.verifier()
 
-__all__ = ['ShortMazeEnv', 'ShortTowerEnv', 'TurnedTilesEnv', 'ShortPushEnv', 'ShortMazeStepsEnv', 'MarkerWalkEnv', 'MarkerWalkShuffledEnv']
+__all__ = ['ShortMazeEnv', 'ShortTowerEnv', 'TurnedTilesEnv', 'ShortPushEnv', 'ShortMazeStepsEnv', 'MarkerWalkShuffledEnv']

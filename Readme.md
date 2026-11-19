@@ -1924,7 +1924,7 @@ In what follows *n* is the rung. In the short walks a press that does not bring 
 
 The frame-by-frame memory families below (now and earlier, carried through, own presses, a cue far back, heard back) show a frame every half second and may be stepped one step a shown frame: their environments accept `frame_hz=2`, where every other clocked task keeps its floor of ten, and a trial driven that way is judged as it is at ten.
 
-Several pairs are **twins**: the same rule in another look, with other colours, shapes, layout and port order. `nwenv.catalog.TWINS` records the pairs and `twin_of()` looks one up. The catalogue also marks a few tasks as held out (`nwenv.catalog.HELD_OUT`); they are not described here.
+Several pairs are **twins**: the same rule in another look, with other colours, shapes, layout and port order. `nwenv.catalog.TWINS` records the pairs and `twin_of()` looks one up. The catalogue also marks a few tasks as held out (`nwenv.catalog.HELD_OUT`); they are not described here. Their models, screens and wrappers live only in the modules `nwenv.catalog.HELD_OUT_MODULES` names, and their tests only in `tests/test_heldout.py`, so every other module can be read without reading a held-out task.
 
 #### Short Maze
 

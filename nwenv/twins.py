@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""The stepped agent boundary for the twin tasks: four rules, each in two looks.
+"""The stepped agent boundary for the twin tasks: rules dealt in two looks.
 
 Turn-based, so these take the think clock: nothing moves until a port
 is pressed.
@@ -46,14 +46,6 @@ class OddShapeEnv(_Rung):
     ports = 12
 
 
-class OddStripeEnv(_Rung):
-    """Odd Stripe: Twelve ports, one an item, counted back round the
-    ring; a rung with fewer items leaves the rest doing nothing."""
-
-    task_class = ('neural_workshop.ui.twins', 'OddStripe')
-    ports = 12
-
-
 class NextShapeEnv(_Rung):
     """Next Shape: Three ports, one a card, from the left."""
 
@@ -85,10 +77,9 @@ class InThePenEnv(_Rung):
 verify_match_shapes_outcome = MatchShapesEnv.verifier()
 verify_match_tiles_outcome = MatchTilesEnv.verifier()
 verify_odd_shape_outcome = OddShapeEnv.verifier()
-verify_odd_stripe_outcome = OddStripeEnv.verifier()
 verify_next_shape_outcome = NextShapeEnv.verifier()
 verify_next_tile_outcome = NextTileEnv.verifier()
 verify_in_the_loop_outcome = InTheLoopEnv.verifier()
 verify_in_the_pen_outcome = InThePenEnv.verifier()
 
-__all__ = ['MatchShapesEnv', 'MatchTilesEnv', 'OddShapeEnv', 'OddStripeEnv', 'NextShapeEnv', 'NextTileEnv', 'InTheLoopEnv', 'InThePenEnv']
+__all__ = ['MatchShapesEnv', 'MatchTilesEnv', 'OddShapeEnv', 'NextShapeEnv', 'NextTileEnv', 'InTheLoopEnv', 'InThePenEnv']

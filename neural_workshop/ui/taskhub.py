@@ -1419,7 +1419,7 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
         ShortMazeSteps()
         return
     if task_id == 'marker_walk':
-        from .ministeps import MarkerWalk
+        from .markerwalk import MarkerWalk
         MarkerWalk()
         return
     if task_id == 'marker_walk_shuffled':
@@ -1439,7 +1439,7 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
         OddShape()
         return
     if task_id == 'odd_stripe':
-        from .twins import OddStripe
+        from .oddstripe import OddStripe
         OddStripe()
         return
     if task_id == 'next_shape':
@@ -1527,7 +1527,7 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
         BeadPile()
         return
     if task_id == 'arrow_walk':
-        from .carried import ArrowWalk
+        from .arrowwalk import ArrowWalk
         ArrowWalk()
         return
     if task_id == 'chevron_walk':
@@ -1539,7 +1539,7 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
         NextInTurn()
         return
     if task_id == 'round_again':
-        from .ownpress import RoundAgain
+        from .roundagain import RoundAgain
         RoundAgain()
         return
     if task_id == 'stay_or_shift':
@@ -1579,7 +1579,7 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
         LongWayRound()
         return
     if task_id == 'key_and_door':
-        from .longwalk import KeyAndDoor
+        from .keydoor import KeyAndDoor
         KeyAndDoor()
         return
     if task_id == 'push_and_pull':

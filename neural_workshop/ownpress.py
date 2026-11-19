@@ -8,8 +8,8 @@ first, presses during it are ignored, and then the question is put.
 The verdict says only right or wrong: it never shows which port was
 pressed, nor which was right.
 
-``cycle``  the ports go round in a fixed cycle (look 0: 1, 2, 3, 4 and
-           back to 1; look 1: 1, 3, 4, 2 and back to 1). At rung k the
+``cycle``  the ports go round in a fixed cycle (1, 2, 3, 4 and back
+           to 1). At rung k the
            right port is the one after the port pressed k trials ago.
            Where that trial had no press, or there is no such trial
            yet, the right port is drawn at random.
@@ -50,7 +50,7 @@ from .i18n import _
 KINDS = ('cycle', 'stay')
 PORTS = 4
 #: The port after each port, by look.
-CYCLES = {0: (1, 2, 3, 0), 1: (2, 0, 3, 1)}
+CYCLES = {0: (1, 2, 3, 0)}
 #: How many of its own turns a hidden port stays right.
 BLOCK = (3, 6)
 LAYOUTS = {0: ('row', 'square', 'column'), 1: ('diamond', 'arc', 'zigzag')}
@@ -93,10 +93,12 @@ def next_hidden(ledger: Ledger, k: int, rng: random.Random) -> Hidden:
 
 
 def deal(kind: str, rung: int, rng: Optional[random.Random] = None,
-         look: int = 0, ledger: Optional[Ledger] = None) -> framed.Puzzle:
+         look: int = 0, ledger: Optional[Ledger] = None,
+         cycle: Optional[tuple] = None) -> framed.Puzzle:
     """The next trial of a run whose history is *ledger*. A ``stay``
     deal adds the trial's hidden port to the ledger; the caller records
-    the press once the trial is judged."""
+    the press once the trial is judged. *cycle* is the port after each
+    port, when it is not the look's own."""
     rng = rng or random.Random()
     ledger = ledger if ledger is not None else Ledger()
     k = max(1, int(rung))
@@ -106,7 +108,8 @@ def deal(kind: str, rung: int, rng: Optional[random.Random] = None,
             'place': (rng.random(), rng.random())}
     if kind == 'cycle':
         before = ledger.presses[-k] if len(ledger.presses) >= k else None
-        answer = (CYCLES[look][before] if before is not None
+        turn = cycle if cycle is not None else CYCLES.get(look)
+        answer = (turn[before] if before is not None
                   else rng.randrange(PORTS))
     elif kind == 'stay':
         hidden = next_hidden(ledger, k, rng)

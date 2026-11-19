@@ -32,9 +32,9 @@ the marker it earns a third at rungs 1 and 2 (the marker has left the
 start at rung 1, and is back on it a third of the time at rung 2) and
 little over a quarter from rung 3 on. The tests count both.
 
-Each kind comes in two looks (see :mod:`framed`): numbers and arrows
-in look 0; piles of beads, and chevrons, in look 1, with the ports the
-other way round.
+The count comes in two looks (see :mod:`framed`): numbers in look 0,
+and piles of beads in look 1, with the ports the other way round. The
+marker is drawn with chevrons, in look 1.
 
 SPDX-License-Identifier: GPL-2.0-or-later
 """

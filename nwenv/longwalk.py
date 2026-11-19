@@ -32,16 +32,6 @@ class LongWayRoundEnv(_Rung):
     ports = 4
 
 
-class KeyAndDoorEnv(_Rung):
-    """Key and Door: Four ports: up, down, left, right. Green means the
-    key was fetched and the door reached within the steps allowed; red
-    means the steps ran out."""
-
-    task_class = (UI, 'KeyAndDoor')
-    ports = 4
-
-
 verify_long_way_round_outcome = LongWayRoundEnv.verifier()
-verify_key_and_door_outcome = KeyAndDoorEnv.verifier()
 
-__all__ = ['LongWayRoundEnv', 'KeyAndDoorEnv']
+__all__ = ['LongWayRoundEnv']

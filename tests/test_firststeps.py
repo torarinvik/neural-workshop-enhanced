@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """The first-steps families: short walks, twins, looking back, what the
-ports do, timing and rule discovery."""
+ports do and rule discovery. The held-out tasks are tested in
+test_heldout."""
 from __future__ import annotations
 
 import os
 import random
 import unittest
 
-from neural_workshop import inwindow, lookback, ministeps, ruleguess, twins
+from neural_workshop import lookback, ministeps, ruleguess, twins
 from nwenv import catalog
 
 try:
@@ -19,6 +20,7 @@ except Exception:                                      # pragma: no cover
     drive = None
 
 NEW = [task for family in catalog.FAMILIES.values() for task in family]
+OPEN = [task for task in NEW if task not in catalog.HELD_OUT]
 
 
 class ShortWalks(unittest.TestCase):
@@ -69,6 +71,8 @@ class ShortWalks(unittest.TestCase):
 class Twins(unittest.TestCase):
     def test_each_rule_has_two_looks_and_one_ladder(self):
         for rule in twins.RULES:
+            if rule == 'odd':
+                continue                      # its look b is held out
             for rung in (1, 2, 5, 9):
                 for seed in range(40):
                     a = twins.deal(rule, 'a', rung, random.Random(seed))
@@ -138,36 +142,6 @@ class LookingBack(unittest.TestCase):
                          [0, 1, 2, 3, 4])
 
 
-class Timing(unittest.TestCase):
-    def test_the_window_starts_at_half_and_narrows(self):
-        self.assertAlmostEqual(inwindow.window(1), 0.5)
-        shares = [inwindow.window(r) for r in range(1, 12)]
-        self.assertEqual(shares, sorted(shares, reverse=True))
-        self.assertEqual(len(set(shares)), len(shares))
-
-    def play(self, rung, policy, seed=0):
-        run = inwindow.Run(inwindow.deal(rung, random.Random(seed)))
-        while run.result is None:
-            port = policy(run)
-            if port in inwindow.EVENTS:
-                inwindow.act(run, port)
-            run.step(1 / 60.0, port)
-        return run.result[0]
-
-    def test_pressing_inside_passes_and_never_pressing_fails(self):
-        for rung in (1, 5, 12):
-            for seed in range(10):
-                self.assertTrue(self.play(rung, inwindow.pilot, seed))
-                self.assertFalse(self.play(rung,
-                                           lambda run: inwindow.WAIT, seed))
-
-    def test_a_blind_press_is_right_about_as_often_as_the_window_is_wide(self):
-        for rung, lo, hi in ((1, 0.4, 0.6), (8, 0.07, 0.22)):
-            wins = sum(self.play(rung, lambda run: inwindow.PRESS, s)
-                       for s in range(400))
-            self.assertTrue(lo < wins / 400.0 < hi, (rung, wins))
-
-
 class RuleDiscovery(unittest.TestCase):
     def test_two_candidates_then_one_more_a_rung(self):
         self.assertEqual([len(ruleguess.candidates(r)) for r in range(1, 9)],
@@ -198,8 +172,6 @@ def _right(task):
             return task.walk.good()[0]
         return ministeps.good(task.puzzle, task.walk.state)[0]
     run = getattr(task, 'run', None)
-    if run is not None and hasattr(run, 'dealt'):
-        return inwindow.pilot(run)
     if run is not None and not run.open:
         return None
     return task.puzzle.answer
@@ -211,9 +183,6 @@ def _wrong(task):
               else ministeps.good(task.puzzle, task.walk.state))
         return next(p for p in range(task.puzzle.ports) if p not in ok)
     run = getattr(task, 'run', None)
-    if run is not None and hasattr(run, 'dealt'):
-        return (inwindow.WAIT if inwindow.inside(run.dealt, run.at)
-                else inwindow.PRESS)
     if run is not None and not run.open:
         return None
     return (task.puzzle.answer + 1) % len(task.puzzle.choices)
@@ -222,7 +191,7 @@ def _wrong(task):
 @needs_ui
 class TheBoundary(unittest.TestCase):
     def test_right_is_green_and_wrong_is_red(self):
-        for task_id in NEW:
+        for task_id in OPEN:
             for rung in (1, 8):
                 self.assertEqual(drive(task_id, rung, _right, seed=3,
                                        steps=3000), [1.0], (task_id, rung))

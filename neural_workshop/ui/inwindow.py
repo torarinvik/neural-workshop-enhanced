@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-"""In the Window on screen: a marker going round a ring or along a
-track, with the window marked on its path.
-
-Space presses. For the agent boundary: port 0 presses, port 1 waits.
+"""In the Window.
 
 SPDX-License-Identifier: GPL-2.0-or-later
 """
@@ -20,7 +17,7 @@ from .clocked import ClockedTask
 
 
 class InTheWindow(ClockedTask):
-    """Press while the marker is inside the window."""
+    """In the Window."""
 
     instance: Optional['InTheWindow'] = None
 

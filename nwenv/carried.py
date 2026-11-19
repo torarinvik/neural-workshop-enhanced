@@ -29,14 +29,6 @@ class BeadPileEnv(FrameRung):
     ports = 4
 
 
-class ArrowWalkEnv(FrameRung):
-    """Arrow Walk: Four ports, one a square, in reading order. Presses
-    before the question is put are ignored."""
-
-    task_class = (UI, 'ArrowWalk')
-    ports = 4
-
-
 class ChevronWalkEnv(FrameRung):
     """Chevron Walk: Four ports, one a square, from the bottom right
     back to the top left. Presses before the question is put are
@@ -46,11 +38,10 @@ class ChevronWalkEnv(FrameRung):
     ports = 4
 
 
-ENVS = (RunningCountEnv, BeadPileEnv, ArrowWalkEnv, ChevronWalkEnv)
+ENVS = (RunningCountEnv, BeadPileEnv, ChevronWalkEnv)
 
 verify_running_count_outcome = RunningCountEnv.verifier()
 verify_bead_pile_outcome = BeadPileEnv.verifier()
-verify_arrow_walk_outcome = ArrowWalkEnv.verifier()
 verify_chevron_walk_outcome = ChevronWalkEnv.verifier()
 
 __all__ = [cls.__name__ for cls in ENVS]

@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-"""The twin tasks on screen: four rules, each in two looks.
+"""The twin tasks on screen: rules dealt in two looks.
 
 Look a is drawn in shapes, in blues and purples, laid out across the
-page; look b in tiles, stripes and pips, in browns and ochres, laid out
-down it or round a ring, with its ports in the other order.
+page; look b in tiles, fences and pips, in browns and ochres, laid out
+down it or across squared paper, with its ports in the other order.
 
 For the agent boundary: one port a choice. Same or different and inside
 or outside have two; the odd one out has one an item; what comes next
@@ -13,7 +13,6 @@ SPDX-License-Identifier: GPL-2.0-or-later
 """
 from __future__ import annotations
 
-import math
 from typing import Optional
 
 import pyglet
@@ -121,32 +120,6 @@ class TwinTask(ChoiceTask):
                        cell * 0.9, number=cell > 60)
             shape(self, name, x0 + (k + 0.5) * cell, y + cell * 0.45,
                   cell * 0.26, hue, group=self.text_group)
-
-    def _odd_b(self, left, bottom, width, height) -> None:
-        data, hue = self.puzzle.data, self._hue()
-        items = data['items']
-        n = len(items)
-        ring = min(width, height) * 0.36
-        r = min(ring * math.sin(math.pi / n) * 0.8, ring * 0.42)
-        cx, cy = left + width / 2, bottom + height / 2
-        for k, tilt in enumerate(items):
-            a = math.tau * (data['turn'] + k / n)
-            x, y = cx + ring * math.sin(a), cy + ring * math.cos(a)
-            self._card(n - 1 - k, x - r, y - r, 2 * r, 2 * r,
-                       number=False)
-            self.drawn.append(pyglet.shapes.Circle(
-                x, y, r * 0.8, color=hue, batch=self.batch,
-                group=self.text_group))
-            t = math.radians(45 * tilt)
-            ux, uy = math.cos(t), math.sin(t)
-            for off in (-0.36, 0.0, 0.36):
-                half = r * 0.8 * math.sqrt(1 - off * off)
-                ox, oy = -uy * off * r * 0.8, ux * off * r * 0.8
-                self.drawn.append(pyglet.shapes.Line(
-                    x + ox - ux * half, y + oy - uy * half,
-                    x + ox + ux * half, y + oy + uy * half,
-                    thickness=max(2.0, r * 0.12), color=self.paper,
-                    batch=self.batch, group=self.top_group))
 
     # --- what comes next -------------------------------------------------
 
@@ -269,14 +242,6 @@ class OddShape(TwinTask):
     instance: Optional['OddShape'] = None
     TITLE, TASK_ID, PREFIX = 'Odd Shape', 'odd_shape', 'ODDSHAPE'
     RULE, LOOK, BUTTONS = 'odd', 'a', 0
-    FOOTNOTE = _('click the odd one out   Esc: menu')
-
-
-class OddStripe(TwinTask):
-    """A ring of striped discs, one striped another way."""
-    instance: Optional['OddStripe'] = None
-    TITLE, TASK_ID, PREFIX = 'Odd Stripe', 'odd_stripe', 'ODDSTRIPE'
-    RULE, LOOK, BUTTONS = 'odd', 'b', 0
     FOOTNOTE = _('click the odd one out   Esc: menu')
 
 

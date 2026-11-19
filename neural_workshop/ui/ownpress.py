@@ -7,8 +7,8 @@ for every answer, a chosen panel is not marked, and the verdict says
 only right or wrong.
 
 For the agent boundary: Next in Turn and Stay or Shift have four
-ports, one a panel, in reading order; their twins Round Again and
-Moving Prize four, one a panel, the other way round. Presses before
+ports, one a panel, in reading order; Moving Prize four, one a panel,
+the other way round. Presses before
 the question is put are ignored.
 
 SPDX-License-Identifier: GPL-2.0-or-later
@@ -119,8 +119,6 @@ def _task(cls_name, title, task_id, prefix, kind, look):
 
 NextInTurn = _task('NextInTurn', 'Next in Turn', 'next_in_turn',
                    'NEXTINTURN', 'cycle', 0)
-RoundAgain = _task('RoundAgain', 'Round Again', 'round_again',
-                   'ROUNDAGAIN', 'cycle', 1)
 StayOrShift = _task('StayOrShift', 'Stay or Shift', 'stay_or_shift',
                     'STAYORSHIFT', 'stay', 0)
 MovingPrize = _task('MovingPrize', 'Moving Prize', 'moving_prize',

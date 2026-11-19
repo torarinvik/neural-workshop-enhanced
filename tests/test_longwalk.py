@@ -17,27 +17,20 @@ from neural_workshop import longwalk, ministeps
 
 
 def shortest(p):
-    """Presses on the shortest way from the start to done, searched over
-    (square, holding the key)."""
+    """Presses on the shortest way from the start to the goal."""
     doors, goal = p.data['doors'], p.data['goal']
-    key = p.data.get('key')
-    start = p.start
+    start = p.start[0]
     seen = {start: 0}
     queue = deque([start])
     while queue:
-        (x, y), held = state = queue.popleft()
-        if (x, y) == goal and held:
-            return seen[state]
+        x, y = here = queue.popleft()
+        if here == goal:
+            return seen[here]
         for dx, dy in ministeps.STEPS:
             to = (x + dx, y + dy)
-            if frozenset(((x, y), to)) not in doors:
-                continue
-            if to == goal and not held:
-                continue
-            nxt = (to, held or to == key)
-            if nxt not in seen:
-                seen[nxt] = seen[state] + 1
-                queue.append(nxt)
+            if frozenset((here, to)) in doors and to not in seen:
+                seen[to] = seen[here] + 1
+                queue.append(to)
     return None
 
 
@@ -50,15 +43,6 @@ class TheDeals(unittest.TestCase):
                 self.assertEqual(p.par, rung)
                 self.assertEqual(shortest(p), rung)
                 self.assertEqual(longwalk.far(p, p.start), rung)
-
-    def test_the_key_walk_is_one_press_longer_and_goes_by_the_key(self):
-        for rung in range(1, 16):
-            for seed in range(5):
-                p = longwalk.deal('key', rung, random.Random(seed))
-                self.assertEqual(p.par, rung + 1)
-                self.assertEqual(shortest(p), rung + 1)
-                self.assertNotEqual(p.start[0], p.data['key'])
-                self.assertNotEqual(p.data['key'], p.data['goal'])
 
     def test_the_board_and_ports_are_the_same_on_every_rung(self):
         for kind in longwalk.KINDS:
@@ -116,23 +100,8 @@ class TheSteps(unittest.TestCase):
         self.assertEqual(presses, p.limit)
         self.assertFalse(walk.result[0])
 
-    def test_the_door_is_a_wall_until_the_key_is_held(self):
-        for seed in range(60):
-            p = longwalk.deal('key', 2, random.Random(seed))
-            goal = p.data['goal']
-            for square in p.data['to_goal']:
-                for port, (dx, dy) in enumerate(ministeps.STEPS):
-                    if (square[0] + dx, square[1] + dy) == goal and \
-                            frozenset((square, goal)) in p.data['doors']:
-                        self.assertEqual(
-                            longwalk.move(p, (square, False), port),
-                            (square, False))
-                        self.assertEqual(
-                            longwalk.move(p, (square, True), port),
-                            (goal, True))
-
     def test_random_presses_at_rung_one(self):
-        for kind, share in (('walk', 0.45), ('key', 0.17)):
+        for kind, share in (('walk', 0.45),):
             rng, wins = random.Random(1), 0
             for _d in range(3000):
                 walk = longwalk.Walk(longwalk.deal(kind, 1, rng))
@@ -166,7 +135,7 @@ class TheBoundary(unittest.TestCase):
         return scalars
 
     def test_right_wrong_wasted_and_none(self):
-        for name in ('long_way_round', 'key_and_door'):
+        for name in ('long_way_round',):
             self.assertEqual(self.drive(name, lambda t: t.walk.good()[0]),
                              [1.0], name)
             self.assertEqual(self.drive(name, lambda t: next(
