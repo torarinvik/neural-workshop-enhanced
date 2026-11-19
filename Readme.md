@@ -1988,6 +1988,14 @@ One of four squares lights, then nothing shows for *n* frames: which was it?
 
 A tone a frame, low, middle or high, reaching the agent only as sound; then press for the tone *n* frames ago.
 
+#### Changed Tile
+
+Four tiles show, each a hue, and show again *n* frames later with one of them another hue: press the tile that changed.
+
+#### Swapped Boxes
+
+One of four boxes lights and goes out; then, *n* times, two boxes are joined and what they hold changes places: press the box the light is in now.
+
 #### Which Rule?
 
 Three cards, and one hidden rule for the whole run saying which to press ("the largest", "the red one"). The rule is one of two candidates at rung 1 and one more each rung; every press is judged at once, so wrong presses rule candidates out.

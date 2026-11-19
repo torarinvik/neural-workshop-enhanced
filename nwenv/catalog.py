@@ -712,6 +712,12 @@ CATALOG: Tuple[Wrapped, ...] = (
     Wrapped('which_rule', 'Which Rule?',
             'nwenv.ruleguess', 'WhichRuleEnv',
             'neural_workshop.ui.ruleguess', 'WhichRule'),
+    Wrapped('changed_tile', 'Changed Tile',
+            'nwenv.inmind', 'ChangedTileEnv',
+            'neural_workshop.ui.inmind', 'ChangedTile'),
+    Wrapped('swapped_boxes', 'Swapped Boxes',
+            'nwenv.inmind', 'SwappedBoxesEnv',
+            'neural_workshop.ui.inmind', 'SwappedBoxes'),
 )
 
 BY_ID: Dict[str, Wrapped] = {row.task_id: row for row in CATALOG}
@@ -726,6 +732,7 @@ FAMILIES: Dict[str, Tuple[str, ...]] = {
     'twins': ('match_shapes', 'match_tiles', 'odd_shape', 'odd_stripe',
               'next_shape', 'next_tile', 'in_the_loop', 'in_the_pen'),
     'looking back': ('shape_back', 'hidden_cue', 'sound_back'),
+    'held in mind': ('changed_tile', 'swapped_boxes'),
     'what the ports do': ('marker_walk', 'marker_walk_shuffled'),
     'timing': ('in_the_window',),
     'rule discovery': ('which_rule',),

@@ -4673,6 +4673,42 @@ HIDDENCUE = TaskSpec(
     note=hiddencue_note)
 
 
+def changedtile_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Four tiles show twice, %d frames apart: press the one that changed its hue.') % int(chosen['CHANGEDTILE_RUNG'])
+
+
+CHANGEDTILE = TaskSpec(
+    title=_('Changed Tile options'),
+    options=(
+        Option('CHANGEDTILE_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('CHANGEDTILE_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('CHANGEDTILE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=changedtile_note)
+
+
+def swappedboxes_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('A box lights, then two boxes change places %d times: press the box the light is in now.') % int(chosen['SWAPPEDBOXES_RUNG'])
+
+
+SWAPPEDBOXES = TaskSpec(
+    title=_('Swapped Boxes options'),
+    options=(
+        Option('SWAPPEDBOXES_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('SWAPPEDBOXES_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('SWAPPEDBOXES_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=swappedboxes_note)
+
+
 def soundback_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung is like."""
     return _('Press for the tone that sounded %d frames ago: low, middle or high.') % int(chosen['SOUNDBACK_RUNG'])
@@ -6528,6 +6564,8 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'gamble': GAMBLE,
     'which_rule': WHICHRULE,
     'in_the_window': INTHEWINDOW,
+    'swapped_boxes': SWAPPEDBOXES,
+    'changed_tile': CHANGEDTILE,
     'sound_back': SOUNDBACK,
     'hidden_cue': HIDDENCUE,
     'shape_back': SHAPEBACK,

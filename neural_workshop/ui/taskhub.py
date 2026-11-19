@@ -308,6 +308,8 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('sound_back', _('Sound Back')),
         ('in_the_window', _('In the Window')),
         ('which_rule', _('Which Rule?')),
+        ('changed_tile', _('Changed Tile')),
+        ('swapped_boxes', _('Swapped Boxes')),
     ],
 }
 
@@ -1446,6 +1448,14 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'which_rule':
         from .ruleguess import WhichRule
         WhichRule()
+        return
+    if task_id == 'changed_tile':
+        from .inmind import ChangedTile
+        ChangedTile()
+        return
+    if task_id == 'swapped_boxes':
+        from .inmind import SwappedBoxes
+        SwappedBoxes()
         return
     if task_id == 'gamble':
         from .gamble import Gamble
