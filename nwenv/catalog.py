@@ -935,10 +935,60 @@ def ui_class(task_id: str) -> Any:
     return getattr(importlib.import_module(row.ui_module), row.ui_class)
 
 
+#: The four oldest wrappers set their port count from the run's options
+#: when they are built, so their cards say None and why; and they say
+#: whether they are clocked here, as they predate the attribute.
+_OPEN_PORTS = {'nback': True, 'monkey_ladder': True, 'fog_of_war': False,
+               'out_of_sight': True}
+
+
+def family_of(task_id: str) -> Any:
+    """The family *task_id* is catalogued in, or None."""
+    for name, members in FAMILIES.items():
+        if task_id in members:
+            return name
+    return None
+
+
+def card(task_id: str) -> Dict[str, Any]:
+    """What can be known of *task_id* without opening its source.
+
+    Every card has ``ports``, ``clocked`` and ``family``, and a held-out
+    task's card has nothing else. An open task's card adds ``measured``
+    and, for the tasks whose floors have been counted (the first-steps
+    families), ``frame_only`` (the chance level for a player that sees
+    only the frame showing), ``frame_only_rung``, ``partial`` (the cheap
+    partial strategies and what each earns) and ``rungs`` (for rungs 1
+    to 5, how many shown frames back the answer lies and how many
+    presses the shortest way needs). :mod:`nwenv.cards` says what each
+    field means.
+    """
+    if task_id not in BY_ID:
+        raise KeyError(task_id)
+    if task_id in _OPEN_PORTS:
+        ports, clocked = None, _OPEN_PORTS[task_id]
+    else:
+        env = env_class(task_id)
+        ports, clocked = int(env.ports), bool(env.clocked)
+    out: Dict[str, Any] = {'ports': ports, 'clocked': clocked,
+                           'family': family_of(task_id)}
+    if task_id in HELD_OUT:
+        return out
+    from . import cards
+    if ports is None:
+        out['ports_note'] = 'set by the run\'s options'
+    if cards.measured(task_id):
+        out.update(cards.describe(task_id))
+    else:
+        out['measured'] = False
+    return out
+
+
 def overlays() -> List[Wrapped]:
     """The tasks that are overlays, so have a UI class to open."""
     return [row for row in CATALOG if row.ui_class]
 
 
 __all__ = ['BY_ID', 'CATALOG', 'HELD_OUT', 'HELD_OUT_MODULES', 'Wrapped',
-           'env_class', 'overlays', 'task_ids', 'ui_class']
+           'card', 'env_class', 'family_of', 'overlays', 'task_ids',
+           'ui_class']
