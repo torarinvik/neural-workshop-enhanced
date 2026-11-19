@@ -718,6 +718,30 @@ CATALOG: Tuple[Wrapped, ...] = (
     Wrapped('swapped_boxes', 'Swapped Boxes',
             'nwenv.inmind', 'SwappedBoxesEnv',
             'neural_workshop.ui.inmind', 'SwappedBoxes'),
+    Wrapped('which_moved', 'Which Moved?',
+            'nwenv.nowthen', 'WhichMovedEnv',
+            'neural_workshop.ui.nowthen', 'WhichMoved'),
+    Wrapped('moved_bead', 'Moved Bead',
+            'nwenv.nowthen', 'MovedBeadEnv',
+            'neural_workshop.ui.nowthen', 'MovedBead'),
+    Wrapped('which_is_new', 'Which Is New?',
+            'nwenv.nowthen', 'WhichIsNewEnv',
+            'neural_workshop.ui.nowthen', 'WhichIsNew'),
+    Wrapped('new_bead', 'New Bead',
+            'nwenv.nowthen', 'NewBeadEnv',
+            'neural_workshop.ui.nowthen', 'NewBead'),
+    Wrapped('which_is_gone', 'Which Is Gone?',
+            'nwenv.nowthen', 'WhichIsGoneEnv',
+            'neural_workshop.ui.nowthen', 'WhichIsGone'),
+    Wrapped('gone_bead', 'Gone Bead',
+            'nwenv.nowthen', 'GoneBeadEnv',
+            'neural_workshop.ui.nowthen', 'GoneBead'),
+    Wrapped('traded_places', 'Traded Places',
+            'nwenv.nowthen', 'TradedPlacesEnv',
+            'neural_workshop.ui.nowthen', 'TradedPlaces'),
+    Wrapped('traded_beads', 'Traded Beads',
+            'nwenv.nowthen', 'TradedBeadsEnv',
+            'neural_workshop.ui.nowthen', 'TradedBeads'),
 )
 
 BY_ID: Dict[str, Wrapped] = {row.task_id: row for row in CATALOG}
@@ -733,6 +757,7 @@ FAMILIES: Dict[str, Tuple[str, ...]] = {
               'next_shape', 'next_tile', 'in_the_loop', 'in_the_pen'),
     'looking back': ('shape_back', 'hidden_cue', 'sound_back'),
     'held in mind': ('changed_tile', 'swapped_boxes'),
+    'now and earlier': ('which_moved', 'moved_bead', 'which_is_new', 'new_bead', 'which_is_gone', 'gone_bead', 'traded_places', 'traded_beads'),
     'what the ports do': ('marker_walk', 'marker_walk_shuffled'),
     'timing': ('in_the_window',),
     'rule discovery': ('which_rule',),
@@ -747,6 +772,10 @@ TWINS: Tuple[Tuple[str, str], ...] = (
     ('odd_shape', 'odd_stripe'),             # the odd one out
     ('next_shape', 'next_tile'),             # what comes next
     ('in_the_loop', 'in_the_pen'),           # inside or outside
+    ('which_moved', 'moved_bead'),
+    ('which_is_new', 'new_bead'),
+    ('which_is_gone', 'gone_bead'),
+    ('traded_places', 'traded_beads'),
 )
 
 #: Tasks kept back from development: not to be trained on, tuned

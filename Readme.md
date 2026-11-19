@@ -1922,7 +1922,9 @@ Tasks for a learner starting from nothing. A beginner pressing at random is paid
 
 In what follows *n* is the rung. In the short walks a press that does not bring the goal nearer ends the trial.
 
-Four pairs are **twins**: the same rule in another look, with other colours, shapes, layout and port order. `nwenv.catalog.TWINS` records the pairs and `twin_of()` looks one up. The catalogue also marks a few tasks as held out (`nwenv.catalog.HELD_OUT`); they are not described here.
+The frame-by-frame memory families below (now and earlier, carried through, own presses, a cue far back, heard back) show a frame every half second and may be stepped one step a shown frame: their environments accept `frame_hz=2`, where every other clocked task keeps its floor of ten, and a trial driven that way is judged as it is at ten.
+
+Several pairs are **twins**: the same rule in another look, with other colours, shapes, layout and port order. `nwenv.catalog.TWINS` records the pairs and `twin_of()` looks one up. The catalogue also marks a few tasks as held out (`nwenv.catalog.HELD_OUT`); they are not described here.
 
 #### Short Maze
 
@@ -1999,6 +2001,17 @@ One of four boxes lights and goes out; then, *n* times, two boxes are joined and
 #### Which Rule?
 
 Three cards, and one hidden rule for the whole run saying which to press ("the largest", "the red one"). The rule is one of two candidates at rung 1 and one more each rung; every press is judged at once, so wrong presses rule candidates out.
+
+#### Now and earlier
+
+Things show twice, *n* frames apart, and the answer is what is different the second time; neither showing alone says anything about it. Each comes in two looks, shapes on a grid with the cards in a row, and coloured beads round a ring with the cards in a column, numbered the other way round.
+
+* **Which Moved?** and **Moved Bead**: four things, then the same four with one in another place: press the card of the one that moved.
+* **Which Is New?** and **New Bead**: three things, then four in fresh places: press the card of the new one.
+* **Which Is Gone?** and **Gone Bead**: four things, then three of them in fresh places: press the card of the one that went. The cards are the one that went and three never shown.
+* **Traded Places** and **Traded Beads**: five things in a row, then the same row with two of them changed places and one of the two marked: press the place of the one it changed places with. Five ports.
+
+From the second showing alone every answer is as likely as another. Keeping where one thing was earns one half on Which Moved? and three in five on Traded Places; keeping one old thing earns a third on Which Is New? and seven in sixteen on Which Is Gone?.
 
 ### Reasoning
 

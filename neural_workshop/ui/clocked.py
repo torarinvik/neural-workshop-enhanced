@@ -32,6 +32,9 @@ class ClockedTask(RungTask):
     MODEL = None
     #: Seconds per physics step.
     SUBSTEP = 1 / 120.0
+    #: The most time one frame may move the run on. A task whose model
+    #: is safe to step a shown frame at a time raises it.
+    LONGEST_TICK = 0.1
     #: Discrete ports by key symbol; and held keys for controls.
     EVENT_KEYS = {}
 
@@ -97,7 +100,7 @@ class ClockedTask(RungTask):
 
     def _tick(self) -> None:
         now = self.clock()
-        dt = max(0.0, min(0.1, now - self.last_tick))
+        dt = max(0.0, min(self.LONGEST_TICK, now - self.last_tick))
         self.last_tick = now
         control = self.control if self.control is not None else \
             self._held()

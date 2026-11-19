@@ -310,6 +310,14 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('which_rule', _('Which Rule?')),
         ('changed_tile', _('Changed Tile')),
         ('swapped_boxes', _('Swapped Boxes')),
+        ('which_moved', _('Which Moved?')),
+        ('moved_bead', _('Moved Bead')),
+        ('which_is_new', _('Which Is New?')),
+        ('new_bead', _('New Bead')),
+        ('which_is_gone', _('Which Is Gone?')),
+        ('gone_bead', _('Gone Bead')),
+        ('traded_places', _('Traded Places')),
+        ('traded_beads', _('Traded Beads')),
     ],
 }
 
@@ -1456,6 +1464,38 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'swapped_boxes':
         from .inmind import SwappedBoxes
         SwappedBoxes()
+        return
+    if task_id == 'which_moved':
+        from .nowthen import WhichMoved
+        WhichMoved()
+        return
+    if task_id == 'moved_bead':
+        from .nowthen import MovedBead
+        MovedBead()
+        return
+    if task_id == 'which_is_new':
+        from .nowthen import WhichIsNew
+        WhichIsNew()
+        return
+    if task_id == 'new_bead':
+        from .nowthen import NewBead
+        NewBead()
+        return
+    if task_id == 'which_is_gone':
+        from .nowthen import WhichIsGone
+        WhichIsGone()
+        return
+    if task_id == 'gone_bead':
+        from .nowthen import GoneBead
+        GoneBead()
+        return
+    if task_id == 'traded_places':
+        from .nowthen import TradedPlaces
+        TradedPlaces()
+        return
+    if task_id == 'traded_beads':
+        from .nowthen import TradedBeads
+        TradedBeads()
         return
     if task_id == 'gamble':
         from .gamble import Gamble

@@ -4709,6 +4709,150 @@ SWAPPEDBOXES = TaskSpec(
     note=swappedboxes_note)
 
 
+def whichmoved_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Four things show twice, %d frames apart, one of them in another place the second time: press its card.') % int(chosen['WHICHMOVED_RUNG'])
+
+
+WHICHMOVED = TaskSpec(
+    title=_('Which Moved? options'),
+    options=(
+        Option('WHICHMOVED_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('WHICHMOVED_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('WHICHMOVED_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=whichmoved_note)
+
+
+def movedbead_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Four beads show twice, %d frames apart, one of them in another place the second time: press its card.') % int(chosen['MOVEDBEAD_RUNG'])
+
+
+MOVEDBEAD = TaskSpec(
+    title=_('Moved Bead options'),
+    options=(
+        Option('MOVEDBEAD_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('MOVEDBEAD_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('MOVEDBEAD_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=movedbead_note)
+
+
+def whichisnew_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Three things show, then four, %d frames later: press the card of the new one.') % int(chosen['WHICHISNEW_RUNG'])
+
+
+WHICHISNEW = TaskSpec(
+    title=_('Which Is New? options'),
+    options=(
+        Option('WHICHISNEW_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('WHICHISNEW_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('WHICHISNEW_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=whichisnew_note)
+
+
+def newbead_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Three beads show, then four, %d frames later: press the card of the new one.') % int(chosen['NEWBEAD_RUNG'])
+
+
+NEWBEAD = TaskSpec(
+    title=_('New Bead options'),
+    options=(
+        Option('NEWBEAD_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('NEWBEAD_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('NEWBEAD_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=newbead_note)
+
+
+def whichisgone_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Four things show, then three of them, %d frames later: press the card of the one that went.') % int(chosen['WHICHISGONE_RUNG'])
+
+
+WHICHISGONE = TaskSpec(
+    title=_('Which Is Gone? options'),
+    options=(
+        Option('WHICHISGONE_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('WHICHISGONE_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('WHICHISGONE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=whichisgone_note)
+
+
+def gonebead_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Four beads show, then three of them, %d frames later: press the card of the one that went.') % int(chosen['GONEBEAD_RUNG'])
+
+
+GONEBEAD = TaskSpec(
+    title=_('Gone Bead options'),
+    options=(
+        Option('GONEBEAD_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('GONEBEAD_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('GONEBEAD_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=gonebead_note)
+
+
+def tradedplaces_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _("Five things in a row show twice, %d frames apart, two of them changed places: press the place of the ringed one's partner.") % int(chosen['TRADEDPLACES_RUNG'])
+
+
+TRADEDPLACES = TaskSpec(
+    title=_('Traded Places options'),
+    options=(
+        Option('TRADEDPLACES_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('TRADEDPLACES_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('TRADEDPLACES_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=tradedplaces_note)
+
+
+def tradedbeads_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _("Five beads on an arc show twice, %d frames apart, two of them changed places: press the place of the marked one's partner.") % int(chosen['TRADEDBEADS_RUNG'])
+
+
+TRADEDBEADS = TaskSpec(
+    title=_('Traded Beads options'),
+    options=(
+        Option('TRADEDBEADS_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 10, 12)),
+        Option('TRADEDBEADS_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('TRADEDBEADS_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=tradedbeads_note)
+
+
 def soundback_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung is like."""
     return _('Press for the tone that sounded %d frames ago: low, middle or high.') % int(chosen['SOUNDBACK_RUNG'])
@@ -6566,6 +6710,14 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'in_the_window': INTHEWINDOW,
     'swapped_boxes': SWAPPEDBOXES,
     'changed_tile': CHANGEDTILE,
+    'which_moved': WHICHMOVED,
+    'moved_bead': MOVEDBEAD,
+    'which_is_new': WHICHISNEW,
+    'new_bead': NEWBEAD,
+    'which_is_gone': WHICHISGONE,
+    'gone_bead': GONEBEAD,
+    'traded_places': TRADEDPLACES,
+    'traded_beads': TRADEDBEADS,
     'sound_back': SOUNDBACK,
     'hidden_cue': HIDDENCUE,
     'shape_back': SHAPEBACK,

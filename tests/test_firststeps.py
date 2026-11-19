@@ -103,7 +103,7 @@ class Twins(unittest.TestCase):
             self.assertEqual(p.data['cards'][p.answer], nxt)
 
     def test_the_catalogue_records_the_pairs(self):
-        self.assertEqual(len(catalog.TWINS), 4)
+        self.assertEqual(len(catalog.TWINS), 8)
         for one, two in catalog.TWINS:
             self.assertEqual(catalog.twin_of(one), two)
             self.assertEqual(catalog.twin_of(two), one)
@@ -194,6 +194,8 @@ class RuleDiscovery(unittest.TestCase):
 
 def _right(task):
     if hasattr(task, 'walk') and task.walk is not None:
+        if hasattr(task.walk, 'good'):
+            return task.walk.good()[0]
         return ministeps.good(task.puzzle, task.walk.state)[0]
     run = getattr(task, 'run', None)
     if run is not None and hasattr(run, 'dealt'):
@@ -205,7 +207,8 @@ def _right(task):
 
 def _wrong(task):
     if hasattr(task, 'walk') and task.walk is not None:
-        ok = ministeps.good(task.puzzle, task.walk.state)
+        ok = (task.walk.good() if hasattr(task.walk, 'good')
+              else ministeps.good(task.puzzle, task.walk.state))
         return next(p for p in range(task.puzzle.ports) if p not in ok)
     run = getattr(task, 'run', None)
     if run is not None and hasattr(run, 'dealt'):
@@ -329,15 +332,17 @@ class TheBoundary(unittest.TestCase):
 
 class TheCatalogue(unittest.TestCase):
     def test_every_new_task_has_a_row(self):
-        self.assertEqual(len(NEW), 22)
+        self.assertEqual(len(NEW), 30)
         for task_id in NEW:
             self.assertIn(task_id, catalog.BY_ID)
 
-    def test_three_are_held_out_from_three_families(self):
-        self.assertEqual(len(catalog.HELD_OUT), 3)
+    def test_each_held_out_task_is_from_a_family_of_its_own(self):
+        # Three drawn with the first families, and one from each of
+        # three of the families added since.
+        self.assertGreaterEqual(len(catalog.HELD_OUT), 3)
         families = {name for name, tasks in catalog.FAMILIES.items()
                     for task in tasks if task in catalog.HELD_OUT}
-        self.assertEqual(len(families), 3)
+        self.assertEqual(len(families), len(catalog.HELD_OUT))
         self.assertTrue(all(catalog.held_out(t) for t in catalog.HELD_OUT))
         self.assertFalse(catalog.held_out('maze'))
 
