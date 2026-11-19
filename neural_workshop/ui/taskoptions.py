@@ -5411,6 +5411,42 @@ FIRSTCOME = TaskSpec(
     note=firstcome_note)
 
 
+def sameoropposite_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Rung %d: a sign at the start of each block of that many trials says: press where the square is, or across from it. It is not shown again in the block.') % int(chosen['SAMEOROPPOSITE_RUNG'])
+
+
+SAMEOROPPOSITE = TaskSpec(
+    title=_('Same or Opposite options'),
+    options=(
+        Option('SAMEOROPPOSITE_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20)),
+        Option('SAMEOROPPOSITE_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('SAMEOROPPOSITE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=sameoropposite_note)
+
+
+def standingorder_note(chosen: Dict[str, Any]) -> str:
+    """The title only: this task is kept back."""
+    return _('Standing Order')
+
+
+STANDINGORDER = TaskSpec(
+    title=_('Standing Order options'),
+    options=(
+        Option('STANDINGORDER_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20)),
+        Option('STANDINGORDER_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('STANDINGORDER_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=standingorder_note)
+
+
 def soundback_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung is like."""
     return _('Press for the tone that sounded %d frames ago: low, middle or high.') % int(chosen['SOUNDBACK_RUNG'])
@@ -7307,6 +7343,8 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'newest_counts': NEWESTCOUNTS,
     'first_counts': FIRSTCOUNTS,
     'first_come': FIRSTCOME,
+    'same_or_opposite': SAMEOROPPOSITE,
+    'standing_order': STANDINGORDER,
     'sound_back': SOUNDBACK,
     'hidden_cue': HIDDENCUE,
     'shape_back': SHAPEBACK,

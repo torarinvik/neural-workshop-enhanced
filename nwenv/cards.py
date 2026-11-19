@@ -201,6 +201,16 @@ _put(('first_counts',), 0.25,
               ('pressing where the last cue was', 0.39, 3)),
      rungs=_rungs(lambda k: 2 * k + 2, _one))
 
+# --- a rule held across trials --------------------------------------------
+
+_put(('same_or_opposite',), 0.5,
+     partial=(('pressing by one rule all run long', 0.5, 1),
+              ('pressing by one rule all run long', 0.5, 3)),
+     rungs=_rungs(_none, _one, lambda k: k - 1),
+     note='the rule is shown at the start of each block of trials, a '
+          'frame before the question of its first trial, and not again '
+          'in the block; trials_back is the most it lies back')
+
 # --- the walks -----------------------------------------------------------
 
 _put(('long_way_round', 'push_and_pull', 'one_way_doors'), 1.0,

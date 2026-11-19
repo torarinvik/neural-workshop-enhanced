@@ -19,7 +19,7 @@ from collections import Counter
 from memorysupport import best_from_view, rate
 
 from neural_workshop import (carried, farcue, framed, handsoff, heardback,
-                             inmind, newestfirst, severalcues,
+                             inmind, keptrule, newestfirst, severalcues,
                              unevenwait,
                              longwalk, lookback, memwalk, ministeps,
                              morewalks, nowthen, ownpress, ruleguess, twins)
@@ -261,6 +261,13 @@ def _ownpress_floor(kind, look):
     return max(right / n, screen)
 
 
+def _rule_run(rung, n, seed=5):
+    """A run of Same or Opposite, its blocks kept across the deals."""
+    rng, ledger = random.Random(seed), keptrule.Ledger()
+    return [keptrule.deal('rule', rung, rng, ledger=ledger)
+            for _t in range(n)]
+
+
 def frame_only(task_id):
     """The chance level for *task_id*, counted."""
     family = catalog.family_of(task_id)
@@ -289,6 +296,12 @@ def frame_only(task_id):
         return _memwalk_floor('one')
     if task_id == 'in_that_order':
         return _memwalk_floor('two')
+    if task_id == 'same_or_opposite':
+        run = _rule_run(1, 6000)
+        it = iter(run)
+        return best_from_view(lambda _rng: next(it),
+                              lambda p: (p.data['cues'][0][1],
+                                         p.data['layout']), n=len(run))
     if task_id in ('next_in_turn', 'stay_or_shift', 'moving_prize'):
         kind = 'cycle' if task_id == 'next_in_turn' else 'stay'
         return _ownpress_floor(kind, 1 if task_id == 'moving_prize' else 0)
@@ -453,6 +466,9 @@ def partial(task_id, strategy, rung):
     if task_id in ('gone_from_view', 'in_that_order'):
         kind = 'one' if task_id == 'gone_from_view' else 'two'
         return _memwalk_play(kind, rung, _to_middle)
+    if task_id == 'same_or_opposite':
+        run = _rule_run(rung, 6000)
+        return sum(p.data['cues'][0][1] == p.answer for p in run) / len(run)
     if task_id == 'which_was_where':
         def last(p, rng):
             place = p.data['cues'][-1][1]
@@ -563,6 +579,15 @@ class TheFloorsAreCounted(unittest.TestCase):
                                                    'in_that_order'):
                     self.assertEqual(said, frames_back(task_id, rung),
                                      (task_id, rung))
+                elif task_id == 'same_or_opposite':
+                    self.assertIsNone(said, task_id)
+                    run = _rule_run(rung, 60)
+                    since = [p for p in run[:rung]]
+                    self.assertIsNotNone(since[0].data['sign'])
+                    self.assertTrue(all(p.data['sign'] is None
+                                        for p in since[1:]))
+                    self.assertEqual(card['rungs'][rung]['trials_back'],
+                                     len(since) - 1, task_id)
                 elif card['rungs'][rung]['trials_back'] is not None:
                     self.assertIsNone(said, task_id)
                     self.assertEqual(card['rungs'][rung]['trials_back'],

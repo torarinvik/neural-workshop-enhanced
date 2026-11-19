@@ -349,6 +349,8 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('newest_counts', _('The Newest Counts')),
         ('first_counts', _('The First Counts')),
         ('first_come', _('First Come')),
+        ('same_or_opposite', _('Same or Opposite')),
+        ('standing_order', _('Standing Order')),
     ],
 }
 
@@ -1651,6 +1653,14 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'first_come':
         from .firstcome import FirstCome
         FirstCome()
+        return
+    if task_id == 'same_or_opposite':
+        from .keptrule import SameOrOpposite
+        SameOrOpposite()
+        return
+    if task_id == 'standing_order':
+        from .standingorder import StandingOrder
+        StandingOrder()
         return
     if task_id == 'gamble':
         from .gamble import Gamble

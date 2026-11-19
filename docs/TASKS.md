@@ -1693,7 +1693,7 @@ Tasks for a learner starting from nothing. A beginner pressing at random is paid
 
 In what follows *n* is the rung. In the short walks a press that does not bring the goal nearer ends the trial.
 
-The frame-by-frame memory families below (now and earlier, carried through, own presses, a cue far back, heard back, hands off, uneven wait, several kept, the newest and the first counts) show a frame every half second and may be stepped one step a shown frame: their environments accept `frame_hz=2`, and a trial driven that way is judged as it is at ten. The older frame tasks (looking back and held in mind) accept it too, as an opt-in: at exactly two steps a second one step carries the trial a whole frame, while at ten and above they run as they always have; other rates below ten are refused. Every other clocked task keeps its floor of ten.
+The frame-by-frame memory families below (now and earlier, carried through, own presses, a cue far back, heard back, hands off, uneven wait, several kept, the newest and the first counts, a rule held across trials) show a frame every half second and may be stepped one step a shown frame: their environments accept `frame_hz=2`, and a trial driven that way is judged as it is at ten. The older frame tasks (looking back and held in mind) accept it too, as an opt-in: at exactly two steps a second one step carries the trial a whole frame, while at ten and above they run as they always have; other rates below ten are refused. Every other clocked task keeps its floor of ten.
 
 Every task on the shared boundary also takes `frame_scale`, one over a whole number (`1/2`, `1/4`, ...): the frame is drawn at full size, as ever, and read back that much smaller on each side, one pixel of each block, sampled on the GPU. The verdict is read off the small frame, and digests, outcomes and the frame export are all of it. At a quarter a step runs about four times as fast (around 85 to 90 steps a second at full size, 310 to 430 at a quarter, on the machine this was measured on); `tests/test_frame_scale.py` checks that runs are judged the same at both sizes.
 
@@ -1873,6 +1873,14 @@ A square lights for a frame. Then come *n* slots, every other frame; how many ho
 * **The First Counts**: press the square that lit first; the later ones are decoys.
 
 The question frame is at one in four. Answering by the other task's rule earns about 50, 45 and 39 in a hundred at rungs 1, 2 and 3: when no later cue comes, the first is the last.
+
+### A rule held across trials
+
+Something kept across judgements, which nothing else in the suite asks for but n-back.
+
+* **Same or Opposite**: at the start of a block of *n* trials a sign shows for a frame: a filled disc, *press where the square is*; or a ring crossed by a bar, *press the square across from it* (the other end of the row or column, the other corner of the square). Every trial of the block then shows one square filled with the question, and each is judged. The sign is not shown again in the block, and nothing on screen says how far into the block a trial is. At rung 1 the sign shows on every trial, a frame before the question. A block keeps the length it began with when the rung changes inside it. Any press before the question ends the trial unpaid. Four ports, one a square, in reading order.
+
+The rule of each block is drawn evenly. Without the sign a player is at one half: pressing by one rule all run long earns that, and so does the best player that sees the question frame. Pressing at random earns one in four.
 
 ## Reasoning
 

@@ -18,8 +18,8 @@ from memorysupport import drive as frame_drive
 
 from neural_workshop import (busybeads, carried, firstcome, framed,
                              inwindow, keydoor, ministeps, oddstripe,
-                             ownpress, rollcall, roundagain, twins,
-                             waitandsee)
+                             ownpress, rollcall, roundagain,
+                             standingorder, twins, waitandsee)
 from nwenv import catalog
 
 try:
@@ -360,6 +360,34 @@ class FirstCome(unittest.TestCase):
                                        2, frame_hz=hz), [1.0])
             self.assertEqual(cue_drive('first_come', lambda t: t.puzzle.answer,
                                        2, wait=lambda t: 0, frame_hz=hz),
+                             [-1.0])
+
+
+
+class StandingOrder(unittest.TestCase):
+
+    def test_deals(self):
+        from neural_workshop import keptrule
+        across = {0: 2, 1: 3, 2: 0, 3: 1}
+        for rung in (1, 2, 4):
+            rng, ledger, rule = random.Random(rung), keptrule.Ledger(), None
+            for i in range(8 * rung):
+                p = standingorder.deal(rung, rng, ledger=ledger)
+                self.assertEqual(p.data['sign'] is not None, i % rung == 0)
+                rule = p.data['sign'] or rule
+                place = p.data['cues'][0][1]
+                want = place if rule == 'same' else across[place]
+                self.assertEqual(p.answer, 3 - want)
+
+    def test_boundary(self):
+        from cuesupport import drive as cue_drive
+        for hz in (2.0, 10.0):
+            self.assertEqual(cue_drive('standing_order',
+                                       lambda t: t.puzzle.answer, 2,
+                                       frame_hz=hz, trials=2), [1.0, 1.0])
+            self.assertEqual(cue_drive('standing_order',
+                                       lambda t: t.puzzle.answer, 2,
+                                       wait=lambda t: 0, frame_hz=hz),
                              [-1.0])
 
 
