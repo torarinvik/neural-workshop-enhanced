@@ -805,6 +805,15 @@ CATALOG: Tuple[Wrapped, ...] = (
     Wrapped('in_that_order', 'In That Order',
             'nwenv.memwalk', 'InThatOrderEnv',
             'neural_workshop.ui.memwalk', 'InThatOrder'),
+    Wrapped('hands_off', 'Hands Off',
+            'nwenv.handsoff', 'HandsOffEnv',
+            'neural_workshop.ui.handsoff', 'HandsOff'),
+    Wrapped('busy_wait', 'Busy Wait',
+            'nwenv.handsoff', 'BusyWaitEnv',
+            'neural_workshop.ui.handsoff', 'BusyWait'),
+    Wrapped('busy_beads', 'Busy Beads',
+            'nwenv.busybeads', 'BusyBeadsEnv',
+            'neural_workshop.ui.busybeads', 'BusyBeads'),
 )
 
 BY_ID: Dict[str, Wrapped] = {row.task_id: row for row in CATALOG}
@@ -832,6 +841,7 @@ FAMILIES: Dict[str, Tuple[str, ...]] = {
     'timing': ('in_the_window',),
     'rule discovery': ('which_rule',),
     'payment for progress': ('short_maze_steps',),
+    'hands off': ('hands_off', 'busy_wait', 'busy_beads'),
 }
 
 #: Twin tasks: the same rule under a different look -- other colours,
@@ -853,6 +863,7 @@ TWINS: Tuple[Tuple[str, str], ...] = (
     ('which_is_new', 'new_bead'),
     ('which_is_gone', 'gone_bead'),
     ('traded_places', 'traded_beads'),
+    ('busy_wait', 'busy_beads'),
 )
 
 #: Tasks kept back from development: not to be trained on, tuned
@@ -868,6 +879,9 @@ HELD_OUT: frozenset = frozenset((
     'arrow_walk',
     'key_and_door',
     'round_again',
+    # Drawn when the hands-off and later cue families and the
+    # two-stage walks were added: one twin of each family.
+    'busy_beads',
 ))
 
 #: Every module that holds a held-out task's model, screen or wrapper.
@@ -892,6 +906,9 @@ HELD_OUT_MODULES: Tuple[str, ...] = (
     'neural_workshop.roundagain',
     'neural_workshop.ui.roundagain',
     'nwenv.roundagain',
+    'neural_workshop.busybeads',
+    'neural_workshop.ui.busybeads',
+    'nwenv.busybeads',
 )
 #: The tests of the held-out tasks, kept apart for the same reason.
 HELD_OUT_TESTS: Tuple[str, ...] = ('tests/test_heldout.py',)

@@ -1693,7 +1693,7 @@ Tasks for a learner starting from nothing. A beginner pressing at random is paid
 
 In what follows *n* is the rung. In the short walks a press that does not bring the goal nearer ends the trial.
 
-The frame-by-frame memory families below (now and earlier, carried through, own presses, a cue far back, heard back) show a frame every half second and may be stepped one step a shown frame: their environments accept `frame_hz=2`, and a trial driven that way is judged as it is at ten. The older frame tasks (looking back and held in mind) accept it too, as an opt-in: at exactly two steps a second one step carries the trial a whole frame, while at ten and above they run as they always have; other rates below ten are refused. Every other clocked task keeps its floor of ten.
+The frame-by-frame memory families below (now and earlier, carried through, own presses, a cue far back, heard back, hands off) show a frame every half second and may be stepped one step a shown frame: their environments accept `frame_hz=2`, and a trial driven that way is judged as it is at ten. The older frame tasks (looking back and held in mind) accept it too, as an opt-in: at exactly two steps a second one step carries the trial a whole frame, while at ten and above they run as they always have; other rates below ten are refused. Every other clocked task keeps its floor of ten.
 
 Every task on the shared boundary also takes `frame_scale`, one over a whole number (`1/2`, `1/4`, ...): the frame is drawn at full size, as ever, and read back that much smaller on each side, one pixel of each block, sampled on the GPU. The verdict is read off the small frame, and digests, outcomes and the frame export are all of it. At a quarter a step runs about four times as fast (around 85 to 90 steps a second at full size, 310 to 430 at a quarter, on the machine this was measured on); `tests/test_frame_scale.py` checks that runs are judged the same at both sizes.
 
@@ -1841,6 +1841,15 @@ Holding something in mind and acting on it over several presses. An open seven b
 * **In That Order**: two places show in turn; visit them in that order. Two places need two presses at least, so rung *n* is *n* + 1 presses.
 
 Where the goal lies, among the squares at the rung's distance, is drawn evenly. A player who sees only the current frame is at about the level of random presses: at rungs 1, 3 and 5, random presses earn 36, 7 and 2 in a hundred on Gone From View and 13, 2 and 1 on In That Order; the best fixed direction earns 26, 9 and 4, and heading for the middle 31, 15 and 6.
+
+### Hands off
+
+In Hidden Cue and the far-cue tasks a press before the question is ignored, so a learner can press a code during the wait and read its own presses back instead of keeping the cue. Here the wait is closed to presses. One of four squares lights for a frame, a wait goes by with nothing of it showing, and then the question: press the square that lit. Four ports, one a square, in reading order; clocked, and may be stepped a frame at a time.
+
+* **Hands Off**: a wait of *n* frames with nothing showing. Any press before the question ends the trial unpaid.
+* **Busy Wait**: a wait of *n* small jobs, two frames each: a dot lights in one of the squares and its port must be pressed once while it shows. A wrong press, a second press, a press outside a job, or a dot left unpressed ends the trial unpaid. The shortest way is *n* + 1 presses.
+
+Where the dots light is drawn evenly and apart from the cue, so the presses a trial is played with say nothing of it: the question frame, read together with every press of the wait, is at one in four. Pressing at random (at each job and at the question) earns one in four at a power of the presses the trial needs: a quarter on Hands Off, a sixteenth at rung 1 of Busy Wait. Unlike the families above, a press at every step is never paid here, by design.
 
 ## Reasoning
 

@@ -5231,6 +5231,60 @@ INTHATORDER = TaskSpec(
     note=inthatorder_note)
 
 
+def handsoff_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Rung %d: a square lights, then that many frames with nothing showing; then press the square that lit. Any press before the question ends the trial.') % int(chosen['HANDSOFF_RUNG'])
+
+
+HANDSOFF = TaskSpec(
+    title=_('Hands Off options'),
+    options=(
+        Option('HANDSOFF_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20)),
+        Option('HANDSOFF_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('HANDSOFF_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=handsoff_note)
+
+
+def busywait_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Rung %d: a square lights, then that many small jobs, two frames each: press where the dot shows, once. Then press the square that lit.') % int(chosen['BUSYWAIT_RUNG'])
+
+
+BUSYWAIT = TaskSpec(
+    title=_('Busy Wait options'),
+    options=(
+        Option('BUSYWAIT_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 8, 10)),
+        Option('BUSYWAIT_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('BUSYWAIT_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=busywait_note)
+
+
+def busybeads_note(chosen: Dict[str, Any]) -> str:
+    """The title only: this task is kept back."""
+    return _('Busy Beads')
+
+
+BUSYBEADS = TaskSpec(
+    title=_('Busy Beads options'),
+    options=(
+        Option('BUSYBEADS_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 8, 10)),
+        Option('BUSYBEADS_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('BUSYBEADS_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=busybeads_note)
+
+
 def soundback_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung is like."""
     return _('Press for the tone that sounded %d frames ago: low, middle or high.') % int(chosen['SOUNDBACK_RUNG'])
@@ -7117,6 +7171,9 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'ice_floor': ICEFLOOR,
     'gone_from_view': GONEFROMVIEW,
     'in_that_order': INTHATORDER,
+    'hands_off': HANDSOFF,
+    'busy_wait': BUSYWAIT,
+    'busy_beads': BUSYBEADS,
     'sound_back': SOUNDBACK,
     'hidden_cue': HIDDENCUE,
     'shape_back': SHAPEBACK,

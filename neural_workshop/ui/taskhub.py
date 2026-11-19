@@ -339,6 +339,9 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('ice_floor', _('Ice Floor')),
         ('gone_from_view', _('Gone From View')),
         ('in_that_order', _('In That Order')),
+        ('hands_off', _('Hands Off')),
+        ('busy_wait', _('Busy Wait')),
+        ('busy_beads', _('Busy Beads')),
     ],
 }
 
@@ -1601,6 +1604,18 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'in_that_order':
         from .memwalk import InThatOrder
         InThatOrder()
+        return
+    if task_id == 'hands_off':
+        from .handsoff import HandsOff
+        HandsOff()
+        return
+    if task_id == 'busy_wait':
+        from .handsoff import BusyWait
+        BusyWait()
+        return
+    if task_id == 'busy_beads':
+        from .busybeads import BusyBeads
+        BusyBeads()
         return
     if task_id == 'gamble':
         from .gamble import Gamble

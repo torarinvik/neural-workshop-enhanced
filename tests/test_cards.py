@@ -18,7 +18,8 @@ from collections import Counter
 
 from memorysupport import best_from_view, rate
 
-from neural_workshop import (carried, farcue, framed, heardback, inmind,
+from neural_workshop import (carried, farcue, framed, handsoff, heardback,
+                             inmind,
                              longwalk, lookback, memwalk, ministeps,
                              morewalks, nowthen, ownpress, ruleguess, twins)
 from nwenv import cards, catalog
@@ -56,6 +57,8 @@ DEALS['changed_note'] = _framed(heardback, 'melody', 0)
 DEALS['changed_chime'] = _framed(heardback, 'melody', 1)
 DEALS['marked_tone'] = _framed(heardback, 'mark', 0)
 DEALS['other_voice'] = _framed(heardback, 'mark', 1)
+DEALS['hands_off'] = _framed(handsoff, 'still', 0)
+DEALS['busy_wait'] = _framed(handsoff, 'busy', 0)
 DEALS['shape_back'] = lambda rung, rng: lookback.deal('shape', rung, rng)
 DEALS['hidden_cue'] = lambda rung, rng: lookback.deal('cue', rung, rng)
 DEALS['sound_back'] = lambda rung, rng: lookback.deal('sound', rung, rng)
@@ -92,6 +95,9 @@ VIEWS = {
     'hidden_cue': lambda p: (p.data['layout'],),
     'changed_tile': lambda p: tuple(p.data['tiles'][1]),
     'swapped_boxes': lambda p: p.data['pairs'][-1],
+    # The kept-cue families: the places, their layout and the question
+    # mark, and the colour asked for where one is.
+    'keptcue': lambda p: (p.data['layout'], p.data['asked']),
 }
 
 
@@ -104,7 +110,8 @@ def view_for(task_id):
                                 ('running_count', 'bead_pile')
                                 else VIEWS['arrows']),
             'far cue': VIEWS['farcue'],
-            'heard back': VIEWS['heardback']}[family]
+            'heard back': VIEWS['heardback'],
+            'hands off': VIEWS['keptcue']}[family]
 
 
 # --- frame-only floors ---------------------------------------------------
@@ -457,6 +464,11 @@ def frames_back(task_id, rung):
     return round(p.open_at / lookback.FRAME)
 
 
+#: Presses the shortest way needs, where it is more than the answer:
+#: a busy wait's jobs and its answer.
+PRESSES = {'busy_wait': lambda rung: rung + 1}
+
+
 class EveryTaskHasACard(unittest.TestCase):
 
     def test_every_catalogued_task(self):
@@ -559,7 +571,8 @@ class TheFloorsAreCounted(unittest.TestCase):
                         task_id == 'marker_walk_shuffled':
                     self.assertEqual(said, rung, task_id)
                 else:
-                    self.assertEqual(said, 1, task_id)
+                    self.assertEqual(said, PRESSES.get(
+                        task_id, lambda r: 1)(rung), task_id)
 
 
 if __name__ == '__main__':

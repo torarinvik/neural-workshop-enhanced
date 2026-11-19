@@ -21,6 +21,10 @@ except Exception:                                      # pragma: no cover
 
 NEW = [task for family in catalog.FAMILIES.values() for task in family]
 OPEN = [task for task in NEW if task not in catalog.HELD_OUT]
+#: Families whose wait is closed to presses: a press before the question
+#: ends the trial unpaid, or must be the wait's job, so a press at every
+#: step is never paid there, by design.
+CLOSED_WAIT = ('hands off',)
 
 
 class ShortWalks(unittest.TestCase):
@@ -107,7 +111,7 @@ class Twins(unittest.TestCase):
             self.assertEqual(p.data['cards'][p.answer], nxt)
 
     def test_the_catalogue_records_the_pairs(self):
-        self.assertEqual(len(catalog.TWINS), 15)
+        self.assertEqual(len(catalog.TWINS), 16)
         for one, two in catalog.TWINS:
             self.assertEqual(catalog.twin_of(one), two)
             self.assertEqual(catalog.twin_of(two), one)
@@ -173,7 +177,7 @@ def _right(task):
         return ministeps.good(task.puzzle, task.walk.state)[0]
     run = getattr(task, 'run', None)
     if run is not None and not run.open:
-        return None
+        return _job(task)
     return task.puzzle.answer
 
 
@@ -184,8 +188,21 @@ def _wrong(task):
         return next(p for p in range(task.puzzle.ports) if p not in ok)
     run = getattr(task, 'run', None)
     if run is not None and not run.open:
-        return None
+        return _job(task)
     return (task.puzzle.answer + 1) % len(task.puzzle.choices)
+
+
+def _job(task):
+    """The port a wait's job asks for now, once; else no press."""
+    run = task.run
+    if not hasattr(run, 'job'):
+        return None
+    j = run.job()
+    if j is None or j in run.done:
+        return None
+    look = task.puzzle.data['look']
+    place = task.puzzle.data['jobs'][j][1]
+    return place if look == 0 else 3 - place
 
 
 @needs_ui
@@ -217,6 +234,8 @@ class TheBoundary(unittest.TestCase):
 
     def test_random_presses_are_paid_at_rung_one_within_twenty_trials(self):
         for task_id in NEW:
+            if catalog.family_of(task_id) in CLOSED_WAIT:
+                continue
             env = catalog.env_class(task_id)(seed=1, rung=1, trials=20,
                                              adaptive=False)
             rng = random.Random(11)
@@ -301,7 +320,7 @@ class TheBoundary(unittest.TestCase):
 
 class TheCatalogue(unittest.TestCase):
     def test_every_new_task_has_a_row(self):
-        self.assertEqual(len(NEW), 51)
+        self.assertEqual(len(NEW), 54)
         for task_id in NEW:
             self.assertIn(task_id, catalog.BY_ID)
 

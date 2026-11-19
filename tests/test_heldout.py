@@ -13,10 +13,12 @@ import random
 import unittest
 from collections import deque
 
+from cuesupport import job_now
 from memorysupport import drive as frame_drive
 
-from neural_workshop import (carried, framed, inwindow, keydoor, ministeps,
-                             oddstripe, ownpress, roundagain, twins)
+from neural_workshop import (busybeads, carried, framed, inwindow, keydoor,
+                             ministeps, oddstripe, ownpress, roundagain,
+                             twins)
 from nwenv import catalog
 
 try:
@@ -242,7 +244,7 @@ def _right(task):
     if run is not None and hasattr(run, 'dealt'):
         return inwindow.pilot(run)
     if run is not None and not run.open:
-        return None
+        return job_now(task) if hasattr(run, 'job') else None
     return task.puzzle.answer
 
 
@@ -256,7 +258,7 @@ def _wrong(task):
         return (inwindow.WAIT if inwindow.inside(run.dealt, run.at)
                 else inwindow.PRESS)
     if run is not None and not run.open:
-        return None
+        return job_now(task) if hasattr(run, 'job') else None
     return (task.puzzle.answer + 1) % len(task.puzzle.choices)
 
 
@@ -269,6 +271,27 @@ class TheBoundary(unittest.TestCase):
                                        steps=3000), [1.0], (task_id, rung))
                 self.assertEqual(drive(task_id, rung, _wrong, seed=3,
                                        steps=3000), [-1.0], (task_id, rung))
+
+
+
+class BusyBeads(unittest.TestCase):
+
+    def test_deals(self):
+        for rung in range(1, 7):
+            for seed in range(10):
+                p = busybeads.deal(rung, random.Random(seed))
+                (_f, place, _c), = p.data['cues']
+                self.assertEqual(p.data['look'], 1)
+                self.assertEqual(p.answer, 3 - place)
+                self.assertEqual(len(p.data['jobs']), rung)
+
+    def test_boundary(self):
+        from cuesupport import drive as cue_drive, job_now
+        for hz in (2.0, 10.0):
+            self.assertEqual(cue_drive('busy_beads', lambda t: t.puzzle.answer,
+                                       2, wait=job_now, frame_hz=hz), [1.0])
+            self.assertEqual(cue_drive('busy_beads', lambda t: t.puzzle.answer,
+                                       2, frame_hz=hz), [-1.0])
 
 
 if __name__ == '__main__':

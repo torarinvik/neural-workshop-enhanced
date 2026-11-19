@@ -163,6 +163,11 @@ _put(('marked_tone', 'other_voice'), 0.25,
      partial=(('pressing the pitch last heard', 0.25, 1),),
      rungs=_rungs(lambda k: _gap(k) + 1, _one))
 
+# --- the hands-off families ---------------------------------------------
+
+_put(('hands_off',), 0.25, rungs=_rungs(_plus_one, _one))
+_put(('busy_wait',), 0.25, rungs=_rungs(lambda k: 2 * k + 1, _plus_one))
+
 # --- the walks -----------------------------------------------------------
 
 _put(('long_way_round', 'push_and_pull', 'one_way_doors'), 1.0,
