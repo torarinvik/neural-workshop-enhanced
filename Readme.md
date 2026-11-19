@@ -2054,7 +2054,11 @@ In the short walks a wrong press ends the trial. Here it does not: a press into 
 
 * **Long Way Round**: a seven by seven maze, drawn afresh each trial, with the goal *n* presses away along the shortest way. The board keeps its size, place on screen and ports (up, down, left, right) on every rung, so a higher rung is a longer walk and not another task. Pips under the board count the steps left.
 
-Pressing at random reaches the goal at rung 1 about 45 times in a hundred.
+* **Push and Pull**: a box and a mark on an open floor with a few blocks. Walk into the box to push it, step straight away from it to pull it after you; a push into a corner is undone by a pull. Rung *n* is *n* presses from the box on the mark.
+* **One-Way Doors**: a maze with a few extra openings that go one way only, shown by a wedge: walk to the goal, *n* presses away.
+* **Ice Floor**: an ice floor with a few blocks: each press slides until a block or the edge stops it; come to rest on the goal, *n* slides away (the ladder tops out at rung 10).
+
+No board is dealt where a press could lead somewhere the goal cannot be reached from. Pressing at random reaches the goal at rung 1 about 45 times in a hundred on Long Way Round, and at rungs 1, 3 and 5 about 37, 4 and 1 in a hundred on Push and Pull, 44, 6 and 1 on One-Way Doors, and 44, 8 and 1 on Ice Floor.
 
 ### Reasoning
 

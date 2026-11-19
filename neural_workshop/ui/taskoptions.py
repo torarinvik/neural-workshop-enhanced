@@ -5141,6 +5141,60 @@ KEYANDDOOR = TaskSpec(
     note=keyanddoor_note)
 
 
+def pushandpull_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Rung %d: the box is that many presses from the mark; walk into it to push, step away from it to pull, and a wrong step costs a step.') % int(chosen['PUSHANDPULL_RUNG'])
+
+
+PUSHANDPULL = TaskSpec(
+    title=_('Push and Pull options'),
+    options=(
+        Option('PUSHANDPULL_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20)),
+        Option('PUSHANDPULL_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('PUSHANDPULL_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=pushandpull_note)
+
+
+def onewaydoors_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Rung %d: the goal is that many steps away in a maze whose wedged openings go one way only; a wrong step costs a step.') % int(chosen['ONEWAYDOORS_RUNG'])
+
+
+ONEWAYDOORS = TaskSpec(
+    title=_('One-Way Doors options'),
+    options=(
+        Option('ONEWAYDOORS_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20)),
+        Option('ONEWAYDOORS_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('ONEWAYDOORS_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=onewaydoors_note)
+
+
+def icefloor_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Rung %d: each press slides until something stops it; come to rest on the goal, that many slides away. A wrong slide costs a step.') % int(chosen['ICEFLOOR_RUNG'])
+
+
+ICEFLOOR = TaskSpec(
+    title=_('Ice Floor options'),
+    options=(
+        Option('ICEFLOOR_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)),
+        Option('ICEFLOOR_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('ICEFLOOR_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=icefloor_note)
+
+
 def soundback_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung is like."""
     return _('Press for the tone that sounded %d frames ago: low, middle or high.') % int(chosen['SOUNDBACK_RUNG'])
@@ -7022,6 +7076,9 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'other_voice': OTHERVOICE,
     'long_way_round': LONGWAYROUND,
     'key_and_door': KEYANDDOOR,
+    'push_and_pull': PUSHANDPULL,
+    'one_way_doors': ONEWAYDOORS,
+    'ice_floor': ICEFLOOR,
     'sound_back': SOUNDBACK,
     'hidden_cue': HIDDENCUE,
     'shape_back': SHAPEBACK,

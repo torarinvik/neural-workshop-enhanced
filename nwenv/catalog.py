@@ -790,6 +790,15 @@ CATALOG: Tuple[Wrapped, ...] = (
     Wrapped('key_and_door', 'Key and Door',
             'nwenv.longwalk', 'KeyAndDoorEnv',
             'neural_workshop.ui.longwalk', 'KeyAndDoor'),
+    Wrapped('push_and_pull', 'Push and Pull',
+            'nwenv.morewalks', 'PushAndPullEnv',
+            'neural_workshop.ui.morewalks', 'PushAndPull'),
+    Wrapped('one_way_doors', 'One-Way Doors',
+            'nwenv.morewalks', 'OneWayDoorsEnv',
+            'neural_workshop.ui.morewalks', 'OneWayDoors'),
+    Wrapped('ice_floor', 'Ice Floor',
+            'nwenv.morewalks', 'IceFloorEnv',
+            'neural_workshop.ui.morewalks', 'IceFloor'),
 )
 
 BY_ID: Dict[str, Wrapped] = {row.task_id: row for row in CATALOG}
@@ -805,7 +814,8 @@ FAMILIES: Dict[str, Tuple[str, ...]] = {
               'next_shape', 'next_tile', 'in_the_loop', 'in_the_pen'),
     'looking back': ('shape_back', 'hidden_cue', 'sound_back'),
     'held in mind': ('changed_tile', 'swapped_boxes'),
-    'forgiving walks': ('long_way_round', 'key_and_door'),
+    'forgiving walks': ('long_way_round', 'key_and_door', 'push_and_pull',
+                        'one_way_doors', 'ice_floor'),
     'heard back': ('changed_note', 'changed_chime', 'marked_tone', 'other_voice'),
     'far cue': ('the_marked_one', 'flagged_bead'),
     'own presses': ('next_in_turn', 'round_again', 'stay_or_shift', 'moving_prize'),

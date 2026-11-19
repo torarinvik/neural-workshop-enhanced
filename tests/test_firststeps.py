@@ -332,7 +332,7 @@ class TheBoundary(unittest.TestCase):
 
 class TheCatalogue(unittest.TestCase):
     def test_every_new_task_has_a_row(self):
-        self.assertEqual(len(NEW), 46)
+        self.assertEqual(len(NEW), 49)
         for task_id in NEW:
             self.assertIn(task_id, catalog.BY_ID)
 

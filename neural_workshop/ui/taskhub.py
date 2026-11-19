@@ -334,6 +334,9 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('other_voice', _('Other Voice')),
         ('long_way_round', _('Long Way Round')),
         ('key_and_door', _('Key and Door')),
+        ('push_and_pull', _('Push and Pull')),
+        ('one_way_doors', _('One-Way Doors')),
+        ('ice_floor', _('Ice Floor')),
     ],
 }
 
@@ -1576,6 +1579,18 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'key_and_door':
         from .longwalk import KeyAndDoor
         KeyAndDoor()
+        return
+    if task_id == 'push_and_pull':
+        from .morewalks import PushAndPull
+        PushAndPull()
+        return
+    if task_id == 'one_way_doors':
+        from .morewalks import OneWayDoors
+        OneWayDoors()
+        return
+    if task_id == 'ice_floor':
+        from .morewalks import IceFloor
+        IceFloor()
         return
     if task_id == 'gamble':
         from .gamble import Gamble
