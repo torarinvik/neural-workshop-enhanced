@@ -5105,6 +5105,42 @@ OTHERVOICE = TaskSpec(
     note=othervoice_note)
 
 
+def longwayround_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Rung %d: the goal is that many steps away in a seven by seven maze; a wrong step costs a step, and the steps allowed are a few more than that.') % int(chosen['LONGWAYROUND_RUNG'])
+
+
+LONGWAYROUND = TaskSpec(
+    title=_('Long Way Round options'),
+    options=(
+        Option('LONGWAYROUND_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20)),
+        Option('LONGWAYROUND_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('LONGWAYROUND_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=longwayround_note)
+
+
+def keyanddoor_note(chosen: Dict[str, Any]) -> str:
+    """The title only: this task is kept back."""
+    return _('Key and Door')
+
+
+KEYANDDOOR = TaskSpec(
+    title=_('Key and Door options'),
+    options=(
+        Option('KEYANDDOOR_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20)),
+        Option('KEYANDDOOR_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('KEYANDDOOR_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=keyanddoor_note)
+
+
 def soundback_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung is like."""
     return _('Press for the tone that sounded %d frames ago: low, middle or high.') % int(chosen['SOUNDBACK_RUNG'])
@@ -6984,6 +7020,8 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'changed_chime': CHANGEDCHIME,
     'marked_tone': MARKEDTONE,
     'other_voice': OTHERVOICE,
+    'long_way_round': LONGWAYROUND,
+    'key_and_door': KEYANDDOOR,
     'sound_back': SOUNDBACK,
     'hidden_cue': HIDDENCUE,
     'shape_back': SHAPEBACK,

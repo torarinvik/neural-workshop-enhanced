@@ -2048,6 +2048,14 @@ The same questions in sound, reaching the agent only as sound: the screen shows 
 
 The tone heard when the question is put says nothing of the answer; keeping only the last of the first four tones earns one half on Changed Note.
 
+#### Forgiving walks
+
+In the short walks a wrong press ends the trial. Here it does not: a press into a wall or down a dead end costs a step, and the trial goes on until the goal is reached or the steps run out, at par plus half of par and never less than par plus two.
+
+* **Long Way Round**: a seven by seven maze, drawn afresh each trial, with the goal *n* presses away along the shortest way. The board keeps its size, place on screen and ports (up, down, left, right) on every rung, so a higher rung is a longer walk and not another task. Pips under the board count the steps left.
+
+Pressing at random reaches the goal at rung 1 about 45 times in a hundred.
+
 ### Reasoning
 
 The *Reasoning* category holds 39 tasks.

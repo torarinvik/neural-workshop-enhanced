@@ -332,6 +332,8 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('changed_chime', _('Changed Chime')),
         ('marked_tone', _('Marked Tone')),
         ('other_voice', _('Other Voice')),
+        ('long_way_round', _('Long Way Round')),
+        ('key_and_door', _('Key and Door')),
     ],
 }
 
@@ -1566,6 +1568,14 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'other_voice':
         from .heardback import OtherVoice
         OtherVoice()
+        return
+    if task_id == 'long_way_round':
+        from .longwalk import LongWayRound
+        LongWayRound()
+        return
+    if task_id == 'key_and_door':
+        from .longwalk import KeyAndDoor
+        KeyAndDoor()
         return
     if task_id == 'gamble':
         from .gamble import Gamble
