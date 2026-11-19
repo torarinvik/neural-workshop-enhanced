@@ -386,8 +386,8 @@ class PlayerTests(unittest.TestCase):
     not forgive.
 
     Both numbers below are floors on a measurement, not the measurement:
-    the sweeps that produced them are in the Readme, over thirty
-    warehouses a rung rather than the handful a unit test can afford.
+    the sweeps that produced them are in the task reference
+    (docs/TASKS.md), over thirty warehouses a rung rather than the handful a unit test can afford.
     What is held here is the shape — that forgetting the load costs
     steps, that dropping the whole update costs the warehouse, and that
     a player which does neither walks the minimum exactly.

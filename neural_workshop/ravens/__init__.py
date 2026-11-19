@@ -33,7 +33,7 @@ conventions of Raven's Progressive Matrices. An earlier version of
 this engine was a port of the Sandia Generated Matrix Tool, a Java
 research tool by Zachary Benz and Kevin Dixon released by Sandia
 Corporation in 2010 under a three-clause BSD licence; what survives
-from it is the colour work and the near-miss strategy. ``Readme.md``
+from it is the colour work and the near-miss strategy. ``docs/TASKS.md``
 says what was rebuilt and why.
 
 SPDX-License-Identifier: GPL-2.0-or-later

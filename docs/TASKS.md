@@ -1,173 +1,32 @@
-[![Build status](https://github.com/torarinvik/neural-workshop/actions/workflows/zip.yml/badge.svg?branch=master)](https://github.com/torarinvik/neural-workshop/actions/workflows/zip.yml)
+# Task reference
 
-# Neural Workshop 5
-PS: If you appreciated this work, please star the repository. It helps others
-find this repository
+Every task in the task hub, by category: what it asks, how its rungs
+grow, and what its options do. Setting up Neural Workshop, the media
+libraries some tasks need, and the agent environment are covered in
+the [README](../README.md).
 
-## What is this?
-This is a fork of the popular brain training software BrainWorkshop
+## Contents
 
-Since there has not been a release in 3 years, I decided to get it working on
-Python 2+3 in additon to making many changes and improvements.
+- [Long-term memory](#long-term-memory)
+- [Working memory](#working-memory)
+- [Attention](#attention)
+- [Perception](#perception)
+- [Accuracy and order](#accuracy-and-order)
+- [First steps](#first-steps)
+- [Reasoning](#reasoning)
+- [Planning](#planning)
+- [Self-control](#self-control)
+- [Decision making](#decision-making)
+- [Computer use](#computer-use)
+- [Emotion](#emotion)
+- [Social](#social)
+- [Rationality](#rationality)
 
-Version 5 is technically in Beta, although it is expected to be more
-stable compared to the original project and work with modern Python and Pyglet
+## Long-term memory
 
-## Downloads
-
- * Windows: https://github.com/torarinvik/neural-workshop/releases
-
-## New in this release:
-
-* Elements on the screen scale depending on the window size, making it much more
-  usable if you have a hidpi monitor.
-* Using a widescreen resolution causes items on the screen to be placed/scale properly
-* Fullscreen mode sets the resolution of the screen automatically
-* Font size scales based on window size
-  * Positioning of items also scales with window size
-  * Window position and font size are determined with one function to do scaling,
-    thereby making it easier in the future to make adjustments
-* Set fonts differently for serif and for monospace fonts, eventually to allow
-  them to be configurable.
-* Now compatible with Python 3
-  * Fixed issues with at least three modules not loading. This was due to
-    being renamed or their semantics changing. Fixed in a way to maintain Python 2
-    compatibility.
-  * Fix alignment of the polygons/icons in the grid due to changes to division
-    in Python 3
-* Compatible with *both* Python 2 and Python 3!
-* Fixed crash with text.Label not recognizing `halign`; use `align` instead since
-  `halign` is deprecated. Though to avoid breaking anything, we try `align` first
-  and if that fails we fall back to using `halign`
-* Fix many more crashes and issues of Brain Workshop failing to launch
-
-
-## Notes:
-* You need pyglet installed for this to work, and mujoco for the Marble Maze's physics (`pip install mujoco`).
-
-### Code layout
-
-`brainworkshop.py` is still the entry point (`python brainworkshop.py`)
-and still the module the gym imports (`import brainworkshop as bw`), but
-it is now a thin facade over three packages:
-
-| Package | What lives there |
-| --- | --- |
-| `neural_workshop/` | the game — config, state, board, modes, scoring, session, events, and everything drawn on screen under `ui/` |
-| `bwaccel/` | the accelerated kernels, dispatching to the `bwcore` C extension when it is built and to `bwaccel/fallback.py` when it is not |
-| `nwenv/` | the agent boundary — frame capture, public outcomes and their verification, and the stepped environments |
-
-Inside `neural_workshop`, `ravens/` is the odd one out: it is the
-Matrix Reasoning puzzle generator, and it imports no pyglet and
-touches no singleton, so a puzzle can be built and checked without a
-window. `glyphs.py` is split the same way for the same reason, with
-its drawing half under `ui/`, and so are `crossword.py`, `scrabble.py`,
-the `wordlist.py` they and `syllogism.py` draw their words from, and
-`tetris.py`, whose whole promise is a property of a generator that can
-be run without a screen and is. Everything else on screen goes through
-`ui/`.
-
-Inside `neural_workshop`, the live singletons (`cfg`, `window`, `mode`,
-`field`, the labels) live in `state.py` and are reached as `state.mode`
-rather than imported by value, because switching user profile rebinds
-some of them. `bootstrap.build_application()` populates that module in
-the one order that works; nothing else touches a singleton before it has.
-
-### Long-term memory games and their media libraries
-
-The task hub's *Long-term memory* category holds three games that work
-on material you have not seen a hundred times already, so the material
-is downloaded rather than shipped:
-
-- **Concentration** — a board of face-down pairs, turned over two at a
-  time. With `Cards show: sound` it deals five-second clips instead of
-  photographs, which is a markedly harder game: a sound cannot be
-  compared at a glance, it has to be held in mind while the second
-  card plays.
-- **Seen It Before?** — the old/new recognition task. A run presents a
-  stream of items, some of them second showings from far enough back
-  that rehearsal is no help. Scored on both halves — catching repeats
-  and not claiming the new ones — so a single constant answer scores
-  the repeat rate, never 100%.
-- **Trivia** — a general-knowledge question and a list of answers, from
-  TriviaQA. The other two ask what you saw a minute ago; this one asks
-  what you knew before you sat down. Its material is fetched by a
-  command of its own, `python -m neural_workshop.trivia`, and it has a
-  section [below](#trivia).
-
-Fetch the libraries once:
-
-```bash
-.venv/bin/python -m neural_workshop.datasets
-```
-
-That pulls 5,000 photographs from `thethinkmachine/tiny-imagenet` and
-500 sound clips from `renumics/esc50` into `<data dir>/datasets/`.
-Name one to fetch only that, and add a number for a different size —
-the whole of either split, if you have the room:
-
-```bash
-.venv/bin/python -m neural_workshop.datasets tiny-imagenet 100000
-.venv/bin/python -m neural_workshop.datasets esc50 2000
-```
-
-| Library | Full split | On disk |
-| --- | --- | --- |
-| `tiny-imagenet` | 100,000 photographs, 64x64 | ~194 MB |
-| `esc50` | 2,000 clips, 5s, 50 classes | ~882 MB |
-| `div2k` | 900 photographs, 2K resolution | ~4 GB |
-| `ucf101` | 13,320 action clips, 320x240, a few seconds each | ~7 GB |
-
-The `div2k` library feeds the jigsaw puzzles and comes by a different
-route: the Hugging Face dataset (`eugenesiow/Div2k`) is a loading
-script over the original NTIRE challenge archives rather than hosted
-rows, so the fetch downloads those zip archives whole and unpacks
-them. The default hundred images is the validation archive alone
-(~430 MB); asking for more pulls the 3.5 GB training archive too. The
-download resumes where it left off if interrupted. DIV2K is published
-for academic research use; the images are collected from the Internet
-and their copyright stays with their owners.
-
-The `ucf101` library feeds Video Jigsaw, Video Sequence and What Happens
-Next. Hugging Face holds it
-(`quchenyuan/UCF101-ZIP`) as a single 7 GB zip, and the fetch never
-downloads that whole: it reads the zip in place with HTTP range
-requests and pulls only the clips it unpacks, spread across all 101
-action classes. The default thousand clips is about half a gigabyte:
-
-```bash
-.venv/bin/python -m neural_workshop.datasets ucf101
-```
-
-Asking for all 13,320 tops out under 7 GB, and the library carries a
-hard 50 GB ceiling that the fetch checks clip by clip. Playing the
-clips needs the `ffmpeg` program on the path (`brew install ffmpeg`,
-`apt install ffmpeg`). UCF-101 is published for research use by the
-University of Central Florida; the clips come from YouTube and their
-copyright stays with their owners.
-
-The full ESC-50 is worth having if you play the sound modes: it is 50
-classes of 40 clips each, so a complete set gives many different
-recordings *within* a class. That is what stops "have I heard this?"
-being answerable from the category alone.
-
-Fetching is resumable and idempotent — it skips what is already on
-disk, so an interrupted download is finished by running it again.
-Nothing downloads on its own; a game whose library is missing says so
-and stays playable in the other medium.
-
-`neural_workshop/datasets.py` needs only the standard library, going
-through Hugging Face's datasets-server rather than `datasets` or
-`pillow`. A large request additionally tries the dataset's parquet
-files, which is one download instead of tens of thousands and turns an
-hour into a couple of minutes; that path wants `pyarrow`, and falls
-back to fetching item by item when it is absent or fails. The media
-column holds encoded bytes, so files are written straight out and no
-image or audio library is involved either way.
-
-```bash
-.venv/bin/python -m pip install pyarrow   # optional, for bulk fetches
-```
+Concentration, Seen It Before? and Trivia play on downloaded
+material; the README's [Media libraries](../README.md#media-libraries)
+section describes them and how to fetch it.
 
 ### Notebook
 
@@ -302,95 +161,7 @@ rung one it is a coin: the free floor there is 50%, which is the
 highest in the workshop and worth knowing before reading anything off
 such a curve.
 
-### Procedurally distorted letters
-
-`neural_workshop/glyphs.py` and `neural_workshop/ui/glyphs.py` are a
-shared piece rather than a game: they turn a letter into a picture of a
-letter that has never been seen in that shape before. No task uses them
-yet.
-
-A task that draws a letter in one of a handful of typefaces cannot tell
-whether it is being read or remembered, and nothing in the picture says
-which happened. So a letter here is drawn in one of the typefaces
-already installed on the machine and then put through a warp sampled
-from a rung: stretched, sheared, turned, tilted in perspective,
-rippled, thickened or thinned, specked, partly hidden behind bars, and
-faded toward its background. Every knob is sampled independently, so
-the ten rungs are boxes to sample from rather than ten appearances.
-
-Two axes are kept apart on purpose — what the letter *is*, which is a
-task's own content, and what it *looks like*, which is this. They deal
-from different seeds and neither reads the other, so a rung of visual
-difficulty goes under any content difficulty a task already has and a
-result can say which of the two moved.
-
-The rules module imports no pyglet and touches no pixels, so a warp can
-be checked without a window; the `ui/` half is the part that reads a
-glyph's coverage off the card and hands back an `ImageData`.
-
-Three things are worth knowing before using it.
-
-**Split by family, not by file.** Georgia and Georgia Bold Italic are
-one typeface in two files, and holding one out while training on the
-other is a leak with a different filename. `families()` groups files by
-the family name in the font's own `name` table and `split()` divides
-those groups whole.
-
-**Ask the font what it can draw.** Of the 198 families installed on this
-Mac only 59 contain Latin capitals — most of the rest are Noto faces for
-other scripts. Ask one of those 139 for a capital A and the platform
-quietly substitutes one, and pyglet hands back a perfectly good letter
-in a typeface nobody asked for. Every held-out family that is really the
-fallback is the *training* typeface being scored as unseen, which was
-two thirds of the pool. `families(must_draw=...)` reads the font's own
-`cmap` and is not optional for anything being measured.
-
-**Widen the pool before believing a held-out number.** 59 families is
-not a sample of anything: the ten that came out held out were ten
-particular typefaces, and another machine would have had a different
-ten. `neural_workshop/fontlib.py` fetches Google Fonts from the
-`Felix92/docTR-resource-collection` mirror on Hugging Face — 6,899
-`.ttf` files across about 1,800 families, plus a 1,010-file subset the
-mirror marks as covering English. Standard library only, resumable and
-idempotent, and nothing downloads on its own: a caller asks, by number
-of families rather than of files, and one already on disk is skipped.
-
-```bash
-PYTHONPATH=. .venv/bin/python -m neural_workshop.fontlib google 300  # about 120 MB
-```
-
-The files land in the player's data directory, not in this repository.
-They are Google Fonts under the SIL Open Font License, Apache 2.0 or the
-Ubuntu Font Licence depending on the family; the mirror is tagged
-Apache 2.0. Two cautions carried in the module: the mirror's *filename*
-is used only to spread a fetch across families rather than pull nine
-weights of one face — the family a font is really in comes from its own
-`name` table — and the mirror's "english" folder is its word, not a
-measurement, so `covered()` still decides what can draw an alphabet.
-
-**The ladder is measured, not asserted.** A nearest-template classifier
-over an eight-by-eight ink grid, templates from 40 training families and
-questions from 16 held-out ones, out of 366 Latin-capable families split
-255/54/56, falls 0.90, 0.90, 0.77, 0.63, 0.45, 0.29, 0.22, 0.19, 0.15,
-0.11 across the rungs against a floor of 0.04. The first rung is the
-ceiling of the measurement rather than a score — these are typefaces the
-templates have never seen — so what the column shows is the fall.
-Switching each knob off in turn at rung six puts most of the cost in the
-plain affine matrix (+0.21) and the speckle (+0.11), and finds that
-thickening and contrast recover nothing at all: a signature counts
-pixels above a fixed threshold, so it is blind to both by construction
-and cannot price them. The elastic ripple, which is the knob that most
-looks like difficulty, is worth +0.04.
-
-Widening the pool six-fold, from 59 families to 366, barely moved that
-column — mild evidence that its shape was not an artefact of whichever
-typefaces happened to be installed.
-
-```bash
-cd tests && PYTHONPATH=.. ../.venv/bin/python bench_glyphs.py   # about a minute
-```
-
-### Working memory
+## Working memory
 
 **In the Dark.** A row of lamps is lit behind you in colours you are
 never shown. You walk through a string of rooms and each one does a
@@ -550,7 +321,7 @@ beat. Every rung is winnable — a player who already knows which box is
 the Core delivers it on 300 of 300 deals, using at most 28% of the
 budget, which `tests/oracle_custody.py` measures and the suite checks.
 
-### Attention
+## Attention
 
 The *Attention* category holds **Reflex**: photographs appear at random
 places and shrink from full size to nothing, and you click them before
@@ -789,7 +560,7 @@ cannot come to believe in a rule the game does not have.
 Nothing is downloaded for this one either — the road and the sky are
 generated.
 
-#### Overrun
+### Overrun
 
 A sentence sits in a lane and slides at the right-hand margin. Type it
 away and the line is hauled back a word at a time; let the end of it
@@ -883,7 +654,7 @@ machine that has fetched nothing.
 cd tests && PYTHONPATH=.. ../.venv/bin/python bench_overrun.py
 ```
 
-#### Buzz Wire
+### Buzz Wire
 
 The fairground game, in three dimensions and with the physics done
 properly. A bent wire runs between two posts, a metal loop is threaded
@@ -985,7 +756,7 @@ still ahead; the beads are spaced against the furthest one tick could
 ever carry the loop, so one action moves the count by one at most and
 the signal is a potential in the sense of Ng et al. rather than a hint.
 
-#### Kerbside
+### Kerbside
 
 A street you cannot see. Cars pass from left and right, each heard as
 it comes: louder as it nears, higher in pitch as it approaches and
@@ -1005,7 +776,7 @@ Pass: the far kerb, unhurt. Every street is dealt only when a player
 who waits a fixed time and then walks cannot cross it, so the ears
 have to do the work.
 
-#### Steadicam
+### Steadicam
 
 Keep a moving subject inside the framing box. **Arrows** (or WASD)
 pan and tilt, **Q / E** or the wheel zoom. The subject walks, stops and turns; the take counts the
@@ -1022,7 +793,7 @@ share of time it was framed.
 Pass: framed for the share the rung asks. Holding any one control, or
 none, fails every dealt take.
 
-#### Free Kick
+### Free Kick
 
 The ball on the grass, the goal ahead with a ring lit in its mouth.
 Set the kick -- **Left / Right** aim, **Up / Down** height, **A / D**
@@ -1042,7 +813,7 @@ past the wall and out of the keeper's reach. One kick a round.
 Pass: in the ring. The reference finds a scoring kick by solving the
 flight and sets the dials to it; the kick as first set never scores.
 
-#### Glove
+### Glove
 
 A pitcher throws ball after ball; move the glove -- mouse or arrows --
 to meet each one at the plate. The camera will not hold still: it cuts
@@ -1062,7 +833,7 @@ controls with the picture.
 
 Pass: every pitch caught, bar the misses allowed.
 
-### Perception
+## Perception
 
 The *Perception* category holds two tasks. One asks about what is in
 front of you; the other asks about something that is not on the screen
@@ -1141,7 +912,7 @@ Nothing is downloaded for this one — the shapes are generated, and
 which shape it is carries nothing at all. It is a marker for an
 instant, not a thing to remember.
 
-#### Camera
+### Camera
 
 You stand in a field of objects, and a photograph taken somewhere in
 it is pinned in the corner of the screen. Walk there with WASD, look
@@ -1186,7 +957,7 @@ policy that knows the answer to a paid match at rung 25, about a
 millimetre. The task is turn-based, so it takes the think clock: study
 the photograph longer, or start walking sooner.
 
-#### By Ear
+### By Ear
 
 A short melody plays on a keyboard; play it back. Click the keys, or
 type them on the home row laid out like a piano: A W S E D F T G Y H U
@@ -1201,7 +972,7 @@ J K from C up to the next C.
 
 Pass: every note right and in order. A wrong note ends the round.
 
-#### Piano Tuner
+### Piano Tuner
 
 A reference string and one to tune, heard together. Turn the pin --
 **Up / Down**, slowly with **Shift** -- until the beating between them
@@ -1217,7 +988,7 @@ stops, then press **Enter**.
 Pass: within the allowance when done is called. The pin's position on
 screen says nothing; only the sound does.
 
-#### Cricket Hunt
+### Cricket Hunt
 
 A dark room and crickets chirping somewhere in it. Walk and turn
 (**WASD**), look up and down, and grab (**Space**) when one is within
@@ -1233,7 +1004,7 @@ than behind and louder when faced.
 
 Pass: every cricket caught with at most three misses.
 
-#### Claw Machine
+### Claw Machine
 
 A glass cabinet from the front, prizes on its floor, a claw on a cable.
 Move the trolley left and right, in and out (**arrows**; **Up** is
@@ -1251,7 +1022,7 @@ are easy from the front; how far in is the whole difficulty.
 
 Pass: the claw closes on the gold prize.
 
-#### Symmetric?
+### Symmetric?
 
 Is the pattern its own mirror image? Patterns that are not are, past
 the first rungs, symmetric ones with a few cells spoilt -- down to one,
@@ -1267,7 +1038,7 @@ Cells are drawn as squares, dots or tiles, in several palettes.
 | 13–15 | Or: the same turned upside down? |
 | 16+ | Grids to 24, four colours, a swapped cell |
 
-#### Tangram
+### Tangram
 
 A silhouette and a few sets of pieces: which set covers it, every piece
 turned or flipped as needed, with no gaps or overlaps? The other sets
@@ -1282,7 +1053,7 @@ answer is exact.
 | 10–12 | Four pieces; two wrong ones keeping the area; four sets |
 | 13+ | A piece more every three rungs, to eight |
 
-#### Will It Fit?
+### Will It Fit?
 
 A flat piece and a hole in a board. The piece may be turned on the
 table but not turned over. Does it go in? Higher up: which of several
@@ -1296,7 +1067,7 @@ holes does it go into?
 | 10–12 | Three holes |
 | 13+ | Four holes, bigger pieces, wrong holes a square short |
 
-#### Holds More
+### Holds More
 
 Containers seen side on, each round about its middle: which holds the
 most? Higher up, water in one is poured into another: which mark does
@@ -1312,7 +1083,7 @@ the old trap.
 | 13–15 | Pouring |
 | 16+ | The margin narrows from a fifth to a twentieth; four containers |
 
-#### More or Less
+### More or Less
 
 Two clouds of dots flash and are covered: which had more? Too quick to
 count past the first rungs, and the more numerous dots are the smaller,
@@ -1328,7 +1099,7 @@ you watch -- has either got more, or are they the same?
 | 10–12 | One mixed cloud in two colours |
 | 13+ | The ratio closes toward 1.06; the flash toward a quarter second |
 
-#### Spot the Change
+### Spot the Change
 
 Two pictures flicker, one thing different. Without a blank between them
 the change jumps out; with one, it has to be found figure by figure
@@ -1342,7 +1113,7 @@ the change jumps out; with one, it has to be found figure by figure
 | 10–12 | Sixteen parts, twenty figures |
 | 13+ | Up to forty figures, shorter pictures, less time |
 
-#### Find It
+### Find It
 
 The target is shown; a crowd flashes and is covered. Was it there? A
 target alone in its colour pops out; one that shares a colour with some
@@ -1357,7 +1128,7 @@ which way it points is slowest of all.
 | 10–12 | The target differs only in how it is turned |
 | 13+ | Up to sixty, a shorter look, turns a step apart |
 
-#### Longer or Sooner?
+### Longer or Sooner?
 
 Which lasted longer, the first or the second? Which came first, the
 left or the right? Asked of lights and of tones (the tones in the left
@@ -1373,7 +1144,7 @@ stronger.
 | 10–12 | Six to five; a twentieth |
 | 13+ | Toward 1.03 and eight thousandths of a second |
 
-#### Behind the Screen
+### Behind the Screen
 
 Balls roll in and go behind a screen; some roll on out, some come back.
 How many are behind it now?
@@ -1386,7 +1157,7 @@ How many are behind it now?
 | 10–12 | Two screens, balls crossing between them |
 | 13+ | More balls, faster, more of them moving at once |
 
-#### Same or Different?
+### Same or Different?
 
 Two things: the same or different in one named respect, while others
 may differ -- the same relation in seven guises: **shape**, **count**,
@@ -1398,7 +1169,7 @@ are shown one after the other. ``SAMEDIFF_GUISE`` keeps a run to one
 guise, so whether "same" learned in one carries to another can be
 tested.
 
-#### Live Claw Machine
+### Live Claw Machine
 
 An arcade crane simulated as the thing itself (MuJoCo), drawn in real
 3D. A gantry carries a winch about the top of a glass cabinet; from it
@@ -1432,7 +1203,7 @@ claw to hang still wins about 19 plays in 20 on rungs 1-6, 17 on 7-9,
 rung 16 and one in ten by rung 30: the rest are the machine's. Doing nothing, and pressing at random, win
 nothing: the claw starts over the chute, where there is no prize.
 
-#### The Artist
+### The Artist
 
 A picture on the left, a blank canvas on the right, and a plain paint
 box: pencil, brush, line, box, filled block, filled round, fill, a
@@ -1469,7 +1240,7 @@ and up, the next tool, colour and width, pick, undo, done -- and a
 reference pilot that knows how each picture of shapes was made passes
 those rungs through the same ports.
 
-#### Piano Man
+### Piano Man
 
 A melody plays; then play it back on the keyboard, note for note. Click
 the keys, or use the computer's own: **Z X C V B N M** are the white
@@ -1498,7 +1269,7 @@ The melody reaches an agent only as sound (and, on rungs 1-3, as the
 lit keys); it answers through twenty-six ports, one a key and the last
 to hear it again, and hears its own keys as it plays them.
 
-#### Thirty judgements by eye and ear
+### Thirty judgements by eye and ear
 
 The thirty tasks from *Brighter* to *Flash and Beep* are each one quick
 judgement, asked again and again: a run is twenty of them, each judged
@@ -1511,7 +1282,7 @@ answers from the picture or the sound itself -- measuring the areas,
 finding the chain, reading the pile -- which must agree with every
 deal. The six heard tasks reach the agent only as sound.
 
-#### Brighter
+### Brighter
 
 Grey patches, each on its own ground: which patch is the lighter? A grey looks lighter on a dark ground and darker on a light one, so from rung 4 the grounds are dealt to argue against the truth.
 
@@ -1523,7 +1294,7 @@ Grey patches, each on its own ground: which patch is the lighter? A grey looks l
 | 10–12 | Patches of different sizes |
 | 13+ | Three patches, four from 19; the step narrowing toward one in a hundred |
 
-#### Colour Match
+### Colour Match
 
 A sample and a row of swatches; exactly one is the sample's colour, the others a step off in hue, strength or lightness.
 
@@ -1535,7 +1306,7 @@ A sample and a row of swatches; exactly one is the sample's colour, the others a
 | 10–12 | Different shapes and sizes |
 | 13+ | Five swatches, six from 19; ever closer |
 
-#### Longer Line
+### Longer Line
 
 Which line is the longest? Arrowheads make a line look shorter and tails longer (Müller-Lyer); between converging rails the line nearer the narrow end looks longer (Ponzo). The fins are dealt against the truth.
 
@@ -1547,7 +1318,7 @@ Which line is the longest? Arrowheads make a line look shorter and tails longer 
 | 10–12 | Rails that mislead; a twelfth |
 | 13+ | Three lines, four from 19; toward one part in fifty |
 
-#### Steeper
+### Steeper
 
 Two slopes: which is nearer upright?
 
@@ -1559,7 +1330,7 @@ Two slopes: which is nearer upright?
 | 10–12 | 4; each in a tilted frame |
 | 13+ | Narrowing toward half a degree |
 
-#### Bigger Area
+### Bigger Area
 
 Which shape covers the most paper? A long shape looks bigger than a compact one of the same area, so the smaller shapes are the longer ones.
 
@@ -1571,7 +1342,7 @@ Which shape covers the most paper? A long shape looks bigger than a compact one 
 | 10–12 | Turned any way; by an eighth |
 | 13+ | Three shapes, four from 19; toward one part in thirty |
 
-#### Midpoint
+### Midpoint
 
 A line with numbered marks across it: which is exactly halfway?
 
@@ -1583,7 +1354,7 @@ A line with numbered marks across it: which is exactly halfway?
 | 10–12 | No line, only its ends; four marks |
 | 13+ | Five marks, toward one part in a hundred |
 
-#### Parallel?
+### Parallel?
 
 Two long lines: parallel or not quite? From rung 7 short hatches cross them, slanted to hide a real tilt or to fake one (Zöllner).
 
@@ -1595,7 +1366,7 @@ Two long lines: parallel or not quite? From rung 7 short hatches cross them, sla
 | 10–12 | 1.5 |
 | 13+ | Toward a quarter of a degree |
 
-#### Hidden Figure
+### Hidden Figure
 
 A small figure of a few strokes and some busier drawings; exactly one contains it, the same way up and the same size. A deal is kept only when a search of every position finds it in one drawing and no other.
 
@@ -1607,7 +1378,7 @@ A small figure of a few strokes and some busier drawings; exactly one contains i
 | 10–12 | Five among twelve on a bigger lattice; four drawings |
 | 13+ | More strokes around it; six-stroke figures from 16 |
 
-#### Contour
+### Contour
 
 A field of short strokes pointing every way; in one part some lie end to end along a smooth path. Which part? The path is kept only when it is the longest chain a chain-finder can find anywhere in the field.
 
@@ -1619,7 +1390,7 @@ A field of short strokes pointing every way; in one part some lie end to end alo
 | 10–12 | More off true, a tighter curve |
 | 13+ | Seven strokes, up to fifteen degrees off |
 
-#### Same Line?
+### Same Line?
 
 Lines cross the page through a tangle, all in one ink. Are the two dots on the same line? Higher up: which end does the marked line come out at?
 
@@ -1631,7 +1402,7 @@ Lines cross the page through a tangle, all in one ink. Are the two dots on the s
 | 10–12 | Five lines, four stretches |
 | 13+ | Six lines; a longer tangle every three rungs |
 
-#### Texture Edge
+### Texture Edge
 
 A page of small strokes that all lean one way, except in one square patch. No outline is drawn. Which part of the page is it in? From rung 7 the texture is sometimes crosses among corners -- the same two strokes, arranged differently.
 
@@ -1643,7 +1414,7 @@ A page of small strokes that all lean one way, except in one square patch. No ou
 | 10–12 | 30 degrees |
 | 13+ | A patch of four strokes, toward 10 degrees |
 
-#### What Is Behind
+### What Is Behind
 
 A shape with a screen across it, and whole shapes below: exactly one agrees with the parts that show.
 
@@ -1655,7 +1426,7 @@ A shape with a screen across it, and whole shapes below: exactly one agrees with
 | 10–12 | Four shapes |
 | 13+ | The whole shapes turned round, and ever closer |
 
-#### Top Card
+### Top Card
 
 Numbered cards dropped one on another. Where one card's edge runs unbroken across another it lies over it, and the whole order can be read. A deal is kept only when what can be seen settles the order.
 
@@ -1667,7 +1438,7 @@ Numbered cards dropped one on another. Where one card's edge runs unbroken acros
 | 10–12 | Five cards; second from the top |
 | 13+ | Six cards of one colour, seven from 19; third from the top |
 
-#### Bump or Dent
+### Bump or Dent
 
 Round marks shaded from one side to the other. A bump is lit on the side facing the lamp and a dent on the side away, so the same picture upside down changes from one to the other.
 
@@ -1679,7 +1450,7 @@ Round marks shaded from one side to the other. A bump is lit on the side facing 
 | 10–12 | Four to six marks and a lamp: how many are bumps? |
 | 13+ | Counting from a labelled bump; more marks, fainter shading |
 
-#### Far Size
+### Far Size
 
 Posts on flat ground running to the horizon: which is really the tallest? A post whose top just reaches the horizon is as tall as the eye is high, wherever it stands.
 
@@ -1691,7 +1462,7 @@ Posts on flat ground running to the horizon: which is really the tallest? A post
 | 10–12 | Three posts; an eighth |
 | 13+ | Four posts from 16; no ground lines from 19 |
 
-#### Reflection
+### Reflection
 
 A figure and a mirror: which figure is what the mirror shows? The others are the figure itself, turned half round, or mirrored the other way.
 
@@ -1703,7 +1474,7 @@ A figure and a mirror: which figure is what the mirror shows? The others are the
 | 10–12 | A mirror at any angle |
 | 13+ | One of the others is a reflection with a stroke wrong |
 
-#### Gaze
+### Gaze
 
 A face and numbered things around it. Each eye points at the thing for itself, so the two converge on it. Which thing?
 
@@ -1715,7 +1486,7 @@ A face and numbered things around it. Each eye points at the thing for itself, s
 | 10–12 | Six; one lies on the same line as the thing looked at, nearer or farther |
 | 13+ | Eight, toward 6 degrees apart |
 
-#### Which Way
+### Which Way
 
 A field of short-lived dots; some all drift one way, the rest every way. Which way is the drift?
 
@@ -1727,7 +1498,7 @@ A field of short-lived dots; some all drift one way, the rest every way. Which w
 | 10–12 | A quarter; shorter lives |
 | 13+ | Eight ways; toward one in sixteen |
 
-#### Faster
+### Faster
 
 Two windows of moving dots: in which are they faster?
 
@@ -1739,7 +1510,7 @@ Two windows of moving dots: in which are they faster?
 | 10–12 | An eighth |
 | 13+ | One window after the other; toward one part in thirty |
 
-#### Walker
+### Walker
 
 Eleven lights on the joints of someone walking on the spot. Which way does the figure face? Knees lead and elbows trail.
 
@@ -1751,7 +1522,7 @@ Eleven lights on the joints of someone walking on the spot. Which way does the f
 | 10–12 | Sixteen |
 | 13+ | More every rung, to sixty |
 
-#### Collision Course
+### Collision Course
 
 Two balls roll toward where their ways cross and are covered before they get there. Will they hit?
 
@@ -1763,7 +1534,7 @@ Two balls roll toward where their ways cross and are covered before they get the
 | 10–12 | Covered sooner; nearer misses, hits that only clip |
 | 13+ | Sooner still; a miss by one and a fifth |
 
-#### Heading
+### Heading
 
 Dots stream outward from the point being headed for. Which numbered mark is it?
 
@@ -1775,7 +1546,7 @@ Dots stream outward from the point being headed for. Which numbered mark is it?
 | 10–12 | Five; three in ten; short-lived dots |
 | 13+ | Seven marks closing up; more strays |
 
-#### Number Line
+### Number Line
 
 A line with a number at each end and a mark along it: what number is at the mark? From rung 7 also the other way: which mark is at a given number.
 
@@ -1787,7 +1558,7 @@ A line with a number at each end and a mark along it: what number is at the mark
 | 10–12 | 7 parts in a hundred |
 | 13+ | Five answers, six from 16; toward 1.5 in a hundred |
 
-#### What Share
+### What Share
 
 A bar, a round or a scatter of dots, part coloured: what share is that?
 
@@ -1799,7 +1570,7 @@ A bar, a round or a scatter of dots, part coloured: what share is that?
 | 10–12 | 7 apart; scatters of dots too |
 | 13+ | Five answers, six from 16; toward 3 in a hundred |
 
-#### Louder
+### Louder
 
 Tones in turn: which was the loudest? Heard, not seen; the whole trial is played now quietly, now loudly.
 
@@ -1811,7 +1582,7 @@ Tones in turn: which was the loudest? Heard, not seen; the whole trial is played
 | 10–12 | Three tones; an eighth |
 | 13+ | Toward one part in thirty |
 
-#### Which Ear
+### Which Ear
 
 A tone between the ears: left or right? Higher up, two tones: was the second left or right of the first?
 
@@ -1823,7 +1594,7 @@ A tone between the ears: left or right? Higher up, two tones: was the second lef
 | 10–12 | An eighth; different pitches |
 | 13+ | Toward one part in forty |
 
-#### Up or Down
+### Up or Down
 
 Two tones: did it go up or down? From rung 10 three tones: which was highest?
 
@@ -1835,7 +1606,7 @@ Two tones: did it go up or down? From rung 10 three tones: which was highest?
 | 10–12 | The highest of three |
 | 13+ | Toward a twentieth of a semitone |
 
-#### How Many Beeps
+### How Many Beeps
 
 A run of beeps: how many?
 
@@ -1847,7 +1618,7 @@ A run of beeps: how many?
 | 10–12 | Up to seven, on different notes |
 | 13+ | Up to nine, among low knocks that do not count |
 
-#### Same Instrument
+### Same Instrument
 
 Two notes: one instrument or two? From rung 10 three notes: which was on the other instrument?
 
@@ -1859,7 +1630,7 @@ Two notes: one instrument or two? From rung 10 three notes: which was on the oth
 | 10–12 | The odd one of three |
 | 13+ | Always one family; an octave apart; shorter notes |
 
-#### Flash and Beep
+### Flash and Beep
 
 A lamp flashes and a beep sounds: which came first? Higher up the lamp flashes a few times among a different number of beeps: how many flashes?
 
@@ -1871,12 +1642,12 @@ A lamp flashes and a beep sounds: which came first? Higher up the lamp flashes a
 | 10–12 | 0.04 s; up to three |
 | 13+ | Up to four, quicker; toward 0.01 s |
 
-### Accuracy and order
+## Accuracy and order
 
 Getting it exactly right: rules applied to the letter, and things kept
 in their places.
 
-#### Desk Jockey
+### Desk Jockey
 
 A rulebook on the left, a tray of forms on the right, and the form on
 top of the tray in the middle with whatever is attached to it -- an
@@ -1911,7 +1682,7 @@ every tray. Approving everything, or sending everything back, never
 does; pressing actions at random clears about one three-form tray in
 eight at rung 1 and next to none above.
 
-### First steps
+## First steps
 
 Tasks for a learner starting from nothing. A beginner pressing at random is paid on almost none of the multi-press tasks, so it has nothing to learn from. Each of these gives a first payment that is within reach and then asks for one small step more:
 
@@ -1928,83 +1699,83 @@ Every task on the shared boundary also takes `frame_scale`, one over a whole num
 
 Several pairs are **twins**: the same rule in another look, with other colours, shapes, layout and port order. `nwenv.catalog.TWINS` records the pairs and `twin_of()` looks one up. The catalogue also marks a few tasks as held out (`nwenv.catalog.HELD_OUT`); they are not described here. Their models, screens and wrappers live only in the modules `nwenv.catalog.HELD_OUT_MODULES` names, and their tests only in `tests/test_heldout.py`, so every other module can be read without reading a held-out task. `nwenv.catalog.card(task_id)` describes any catalogued task without opening its source: its ports, whether it is clocked and its family; and, for the open first-steps tasks, the chance level for a player that sees only the frame showing, what the cheap partial strategies earn, and for rungs 1 to 5 how many shown frames back the answer lies and how many presses the shortest way needs. A held-out task's card gives only ports, family and clock. `tests/test_cards.py` counts every floor on the cards over deals.
 
-#### Short Maze
+### Short Maze
 
 A small maze with the way out *n* steps from the walker. Four ports steer.
 
-#### Short Tower
+### Short Tower
 
 A tower of discs *n* moves from stacked on the marked peg. Six ports, one a peg-to-peg move.
 
-#### Turned Tiles
+### Turned Tiles
 
 A board on which *n* tiles are turned out of place, never more than half of them; a pattern tile shows how they should sit. One port a tile.
 
-#### Short Push
+### Short Push
 
 A box-pushing room *n* presses from solved. Four ports steer.
 
-#### Short Maze, Step by Step
+### Short Maze, Step by Step
 
 A small maze with the way out *n* steps from the walker, for a learner paid by the press: built by a runtime, each right step is marked green as it is taken, as well as the finish. Built the plain way only the finish is paid.
 
-#### Marker Walk, Shuffled
+### Marker Walk, Shuffled
 
 A marker on an open grid and a marked square *n* moves away. Each port moves the marker one way, and which way is dealt afresh for each run, so what a port does has to be found by pressing it.
 
-#### Match Shapes
+### Match Shapes
 
 Two sets of *n* shapes side by side: the same, or different in one place?
 
-#### Match Tiles
+### Match Tiles
 
 Two strips of *n* coloured tiles, one above the other: the same, or different in one place? The twin of the same-or-different rule in another look, with the two ports the other way round.
 
-#### Odd Shape
+### Odd Shape
 
 A row of *n* + 2 shapes, one of them another shape: which?
 
-#### Next Shape
+### Next Shape
 
 A run of shapes repeating every *n* + 1: which of three cards comes next?
 
-#### Next Tile
+### Next Tile
 
 A column of pip tiles repeating every *n* + 1: which of three cards comes next?
 
-#### In the Loop
+### In the Loop
 
 An outline with *n* + 3 corners and a dot: inside or outside?
 
-#### In the Pen
+### In the Pen
 
 A fence round *n* + 3 squares of squared paper and a mark: outside or inside?
 
-#### Shape Back
+### Shape Back
 
 A shape a frame; then press the card for the shape that was showing *n* frames ago.
 
-#### Hidden Cue
+### Hidden Cue
 
 One of four squares lights, then nothing shows for *n* frames: which was it?
 
-#### Sound Back
+### Sound Back
 
 A tone a frame, low, middle or high, reaching the agent only as sound; then press for the tone *n* frames ago.
 
-#### Changed Tile
+### Changed Tile
 
 Four tiles show, each a hue, and show again *n* frames later with one of them another hue: press the tile that changed.
 
-#### Swapped Boxes
+### Swapped Boxes
 
 One of four boxes lights and goes out; then, *n* times, two boxes are joined and what they hold changes places: press the box the light is in now.
 
-#### Which Rule?
+### Which Rule?
 
 Three cards, and one hidden rule for the whole run saying which to press ("the largest", "the red one"). The rule is one of two candidates at rung 1 and one more each rung; every press is judged at once, so wrong presses rule candidates out.
 
-#### Now and earlier
+### Now and earlier
 
 Things show twice, *n* frames apart, and the answer is what is different the second time; neither showing alone says anything about it. Each comes in two looks, shapes on a grid with the cards in a row, and coloured beads round a ring with the cards in a column, numbered the other way round.
 
@@ -2015,7 +1786,7 @@ Things show twice, *n* frames apart, and the answer is what is different the sec
 
 From the second showing alone every answer is as likely as another. Keeping where one thing was earns one half on Which Moved? and three in five on Traded Places; keeping one old thing earns a third on Which Is New? and seven in sixteen on Which Is Gone?.
 
-#### Carried through
+### Carried through
 
 A state shows once, then *n* events change it, a frame each; the question is put on the last event.
 
@@ -2024,7 +1795,7 @@ A state shows once, then *n* events change it, a frame each; the question is put
 
 The last event and the cards say nothing of the answer. Keeping the start and dropping the events earns one half at rung 1 on the count, about a third by rung 3, and a third on the walk at rungs 1 and 2.
 
-#### Own presses
+### Own presses
 
 Four plain panels, the same for every answer; the right one depends on what was pressed, and paid, on earlier trials, and nothing on screen says what that was: no panel is marked after a press, and the verdict says only *Right* or *Wrong*.
 
@@ -2033,7 +1804,7 @@ Four plain panels, the same for every answer; the right one depends on what was 
 
 Without memory of its own presses a player is right one time in four. Pressing round the cycle without looking back is right at rungs 1, 5, 9 and never at the others; win-stay, lose-shift *n* trials back earns about half on Stay or Shift.
 
-#### A cue far back
+### A cue far back
 
 For a learner whose memory is too short to keep every frame. Four things show, one of them marked; then 2, 4, 8, 16 or 32 frames (rungs 1 to 5) of the same kind of things in the same places, unmarked; then the four first things on cards in a new order: press the card of the marked one.
 
@@ -2041,7 +1812,7 @@ For a learner whose memory is too short to keep every frame. Four things show, o
 
 The question frame is at one in four, and so are keeping the first frame without the mark, keeping where the mark was without what, and keeping only the last frames.
 
-#### Heard back
+### Heard back
 
 The same questions in sound, reaching the agent only as sound: the screen shows when a tone plays, never which. Four pitches, drawn evenly, moving together by up to a semitone from trial to trial.
 
@@ -2050,7 +1821,7 @@ The same questions in sound, reaching the agent only as sound: the screen shows 
 
 The tone heard when the question is put says nothing of the answer; keeping only the last of the first four tones earns one half on Changed Note.
 
-#### Forgiving walks
+### Forgiving walks
 
 In the short walks a wrong press ends the trial. Here it does not: a press into a wall or down a dead end costs a step, and the trial goes on until the goal is reached or the steps run out, at par plus half of par and never less than par plus two.
 
@@ -2062,7 +1833,7 @@ In the short walks a wrong press ends the trial. Here it does not: a press into 
 
 No board is dealt where a press could lead somewhere the goal cannot be reached from. Pressing at random reaches the goal at rung 1 about 45 times in a hundred on Long Way Round, and at rungs 1, 3 and 5 about 37, 4 and 1 in a hundred on Push and Pull, 44, 6 and 1 on One-Way Doors, and 44, 8 and 1 on Ice Floor.
 
-#### Walks from memory
+### Walks from memory
 
 Holding something in mind and acting on it over several presses. An open seven by seven board; where to go shows for two frames and is hidden, and the walk goes under the forgiving rules (a wrong press costs a step; the steps allowed are par plus half of par, at least par plus two). Presses while the goal shows are ignored, nothing on screen changes when a place is reached, and the screen shows no rung and no count of steps, so it holds nothing a player could use in place of memory.
 
@@ -2071,11 +1842,11 @@ Holding something in mind and acting on it over several presses. An open seven b
 
 Where the goal lies, among the squares at the rung's distance, is drawn evenly. A player who sees only the current frame is at about the level of random presses: at rungs 1, 3 and 5, random presses earn 36, 7 and 2 in a hundred on Gone From View and 13, 2 and 1 on In That Order; the best fixed direction earns 26, 9 and 4, and heading for the middle 31, 15 and 6.
 
-### Reasoning
+## Reasoning
 
 The *Reasoning* category holds 39 tasks.
 
-#### Graph Mapping
+### Graph Mapping
 
 Two networks of dots
 and lines, side by side, drawn differently. The question is whether
@@ -2125,7 +1896,7 @@ the pair under time pressure, and with *Add a dot when right* the size
 follows how you do. Nothing is downloaded for this one either — the
 networks are generated.
 
-#### Matrix Reasoning
+### Matrix Reasoning
 
 A grid of figures that follow rules you have to work out, with the
 bottom-right panel missing and the candidates for it beside the grid
@@ -2226,7 +1997,7 @@ once it has been answered, which turns a run into practice rather than
 a test. Nothing is downloaded — a puzzle costs under a tenth of a
 millisecond to build, so they are made as you play.
 
-##### Colour
+#### Colour
 
 *Mix in coloured puzzles* alternates coloured grids with grey ones. A
 puzzle is one or the other and never both: a candidate in the wrong
@@ -2246,7 +2017,7 @@ so the sequence is a lightness ramp as well as a colour one. A player
 who cannot separate the hues at all still sees each step get darker,
 which is the same rule the grey puzzles ask for.
 
-##### The wrong answers
+#### The wrong answers
 
 A puzzle is only as good as the choices it offers, and the obvious
 way to build them is a trap. Make each wrong answer "the right one
@@ -2276,7 +2047,7 @@ seven attributes kept every one of them balanced and still gave the
 game away, because the all-correct answer agreed with the wrong ones
 *less* than they agreed with each other.
 
-##### Where this came from
+#### Where this came from
 
 The first version of this task was a port of the Sandia Generated
 Matrix Tool, a Java research tool by Zachary Benz and Kevin Dixon
@@ -2293,7 +2064,7 @@ colour work above and the near-miss idea — which was itself a strategy
 the Sandia tool declared, as `MODIFIED_CORRECT_ANSWER`, and never
 wrote.
 
-#### 3D Matrix
+### 3D Matrix
 
 Matrix Reasoning with solid things. Each cell of a three-by-three
 matrix holds a small construction -- blocks stacked on a table, a ball
@@ -2339,7 +2110,7 @@ show; and from rung 4 to 15 picking among the answers *not* on show
 wins about one time in three or four where chance is one in four or
 six. From rung 16 that is at chance too.
 
-#### The Linguist
+### The Linguist
 
 Every trial deals a language nobody has seen, written in letters made
 up for that trial. A few sentences are shown, each under a picture of
@@ -2386,7 +2157,7 @@ each fault is in as many answers as are free of it.
 Not in it: sound rules beyond a letter said twice, and exceptions to
 a language's own rules.
 
-#### Hidden Rule
+### Hidden Rule
 
 Matrix Reasoning asks which of eight pictures finishes a pattern; this
 asks the player to find the pattern themselves, by experiment. A lamp
@@ -2434,7 +2205,7 @@ The agent plays through ten ports: six step one property each to its
 next value (free), then Test, Exam, Lit and Dark. It is turn-based, so
 it takes the think clock.
 
-#### Hidden Wiring
+### Hidden Wiring
 
 A panel of switches and a row of lamps, wired through gates nobody
 shows. Flipping a switch is free; **looking** at the lamps costs a
@@ -2469,7 +2240,7 @@ under all of them. The exam only asks patterns that need a look to
 answer. Eleven agent ports: flip switches one to eight, Look, Exam,
 Answer. Turn-based, so it takes the think clock.
 
-#### Jigsaw Puzzle
+### Jigsaw Puzzle
 
 A photograph is cut into a grid of tiles and shuffled; click two
 tiles to swap them (or walk the cursor with the arrow keys and press
@@ -2504,7 +2275,7 @@ you have already assembled is a memory task, not a reasoning one. A
 larger library therefore means longer before anything comes round
 again; the default hundred images is a hundred fresh puzzles.
 
-#### Video Jigsaw
+### Video Jigsaw
 
 The jigsaw with a moving picture. A short clip is cut into a grid of
 tiles and shuffled, and every tile goes on playing its own part of the
@@ -2525,7 +2296,7 @@ The clips are the `ucf101` library and need `ffmpeg`, as Video
 Sequence does, but the two keep separate rotations: a clip you have
 put in order there is still new here.
 
-#### Video Sequence
+### Video Sequence
 
 The jigsaw in time instead of space. A short clip of someone doing
 something — a dive, a serve, a lift — is cut into equal stretches,
@@ -2542,7 +2313,7 @@ from three up to nine. Clips whose pieces look too alike to order are
 passed over, and every clip is used before any comes round again. The
 clips are the `ucf101` library above, and need `ffmpeg` to play.
 
-#### What Happens Next
+### What Happens Next
 
 The opening of a short clip plays; then a few short stretches of video
 play side by side, and one of them is what really came next. Click it.
@@ -2565,7 +2336,7 @@ library and need `ffmpeg`, as Video Sequence does, with a rotation of
 their own. Six agent ports, one per option. Clocked, because the
 evidence is motion.
 
-#### Will It Fall?
+### Will It Fall?
 
 A small scene of plain rigid-body physics, a question, and a row of
 answer buttons. Every answer is exact -- worked out from centres of
@@ -2591,7 +2362,7 @@ Turn-based, so it takes the think clock. After the verdict the truth is
 drawn in -- the block that topples outlined, the plank tilted, the
 ball's whole path traced -- so a wrong answer shows why.
 
-#### Same or Mirror?
+### Same or Mirror?
 
 Shepard and Metzler's mental rotation. Two figures of cubes, each cube
 face to face with the next in straight arms at right angles: is the
@@ -2614,7 +2385,7 @@ choice is right or wrong; for a pair, the verdict says how many degrees
 apart the two views were. Five agent ports, one per answer. Turn-based, so it
 takes the think clock.
 
-#### Which Is Nearer?
+### Which Is Nearer?
 
 A few solids in a scene: click the nearest. Depth is never given
 straight -- the eye reads it from cues -- and every few rungs one cue
@@ -2635,7 +2406,7 @@ solid's button carries a swatch of its colour, since crowded solids
 leave no room for numbers. Six agent ports, one per solid, counted
 left to right. Clocked, because from rung 16 the evidence is motion.
 
-#### Shape from Motion
+### Shape from Motion
 
 Dots scattered over the surface of a solid that turns about the
 vertical, seen straight on: every dot alike, no shading, no outline,
@@ -2658,7 +2429,7 @@ outline -- a spring especially; past rung 12 the noise and short lives
 leave the motion as what decides. A trial is right or wrong. Six agent
 ports, one per answer. Clocked: the evidence is motion.
 
-#### Point of View
+### Point of View
 
 A map of a table from straight above -- each solid's footprint, and a
 camera with the wedge it looks along -- and a row of pictures of the
@@ -2679,7 +2450,7 @@ order from the right one, so the order alone can always decide. A
 choice is right or wrong. Five agent ports, one per picture. Turn-
 based, so it takes the think clock.
 
-#### Dr Shape
+### Dr Shape
 
 A turtle flies through a dark neon stage laying down a line, and every
 stroke it draws is also a note: the stroke's **height is its pitch**,
@@ -2733,7 +2504,7 @@ frame -- 22.05 kHz, two channels -- and six ports, one per card.
 Clocked: the turtle draws and the choosing time runs out whatever the
 agent does.
 
-#### Inside or Out?
+### Inside or Out?
 
 One closed line on paper and a dot: is the dot inside? **I** or **Y**
 for inside, **O** or **N** for out, or click. A glance settles a blob; a
@@ -2753,7 +2524,7 @@ The line never crosses itself and the dot is never on it.
 Two agent ports, inside (or *yes*) and out (or *no*). Turn-based, so it
 takes the think clock.
 
-#### Touching?
+### Touching?
 
 Two outlined shapes: do they stand **A**part, **T**ouch, or **O**verlap?
 Touching is exact -- the outlines meet at one point -- and apart and
@@ -2771,7 +2542,7 @@ overlapping always clear a visible margin, which narrows up the ladder.
 After the answer the touching points are ringed. Six agent ports: the
 three answers, or a count. Turn-based, so it takes the think clock.
 
-#### Time It
+### Time It
 
 A ball rolls (or flies) behind a screen with a mark on it. Press
 **Space** the moment the hidden ball is at the mark. Its motion has to
@@ -2792,7 +2563,7 @@ while it is in view. Afterwards a ghost shows where it really was.
 One agent port, the press. Clocked: the ball moves whatever the agent
 does, and the agent hears the hum with every frame.
 
-#### Tuner
+### Tuner
 
 A sound plays once -- a dog, rain, a chainsaw. Then an old radio warms
 up: static across the dial, and here and there a station, each playing
@@ -2805,7 +2576,7 @@ which station plays what; the signal meter only says how strong a
 station is.
 
 The recordings are the ESC-50 clips the memory games use (see
-[the media libraries](#long-term-memory-games-and-their-media-libraries); the default 500 are enough, all
+[the media libraries](../README.md#media-libraries); the default 500 are enough, all
 2,000 give more variety). Each clip's kind and sounding stretch is
 indexed in `res/misc/esc50/index.tsv`, built by
 `tools/index_esc50.py`, so a trial is chosen without opening files and
@@ -2826,7 +2597,7 @@ Six agent ports: dial down and up, coarse and fine, lock, and hear it
 again. The sound and the radio reach the agent only as audio, mixed
 exactly as it plays. Clocked.
 
-#### Shadow Play
+### Shadow Play
 
 A bent copper rod hangs in a lamplit room; its shadow falls on the
 back wall, where a gold outline shows the shadow wanted. Turn the rod --
@@ -2847,7 +2618,7 @@ one way the rod might hang can throw the same shadow.
 
 Six agent ports, one per turn direction. Clocked.
 
-#### Captcha
+### Captcha
 
 Type the characters in the picture -- the keyboard types, **Backspace**
 rubs out, **Enter** submits. The rule above the picture says which
@@ -2873,7 +2644,7 @@ After the answer the real characters are ringed. Twenty-five agent
 ports: one per character, rub out, submit. Turn-based, so it takes the
 think clock.
 
-#### Winning Move
+### Winning Move
 
 One legal chess position is dealt and the side to move has exactly one
 checkmate in one. Click a piece and then its destination; legal destinations
@@ -2889,7 +2660,7 @@ up to fourteen independently checked decoys and prefers positions with more
 legal alternatives. The same seeded random source used by the agent boundary
 drives generation, so a seed still reproduces the exact puzzle.
 
-#### Sudoku
+### Sudoku
 
 Twelve rungs, from a four by four that falls to naked singles up to a
 sixteen by sixteen with a hundred and fifty-six blanks that still
@@ -2934,7 +2705,7 @@ landed 16, 6 and 3 across tiers four, five and six, and none below.
 The screen always reports the tier it actually got, never the one it
 wanted.
 
-#### Crossed Wires
+### Crossed Wires
 
 Every other task in the workshop hands the player all the information
 it is ever going to give and then asks what follows. This one does
@@ -2982,7 +2753,7 @@ as a bar as well as a number, because an agent reads this screen as
 pixels and a quantity it can only get by parsing a glyph is one it
 effectively cannot see.
 
-#### Crossword
+### Crossword
 
 Grids generated to order, filled from a word list fetched
 rather than shipped, and clued from definitions the same fetch brings
@@ -3043,7 +2814,7 @@ answer's. Finishing is not the measure: a grid only settles once it is
 full and right, so every solved grid finished. What separates them is
 having deduced rather than run the alphabet.
 
-#### Scrabble
+### Scrabble
 
 One rack, one board, one play. There is no opponent and no
 bag to draw from: a trial hands over a position and scores what you
@@ -3109,7 +2880,7 @@ run of squares, scored the long way — because the whole task rests on
 that one number, and a solver that quietly missed a play would flatter
 every player by an unknown amount and never say so.
 
-#### The word list behind both
+### The word list behind both
 
 Neither game ships its words. Two files come from Hugging Face on
 request:
@@ -3190,7 +2961,7 @@ Both ladders are rerunnable:
 cd tests && PYTHONPATH=.. ../.venv/bin/python bench_words.py
 ```
 
-#### Scramble
+### Scramble
 
 A sentence is corrupted and you type it back.
 
@@ -3265,7 +3036,7 @@ a person brings to `the hrose is balck` is everything they know about
 horses, and a sentence built from a template tests how fast they learn
 the template.
 
-#### The text behind Scramble
+### The text behind Scramble
 
 ```bash
 python -m neural_workshop.sentences
@@ -3308,7 +3079,7 @@ out is a word you cannot type at speed, and speed is all that task is.
 cd tests && PYTHONPATH=.. ../.venv/bin/python bench_scramble.py
 ```
 
-#### Verbal Reasoning
+### Verbal Reasoning
 
 Verbal Reasoning draws English multiple-choice questions from the verified
 artifact built by the sibling `VerbalIQDataset` project. The corpus is not
@@ -3335,7 +3106,7 @@ Only displayable English questions with two to five indexed choices are
 offered. Choices are shuffled on every deal while the gold answer follows its
 text, so a source's answer-position distribution is not a shortcut.
 
-#### Signals
+### Signals
 
 A partner across the table, a row of objects -- each a colour and a
 shape -- and a code nobody explains. When the partner speaks it thinks
@@ -3363,7 +3134,7 @@ below rung twenty and, past it, par set halfway between that learner
 and a perfect game. Sixteen agent ports: eight to pick an object, eight
 to send a glyph. Turn-based, so it takes the think clock.
 
-#### Fold It
+### Fold It
 
 A flat net of six squares, printed side up, its squares folding away
 from the eye. Any of the eleven nets of a cube can be dealt.
@@ -3386,7 +3157,7 @@ sit, so none can be the right cube seen another way. A choice is right
 or wrong. Six agent ports, one per answer. Turn-based, so it takes the
 think clock.
 
-#### Who Knows What?
+### Who Knows What?
 
 A short story told in panels -- each the room just after one event,
 with what is really in each container, who is in the room and who is
@@ -3419,7 +3190,7 @@ the belief tracker, never from the wording, and the tests check the
 tracker on hand-written stories. A trial is right or wrong. Four agent
 ports, one per container. Turn-based, so it takes the think clock.
 
-#### Algebra
+### Algebra
 
 ```
 3 + 4
@@ -3498,7 +3269,7 @@ brackets, and no more written terms than the collected form has.
 cd tests && PYTHONPATH=.. ../.venv/bin/python bench_algebra.py
 ```
 
-#### Syllogisms
+### Syllogisms
 
 ```
 volatile is less than purple   numeric is less than pain
@@ -3645,7 +3416,7 @@ that means something else has stopped the page from saying it.
 cd tests && PYTHONPATH=.. ../.venv/bin/python bench_syllogism.py
 ```
 
-#### The Cipher Abyss
+### The Cipher Abyss
 
 A laboratory with a machine in it. The machine takes a row of coloured
 symbols (each with a shape, a number and a note) and gives back
@@ -3850,7 +3621,7 @@ or off, 32/33 scroll the notebook, 34 marks its last row, 35 toggles
 numbers and 36 sorts. The agent hears every answer as a short tune.
 Clocked, but the clock is long.
 
-#### Crazy Cog
+### Crazy Cog
 
 A motor turns on the left of a workshop pegboard, a winch with a bucket
 on its rope waits to the right, and along the bottom is a tray of cogs
@@ -3907,7 +3678,7 @@ on, the motor's hum rising with its speed and groaning when it stalls,
 a grind when the train jams, and the winch ticking as the bucket
 rises. Clocked.
 
-#### The Proofreader
+### The Proofreader
 
 A passage of real text, damaged. Each sentence sits on its own line and
 each word on its own tile. Mend the passage until it reads exactly as
@@ -3955,7 +3726,7 @@ For the agent, ports 0–11 move the pointer, 12 presses and 13 lets go,
 14 hands the passage in and 15 resets it. Sounds mark a lift, a drop
 and a pick but never say whether a change was right. Clocked.
 
-#### Full Stop
+### Full Stop
 
 A few sentences of real text run together, with every full stop and
 every capital taken out. **Click the last word of each sentence** to
@@ -3977,7 +3748,7 @@ stand side by side inside any sentence of the corpus, so English never
 runs on across a break. Ports as in The Proofreader: 0–11 move, 12
 presses, 13 lets go, 14 hands in, 15 resets. Clocked.
 
-#### The Missing Word
+### The Missing Word
 
 A passage of real text, one sentence a line, has lost some words and,
 from rung 7, gained some it never had. Under every gap between two
@@ -4005,7 +3776,7 @@ word is missing there or not, so the offer doesn't give the gaps away.
 
 Ports as in The Proofreader. Clocked.
 
-#### Figures of Speech
+### Figures of Speech
 
 Words that do not mean what they say, from BIG-bench (see
 [Social](#social) for the source and how to fetch it). It runs on the
@@ -4018,7 +3789,7 @@ same screen as the Emotion tasks.
 | 7–9 | Also: the moral of a fable, from five; six figures to choose from |
 | 10+ | Also: which of five sentences is not a metaphor of the kind the others are; eight figures; less time to read |
 
-#### Heavier
+### Heavier
 
 Crates that look alike stand in lanes. Push one -- hold it with the
 mouse, or hold **1-4** -- and it goes off as fast as its mass and the
@@ -4039,7 +3810,7 @@ Pass: every board right. From rung 4 the crate slowest off the mark is
 the answer only by chance; the slowing after release gives the floor,
 and the two together give the mass.
 
-#### Analogies
+### Analogies
 
 A is to B as C is to which? Three glyph panels and a row of candidates.
 What turned A into B -- a colour, a size, a number of copies, a turn, a
@@ -4057,7 +3828,7 @@ the step is offered.
 | 13–15 | Three changes; glyphs placed across the panel, and moving |
 | 16+ | A change more every four rungs to six; up to eight candidates |
 
-#### Odd One Out
+### Odd One Out
 
 Every panel but one shares something; click the one that does not.
 Every feature a panel can have is tried, and a deal is kept only when
@@ -4071,7 +3842,7 @@ the panel it means is the only one any feature singles out.
 | 10–12 | Five panels; the odd pair may be the one that keeps it |
 | 13+ | A panel more every three rungs to eight; from 16 the odd panel is one property away from another |
 
-#### Which Side?
+### Which Side?
 
 Six panels left of a line follow a rule; six right of it do not. Does a
 new panel go left or right (**Left** / **Right**)? Every rule the rung
@@ -4087,7 +3858,7 @@ all the rules they leave standing send the new panel the same way.
 | 13–15 | Pairs, and rules about the pair |
 | 16+ | Fewer examples a side, down to three; the new panel a property from one of them |
 
-#### Pecking Order
+### Pecking Order
 
 Creatures in an order nobody shows; clues are pairs, "this one beats
 that one". Who wins a pair the clues never put together? Higher up:
@@ -4102,7 +3873,7 @@ which creature stands *k*-th?
 | 13–15 | Seven or eight, the pair far apart |
 | 16+ | A creature's place in the order, among up to twelve |
 
-#### Card Sort
+### Card Sort
 
 Key cards differ from each other in every property. Each card goes
 under one; only "right" or "wrong" is said, and after a run of right
@@ -4122,7 +3893,7 @@ Pass: the card under the key the rule in force says. A reference player
 that keeps the rules the answers allow stays above 70% at every rung;
 sticking to one rule, or guessing, falls below 60% and 50%.
 
-#### Triples
+### Triples
 
 Cards in colour, shape, number and fill, each one of three ways. Three
 make a **triple** when, property by property, they are all alike or all
@@ -4137,7 +3908,7 @@ on the table?
 | 10–12 | Count the triples among six cards |
 | 13+ | A card more every two rungs, to twelve |
 
-#### Who Lives Where?
+### Who Lives Where?
 
 Houses in a row; each has one of every kind of thing. Picture clues:
 ``=`` same house, ``≠`` not, ``|`` just left of, ``…`` somewhere left
@@ -4153,7 +3924,7 @@ thing? The clues always settle it, and none can be dropped.
 | 13–15 | Five houses |
 | 16+ | Six houses; from 22 a fifth kind and ever weaker clues |
 
-#### Which Urn?
+### Which Urn?
 
 Two kinds of urn, their balls shown, and how many of each kind. Some
 balls were drawn from one: from which kind, more likely? The answer is
@@ -4169,7 +3940,7 @@ deal is kept only when one kind is ahead by the rung's margin.
 | 13–15 | Small urns, drawn without putting back |
 | 16+ | The margin narrows; more balls |
 
-#### Grid Change
+### Grid Change
 
 Two or three pairs of coloured grids, a before and an after, the same
 change made to each; then a new grid and candidates. The changes are
@@ -4187,7 +3958,7 @@ kept only when all those that fit do the same to the new grid.
 | 13–15 | Up to three; grids to seven |
 | 16+ | Two examples; bigger grids; candidates a cell off |
 
-#### Button Box
+### Button Box
 
 A figure, a target, and a row of buttons, each doing one hidden thing
 (turn, recolour, grow, move, change shape) -- dealt afresh every trial.
@@ -4208,7 +3979,7 @@ tries each button once and then takes the shortest way needs, plus the
 rung's spare. Random pressing wins about three trials in four at rung 1
 and almost none from rung 13.
 
-#### Which Block?
+### Which Block?
 
 Blocks, and a machine that lights for some. Earlier tries are shown;
 the player may put blocks on and **Run** it (a try), then name the block
@@ -4226,7 +3997,7 @@ together and testing whether one makes the other happen.
 | 13–15 | Six or seven blocks, tries only just enough |
 | 16+ | Up to eight; the machine sometimes fails to light |
 
-### Planning
+## Planning
 
 Every task in the *Planning* category is scored the same honest way:
 against a knowable optimum, because merely finishing any of them
@@ -4359,7 +4130,7 @@ An option marks where you have already been; turning it off makes the
 maze a memory task as well, since you then have to carry the map
 yourself.
 
-#### 3D Maze
+### 3D Maze
 
 The same maze, from inside it. The screen splits: a first-person view
 on the left, cast one ray to a screen column, and on the right a map
@@ -4427,7 +4198,7 @@ costs is nothing where it would have mattered: at 37x37 the map's cell
 size is set by the panel's *width*, so the height it gave up buys the
 guard for free.
 
-#### 3D Sokoban
+### 3D Sokoban
 
 The same warehouse, from inside it — the 2D game's own engine
 throughout. The generator, the ladder, the solver that certifies a
@@ -4526,7 +4297,7 @@ the 3D Maze next door, which had been shipping it: see **the agent
 environment** below for what a sweep of that one could and could not
 have seen.
 
-#### Marble Maze
+### Marble Maze
 
 The wooden labyrinth. Two knobs tip a tray, the tray has walls and holes
 in it, and a steel marble goes where gravity tells it. Get every marble
@@ -4747,7 +4518,7 @@ play raises or lowers the rung from the player's success, while the grid,
 pellet, and line-length controls can be fixed for children, adults, or a
 machine search.
 
-#### Lander
+### Lander
 
 A craft in a lunar valley with gravity, one engine and a tank. **Up**
 fires (down and fuel burn), **Left** and **Right** turn, and the agent
@@ -4769,7 +4540,7 @@ Speed across a moving pad is judged against the pad, so landing on one
 means matching it, not stopping. The model's autopilot lands every
 rung below 20 nearly every time and the top rungs a third of the time.
 
-#### Juggler
+### Juggler
 
 A circus cart under spotlights with a springy tray. Balls drop from the
 top of the tent; **Left** and **Right** drive the cart, and a ball that
@@ -4791,7 +4562,7 @@ Pass: no ball dropped before the act ends. The model's juggler aims
 every catch so the ball comes back toward the middle and keeps all of
 them up through rung 10 nearly every time.
 
-#### Balance
+### Balance
 
 A handcar in a fenced desert yard at dusk, seen from behind and above,
 with a lantern on a pole standing on it. The **arrow keys** (or **W A S
@@ -4816,7 +4587,7 @@ the fence just stops the cart.
 The model's controller balances both ways at once, with gains worked
 out for each pole length and gravity, and passes every rung tried.
 
-#### Crossings
+### Crossings
 
 How many times does the red line cross the blue? Press the number. Every
 crossing is clean -- a fair angle, well apart from the others, and no
@@ -4835,7 +4606,7 @@ counting.
 After the answer every crossing is ringed. Seven agent ports, 0 to 6.
 Turn-based, so it takes the think clock.
 
-#### Keep the Beat
+### Keep the Beat
 
 A metronome ticks -- a click, a lamp, a swinging arm -- then a curtain
 drops over it and it goes silent. Keep tapping **Space** (or **J**, **F**)
@@ -4858,7 +4629,7 @@ One agent port, the tap; the clicks reach the agent as audio with every
 frame. Clocked. At 60 frames a second every rung can be hit; at the
 slowest frame rate the tightest windows fall between frames.
 
-#### Glider
+### Glider
 
 A paper glider flies on through a sunset canyon. Hold **Space** (or
 **Up**, **W**) to climb, let go to sink; it carries its speed, so it has
@@ -4878,7 +4649,7 @@ roof or floor.
 Every course is flown by the model's pilot before it is dealt, so each
 one can be passed. One agent port, held. Clocked.
 
-#### Catch
+### Catch
 
 A court runs away from you in perspective and a thrower lobs balls down
 it. Move the basket -- the mouse runs it to the spot under the pointer,
@@ -4900,7 +4671,7 @@ depth is the whole task. Drop no more than one.
 
 Eight agent ports, four per basket. Clocked, with the balls' sound.
 
-#### Echo Cave
+### Echo Cave
 
 Fly a bat down a winding cave, steering with the mouse (it flies toward
 the pointer) or the arrows, without touching rock, and fly through moths
@@ -4923,7 +4694,7 @@ there is.
 Nine agent ports: eight steering directions and the click. Clocked;
 clicks, echoes and moths reach the agent as sound.
 
-#### Drone Hoops
+### Drone Hoops
 
 Fly a little drone through hoops standing on poles in a walled yard at
 dusk, in order, before the clock runs out. Hold the mouse button and
@@ -4951,7 +4722,7 @@ forward, back, left, right, the four diagonals, up and down. The agent
 hears the bell, the rotors, the wind, the birds and the thunder.
 Clocked.
 
-#### Field Manual
+### Field Manual
 
 A cube of a machine with buttons, switches, dials and sliders on its
 faces, and an order in words along the top: "Press the red button",
@@ -4978,7 +4749,7 @@ Twenty-five agent ports. Ports 0–11 move a pointer drawn on the screen (up, do
 which counts as held for a quarter of a second after it is sent.
 Clocked.
 
-#### Safecracker
+### Safecracker
 
 A vault door with a dial, a word lock and a handle, and an alarm
 counting down. **Drag round the dial**: it ticks at every number and
@@ -5000,7 +4771,7 @@ sets the tumbler. **Type** the answer to the clue along the top, then
 Forty-one agent ports. Ports 0–11 move a pointer drawn on the screen (up, down, left, right by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses its button and 13 lets go; 14–39 type A to Z; 40 is Backspace.
 Clocked.
 
-#### Stagehand
+### Stagehand
 
 A small stage with props on marks and an actor wandering about, and a
 script that comes up a line at a time. **Drag** a prop to the mark the
@@ -5024,7 +4795,7 @@ before nor late.
 
 Nineteen agent ports. Ports 0–11 move a pointer drawn on the screen (up, down, left, right by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses its button and 13 lets go; 14–18 are the cue keys. Clocked.
 
-#### Loading Dock
+### Loading Dock
 
 A warehouse: a shelf of crates along the back, trucks along the front,
 their orders written at the top ("OSLO: two red crates and a blue
@@ -5050,7 +4821,7 @@ Twenty agent ports. Ports 0–11 move a pointer drawn on the screen (up, down, l
 forward, back, turn left, turn right, forward-left, forward-right.
 Clocked.
 
-#### Gunslinger
+### Gunslinger
 
 A duel in a street at sundown, seen down your own barrel. Your revolver
 is already in your hand and its sight follows the **mouse**, but you
@@ -5075,7 +4846,7 @@ Fifteen agent ports. Ports 0–11 move the sight (up, down, left, right
 by 80, 20 or 5 units of a 1000 by 640 screen), 12 pulls the trigger
 and 13 lets it go; 14 cocks the hammer. Clocked.
 
-#### Potter's Wheel
+### Potter's Wheel
 
 A lump of clay turns on the wheel. **Hold the mouse button** against it
 at some height and the clay there moves, slowly, to where the pointer
@@ -5100,7 +4871,7 @@ by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses its button
 and 13 lets it go; 14 spins the wheel faster, 15 slower, 16 wets
 the clay. Clocked.
 
-#### Conductor
+### Conductor
 
 The orchestra from the podium: strings to the left, woodwind in the
 middle, brass to the right, drums at the back. The drummer gives the
@@ -5125,7 +4896,7 @@ Sixteen agent ports. Ports 0–11 move the drawn pointer (up, down, left, right
 by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses its button
 and 13 lets it go; 14 is louder and 15 softer. Clocked.
 
-#### Tightrope
+### Tightrope
 
 Seen in 3D from just behind your shoulders, you are on a wire strung
 between two towers high over a city, holding a long pole. Move the
@@ -5157,7 +4928,7 @@ Fifteen agent ports. Ports 0–11 move the drawn pointer (up, down, left, right
 by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses its button
 and 13 lets it go; 14 takes a step. Clocked.
 
-#### Sign Painter
+### Sign Painter
 
 A board hangs on two chains and the job is written above it: "Paint
 TENT in blue." The letters are made of straight strokes: put the brush
@@ -5182,7 +4953,7 @@ by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses its button
 and 13 lets it go; 14–17 pick red, green, blue and yellow, 18
 dips the brush. Clocked.
 
-#### Bartender
+### Bartender
 
 You stand at the near end of a long bar with bottles on the shelf and
 one glass. Orders come up in words: "Seat 3: a double red on the
@@ -5208,7 +4979,7 @@ Fifteen agent ports. Ports 0–11 move the drawn pointer (up, down, left, right
 by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses its button
 and 13 lets it go; 14 is the ice. Clocked.
 
-#### Lock Pick
+### Lock Pick
 
 A lock cut open, its pins in a row, and two hands' work. One holds
 tension on the plug: **hold Space** (or T) and it builds, let go and it
@@ -5231,7 +5002,7 @@ Fifteen agent ports. Ports 0–11 move the drawn pointer (up, down, left, right
 by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses its button
 and 13 lets it go; port 14, held, tightens the wrench. Clocked.
 
-#### Air Hockey
+### Air Hockey
 
 A table seen from your end. Your mallet goes where the **mouse** is on
 your half; knock the puck into the far goal. Your own goal is kept by
@@ -5255,7 +5026,7 @@ by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses its button
 and 13 lets it go; ports 14 and 15, held, slide the bar left and
 right. Clocked.
 
-#### 3D Brick Breaker
+### 3D Brick Breaker
 
 A ball in a box that runs away from you, a wall of bricks at the far
 end, and a paddle across the near one. The **mouse** slides the paddle
@@ -5312,7 +5083,7 @@ about half the boards up to rung 15 -- there, keeping the ball in play
 is most of the job -- one in forty at rung 19 and none from 22, where
 the mines find it.
 
-#### Semaphore
+### Semaphore
 
 A signaller on a far ship holds two flags; each pair of positions is a
 letter in the workshop's own code. **Drag your own two flags** by their
@@ -5335,7 +5106,7 @@ Forty agent ports. Ports 0–11 move the drawn pointer (up, down, left, right
 by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses its button
 and 13 lets it go; ports 14–39 are the letters A to Z. Clocked.
 
-#### Shadow Puppets
+### Shadow Puppets
 
 A lamp throws the shadow of a figure made of blocks on the wall.
 **Drag** to turn the figure (across spins it, up and down tips it) and
@@ -5358,7 +5129,7 @@ by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses its button
 and 13 lets it go; 14 and 15 roll the figure a little left and
 right. Clocked.
 
-#### Night Watch
+### Night Watch
 
 A dark warehouse and one torch: you see only the round of light at the
 **mouse**. People come in at the doors -- thieves, who walk to the
@@ -5384,7 +5155,7 @@ by 80, 20 or 5 units of a 1000 by 640 screen), 12 presses its button
 and 13 lets it go; ports 14 and 15, held, turn the view left and
 right. Clocked.
 
-#### Rail Yard
+### Rail Yard
 
 Trains leave a tunnel one after another, each painted the colour of the
 station it must reach. **Click a set of points** (or press its number)
@@ -5405,7 +5176,7 @@ rails; two trains on one stretch of track collide.
 The model's dispatcher throws points for the next train in and releases
 a train only when its whole route is clear; it clears every rung.
 
-#### Air Traffic
+### Air Traffic
 
 A radar scope with planes coming in from the edges. **Pick a plane**
 (click it or 1–8) and tell it to **hold** (H), **turn** 45 degrees (A,
@@ -5426,7 +5197,7 @@ The model's controller resolves conflicts, steers round storms and
 clears one plane per runway at a time; it lands nearly every round low
 down and few at the top, which is honest: the top is hard.
 
-#### Escort
+### Escort
 
 Walkers cross a torch-lit temple from the west gate to the east, never
 stopping of their own accord. **Pull levers** (1–6, or click) to open
@@ -5446,7 +5217,7 @@ timed through it. A moving bridge carries no one.
 Every temple is dealt so that the model's escort, which weighs what each
 lever would break against what it would fix, brings everyone through.
 
-#### Sokoban Live
+### Sokoban Live
 
 Crates and pads in a lit warehouse, but the clock runs. **Arrows** step
 the worker and push. Guards patrol straight aisles, one square a beat,
@@ -5466,7 +5237,7 @@ Rooms come from the Sokoban generator, made roomier; every one dealt is
 cleared by the model's worker, which plans the pushes and then waits or
 sidesteps when a guard would meet it.
 
-#### Kitchen
+### Kitchen
 
 One cook, crates of tomatoes, onions, mushrooms and fish, chopping
 boards, stoves, plates, a pass and a bin. Tickets arrive along the rail,
@@ -5486,7 +5257,7 @@ the obvious thing there; a pan left done too long burns.
 The model's cook keeps every plate building toward the most urgent
 ticket and serves nearly every shift below rung 25.
 
-#### Crane
+### Crane
 
 A harbour crane at dawn: a trolley on a rail high above, a hook on a
 cable, a ship moored alongside and bays on the quay. **Left** and
@@ -5507,7 +5278,7 @@ into its bay; the load swings, and a box swung into anything is lost.
 The model's crane driver damps the swing with gains computed offline
 for each cable length and unloads nearly every yard through rung 25.
 
-#### Ferry
+### Ferry
 
 A river ferry between piers on two banks, with barges coming down the
 lanes. **Ahead**, **Astern**, **Left** and **Right** (and the two
@@ -5528,7 +5299,7 @@ as the shift asks, without touching a barge or running aground.
 The model's skipper waits at each lane's edge for a gap and crosses
 nearly every shift through rung 16.
 
-#### Docking
+### Docking
 
 The view from a ship's cockpit: the station's face, its port a ring
 with a cross on a post standing out of it. Lined up, the cross sits in
@@ -5546,7 +5317,7 @@ centred, square and slow, before the fuel runs out.
 Pass: docked within the limits. The fuel is the reference's own use
 times a slack that shrinks with the rung.
 
-#### Rover
+### Rover
 
 A rover on another world. What you send reaches it some time later,
 and what its camera sees reaches you late again: half the delay each
@@ -5568,7 +5339,7 @@ Pass: every flag reached. The reference plans a route on a grid clear
 of rocks and steep cross-slopes and steers from where the rover will
 be when its command lands.
 
-#### Unicycle
+### Unicycle
 
 A rider on one wheel in open country, drawn in lit 3D with shadows,
 the camera riding behind them. The rider is joined to the wheel by a
@@ -5594,7 +5365,7 @@ Only the head touching the ground ends the ride.
 Pass: the flag, in time, head up. The time allowed is the reference
 rider's own time with a slack that shrinks toward a tenth.
 
-### Self-control
+## Self-control
 
 A category of its own rather than a sixth attention task, and the
 difference is worth stating. Everything under **Attention** is about
@@ -5766,7 +5537,7 @@ the time asked for, passes.
 
 One agent port, held. Clocked, with the tone in the agent's audio.
 
-#### Morning Round
+### Morning Round
 
 A paper round up a street, seen from above. The bicycle rides near the
 bottom and the houses come down past it, left and right. **Left /
@@ -5817,14 +5588,13 @@ every block.
 For the agent: ports 0–1 steer, 2–3 pedal faster or slower (each for the
 step it is sent in), 4 throws left, 5 throws right. Clocked.
 
-
-### Decision making
+## Decision making
 
 Choosing under uncertainty: what to find out, when to stop finding out
 and commit, what a wrong commitment costs, and what waiting costs while
 the world moves on.
 
-#### Sonar
+### Sonar
 
 One target is hidden on a grid. Click a cell to **ping** it: it costs
 one point and shows how far away the target is, in bands of distance.
@@ -5859,7 +5629,7 @@ planning further ahead can beat it.
 The agent plays it through six ports: four move a cursor (free), one
 pings and one digs. It is turn-based, so it takes the think clock.
 
-#### Dispatch
+### Dispatch
 
 Sonar's decisions, with the clock running. A town map with three
 stations and two or three crews. Incidents appear as discs that grow,
@@ -5934,7 +5704,7 @@ one way: it does not count how long an incident waited. A finished
 refit is not paid: whether it was worth its twelve seconds is what the
 round's verdict is for.
 
-#### Triage
+### Triage
 
 A few cards, each a row of digits to sort into order by swapping
 neighbours, each paying something when it is sorted -- and one budget
@@ -5966,7 +5736,7 @@ ports: open cards one to eight, swap neighbours one-two to eight-nine
 in the open row, Done. Turn-based, so it takes the think clock, which
 is the point: what is measured is what gets thought about.
 
-#### Gamble
+### Gamble
 
 A row of slot machines with hidden odds. A pull pays what that machine
 pays on a win, or nothing, and the strip under each machine shows its
@@ -6002,7 +5772,7 @@ eighteen; a greedy player that tries each machine once passes three
 quarters at rung one and a fifth at rung thirty. Nine agent ports: pull
 machines one to eight, Stop. Turn-based, so it takes the think clock.
 
-#### Bluff
+### Bluff
 
 A small poker game. Both players put in a chip and get one card from a
 short deck; the higher card wins a showdown. The first to act checks or
@@ -6034,7 +5804,7 @@ adapts at rung one to the reference at twenty-one; one-note and random
 players fall well short. Two agent ports: check or fold, bet or call.
 Turn-based, so it takes the think clock.
 
-#### Explore or Exploit
+### Explore or Exploit
 
 Slot machines, each with a payout that wobbles around a mean you are
 not told. Each card shows the machine's last six payouts. Pull (click or
@@ -6056,7 +5826,7 @@ A machine you stopped pulling never tells you it got better, so the
 only way to know is to spend a pull finding out. The exploration that
 pays at rung 10 is wasted at rung 3.
 
-#### Firebreak
+### Firebreak
 
 A forest fire on a painted landscape, driven by the wind. **Arrows**
 move the crew (Shift: four squares), **Space** digs a firebreak, and a
@@ -6079,7 +5849,7 @@ embers leap it; a wide one costs shovels the fire may not leave time to
 spend. The model's crew rings the town twice against embers and saves
 it nearly always below rung 20.
 
-#### Crossroads
+### Crossroads
 
 A town seen from above, its traffic lights yours. **1–4** (or a click)
 switch a junction between its two ways; every switch runs through amber
@@ -6100,7 +5870,7 @@ light too long loses the shift too.
 Every town dealt is one the model's pressure controller clears and that
 leaving the lights alone does not.
 
-#### Dam Keeper
+### Dam Keeper
 
 Reservoirs step down a valley to a town. Each dam has a gate with four
 notches (**Q W E** open a notch, **A S D** shut one); water let out of
@@ -6123,9 +5893,9 @@ A storm brings water faster than a gate lets it out, so room has to be
 made before it comes. Gates start shut, and every valley dealt is one
 that doing nothing floods.
 
-### Computer use
+## Computer use
 
-#### Desktop
+### Desktop
 
 A small computer, drawn by the task itself: windows with title bars,
 switches, rows of choices, colour swatches, sliders with notches,
@@ -6236,7 +6006,7 @@ Apply, controls with no labels whose effect has to be worked out by
 trying them, selecting several files at once, renaming, search, and
 typing.
 
-#### Forms
+### Forms
 
 Desktop is the pointer half of using a computer; this is the keyboard
 half. A card on the right says who someone is, and the form on the left
@@ -6268,7 +6038,7 @@ Forty-six agent ports, one per key: a-z, 0-9, space, @ . - /,
 Backspace, Tab, Enter, Up and Down. Clicking a field moves to it for a
 key. Turn-based, so it takes the think clock.
 
-#### Manual
+### Manual
 
 A control panel never seen before -- switches, knobs from 0 to 4,
 buttons, coloured lamps and a one-digit display -- and a written
@@ -6297,7 +6067,7 @@ four knobs (down, up), six buttons, Finish -- so once the labels are
 shuffled the label has to be read. Turn-based, so it takes the think
 clock.
 
-#### Browser
+### Browser
 
 A web shop drawn by the task -- a home page of departments, product
 lists that sort and run over pages, a page for each product, a cart --
@@ -6330,7 +6100,7 @@ ports, Desktop's pointer and two more: move up, down, left or right by
 80, 20 or 5 units of a 1000 by 640 window, click, scroll up, scroll
 down. Turn-based, so it takes the think clock.
 
-#### Errands
+### Errands
 
 A small computer: an app strip with **Mail**, **Shop** and
 **Expenses**, and a **Done** button. The mail says what is wanted --
@@ -6362,7 +6132,7 @@ ports, Browser's: move the pointer by 80, 20 or 5 units in four
 directions, click, scroll up, scroll down. Turn-based, so it takes the
 think clock.
 
-#### Spreadsheet
+### Spreadsheet
 
 A table of orders (id, item, category, quantity, price, total) and a
 question above it: *what is the total of everything in Garden?*, *which
@@ -6387,7 +6157,7 @@ from 40% to 10% up the ladder. The tools only help the player who knows
 which one the question needs: scrolling 60 rows and adding up in your
 head is correct and over par.
 
-### Emotion
+## Emotion
 
 Reading feeling: in a face, in a voice, in what people write, in a
 dialogue, and in what a situation is bound to make someone feel. All six
@@ -6420,7 +6190,7 @@ python -m neural_workshop.emotiondata faces         # or one of them
 Without them each task still runs on what is built in: faces drawn from
 a few lines, and a handful of comments, dialogues and stories.
 
-#### Emotion
+### Emotion
 
 Which emotion is the face showing? The right answer is what most of
 the ten FERPlus readers said, and the ladder starts on faces nearly all
@@ -6438,7 +6208,7 @@ of them read the same way.
 | 14+ | Faces with two emotions in them: name the strongest, then the next |
 | 15+ | Down to faces only half the readers agreed on, and less time each, without end |
 
-#### Which Feeling
+### Which Feeling
 
 What does the writer of a Reddit comment feel? GoEmotions' raters say.
 The ladder is how close the other answers are to the right one.
@@ -6452,7 +6222,7 @@ The ladder is how close the other answers are to the right one.
 | 11–13 | Six of the same kind, and neutral |
 | 14+ | Eight, and less time to read each rung |
 
-#### How Strongly
+### How Strongly
 
 A short dialogue from EQ-Bench, and four emotions. Up to rung 3: which
 of the four does the character feel most at the end? From rung 4: how
@@ -6462,14 +6232,14 @@ rung 4, two fewer every two rungs, and not at all from rung 11. Only
 dialogues where giving the same answer to all four would fail are
 dealt.
 
-#### Reading People
+### Reading People
 
 Stories from EmoBench. Rungs 1–3 ask how the subject feels; rungs 4–6
 how they feel and then why; rungs 7–9 what would be the most helpful
 thing for them to do; from rung 10 all of these, mixed, with less time
 to read each rung.
 
-#### Why They Feel
+### Why They Feel
 
 Short stories made up for the task, each built so that one emotion
 follows from it by the appraisal theory of Ortony, Clore and Collins:
@@ -6491,8 +6261,7 @@ Answers that would also be fair (someone relieved is happy too) are
 never offered against each other. The number of answers grows from two
 to eight, and the time per story shrinks with every rung.
 
-
-#### Tone of Voice
+### Tone of Voice
 
 An actor says an ordinary sentence ("It's eleven o'clock") angry,
 disgusted, afraid, happy, sad or plainly. The words are shown, and
@@ -6517,7 +6286,7 @@ Without the clips the voice is a hum made here: six syllables whose
 pitch, pace, loudness and fall follow what is known of how each
 emotion sounds. The voice also goes to an agent on the audio channel.
 
-### Social
+## Social
 
 Reading people past their words. Both tasks run on the Emotion screen
 (the text in the middle, answers on buttons, **1–8** or a click), and so
@@ -6545,7 +6314,7 @@ python -m neural_workshop.socialdata voices        # or one of them
 Without them each task still runs on a handful of questions written
 here (and Tone of Voice on its hum).
 
-#### Between the Lines
+### Between the Lines
 
 What someone means, not what they say. Every question has two answers,
 so a round has twenty and needs fifteen.
@@ -6557,7 +6326,7 @@ so a round has twenty and needs fifteen.
 | 7–9 | Also: whether a sentence is ironic |
 | 10+ | All three mixed, with less time to read each rung |
 
-#### Social Sense
+### Social Sense
 
 Everyday situations from Social IQa, each with a question and three
 answers.
@@ -6570,12 +6339,12 @@ answers.
 | 10–12 | Every kind of question, with less time |
 | 13+ | Two questions about the same situation, both to be right |
 
-### Rationality
+## Rationality
 
 Thinking twice. Both tasks make their questions here, so there is
 never a shortage and none has been seen before.
 
-#### Bad Argument
+### Bad Argument
 
 Does the conclusion follow from what is given? The arguments take a few
 forms, valid or not: *if p then q; p; so q* and *if p then q; not q;
@@ -6597,7 +6366,7 @@ its sets or facts could be.
 | 13–15 | Chains of three premises, whole or with a link turned round, and BIG-bench's syllogisms with negations |
 | 16+ | All of it, naming the flaw again, with less time |
 
-#### Second Thoughts
+### Second Thoughts
 
 Questions whose first answer is wrong; that answer is always among the
 choices.
@@ -6609,782 +6378,3 @@ choices.
 | 7–9 | Also: the hospitals (the small one sees more days with over 60% boys), and the test in percentages, where the lure is the test's accuracy |
 | 10–12 | All of them, with less time |
 | 13+ | Also: the chance of illness after two positive tests |
-
-### Window size, full screen, and the two coordinate spaces
-
-The window is resizable, and **F11** switches to and from full screen
-on any screen. `WINDOW_FULLSCREEN` in `config.ini` decides which one
-the game starts in.
-
-Widgets are positioned from the window size when they are built and
-there is no per-frame layout pass, so a size change rebuilds them.
-Nothing has to remember to ask: `display.on_resize` is pushed onto the
-window, `geometry.set_window_size` notifies its listeners, and every
-`on_draw` calls `display.ensure_laid_out()` as a last check. Rebuilds
-are coalesced, so dragging the window edge costs one rebuild when the
-drag settles rather than one per event. The session, the level and the
-stats live outside the widgets and are untouched; a stimulus on screen
-mid-trial is put back.
-
-A screen that pushes its own `on_draw` must call
-`display.register_overlay(self)`, `display.unregister_overlay(self)`
-when it closes, and provide `relayout()`. `tests/test_ui_units.py`
-fails the build if one does not.
-
-**Pixels are not points.** On a scaled display (Retina, Windows display
-scaling) a window has a drawing surface in *pixels* — `window.width`,
-the GL viewport, every widget coordinate — and a size in *points*,
-which is what the OS API takes. `pixels = points * window.scale`, and
-on an unscaled display the two are equal, which is why mixing them up
-survives testing on one machine and doubles the window on another.
-pyglet gets this wrong itself: `set_fullscreen` saves the windowed size
-in pixels and restores it as points, so leaving full screen would
-double the window on every toggle.
-
-`neural_workshop/geometry.py` owns the distinction and every call into
-pyglet's point-space API:
-
-| Need | Use |
-| --- | --- |
-| lay something out | `window.width` / `window.height`, or the `from_*` helpers — pixels, as always |
-| resize the window | `geometry.set_window_size(width, height)` — points, clamped, verified |
-| the window in OS terms | `geometry.point_size()` |
-| the buffer to read pixels from | `geometry.framebuffer_size(window)` |
-
-Nothing else may call `set_size`, `get_size`, `get_framebuffer_size`,
-`set_minimum_size`, or read `window.scale`; the same test enforces that
-by scanning the source.
-
-### The title logo
-
-The splash is `res/misc/splash/logo.png`, and the one used when
-`BLACK_BACKGROUND` is on is `res/misc/splash-black/logo_blk.png`. Both
-are ordinary resource sets, so a folder holding several images gives a
-different logo each launch — which also means a second file left in
-beside the first is not a replacement, it is a coin toss.
-
-The artwork is *fitted* to the window rather than drawn at whatever
-resolution the file happens to be. `bootstrap._place_splash` scales it,
-aspect ratio intact, into the gap between the version banner and the
-key list, so a new logo cannot be clipped by the window, land on top of
-the keys, or sit as a speck on a large screen. `tests/test_ui_screens.py`
-holds it to that with artwork from 64x64 to 2000x500.
-
-The dark copy is derived from the light one by `tools/unwhite.py`, which
-reads every pixel as ink laid over white paper and undoes that
-composite. The logo is then unchanged on white and becomes pencil on
-black in the dark theme, instead of a bright card floating on it. Run it
-again after changing the logo:
-
-```bash
-python tools/unwhite.py res/misc/splash/logo.png res/misc/splash-black/logo_blk.png
-```
-
-### Trial timing (milliseconds)
-
-Human play still defaults to 100 ms ticks and ~3 s per trial. For faster
-agent training you can set millisecond intervals:
-
-```
-./run --headless --tick-ms 1 --trial-ms 50
-```
-
-- `--trial-ms N` — length of one cell/trial in milliseconds
-- `--tick-ms N` — scheduler quantum (use `1` for true ms control)
-- `--stim-ms N` — requested stimulus visibility (scaled down if it
-  cannot fit in the trial together with feedback)
-- `--headless` — skip the title screen, hide the window, mute music,
-  default to a 1 ms clock and 10 ms trials (override with `--trial-ms`)
-
-Trials are a **state machine** (`stimulus` → optional `blank` →
-`feedback`). If `stimulus + feedback > trial`, both phases are scaled
-so they stay non-overlapping and still fit.
-
-In game: **C** → *Trial interval (ms)*, or **F5** / **F6** in Manual mode.
-
-### Agent environment
-
-`nwenv.NeuralWorkshopEnv` is a `reset → observe → act → advance` boundary
-that shares the human game's stimulus, input, scoring, and renderer.
-
-```python
-from nwenv import NeuralWorkshopEnv
-env = NeuralWorkshopEnv(seed=1)
-obs = env.reset(1)            # RGBA + frame_seq + timestamp
-receipt = env.act(0)                    # opaque port index, not a modality name
-obs, events, done = env.step([])        # waits until the last frame was consumed
-env.close()
-```
-
-- Each `advance`/`step` emits the next **significant** frame (stimulus,
-  blank, or feedback) and will not move on until that frame is consumed.
-- Observations never include cell IDs, match labels, scores, phase
-  names, or the sequence. Outcomes are a pixel-derived scalar plus
-  SHA-256 digests of the public frames used as evidence and the
-  trial's action receipt. Missing/ambiguous feedback yields *no*
-  outcome (not a zero reward).
-- `verify_public_outcome` requires both the immutable frame archive and
-  the receipt ledger whenever the outcome names a receipt. Omitting
-  either fails closed. `verify_public_pixels` is diagnostic only.
-- Actions are opaque integer port indices (`act(0)`, `act([0, 1])`).
-- Headless / `NW_HEADLESS=1` uses pyglet's silent audio driver and a
-  capture player (PCM is recorded, OpenAL is not started). Dual N-Back
-  audio for training is the captured buffer, not physical playback.
-- `NW_SHM=name` writes a one-way framebuffer dump (header + RGBA).
-  It is **not** a complete IPC protocol (no seqlock, no action or
-  reset channel, no ownership handshake).
-- Parity tests compare the step driver to the scheduled `update()`
-  clock with the window **hidden**. That is stepped-versus-scheduled
-  parity, not literal visible-window execution.
-
-Benchmark (reports trials/s, never “experiences/s”):
-
-```
-.venv/bin/python -m nwenv
-```
-
-`GRID_SIZE` is the visible board. `ACTIVE_POSITION_CELLS` (0 = all) is
-an independent center-out curriculum. The session panel shows
-`Grid 4×4 (8/16 cells)` when a subset is active.
-
-Neural Workshop is the canonical training gym. Session difficulty belongs
-on `NeuralWorkshopEnv`:
-
-```
-from nwenv import NeuralWorkshopEnv
-env = NeuralWorkshopEnv(
-    seed=17, game_mode=2, n_back=1, num_trials=60,
-    grid_size=3, active_cells=8, visible=False,
-)
-```
-
-`game_mode=2` is Dual (pixels + public PCM). `game_mode=10` is Position.
-Do not train by patching a separate Brain Workshop or by poking `bw.cfg`.
-A visible window (`visible=True` and `NW_HEADLESS=0`) is for watching the
-gym; the learner still sees only the public observation.
-
-#### Out of Sight as an environment
-
-`nwenv.OutOfSightEnv` is the same `reset → observe → act → advance`
-boundary over the Out of Sight task. The n-back environment watches a
-game it does not control and has to work out where one trial ends; this
-one is the other way round. The task is a continuous animation, so the
-driver owns its clock outright and **one step is one rendered tick**.
-Nothing moves between steps and two runs under the same seed produce the
-same frames byte for byte.
-
-```python
-from nwenv import OutOfSightEnv, verify_sight_outcome
-env = OutOfSightEnv(seed=1, dots=10, targets=3, blinds=4, frame_hz=60)
-obs = env.reset(1)                      # RGBA + frame_seq + timestamp
-receipt = env.act(1)                    # one of two opaque ports
-obs, events, done = env.step()
-env.close()
-```
-
-- A **trial is one question**: the window opens on the tick a dot is
-  ringed and closes when the ring resolves. Exactly one action may be
-  finalized inside it, and it gets a receipt. Pressing both ports or
-  neither is not an answer.
-- The outcome is `+1` or `-1`, read off the ring's colour in the frame —
-  pixels only, never the task's own verdict — so a third party holding
-  the archive and the ledger can re-derive it. `verify_sight_outcome`
-  applies exactly the rules `verify_public_outcome` does and fails
-  closed the same way; only how the scalar is read differs, which is
-  now an argument to the shared verifier.
-- A question the learner never answers still resolves, and resolves
-  as `-1`. Silence is an answer here, because the ring runs out.
-- The dials (`dots`, `targets`, `speed`, `blinds`, `blind_width`,
-  `cross_ms`, `probes`, `rounds`) default to the values in the source,
-  **not** to the player's `config.ini`, so a run under a given seed
-  means the same thing on two machines. `adaptive` is off by default:
-  a curriculum that moves under the learner is the runtime's business.
-- `frame_hz` is what the task is clocked at, not a wall-clock rate. The
-  task's seconds stay the task's seconds; a lower rate is simply a
-  coarser look at the same motion, which is the observation-rate axis
-  the task is hardest along. Ten is the floor — below it a tick would
-  outrun how far the task will move in one call, and the environment
-  refuses rather than quietly drifting.
-
-```
-.venv/bin/python -m nwenv --sight
-```
-
-#### The rest of the workshop
-
-Every task in the hub is reachable by the agent, on the same
-`reset → observe → act → advance` boundary. `nwenv.catalog` is the list,
-and `tests/test_env_catalog.py` fails the build if a task is added to the
-hub without one:
-
-```python
-from nwenv import catalog
-env = catalog.env_class('tower_of_hanoi')(seed=0, disks=4)
-obs, events, done = env.step(2)         # one of three opaque ports
-env.close()
-```
-
-Twenty-two of the forty-five are *declarations* rather than code — where
-the task class lives, what one port calls, which phase takes input, which
-phase means the trial is over, and what the difficulty knobs are called:
-
-```python
-class HanoiEnv(TaskEnv):
-    task_class = ('neural_workshop.ui.hanoi', 'TowerOfHanoi')
-    ports = 3
-    clocked = False
-    action = '_pick'
-    open_phase = ('solving',)
-    settled_phase = ('solved',)
-    knobs = {'disks': 'start_disks', 'rounds': 'total_rounds'}
-```
-
-They carry **no deriver and no verifier**, because they paint the shared
-verdict label and the boundary already knows how to read one. Nineteen
-of them add a short method or two — a port that names an object rather than
-an index, a port that is a moment rather than a symbol, a trial window the
-task has no phase for, a coach gated on whether the boundary will actually
-pay it. The four written before that existed still carry both, at about a
-hundred lines apiece. Twenty-two and nineteen and four is forty-five, which
-is the point of counting them.
-`ADDING_A_TASK.md` is the whole contract.
-
-Two things had to change across the workshop to make this work, and both
-were latent defects rather than boundary plumbing:
-
-- **Fifteen tasks read the wall clock directly**, so a stepped run either
-  never advanced past a feedback window or advanced at a rate set by how
-  fast the machine was. They now read `self.clock()`, which the boundary
-  swaps for a virtual one; `tests/test_ui_clock.py` keeps it that way.
-- **Nine tasks painted into the strip the outcome reader looks at.** Six
-  of them not by using a verdict colour — by using any colour with two
-  channels far apart, whose *anti-aliased edge* passes through the
-  reader's window on its way to the background.
-  `neural_workshop.ui.verdict.above_the_band` is now where that line
-  lives, and `tests/check_band.py` sweeps every task through its own
-  wrapper on every rung.
-
-  The seventh was found later and is a different animal, worth its own
-  sentence because it says something about the sweep. Reflex spawns its
-  targets from a tenth of the way up the screen, which is inside the
-  bottom quarter — and its targets are *photographs*, so whether a run
-  painted anything the reader counted depended on which pictures it
-  happened to draw. `check_band.py` reported it about one run in three
-  and came up clean the rest of the time. **A sampling check that comes
-  up clean is not evidence**; where the violation depends on content
-  rather than on layout, the guard has to be a test of the geometry, and
-  `tests/test_ui_attention.py` now holds every spawn's bottom edge above
-  the band whatever picture is in it.
-
-  The eighth and ninth are the two first-person screens, and between them
-  they say the last thing worth saying about sweeps. **3D Sokoban** paints
-  boxes in Okabe-Ito sky blue, `(86, 180, 233)`, which is not a verdict
-  colour — but against the dark room's near-black ceiling its
-  anti-aliased edge runs through `(69, 140, 180)`, which is the reader's
-  positive pattern exactly. That one was caught before it shipped, by
-  enumerating the palette instead of sampling it: what a first-person
-  view can paint is a small closed set, so it is cheaper to check all of
-  it than to draw some of it.
-
-  **The 3D Maze** is the interesting one. Its map draws doors and keys in
-  `KEY_COLORS`, one of which is vermillion `(213, 94, 0)` — the reader's
-  *negative* pattern outright, no edge required — and three more of which
-  fade through the window on their way to the background. Whether any of
-  it landed in the band turned on neither the deal nor the content but on
-  the **shape of the window**: the map letterboxes its grid inside its
-  panel, so on a tall window a 37-row maze is width-bound and sits well
-  clear of the bottom, while on a wide one it is height-bound and the last
-  row lands on the panel's floor. Measured with one seed throughout,
-  1824x1368 is clear at every rung — and that is the size the tests and
-  `check_band.py` run at. 1920x1080 puts a rung-fifteen door at y=533
-  against a ceiling of 540; 2560x1080 puts a rung-*eight* door 95 pixels
-  inside it. No number of extra deals would have found that.
-
-  The same screen carried a second one, which no sweep could have found
-  either. The pips showing which keys you are carrying are `KEY_COLORS`
-  too, and they hung a couple of pip-widths *below* the stage — around
-  y=143 on a 1920x1080 window, on every rung with a door. What hid it is
-  that the coloured half only shows for a key already *held*, and nothing
-  that swept it was carrying one. Both are fixed by `above_the_band` and
-  by not drawing outside your own rectangle, and
-  `tests/test_youarehere.py` now holds the stage above the band across
-  five window shapes and holds the pips inside the view with the keys in
-  hand.
-
-Random play is paid on twenty-two of the twenty-seven overlays. The other
-five — Sudoku, Jigsaw, Concentration and the two mazes — have no
-accidental solutions, and are tested by driving them with a policy that
-knows the answer through the same ports a learner would use. 3D Sokoban
-is not among them, and the reason is worth knowing: random play never
-*finishes* a warehouse either, but it very readily shoves a box
-somewhere nothing brings it back from, and the screen calls that and
-pays it.
-
-```
-cd tests && PYTHONPATH=.. ../.venv/bin/python drive_env.py --all 1500
-```
-
-One environment at a time: these bind shared-memory segments, and two
-workshop instances at once risk a name collision.
-
-#### The think clock: making thinking cost something
-
-A turn-based task waits for ever. The boundary's clock moves on every
-step, but nothing reads it as a cost, so a learner that ponders for a
-thousand steps is paid what one that answers in ten is — and choosing
-*how long to think*, the skill an agent that has to act in real time
-needs most, cannot be measured on any of them. The think clock puts a
-price on it without changing a single task:
-
-```python
-env = catalog.env_class('sokoban')(seed=0, think_seconds=2.0,
-                                   refill_seconds=0.5)
-```
-
-The learner holds a bank of `think_seconds`. It drains at the
-boundary's frame rate while a trial is open — whether the learner acts
-or not, because a step with no port *is* thinking — and each new trial
-pays `refill_seconds` back into it, up to the full bank. If it runs dry
-the trial is forfeit: the boundary paints the standard red verdict over
-the task, shows it for one frame, and deals the next trial. A forfeit is
-read and verified by the same reader as any other loss.
-
-The two numbers cover the cases worth having:
-
-| `refill_seconds` | What it is |
-| --- | --- |
-| omitted, or equal to the bank | a deadline per trial |
-| `0` | one bank for the whole run: time spent on a hard trial is taken from every later one |
-| anything between | a chess clock with an increment: what an easy trial leaves unused pays for a hard one |
-
-The last is "pay for what you use" written as a rule: the policy that
-does best answers easy trials at once and spends the savings where
-thinking pays. Seconds are the boundary's, not the wall's — at the
-default `frame_hz=60` a second is sixty steps.
-
-The bank is drawn as a slate bar along the top edge, so the learner can
-see what it has left, and the verdict reader never looks there.
-`env.think_left` gives the same number to a caller, and `env.forfeits`
-counts the trials lost to it.
-
-It applies to the nineteen turn-based tasks that declare when a trial
-is over — the puzzles, the word games, the board positions, Sokoban,
-Hanoi, the Maze — and is refused, with the reason, on the rest. A
-clocked task already does not wait: its world moves while the learner
-thinks, and charging for that time again would charge twice. The 3D Maze
-deals its own trials, so the boundary has nothing to forfeit.
-
-### Grid size
-
-The board is `GRID_SIZE` × `GRID_SIZE`. Squares, letters, and images
-scale to fit a single cell. Default `3` is classic Dual N-Back (8 cells,
-center empty). A 4×4 board uses all 16 cells. Change it in **C: Choose Game
-Mode** (*Grid size*) or in `config.ini` (`GRID_SIZE = 10`). Allowed sizes
-are `GRID_SIZE_MIN`–`GRID_SIZE_MAX` (defaults 2–32). Odd sizes skip
-the center cell unless `GRID_INCLUDE_CENTER = True`.
-
-### Native C kernels (recommended)
-
-The heaviest game loops (Jaeggi/BT sequence construction, session scoring,
-stats-file parsing, graph aggregation, variable n-back draws, and rounded-
-rectangle vertices) live in a C extension, `bwcore`.
-
-Build it once from the project root (needs a C compiler and Python headers):
-
-```
-python setup.py build_ext --inplace
-```
-
-The game still runs without the extension: the `bwaccel` package falls back to
-equivalent Python. Sessions at high n-back are much faster with the C module,
-because the old rejection sampler is replaced by an O(n) constructive
-generator that still produces exactly 6 position matches, 6 audio matches,
-and 2 dual matches.
-
-The title screen and the workshop hub show a tiny `native: C` or
-`native: Python` tag so you can see which path is live. Launch with
-`--debug` to print the same tag on the console.
-
-Windows release zips are frozen with `bwcore` already compiled in — players
-do not need a C compiler. CI also publishes platform wheels as artifacts
-(and attaches them to tagged releases).
-
-### Python 3
-If you are having issues launching BrainWorkshop even if you have `pyglet`, `future`, `past` and
-  `libfuturize` modules installed, follow these steps first:
-1. Copy the following folders into the neural-workshop folder: past, future and
-   libfuturize. You can get those here: https://github.com/PythonCharmers/python-future
-2. Copy the pyglet module into a `pyglet` folder. You can get pyglet here: http://www.pyglet.org/
-
-### Python 2
-* You need pyglet, urllib3
-
-# Start of Old Readme
-
-Brain Workshop: a Dual N-Back game in Python
-
-Thank you for downloading Brain Workshop.
-Please visit the Brain Workshop web site for help & instructions!
-
-From the main screen, press W to open the web site.
-Pressing H will open the Help & Tutorial page.
-
-Or visit:
-   http://brainworkshop.sourceforge.net
-
-Configuration options are available in the file 'config.ini'
-in the data folder. This file is created when the program is
-first launched. Windows users can access this file via the
-'Configuration' item in the Brain Workshop group in the Start Menu.
-Mac OS X users will need to right-click on the brainworkshop icon,
-select "Show Package Contents", and browse to Contents/MacOS/data/.
-
-Let us know if you have any comments or suggestions:
-
-   plhosk@gmail.com
-   jtoomim@jtoomim.org
-
-Enjoy!
-
-----------------------------------------------------------------------
-*** NOTE TO LINUX AND SOURCE-CODE USERS: ***
-
-Python 2.5 or later is required to run Brain Workshop on Linux. Python 2.4
-may also work as long as the python-ctypes package is installed.
-[Note: Windows versions and Mac OS X .app bundled versions of Brain
-Workshop have python included.]
-
-The latest version of python can be downloaded here:
-      http://www.python.org/download/releases/
-
-Music support requires AVBin (highly recommended!)
-AVBin is included in binary distributions of Brain Workshop, but source
-code users will want to download AVBin here:
-      http://code.google.com/p/avbin/
-
-Detailed instructions and links for Mac OS X, Linux and win32 source
-installation are available on the Brain Workshop web site:
-
-    http://brainworkshop.sourceforge.net
-
-----------------------------------------------------------------------
-Change Log:
-
-4.8.1:
-* Bugfix release.  Text shows up properly on Menu screens with
-   BLACK_BACKGROUND=True.  Bug in graphing code fixed which caused some
-   stats.txt files to not be graphable.  Option added to remove post-
-   session feedback (requested by a researcher).  Daily session counter
-   fixed.  Trials per session at startup fixed.
-
-4.8:
-* Changed config.ini file format.  Existing config.ini files will be
-   renamed and replaced.  Users will have to migrate their
-   customizations manually.
-* Added Multi-stim modes, whereby objects appear in two to four places
-   in the 3x3 grid at the same time.  Objects can be differentiated
-   either by image or by color.
-* Added Crab modes.  In crab modes, you have to reverse every N stimuli
-   when matching, so that in 3-back, if the stimuli you saw were the
-   first line below, then you would be matching them against the
-   second line, like thus:
-        ABCDEFGHIJKLMNO
-        ---CBAFEDIHGLKJ
-* Full support for multiple users and/or profiles.  This lets you
-   easily keep separate statistics for different settings (for example,
-   with different timings or with JAEGGI_SCORING in the config file) or
-   for different users.
-* Added an "interference" setting, whereby a certain percentage of the
-   time Brain Workshop will generate trials designed to be particularly
-   tricky, such as by making the current stimulus match the stimulus
-   (n-1), (n+1), or (2n) trials ago, or (in multi-stim mode) by
-   swapping the positions of the stimuli (n) trials ago.
-* New mode-, sound-, and user-selection screens.
-* Changed how often matches are generated for modes other than Dual
-   N-back.
-* Made Brain Workshop ask for donations, by default every 100 sessions.
-   You should do as the program asks.  (This behavior can be
-   changed in the config.ini file.)
-* Trial-by-trial session data are now recorded to disk in Python's
-   pickle format in the USERNAME-sessions.dat files.
-* Changed how scores are calculated in graphing; the percentage of
-   items correct now affects the exact score in addition to the
-   N-back level.
-* All of the music files and some of the other media files have been
-   removed for copyright reasons and replaced with free alternatives.
-
-4.7:
-* Added Dual Audio n-back modes. Go to the Sound Selection screen to
-   choose the sound set and channel (left, right, center) for each
-   sound stimulus.
-* Number of trials per session now increases automatically with higher
-   n-back levels. The calculation can be adjusted from the config file.
-* Timing resolution has been increased to 0.1 seconds, with a maximum
-   speed of 0.3 seconds per trial.
-* Toggling Manual Mode no longer reverts to default settings.
-* Title screen graphic is now colored inversely when a black background is
-   selected.
-* Stats file may be specified on the command line with --statsfile,
-   complementing the --configfile command line parameter.
-* Comments may be added to the stats file on separate lines beginning
-   with the # character.
-
-4.5:
-* First release with Quad N-Back and other new modes
-* Includes various other improvements.
-
-4.41:
-* The size of the field with the FIELD_EXPAND option was decreased slightly.
-
-4.4:
-* Novice Mode was renamed to Jaeggi Mode.
-* Jaeggi Mode will activate certain options to emulate the appearance
-   of the software used in the original study. Two configuration options
-   were added to control this behavior.
-   [Note: to see the new config options, delete your current config
-    file and relaunch Brain Workshop to generate a fresh config.]
-* The data and res directories can now be specified on the command line
-   using the --datadir and --resdir parameters
-   (contributed by Timo Juhani Lindfors <timo.lindfors@iki.fi>).
-* The daily rollover hour for stats can now be specified in the config file.
-* A bug was fixed where certain trials would not show up in the list
-   if the program was launched between midnight and 4 AM.
-* A setting to skip the title screen was added to the config file.
-* The grid lines and crosshairs can be toggled in the config file.
-* A setting was added to select rounded or sharp corners for the
-   solid-color squares.
-* A setting was added to expand the size of the field to fill the screen.
-* Arithmetic Mode: The acceptable decimal answers can be set in the
-   config file.
-* Three new music clips were added.
-* The Clear Stats key (Control-C) is working again.
-
-4.3:
-* Variable n-back levels can be used with any game mode by pressing V
-   in the Choose Game Mode screen.
-* Sounds for the auditory n-back task can be selected by pressing S.
-* Letter N-Back renamed to Combination N-Back.
-* New Morse Code sounds can be used with any n-back mode.
-   For the ultimate challenge try using Morse Code with Dual, Tri or
-   Quad Combination N-Back. Press J to open a Morse Code reference page.
-* Average n-back indicator will only count sessions specific to the
-   current game mode.
-* Progress graphs now start from 1.0 on the vertical axis to give a
-   better overall picture.
-* The cutoff for daily averages is is now 4:00 AM instead of midnight.
-* Music and applause is stopped when entering the progress graph to
-   avoid sound skipping. (The sound may not stop in Linux due to
-   driver limitations.)
-* Config file changes: The starting N-Back mode and game speed is
-   now separately adjustable for each game mode, and some colors
-   can be customized. Variable N-Back can also be set as default.
-   [Note: to see the new config options, delete your current config
-   file and relaunch Brain Workshop to generate a fresh config.]
-
-4.22:
-* There's a new title screen.
-* Launching in Novice Mode will no longer cause a crash.
-* Progress graph: date axis will no longer skip days.
-* Progress graph: data points are now indicated with a dot.
-* Num pad should now work properly with Arithmetic N-Back modes.
-* Difficulty of Dual Variable N-Back has been increased slightly.
-
-4.2:
-* Added new mode to stretch working memory: Dual Variable N-Back.
-   The n-back level is displayed in the center and changes
-   randomly every 3 seconds.
-* Added single-task n-back modes: Position N-Back and Audio N-Back.
-* Default config file is no longer packaged with the download
-   so upgrading to this version won't overwrite existing
-   configuration settings. The config file config.ini will be
-   created if necessary when BW is launched for the first time.
-* OpenAL is now the default sound driver in Linux if available.
-   If you're having sound problems, it may help to install the
-   python-openal package.
-* There's no longer any need to install pyglet on Mac OS X or Linux.
-   It's now included with the source distribution.
-
-4.12:
-* Fixed level increase threshold in Novice mode
-* Novice mode now generates 4 visual matches, 4 audio matches
-   and 2 simultaneous matches, matching the formula used in the
-   original study.
-
-4.11:
-* Fixed level decrease threshold in Novice mode
-* Added a configuration option to use the pre-4.1 flat squares
-* Two changes to Novice Mode to eliminate the last of the differences
-  compared to the original study protocol:
-     1. Exactly 6 position and 6 audio matches are now generated each
-           session
-     2. The score for the session is set as the lowest of the two
-           individual modality scores (visual & audio).
-
-4.1:
-* The squares in Dual & Triple N-Back have a new look.
-* Individual scores for each input category (position, sound, etc)
-   are shown in the graph screen.
-* The number of sessions below 50% required to trigger a
-   level decrease has been changed from 1 to 3.
-* New piano sounds are available in the config file to test your
-   tonal memory.
-* Pressing the ESC key during a session will return you to the
-   main screen instead of quitting the program.
-
-4.04:
-- Added the division operation to the Arithmetic N-Back modes.
-   Use the period key '.' to insert a decimal point.
-   Each of the operations (add, subtract, multiply, divide)
-   can be turned off or on in any combination in the config file.
-- Fixed a bug where if you had just advanced to a new level and
-   quit BW, the next time you restarted you would be back at
-   the previous level.
-- Added config option to play music in Manual mode.
-
-4.03:
-- Added new number sounds (0-13). Either the letters or the numbers
-   will be chosen randomly at the start of each session.
-- The female voice sounds are now selected by default.
-- Added two new game modes, Dual Arithmetic N-Back and Triple
-   Arithmetic N-Back. Press N from the main screen to access
-   the extra game modes.
-
-4.02:
-- Fixed sound driver selection in Linux.
-- A few minor changes related to Arithmetic N-Back mode.
-
-4.0:
-- New game mode: Arithmetic N-Back (see tutorial for details)
-- Optional Novice mode (aka BT mode) emulates the original study
-  protocol.
-- New NATO Phonetic Alphabet sounds (alpha, bravo, charlie, etc).
-   The old sounds are still available as an option.
-- Keep track of your daily progress with the new graphing feature.
-- Export your history of daily n-back averages to a text file
-  for easy pasting into a spreadsheet.
-- Adaptive level-changing model ensures you're always playing
-   at the right level.
-- Keyboard keys can now be redefined.
-- Feedback for missed cues is displayed.
-- Feedback can be turned off in the config file if desired.
-- Text can be hidden during gameplay to reduce distractions.
-- Optional full-screen mode for a larger, distraction-free
-   playing field.
-- Optional black background reduces eye strain.
-- Easy config file provides access to configuration options.
-
-3.1:
-- Enabled high performance VBO (vertex buffer object). If you get a
-   MissingFunctionException, use the --novbo command line parameter
-   to launch Brain Workshop.
-- Changed preferred sound driver to ALSA on Linux.
-- Converted letter sounds to 44.1 KHz to alleviate crackling problem
-   on certain sound hardware.
-
-3.01:
-- When first loading, if the last session completed was in Standard
-   mode, Brain Workshop will start at the same n-back level.
-- Only today's sessions are loaded in the history chart.
-
-3.0:
-- Three consecutive scores of >=80% are now required to advance levels,
-   as indicated by the grey/green squares in the top left corner.
-   A grey square will turn green if a >=80% score is achieved and a
-   green square (if any) will turn grey if the score is below 80%.
-   Once both squares are green and another 80% is achieved, the level
-   increases. A 100% score will cause an instant advancing.
-- The entries on the session history chart will turn green if
-   the session is >= 80%. The chart now displays in a variable-width
-   font.
-- Added the time.sleep() workaround to reduce CPU usage on OS X.
-   Disabled Vsync to eliminate an error message on certain machines.
-- New columns have been added to the stats.txt file, including
-   individual percentage scores for the six input types. Please see
-   Readme-stats.txt in the data directory for details.
-
-2.7:
-- Added a new column in the stats file:
-	0 = Standard mode, 1 = Training mode
-- one new music clip added
-- Added an encouraging message if you get below 40%
-
-2.64:
-- Lowered level advance threshold to 80%.
-- Added a workaround for pyglet.gl.lib.MissingFunctionException
-  which occurs on certain video cards.
-
-2.63:
-- Fixed a bug causing 100% CPU utilization.
-- Fixed a crash caused by the music clip feature.
-- Reduced startup time and memory footprint.
-
-2.62:
-- Contribution to the n-back average is now calculated like so:
-	(nback - 1) + percentage / 100
-   This means the average n-back level for a single 4-back session
-   with a score of 50 percent will now be 3.5 instead of 2.
-
-- Fixed a bug in the input feedback that would show correct responses
-   as incorrect (this did not affect stats).
-- Added more music clips and adjusted the length and volumes of the
-   existing ones.
-
-2.6:
-- Added color feedback on input. The input labels ('A: position' etc)
-   will turn red for incorrect, green for correct and blue if
-   there haven't been enough trials yet.
-
-2.5:
-- Fixed bug where a bogus stats entry would be created under
-   certain conditions when switching from Standard to Training mode.
-- Removed the need for Tkinter on Linux and OS X.
-
-2.4:
-Added music clips which play when certain scores are achieved.
-
-2.3:
-- Added a Sessions Today indicator which shows the total number of
-   sessions completed this calendar day. Useful for tracking progress
-   on your 20 session per day training quota.
-- Added possibility of different stats files on the command line.
-     Give each person in your family a separate desktop icon!
-        example: brainworkshop.exe --statsfile fred.txt
-                 brainworkshop.exe --statsfile mary.txt
-- Brain Workshop now starts in Standard mode. This enforces
-  certain settings for number of trials and time per trial,
-  making it easier to compare scores. Currently these are
-  specified as follows:
-	All modes are 20 trials per session.
-            Dual N-Back: starts with 2-back, 3 seconds
-          Triple N-Back: starts with 2-back, 3 seconds
-     Dual Letter N-Back: starts with 1-back, 3 seconds
-      Tri Letter N-Back: starts with 1-back, 4 seconds
-     Quad Letter N-Back: starts with 1-back, 4 seconds
-- Fixed a bug in the average n-back calculation
-- Changed stats file format from tab-separated to comma-separated.
-   Old stats files will still load successfully.
-
-2.2:
-   - Session stats are now output to the file data\stats.txt
-   - Previous stats are loaded upon launch.
-   - Added an option to clear stats (this does not affect stats.txt)
-   - Average N-Back level is calculated for the last 20 sessions.
-        The contribution of a particular session is calculated:
-           Contribution = (N-back level) * (Percentage score) / 100
-        Average is calculated as:
-           Average = (sum of contributions) / (number of sessions)
-
-2.1:
-   - Added three new challenging game modes:
-      Dual Letter N-Back, Tri Letter N-Back, Quad Letter N-Back
-   - Adjusted level advance threshold from 100% to 90%
-   - Adjusted "applause" threshold from 80% to 70%
-
-2.0:
-   - Applause sound now plays when a score of 80% is achieved
-   - Version check is now performed on launch
-   - Added a workaround for the pyglet.gl.ContextException error
-      which occurs on certain video cards
-   - Added a more descriptive error message in case an old version
-      of pyglet is installed
-   - Fixed cosmetic issue with the session history label on Linux

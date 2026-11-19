@@ -315,11 +315,18 @@ class TheCatalogue(unittest.TestCase):
         self.assertTrue(all(catalog.held_out(t) for t in catalog.HELD_OUT))
         self.assertFalse(catalog.held_out('maze'))
 
-    def test_the_readme_does_not_describe_the_held_out_tasks(self):
+    def test_the_docs_do_not_describe_the_held_out_tasks(self):
         here = os.path.dirname(os.path.abspath(__file__))
-        with open(os.path.join(here, '..', 'Readme.md'),
-                  encoding='utf-8') as handle:
-            text = handle.read()
+        root = os.path.join(here, '..')
+        docs = os.path.join(root, 'docs')
+        paths = [os.path.join(root, 'README.md'),
+                 os.path.join(root, 'ADDING_A_TASK.md')] + [
+            os.path.join(docs, name) for name in sorted(os.listdir(docs))
+            if name.endswith('.md')]
+        text = ''
+        for path in paths:
+            with open(path, encoding='utf-8') as handle:
+                text += handle.read()
         for task_id in catalog.HELD_OUT:
             label = catalog.BY_ID[task_id].label
             # Another task's longer title may begin with this one's.

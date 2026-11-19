@@ -98,7 +98,7 @@ class ThePieces(unittest.TestCase):
 
 
 class TheReadme(unittest.TestCase):
-    """The language table in the Readme, row by row: one example a step,
+    """The language table in the task reference (docs/TASKS.md), row by row: one example a step,
     on 0 1 1 3 2 0 with four symbols."""
 
     X = (0, 1, 1, 3, 2, 0)
