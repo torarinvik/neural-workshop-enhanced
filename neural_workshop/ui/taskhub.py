@@ -326,6 +326,8 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('round_again', _('Round Again')),
         ('stay_or_shift', _('Stay or Shift')),
         ('moving_prize', _('Moving Prize')),
+        ('the_marked_one', _('The Marked One')),
+        ('flagged_bead', _('Flagged Bead')),
     ],
 }
 
@@ -1536,6 +1538,14 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'moving_prize':
         from .ownpress import MovingPrize
         MovingPrize()
+        return
+    if task_id == 'the_marked_one':
+        from .farcue import TheMarkedOne
+        TheMarkedOne()
+        return
+    if task_id == 'flagged_bead':
+        from .farcue import FlaggedBead
+        FlaggedBead()
         return
     if task_id == 'gamble':
         from .gamble import Gamble

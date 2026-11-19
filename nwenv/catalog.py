@@ -766,6 +766,12 @@ CATALOG: Tuple[Wrapped, ...] = (
     Wrapped('moving_prize', 'Moving Prize',
             'nwenv.ownpress', 'MovingPrizeEnv',
             'neural_workshop.ui.ownpress', 'MovingPrize'),
+    Wrapped('the_marked_one', 'The Marked One',
+            'nwenv.farcue', 'TheMarkedOneEnv',
+            'neural_workshop.ui.farcue', 'TheMarkedOne'),
+    Wrapped('flagged_bead', 'Flagged Bead',
+            'nwenv.farcue', 'FlaggedBeadEnv',
+            'neural_workshop.ui.farcue', 'FlaggedBead'),
 )
 
 BY_ID: Dict[str, Wrapped] = {row.task_id: row for row in CATALOG}
@@ -781,6 +787,7 @@ FAMILIES: Dict[str, Tuple[str, ...]] = {
               'next_shape', 'next_tile', 'in_the_loop', 'in_the_pen'),
     'looking back': ('shape_back', 'hidden_cue', 'sound_back'),
     'held in mind': ('changed_tile', 'swapped_boxes'),
+    'far cue': ('the_marked_one', 'flagged_bead'),
     'own presses': ('next_in_turn', 'round_again', 'stay_or_shift', 'moving_prize'),
     'carried through': ('running_count', 'bead_pile', 'arrow_walk', 'chevron_walk'),
     'now and earlier': ('which_moved', 'moved_bead', 'which_is_new', 'new_bead', 'which_is_gone', 'gone_bead', 'traded_places', 'traded_beads'),
@@ -798,6 +805,7 @@ TWINS: Tuple[Tuple[str, str], ...] = (
     ('odd_shape', 'odd_stripe'),             # the odd one out
     ('next_shape', 'next_tile'),             # what comes next
     ('in_the_loop', 'in_the_pen'),           # inside or outside
+    ('the_marked_one', 'flagged_bead'),
     ('next_in_turn', 'round_again'),
     ('stay_or_shift', 'moving_prize'),
     ('running_count', 'bead_pile'),

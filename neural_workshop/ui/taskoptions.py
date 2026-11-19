@@ -4997,6 +4997,42 @@ MOVINGPRIZE = TaskSpec(
     note=movingprize_note)
 
 
+def themarkedone_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Rung %d: four things, one ringed, then 2, 4, 8, 16 or 32 frames of look-alikes: press the card of the ringed one.') % int(chosen['THEMARKEDONE_RUNG'])
+
+
+THEMARKEDONE = TaskSpec(
+    title=_('The Marked One options'),
+    options=(
+        Option('THEMARKEDONE_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5)),
+        Option('THEMARKEDONE_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('THEMARKEDONE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=themarkedone_note)
+
+
+def flaggedbead_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Rung %d: four beads, one flagged, then 2, 4, 8, 16 or 32 frames of look-alikes: press the card of the flagged one.') % int(chosen['FLAGGEDBEAD_RUNG'])
+
+
+FLAGGEDBEAD = TaskSpec(
+    title=_('Flagged Bead options'),
+    options=(
+        Option('FLAGGEDBEAD_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5)),
+        Option('FLAGGEDBEAD_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('FLAGGEDBEAD_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=flaggedbead_note)
+
+
 def soundback_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung is like."""
     return _('Press for the tone that sounded %d frames ago: low, middle or high.') % int(chosen['SOUNDBACK_RUNG'])
@@ -6870,6 +6906,8 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'round_again': ROUNDAGAIN,
     'stay_or_shift': STAYORSHIFT,
     'moving_prize': MOVINGPRIZE,
+    'the_marked_one': THEMARKEDONE,
+    'flagged_bead': FLAGGEDBEAD,
     'sound_back': SOUNDBACK,
     'hidden_cue': HIDDENCUE,
     'shape_back': SHAPEBACK,

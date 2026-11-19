@@ -2031,6 +2031,14 @@ Four plain panels, the same for every answer; the right one depends on what was 
 
 Without memory of its own presses a player is right one time in four. Pressing round the cycle without looking back is right at rungs 1, 5, 9 and never at the others; win-stay, lose-shift *n* trials back earns about half on Stay or Shift.
 
+#### A cue far back
+
+For a learner whose memory is too short to keep every frame. Four things show, one of them marked; then 2, 4, 8, 16 or 32 frames (rungs 1 to 5) of the same kind of things in the same places, unmarked; then the four first things on cards in a new order: press the card of the marked one.
+
+* **The Marked One**: shapes, ringed; **Flagged Bead**: beads, flagged with a pointer, cards the other way round.
+
+The question frame is at one in four, and so are keeping the first frame without the mark, keeping where the mark was without what, and keeping only the last frames.
+
 ### Reasoning
 
 The *Reasoning* category holds 39 tasks.

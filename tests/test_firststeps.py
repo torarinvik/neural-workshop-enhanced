@@ -103,7 +103,7 @@ class Twins(unittest.TestCase):
             self.assertEqual(p.data['cards'][p.answer], nxt)
 
     def test_the_catalogue_records_the_pairs(self):
-        self.assertEqual(len(catalog.TWINS), 12)
+        self.assertEqual(len(catalog.TWINS), 13)
         for one, two in catalog.TWINS:
             self.assertEqual(catalog.twin_of(one), two)
             self.assertEqual(catalog.twin_of(two), one)
@@ -332,7 +332,7 @@ class TheBoundary(unittest.TestCase):
 
 class TheCatalogue(unittest.TestCase):
     def test_every_new_task_has_a_row(self):
-        self.assertEqual(len(NEW), 38)
+        self.assertEqual(len(NEW), 40)
         for task_id in NEW:
             self.assertIn(task_id, catalog.BY_ID)
 
