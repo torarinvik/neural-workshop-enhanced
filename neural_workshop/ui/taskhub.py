@@ -342,6 +342,8 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('hands_off', _('Hands Off')),
         ('busy_wait', _('Busy Wait')),
         ('busy_beads', _('Busy Beads')),
+        ('uneven_wait', _('Uneven Wait')),
+        ('wait_and_see', _('Wait and See')),
     ],
 }
 
@@ -1616,6 +1618,14 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'busy_beads':
         from .busybeads import BusyBeads
         BusyBeads()
+        return
+    if task_id == 'uneven_wait':
+        from .unevenwait import UnevenWait
+        UnevenWait()
+        return
+    if task_id == 'wait_and_see':
+        from .waitandsee import WaitAndSee
+        WaitAndSee()
         return
     if task_id == 'gamble':
         from .gamble import Gamble

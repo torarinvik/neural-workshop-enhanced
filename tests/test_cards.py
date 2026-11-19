@@ -19,7 +19,7 @@ from collections import Counter
 from memorysupport import best_from_view, rate
 
 from neural_workshop import (carried, farcue, framed, handsoff, heardback,
-                             inmind,
+                             inmind, unevenwait,
                              longwalk, lookback, memwalk, ministeps,
                              morewalks, nowthen, ownpress, ruleguess, twins)
 from nwenv import cards, catalog
@@ -59,6 +59,7 @@ DEALS['marked_tone'] = _framed(heardback, 'mark', 0)
 DEALS['other_voice'] = _framed(heardback, 'mark', 1)
 DEALS['hands_off'] = _framed(handsoff, 'still', 0)
 DEALS['busy_wait'] = _framed(handsoff, 'busy', 0)
+DEALS['uneven_wait'] = _framed(unevenwait, 'uneven', 0)
 DEALS['shape_back'] = lambda rung, rng: lookback.deal('shape', rung, rng)
 DEALS['hidden_cue'] = lambda rung, rng: lookback.deal('cue', rung, rng)
 DEALS['sound_back'] = lambda rung, rng: lookback.deal('sound', rung, rng)
@@ -111,7 +112,8 @@ def view_for(task_id):
                                 else VIEWS['arrows']),
             'far cue': VIEWS['farcue'],
             'heard back': VIEWS['heardback'],
-            'hands off': VIEWS['keptcue']}[family]
+            'hands off': VIEWS['keptcue'],
+            'uneven wait': VIEWS['keptcue']}[family]
 
 
 # --- frame-only floors ---------------------------------------------------
@@ -450,7 +452,7 @@ def partial(task_id, strategy, rung):
 
 # --- frames back ---------------------------------------------------------
 
-def frames_back(task_id, rung):
+def frames_back(task_id, rung, seed=None):
     """Shown frames from the one the question is put on back to the
     earliest the answer needs, from a deal; for a walk from memory, from
     the press that ends the shortest way, a press a frame, back to the
@@ -460,7 +462,7 @@ def frames_back(task_id, rung):
                          rung, random.Random(rung))
         opens = round(p.open_at / memwalk.FRAME)
         return opens + p.par - 1 - (memwalk.SHOWN - 1)
-    p = DEALS[task_id](rung, random.Random(rung))
+    p = DEALS[task_id](rung, random.Random(rung if seed is None else seed))
     return round(p.open_at / lookback.FRAME)
 
 
@@ -533,7 +535,13 @@ class TheFloorsAreCounted(unittest.TestCase):
                 continue
             for rung in RUNGS:
                 said = card['rungs'][rung]['frames_back']
-                if task_id in DEALS or task_id in ('gone_from_view',
+                if 'frames_back_least' in card['rungs'][rung]:
+                    backs = {frames_back(task_id, rung, seed)
+                             for seed in range(200)}
+                    self.assertEqual(
+                        (card['rungs'][rung]['frames_back_least'], said),
+                        (min(backs), max(backs)), (task_id, rung))
+                elif task_id in DEALS or task_id in ('gone_from_view',
                                                    'in_that_order'):
                     self.assertEqual(said, frames_back(task_id, rung),
                                      (task_id, rung))

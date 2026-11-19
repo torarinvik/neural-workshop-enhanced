@@ -1693,7 +1693,7 @@ Tasks for a learner starting from nothing. A beginner pressing at random is paid
 
 In what follows *n* is the rung. In the short walks a press that does not bring the goal nearer ends the trial.
 
-The frame-by-frame memory families below (now and earlier, carried through, own presses, a cue far back, heard back, hands off) show a frame every half second and may be stepped one step a shown frame: their environments accept `frame_hz=2`, and a trial driven that way is judged as it is at ten. The older frame tasks (looking back and held in mind) accept it too, as an opt-in: at exactly two steps a second one step carries the trial a whole frame, while at ten and above they run as they always have; other rates below ten are refused. Every other clocked task keeps its floor of ten.
+The frame-by-frame memory families below (now and earlier, carried through, own presses, a cue far back, heard back, hands off, uneven wait) show a frame every half second and may be stepped one step a shown frame: their environments accept `frame_hz=2`, and a trial driven that way is judged as it is at ten. The older frame tasks (looking back and held in mind) accept it too, as an opt-in: at exactly two steps a second one step carries the trial a whole frame, while at ten and above they run as they always have; other rates below ten are refused. Every other clocked task keeps its floor of ten.
 
 Every task on the shared boundary also takes `frame_scale`, one over a whole number (`1/2`, `1/4`, ...): the frame is drawn at full size, as ever, and read back that much smaller on each side, one pixel of each block, sampled on the GPU. The verdict is read off the small frame, and digests, outcomes and the frame export are all of it. At a quarter a step runs about four times as fast (around 85 to 90 steps a second at full size, 310 to 430 at a quarter, on the machine this was measured on); `tests/test_frame_scale.py` checks that runs are judged the same at both sizes.
 
@@ -1850,6 +1850,14 @@ In Hidden Cue and the far-cue tasks a press before the question is ignored, so a
 * **Busy Wait**: a wait of *n* small jobs, two frames each: a dot lights in one of the squares and its port must be pressed once while it shows. A wrong press, a second press, a press outside a job, or a dot left unpressed ends the trial unpaid. The shortest way is *n* + 1 presses.
 
 Where the dots light is drawn evenly and apart from the cue, so the presses a trial is played with say nothing of it: the question frame, read together with every press of the wait, is at one in four. Pressing at random (at each job and at the question) earns one in four at a power of the presses the trial needs: a quarter on Hands Off, a sixteenth at rung 1 of Busy Wait. Unlike the families above, a press at every step is never paid here, by design.
+
+### A wait of uneven length
+
+In the looking-back tasks the cue lies a fixed number of frames back at each rung, so a learner can learn to look exactly that far back. Here the wait is drawn anew each trial.
+
+* **Uneven Wait**: one of four squares lights for a frame; then a wait of *n* to 3*n* frames with nothing showing, drawn evenly; then press the square that lit. Any press before the question ends the trial unpaid. Four ports, one a square, in reading order.
+
+The wait is drawn apart from the cue, so the length of the trial says nothing of the answer: the question frame, read together with the wait's length, is at one in four, and at rung 3 no one distance back holds the cue more than one trial in seven.
 
 ## Reasoning
 

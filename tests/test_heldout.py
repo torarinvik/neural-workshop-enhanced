@@ -16,7 +16,7 @@ from collections import deque
 from cuesupport import job_now
 from memorysupport import drive as frame_drive
 
-from neural_workshop import (busybeads, carried, framed, inwindow, keydoor,
+from neural_workshop import (busybeads, waitandsee, carried, framed, inwindow, keydoor,
                              ministeps, oddstripe, ownpress, roundagain,
                              twins)
 from nwenv import catalog
@@ -292,6 +292,32 @@ class BusyBeads(unittest.TestCase):
                                        2, wait=job_now, frame_hz=hz), [1.0])
             self.assertEqual(cue_drive('busy_beads', lambda t: t.puzzle.answer,
                                        2, frame_hz=hz), [-1.0])
+
+
+
+class WaitAndSee(unittest.TestCase):
+
+    def test_deals(self):
+        for rung in range(1, 7):
+            backs = set()
+            for seed in range(40):
+                p = waitandsee.deal(rung, random.Random(seed))
+                (_f, place, _c), = p.data['cues']
+                self.assertEqual(p.data['look'], 1)
+                self.assertEqual(p.answer, 3 - place)
+                backs.add(p.data['wait'])
+            self.assertEqual(min(backs), rung)
+            self.assertEqual(max(backs), 3 * rung)
+
+    def test_boundary(self):
+        from cuesupport import drive as cue_drive
+        for hz in (2.0, 10.0):
+            self.assertEqual(cue_drive('wait_and_see',
+                                       lambda t: t.puzzle.answer, 2,
+                                       frame_hz=hz), [1.0])
+            self.assertEqual(cue_drive('wait_and_see',
+                                       lambda t: t.puzzle.answer, 2,
+                                       wait=lambda t: 0, frame_hz=hz), [-1.0])
 
 
 if __name__ == '__main__':

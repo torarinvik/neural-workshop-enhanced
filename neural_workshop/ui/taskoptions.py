@@ -5285,6 +5285,42 @@ BUSYBEADS = TaskSpec(
     note=busybeads_note)
 
 
+def unevenwait_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Rung %d: a square lights, then a wait drawn each trial from the rung to three times it, in frames; then press the square that lit. Any press before the question ends the trial.') % int(chosen['UNEVENWAIT_RUNG'])
+
+
+UNEVENWAIT = TaskSpec(
+    title=_('Uneven Wait options'),
+    options=(
+        Option('UNEVENWAIT_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20)),
+        Option('UNEVENWAIT_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('UNEVENWAIT_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=unevenwait_note)
+
+
+def waitandsee_note(chosen: Dict[str, Any]) -> str:
+    """The title only: this task is kept back."""
+    return _('Wait and See')
+
+
+WAITANDSEE = TaskSpec(
+    title=_('Wait and See options'),
+    options=(
+        Option('WAITANDSEE_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20)),
+        Option('WAITANDSEE_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('WAITANDSEE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=waitandsee_note)
+
+
 def soundback_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung is like."""
     return _('Press for the tone that sounded %d frames ago: low, middle or high.') % int(chosen['SOUNDBACK_RUNG'])
@@ -7174,6 +7210,8 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'hands_off': HANDSOFF,
     'busy_wait': BUSYWAIT,
     'busy_beads': BUSYBEADS,
+    'uneven_wait': UNEVENWAIT,
+    'wait_and_see': WAITANDSEE,
     'sound_back': SOUNDBACK,
     'hidden_cue': HIDDENCUE,
     'shape_back': SHAPEBACK,

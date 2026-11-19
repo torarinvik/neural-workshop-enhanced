@@ -21,6 +21,9 @@ A card holds, for an open task:
                 earlier trials, not frames. ``trials_back`` is how many
                 trials back it lies, for those; and ``presses`` is how
                 many presses the shortest way needs.
+``frames_back_least``  where the wait is drawn anew each trial, the
+                fewest frames back the answer may lie; ``frames_back`` is
+                then the most.
 ``note``        where the answer lies, when that is the run as a whole.
 
 Only the first-steps families are measured. Every other catalogued task
@@ -167,6 +170,15 @@ _put(('marked_tone', 'other_voice'), 0.25,
 
 _put(('hands_off',), 0.25, rungs=_rungs(_plus_one, _one))
 _put(('busy_wait',), 0.25, rungs=_rungs(lambda k: 2 * k + 1, _plus_one))
+
+# --- a wait of uneven length ---------------------------------------------
+
+def _uneven(k: int) -> Dict:
+    return {'frames_back': 3 * k + 1, 'frames_back_least': k + 1,
+            'trials_back': None, 'presses': 1}
+
+
+_put(('uneven_wait',), 0.25, rungs={k: _uneven(k) for k in RUNGS})
 
 # --- the walks -----------------------------------------------------------
 
