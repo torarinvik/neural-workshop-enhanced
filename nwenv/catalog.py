@@ -820,6 +820,12 @@ CATALOG: Tuple[Wrapped, ...] = (
     Wrapped('wait_and_see', 'Wait and See',
             'nwenv.waitandsee', 'WaitAndSeeEnv',
             'neural_workshop.ui.waitandsee', 'WaitAndSee'),
+    Wrapped('which_was_where', 'Which Was Where?',
+            'nwenv.severalcues', 'WhichWasWhereEnv',
+            'neural_workshop.ui.severalcues', 'WhichWasWhere'),
+    Wrapped('roll_call', 'Roll Call',
+            'nwenv.rollcall', 'RollCallEnv',
+            'neural_workshop.ui.rollcall', 'RollCall'),
 )
 
 BY_ID: Dict[str, Wrapped] = {row.task_id: row for row in CATALOG}
@@ -849,6 +855,7 @@ FAMILIES: Dict[str, Tuple[str, ...]] = {
     'payment for progress': ('short_maze_steps',),
     'hands off': ('hands_off', 'busy_wait', 'busy_beads'),
     'uneven wait': ('uneven_wait', 'wait_and_see'),
+    'several kept': ('which_was_where', 'roll_call'),
 }
 
 #: Twin tasks: the same rule under a different look -- other colours,
@@ -872,6 +879,7 @@ TWINS: Tuple[Tuple[str, str], ...] = (
     ('traded_places', 'traded_beads'),
     ('busy_wait', 'busy_beads'),
     ('uneven_wait', 'wait_and_see'),
+    ('which_was_where', 'roll_call'),
 )
 
 #: Tasks kept back from development: not to be trained on, tuned
@@ -891,6 +899,7 @@ HELD_OUT: frozenset = frozenset((
     # two-stage walks were added: one twin of each family.
     'busy_beads',
     'wait_and_see',
+    'roll_call',
 ))
 
 #: Every module that holds a held-out task's model, screen or wrapper.
@@ -921,6 +930,9 @@ HELD_OUT_MODULES: Tuple[str, ...] = (
     'neural_workshop.waitandsee',
     'neural_workshop.ui.waitandsee',
     'nwenv.waitandsee',
+    'neural_workshop.rollcall',
+    'neural_workshop.ui.rollcall',
+    'nwenv.rollcall',
 )
 #: The tests of the held-out tasks, kept apart for the same reason.
 HELD_OUT_TESTS: Tuple[str, ...] = ('tests/test_heldout.py',)

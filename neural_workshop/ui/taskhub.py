@@ -344,6 +344,8 @@ TASKS: Dict[str, List[Tuple[str, str]]] = {
         ('busy_beads', _('Busy Beads')),
         ('uneven_wait', _('Uneven Wait')),
         ('wait_and_see', _('Wait and See')),
+        ('which_was_where', _('Which Was Where?')),
+        ('roll_call', _('Roll Call')),
     ],
 }
 
@@ -1626,6 +1628,14 @@ def launch_task(task_id: str, from_hub: Optional[TaskHub] = None) -> None:
     if task_id == 'wait_and_see':
         from .waitandsee import WaitAndSee
         WaitAndSee()
+        return
+    if task_id == 'which_was_where':
+        from .severalcues import WhichWasWhere
+        WhichWasWhere()
+        return
+    if task_id == 'roll_call':
+        from .rollcall import RollCall
+        RollCall()
         return
     if task_id == 'gamble':
         from .gamble import Gamble

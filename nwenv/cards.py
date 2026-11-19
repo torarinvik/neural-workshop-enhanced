@@ -180,6 +180,14 @@ def _uneven(k: int) -> Dict:
 
 _put(('uneven_wait',), 0.25, rungs={k: _uneven(k) for k in RUNGS})
 
+# --- several kept, one asked for ------------------------------------------
+
+_put(('which_was_where',), 0.25,
+     partial=(('answering with the last cue shown', 1 / 2, 1),
+              ('answering with the last cue shown', 1 / 3, 2),
+              ('answering with the last cue shown', 1 / 4, 3)),
+     rungs=_rungs(lambda k: min(k, 3) + 3, _one))
+
 # --- the walks -----------------------------------------------------------
 
 _put(('long_way_round', 'push_and_pull', 'one_way_doors'), 1.0,

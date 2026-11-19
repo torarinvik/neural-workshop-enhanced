@@ -24,7 +24,7 @@ OPEN = [task for task in NEW if task not in catalog.HELD_OUT]
 #: Families whose wait is closed to presses: a press before the question
 #: ends the trial unpaid, or must be the wait's job, so a press at every
 #: step is never paid there, by design.
-CLOSED_WAIT = ('hands off', 'uneven wait')
+CLOSED_WAIT = ('hands off', 'uneven wait', 'several kept')
 
 
 class ShortWalks(unittest.TestCase):
@@ -111,7 +111,7 @@ class Twins(unittest.TestCase):
             self.assertEqual(p.data['cards'][p.answer], nxt)
 
     def test_the_catalogue_records_the_pairs(self):
-        self.assertEqual(len(catalog.TWINS), 17)
+        self.assertEqual(len(catalog.TWINS), 18)
         for one, two in catalog.TWINS:
             self.assertEqual(catalog.twin_of(one), two)
             self.assertEqual(catalog.twin_of(two), one)
@@ -320,7 +320,7 @@ class TheBoundary(unittest.TestCase):
 
 class TheCatalogue(unittest.TestCase):
     def test_every_new_task_has_a_row(self):
-        self.assertEqual(len(NEW), 56)
+        self.assertEqual(len(NEW), 58)
         for task_id in NEW:
             self.assertIn(task_id, catalog.BY_ID)
 

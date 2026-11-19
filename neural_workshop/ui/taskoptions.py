@@ -5321,6 +5321,42 @@ WAITANDSEE = TaskSpec(
     note=waitandsee_note)
 
 
+def whichwaswhere_note(chosen: Dict[str, Any]) -> str:
+    """What the starting rung is like."""
+    return _('Rung %d: one more square than the rung lights, up to four, each in its own colour; then the question shows one colour: press where it lit.') % int(chosen['WHICHWASWHERE_RUNG'])
+
+
+WHICHWASWHERE = TaskSpec(
+    title=_('Which Was Where? options'),
+    options=(
+        Option('WHICHWASWHERE_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3)),
+        Option('WHICHWASWHERE_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('WHICHWASWHERE_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=whichwaswhere_note)
+
+
+def rollcall_note(chosen: Dict[str, Any]) -> str:
+    """The title only: this task is kept back."""
+    return _('Roll Call')
+
+
+ROLLCALL = TaskSpec(
+    title=_('Roll Call options'),
+    options=(
+        Option('ROLLCALL_RUNG', _('Starting rung'), 1,
+               values=(1, 2, 3)),
+        Option('ROLLCALL_TRIALS', _('Trials per run'), 20,
+               values=(5, 10, 20, 40, 100)),
+        Option('ROLLCALL_ADAPTIVE',
+               _('Climb a rung on a pass, drop one on a fail'), True),
+    ),
+    note=rollcall_note)
+
+
 def soundback_note(chosen: Dict[str, Any]) -> str:
     """What the starting rung is like."""
     return _('Press for the tone that sounded %d frames ago: low, middle or high.') % int(chosen['SOUNDBACK_RUNG'])
@@ -7212,6 +7248,8 @@ TASK_SPECS: Dict[str, TaskSpec] = {
     'busy_beads': BUSYBEADS,
     'uneven_wait': UNEVENWAIT,
     'wait_and_see': WAITANDSEE,
+    'which_was_where': WHICHWASWHERE,
+    'roll_call': ROLLCALL,
     'sound_back': SOUNDBACK,
     'hidden_cue': HIDDENCUE,
     'shape_back': SHAPEBACK,

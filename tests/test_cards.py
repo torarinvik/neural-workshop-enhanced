@@ -19,7 +19,7 @@ from collections import Counter
 from memorysupport import best_from_view, rate
 
 from neural_workshop import (carried, farcue, framed, handsoff, heardback,
-                             inmind, unevenwait,
+                             inmind, severalcues, unevenwait,
                              longwalk, lookback, memwalk, ministeps,
                              morewalks, nowthen, ownpress, ruleguess, twins)
 from nwenv import cards, catalog
@@ -60,6 +60,7 @@ DEALS['other_voice'] = _framed(heardback, 'mark', 1)
 DEALS['hands_off'] = _framed(handsoff, 'still', 0)
 DEALS['busy_wait'] = _framed(handsoff, 'busy', 0)
 DEALS['uneven_wait'] = _framed(unevenwait, 'uneven', 0)
+DEALS['which_was_where'] = _framed(severalcues, 'several', 0)
 DEALS['shape_back'] = lambda rung, rng: lookback.deal('shape', rung, rng)
 DEALS['hidden_cue'] = lambda rung, rng: lookback.deal('cue', rung, rng)
 DEALS['sound_back'] = lambda rung, rng: lookback.deal('sound', rung, rng)
@@ -113,7 +114,8 @@ def view_for(task_id):
             'far cue': VIEWS['farcue'],
             'heard back': VIEWS['heardback'],
             'hands off': VIEWS['keptcue'],
-            'uneven wait': VIEWS['keptcue']}[family]
+            'uneven wait': VIEWS['keptcue'],
+            'several kept': VIEWS['keptcue']}[family]
 
 
 # --- frame-only floors ---------------------------------------------------
@@ -447,6 +449,11 @@ def partial(task_id, strategy, rung):
     if task_id in ('gone_from_view', 'in_that_order'):
         kind = 'one' if task_id == 'gone_from_view' else 'two'
         return _memwalk_play(kind, rung, _to_middle)
+    if task_id == 'which_was_where':
+        def last(p, rng):
+            place = p.data['cues'][-1][1]
+            return place if p.data['look'] == 0 else 3 - place
+        return rate(lambda rng: severalcues.deal('several', rung, rng), last)
     raise KeyError((task_id, strategy))
 
 
